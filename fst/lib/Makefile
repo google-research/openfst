@@ -3,7 +3,7 @@ SRCS=fst.cc properties.cc symbol-table.cc compat.cc
 OBJS=fst.o properties.o symbol-table.o compat.o
 CC=g++
 OPT=-O2
-CFLAGS=$(OPT) -I../.. -DFST_DL -Wall # -Wno-sign-compare
+CFLAGS=$(OPT) -I../.. -DFST_DL
 LIBTYPE=so # "dylib" on macosx
 SOFLAGS=-shared  # "-dynamiclib -flat_namespace -undefined suppress" on macosx
 
