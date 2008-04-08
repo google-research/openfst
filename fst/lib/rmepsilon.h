@@ -145,6 +145,7 @@ void RmEpsilonState<Arc,Queue>::Expand(typename Arc::StateId source) {
      eps_queue_.pop();
 
      while (visited_.size() <= state) visited_.push_back(false);
+     if (visited_[state]) continue;
      visited_[state] = true;
      visited_states_.push_front(state);
 
@@ -168,7 +169,8 @@ void RmEpsilonState<Arc,Queue>::Expand(typename Arc::StateId source) {
                 (element, pair<StateId, ssize_t>(source, arcs_.size())));
             arcs_.push_back(arc);
           } else {
-            if (((*it).second).first == source) {
+            if ((((*it).second).first == source) &&
+                (((*it).second).second < arcs_.size())) {
               Weight &w = arcs_[((*it).second).second].weight;
               w = Plus(w, arc.weight);
             } else {
