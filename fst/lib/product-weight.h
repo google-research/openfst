@@ -79,7 +79,8 @@ class ProductWeight {
   }
 
   ProductWeight<W1, W2> Quantize(float delta = kDelta) const {
-    return ProductWeight<W1, W2>(value1_.Quantize(), value2_.Quantize());
+    return ProductWeight<W1, W2>(value1_.Quantize(delta),
+                                 value2_.Quantize(delta));
   }
 
   ReverseWeight Reverse() const {

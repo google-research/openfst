@@ -535,15 +535,20 @@ class ComposeFstImpl : public ComposeFstImplBase<A> {
               // fsta is reached.
 
               StateId sf = sa;  // Start of current failure transition.
+              Weight wf = Weight::One();
               while (labela == kPhiLabel && sf != arca.nextstate) {
                 sf = arca.nextstate;
+                wf = Times(wf, arca.weight);
 
                 size_t numarcsf = fsta->NumArcs(sf);
                 ArcIterator< Fst<A> > aiterf(*fsta, sf);
                 if (FindLabel(&aiterf, numarcsf, match_labelb, find_input)) {
                   // Sub-case 1a: there exists a transition starting
                   // in sf and consuming symbol 'match_labelb'.
-                  AddArc(s, aiterf.Value(), arcb, 0, find_input);
+                  arca = aiterf.Value();
+                  labela = find_input ? arca.ilabel : arca.olabel;
+                  arca.weight = Times(wf, arca.weight);
+                  AddArc(s, arca, arcb, 0, find_input);
                   break;
                 } else {
                   // No transition labelled 'match_labelb' found: try
