@@ -29,6 +29,7 @@ using std::vector;
 
 #include <fst/script/fst-class.h>
 #include <fst/script/arg-packs.h>
+#include <fst/script/shortest-path.h>
 
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/expand.h>
@@ -166,17 +167,31 @@ void PdtReverse(const FstClass &ifst,
 
 // PDT SHORTESTPATH
 
+struct PdtShortestPathOptions {
+  QueueType queue_type;
+  bool keep_parentheses;
+  bool path_gc;
+
+  PdtShortestPathOptions(QueueType qt = FIFO_QUEUE,
+                         bool kp = false, bool gc = true)
+      : queue_type(qt), keep_parentheses(kp), path_gc(gc) {}
+};
+
 typedef args::Package<const FstClass &,
                       const vector<pair<int64, int64> >&,
-                      MutableFstClass *> PdtShortestPathArgs;
+                      MutableFstClass *,
+                      const PdtShortestPathOptions &> PdtShortestPathArgs;
 
 template<class Arc>
 void PdtShortestPath(PdtShortestPathArgs *args) {
   typedef typename Arc::StateId StateId;
   typedef typename Arc::Label Label;
+  typedef typename Arc::Weight Weight;
 
   const Fst<Arc> &fst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg3->GetMutableFst<Arc>();
+  const PdtShortestPathOptions &opts = args->arg4;
+
 
   vector<pair<Label, Label> > parens(args->arg2.size());
   for (size_t i = 0; i < parens.size(); ++i) {
@@ -184,12 +199,38 @@ void PdtShortestPath(PdtShortestPathArgs *args) {
     parens[i].second = args->arg2[i].second;
   }
 
-  ShortestPath(fst, parens, ofst);
+  switch (opts.queue_type) {
+    case FIFO_QUEUE: {
+      typedef FifoQueue<StateId> Queue;
+      fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
+                                                         opts.path_gc);
+      ShortestPath(fst, parens, ofst, spopts);
+      return;
+    }
+    case LIFO_QUEUE: {
+      typedef LifoQueue<StateId> Queue;
+      fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
+                                                         opts.path_gc);
+      ShortestPath(fst, parens, ofst, spopts);
+      return;
+    }
+    case STATE_ORDER_QUEUE: {
+      typedef StateOrderQueue<StateId> Queue;
+      fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
+                                                         opts.path_gc);
+      ShortestPath(fst, parens, ofst, spopts);
+      return;
+    }
+    default:
+      LOG(FATAL) << "Unknown queue type: " << opts.queue_type;
+  }
 }
 
 void PdtShortestPath(const FstClass &ifst,
                      const vector<pair<int64, int64> > &parens,
-                     MutableFstClass *ofst);
+                     MutableFstClass *ofst,
+                     const PdtShortestPathOptions &opts =
+                     PdtShortestPathOptions());
 
 // PRINT INFO
 

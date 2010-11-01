@@ -29,21 +29,16 @@ using std::vector;
 namespace fst {
 namespace script {
 
-enum ArcFilterType { ANY_ARC_FILTER, EPSILON_ARC_FILTER,
-                     INPUT_EPSILON_ARC_FILTER, OUTPUT_EPSILON_ARC_FILTER };
-
 struct PruneOptions {
   WeightClass weight_threshold;
   int64 state_threshold;
-  ArcFilterType filter_type;
   const vector<WeightClass> *distance;
   float delta;
 
-  explicit PruneOptions(const WeightClass& w, int64 s, ArcFilterType f,
+  explicit PruneOptions(const WeightClass& w, int64 s,
                         vector<WeightClass> *d = 0, float e = kDelta)
       : weight_threshold(w),
         state_threshold(s),
-        filter_type(f),
         distance(d),
         delta(e) {}
  private:
@@ -52,21 +47,17 @@ struct PruneOptions {
 
 // converts a script::PruneOptions into a fst::PruneOptions.
 // Notes:
-//  1) It is assumed you'll call this function with the correct ArcFilter type.
-//     This function ignores opts.filter_type
-//
-//  2) If the original opts.distance is not NULL, a new distance will be
-//     created with new; it's the client's responsibility to delete this.
+//  If the original opts.distance is not NULL, a new distance will be
+//  created with new; it's the client's responsibility to delete this.
 
-template<class A, class ArcFilter>
-fst::PruneOptions<A, ArcFilter> ConvertPruneOptions(
+template<class A>
+fst::PruneOptions<A, AnyArcFilter<A> > ConvertPruneOptions(
     const PruneOptions &opts) {
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
 
   Weight weight_threshold = *(opts.weight_threshold.GetWeight<Weight>());
   StateId state_threshold = opts.state_threshold;
-  // ignore filter_type
   vector<Weight> *distance = 0;
 
   if (opts.distance) {
@@ -76,8 +67,8 @@ fst::PruneOptions<A, ArcFilter> ConvertPruneOptions(
     }
   }
 
-  return fst::PruneOptions<A, ArcFilter>(
-      weight_threshold, state_threshold, ArcFilter(), distance,
+  return fst::PruneOptions<A, AnyArcFilter<A> >(
+      weight_threshold, state_threshold, AnyArcFilter<A>(), distance,
       opts.delta);
 }
 
@@ -91,36 +82,10 @@ void Prune(PruneArgs1 *args) {
   typedef typename Arc::Weight Weight;
   typedef typename Arc::StateId StateId;
 
-  switch (args->arg2.filter_type) {
-    case ANY_ARC_FILTER: {
-      fst::PruneOptions<Arc, AnyArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, AnyArcFilter<Arc> >(args->arg2);
-      Prune(ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, EpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, EpsilonArcFilter<Arc> >(args->arg2);
-      Prune(ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case INPUT_EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, InputEpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, InputEpsilonArcFilter<Arc> >(args->arg2);
-      Prune(ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case OUTPUT_EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, OutputEpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, OutputEpsilonArcFilter<Arc> >(args->arg2);
-      Prune(ofst, opts);
-      delete opts.distance;
-      return;
-    }
-  }
+  fst::PruneOptions<Arc, AnyArcFilter<Arc> > opts =
+      ConvertPruneOptions<Arc>(args->arg2);
+  Prune(ofst, opts);
+  delete opts.distance;
 }
 
 // 2
@@ -132,36 +97,10 @@ void Prune(PruneArgs2 *args) {
   const Fst<Arc>& ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
 
-  switch (args->arg3.filter_type) {
-    case ANY_ARC_FILTER: {
-      fst::PruneOptions<Arc, AnyArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, AnyArcFilter<Arc> >(args->arg3);
-      Prune(ifst, ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, EpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, EpsilonArcFilter<Arc> >(args->arg3);
-      Prune(ifst, ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case INPUT_EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, InputEpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, InputEpsilonArcFilter<Arc> >(args->arg3);
-      Prune(ifst, ofst, opts);
-      delete opts.distance;
-      return;
-    }
-    case OUTPUT_EPSILON_ARC_FILTER: {
-      fst::PruneOptions<Arc, OutputEpsilonArcFilter<Arc> > opts =
-          ConvertPruneOptions<Arc, OutputEpsilonArcFilter<Arc> >(args->arg3);
-      Prune(ifst, ofst, opts);
-      delete opts.distance;
-      return;
-    }
-  }
+  fst::PruneOptions<Arc, AnyArcFilter<Arc> > opts =
+      ConvertPruneOptions<Arc>(args->arg3);
+  Prune(ifst, ofst, opts);
+  delete opts.distance;
 }
 
 // 3

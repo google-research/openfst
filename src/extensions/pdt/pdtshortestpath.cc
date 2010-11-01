@@ -23,6 +23,11 @@
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
 
+
+DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result.");
+DEFINE_string(queue_type, "fifo", "Queue type: one of: "
+              "\"fifo\", \"lifo\", \"state\"");
+DEFINE_bool(path_gc, true, "Garbage collect shortest path data");
 DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs.");
 
 int main(int argc, char **argv) {
@@ -54,8 +59,21 @@ int main(int argc, char **argv) {
   fst::ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false);
 
   s::VectorFstClass ofst(ifst->ArcType());
-  s::PdtShortestPath(*ifst, parens, &ofst);
 
+  fst::QueueType qt;
+
+  if (FLAGS_queue_type == "fifo") {
+    qt = fst::FIFO_QUEUE;
+  } else if (FLAGS_queue_type == "lifo") {
+    qt = fst::LIFO_QUEUE;
+  } else if (FLAGS_queue_type == "state") {
+    qt = fst::STATE_ORDER_QUEUE;
+  } else {
+    LOG(FATAL) << "Unknown or unsupported queue type: " << FLAGS_queue_type;
+  }
+
+  s::PdtShortestPathOptions opts(qt, FLAGS_keep_parentheses, FLAGS_path_gc);
+  s::PdtShortestPath(*ifst, parens, &ofst, opts);
   ofst.Write(out_name);
 
   return 0;

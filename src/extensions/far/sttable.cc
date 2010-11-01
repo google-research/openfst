@@ -20,9 +20,12 @@ namespace fst {
 
 bool IsSTTable(const string &filename) {
   ifstream strm(filename.c_str());
+  if (!strm)
+    return false;
+
   int32 magic_number = 0;
   ReadType(strm, &magic_number);
-  return strm && magic_number == kSTTableMagicNumber;
+  return magic_number == kSTTableMagicNumber;
 }
 
 }  // namespace fst

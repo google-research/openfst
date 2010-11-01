@@ -25,8 +25,6 @@
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
 DEFINE_string(weight, "", "Weight parameter");
-DEFINE_string(arc_filter, "any", "Arc filter: one of :"
-              " \"any\", \"epsilon\", \"iepsilon\", \"oepsilon\"");
 
 
 int main(int argc, char **argv) {
@@ -65,21 +63,7 @@ int main(int argc, char **argv) {
       WeightClass::Zero() :
       WeightClass(ifst->WeightType(), FLAGS_weight);
 
-  s::ArcFilterType arc_filter;
-  if (FLAGS_arc_filter == "any") {
-    arc_filter = s::ANY_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "epsilon") {
-    arc_filter = s::EPSILON_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "iepsilon") {
-    arc_filter = s::INPUT_EPSILON_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "oepsilon") {
-    arc_filter = s::OUTPUT_EPSILON_ARC_FILTER;
-  } else {
-    LOG(FATAL) << "Unknown arc filter type: " << FLAGS_arc_filter;
-  }
-
-  s::PruneOptions opts(weight_threshold, FLAGS_nstate, arc_filter,
-                       0, FLAGS_delta);
+  s::PruneOptions opts(weight_threshold, FLAGS_nstate, 0, FLAGS_delta);
 
   s::Prune(ofst, opts);
 

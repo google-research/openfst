@@ -85,8 +85,9 @@ void PdtReverse(const FstClass &ifst,
 
 void PdtShortestPath(const FstClass &ifst,
                      const vector<pair<int64, int64> > &parens,
-                     MutableFstClass *ofst) {
-  PdtShortestPathArgs args(ifst, parens, ofst);
+                     MutableFstClass *ofst,
+                     const PdtShortestPathOptions &opts) {
+  PdtShortestPathArgs args(ifst, parens, ofst, opts);
 
   Apply<Operation<PdtShortestPathArgs> >("PdtShortestPath",
                                          ifst.ArcType(), &args);

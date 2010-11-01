@@ -30,6 +30,9 @@ using std::vector;
 namespace fst {
 namespace script {
 
+enum ArcFilterType { ANY_ARC_FILTER, EPSILON_ARC_FILTER,
+                     INPUT_EPSILON_ARC_FILTER, OUTPUT_EPSILON_ARC_FILTER };
+
 // See nlp/fst/lib/shortest-distance.h for the template options class
 // that this one shadows
 struct ShortestDistanceOptions {
@@ -54,14 +57,14 @@ typedef args::Package<const FstClass &, vector<WeightClass> *,
 template<class Queue, class Arc, class ArcFilter>
 struct QueueConstructor {
   //  template<class Arc, class ArcFilter>
-  static Queue Construct(const Fst<Arc> &fst,
-                         const vector<typename Arc::Weight> *weights) {
+  static Queue Construct(const Fst<Arc> &,
+                         const vector<typename Arc::Weight> *) {
     return Queue();
   }
 };
 
-// Specializations to deal with AutoQueue and TopOrderQueue's different
-// constructors
+// Specializations to deal with AutoQueue, NaturalShortestFirstQueue,
+// and TopOrderQueue's different constructors
 template<class Arc, class ArcFilter>
 struct QueueConstructor<AutoQueue<typename Arc::StateId>, Arc, ArcFilter> {
   //  template<class Arc, class ArcFilter>
@@ -73,6 +76,19 @@ struct QueueConstructor<AutoQueue<typename Arc::StateId>, Arc, ArcFilter> {
 };
 
 template<class Arc, class ArcFilter>
+struct QueueConstructor<NaturalShortestFirstQueue<typename Arc::StateId,
+                                                  typename Arc::Weight>,
+                        Arc, ArcFilter> {
+  //  template<class Arc, class ArcFilter>
+  static NaturalShortestFirstQueue<typename Arc::StateId, typename Arc::Weight>
+  Construct(const Fst<Arc> &fst,
+            const vector<typename Arc::Weight> *distance) {
+    return NaturalShortestFirstQueue<typename Arc::StateId,
+                                     typename Arc::Weight>(*distance);
+  }
+};
+
+template<class Arc, class ArcFilter>
 struct QueueConstructor<TopOrderQueue<typename Arc::StateId>, Arc, ArcFilter> {
   //  template<class Arc, class ArcFilter>
   static TopOrderQueue<typename Arc::StateId> Construct(
@@ -80,6 +96,7 @@ struct QueueConstructor<TopOrderQueue<typename Arc::StateId>, Arc, ArcFilter> {
     return TopOrderQueue<typename Arc::StateId>(fst, ArcFilter());
   }
 };
+
 
 template<class Arc, class Queue>
 void ShortestDistanceHelper(ShortestDistanceArgs1 *args) {
@@ -120,7 +137,8 @@ void ShortestDistanceHelper(ShortestDistanceArgs1 *args) {
     }
     case OUTPUT_EPSILON_ARC_FILTER: {
       Queue queue =
-          QueueConstructor<Queue, Arc, OutputEpsilonArcFilter<Arc> >::Construct(
+          QueueConstructor<Queue, Arc,
+          OutputEpsilonArcFilter<Arc> >::Construct(
               fst, &weights);
       fst::ShortestDistanceOptions<Arc, Queue,
           OutputEpsilonArcFilter<Arc> > sdopts(
@@ -143,11 +161,12 @@ template<class Arc>
 void ShortestDistance(ShortestDistanceArgs1 *args) {
   const ShortestDistanceOptions &opts = args->arg3;
   typedef typename Arc::StateId StateId;
+  typedef typename Arc::Weight Weight;
 
   // Must consider (opts.queue_type x opts.filter_type) options
   switch (opts.queue_type) {
-    case TRIVIAL_QUEUE:
-      ShortestDistanceHelper<Arc, TrivialQueue<StateId> >(args);
+    case AUTO_QUEUE:
+      ShortestDistanceHelper<Arc, AutoQueue<StateId> >(args);
       return;
 
     case FIFO_QUEUE:
@@ -158,12 +177,17 @@ void ShortestDistance(ShortestDistanceArgs1 *args) {
        ShortestDistanceHelper<Arc, LifoQueue<StateId> >(args);
       return;
 
+    case SHORTEST_FIRST_QUEUE:
+      ShortestDistanceHelper<Arc,
+        NaturalShortestFirstQueue<StateId, Weight> >(args);
+      return;
+
     case STATE_ORDER_QUEUE:
        ShortestDistanceHelper<Arc, StateOrderQueue<StateId> >(args);
       return;
 
-    case AUTO_QUEUE:
-      ShortestDistanceHelper<Arc, AutoQueue<StateId> >(args);
+    case TOP_ORDER_QUEUE:
+       ShortestDistanceHelper<Arc, TopOrderQueue<StateId> >(args);
       return;
 
     default:

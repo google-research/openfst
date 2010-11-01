@@ -23,7 +23,7 @@
 #include <fst/flags.h>
 
 DEFINE_int32(v, 0, "verbose level");
-DEFINE_bool(help, false, "verbose level");
+DEFINE_bool(help, false, "show usage information");
 DEFINE_string(tmpdir, "/tmp/", "temporary directory");
 
 using namespace std;

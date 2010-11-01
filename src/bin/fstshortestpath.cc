@@ -26,10 +26,8 @@ DEFINE_int64(nshortest, 1, "Return N-shortest paths");
 DEFINE_bool(unique, false, "Return unique strings");
 DEFINE_string(weight, "", "Weight parameter");
 DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
-DEFINE_string(queue_type, "auto", "Queue type: one of \"trivial\", "
-              "\"fifo\", \"lifo\", \"top\", \"auto\".");
-DEFINE_string(arc_filter, "any", "Arc filter: one of :"
-              " \"any\", \"epsilon\", \"iepsilon\", \"oepsilon\"");
+DEFINE_string(queue_type, "auto", "Queue type: one of \"auto\", "
+              "\"fifo\", \"lifo\", \"shortest\', \"state\", \"top\"");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -63,37 +61,26 @@ int main(int argc, char **argv) {
   VectorFstClass ofst(ifst->ArcType());
   vector<WeightClass> distance;
 
-  s::ArcFilterType arc_filter;
-  if (FLAGS_arc_filter == "any") {
-    arc_filter = s::ANY_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "epsilon") {
-    arc_filter = s::EPSILON_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "iepsilon") {
-    arc_filter = s::INPUT_EPSILON_ARC_FILTER;
-  } else if (FLAGS_arc_filter == "oepsilon") {
-    arc_filter = s::OUTPUT_EPSILON_ARC_FILTER;
-  } else {
-    LOG(FATAL) << "Unknown arc filter type: " << FLAGS_arc_filter;
-  }
-
   fst::QueueType qt;
 
-  if (FLAGS_queue_type == "trivial") {
-    qt = fst::TRIVIAL_QUEUE;
+  if (FLAGS_queue_type == "auto") {
+    qt = fst::AUTO_QUEUE;
   } else if (FLAGS_queue_type == "fifo") {
     qt = fst::FIFO_QUEUE;
   } else if (FLAGS_queue_type == "lifo") {
     qt = fst::LIFO_QUEUE;
+  } else if (FLAGS_queue_type == "shortest") {
+    qt = fst::SHORTEST_FIRST_QUEUE;
+  } else if (FLAGS_queue_type == "state") {
+    qt = fst::STATE_ORDER_QUEUE;
   } else if (FLAGS_queue_type == "top") {
     qt = fst::TOP_ORDER_QUEUE;
-  } else if (FLAGS_queue_type == "auto") {
-    qt = fst::AUTO_QUEUE;
   } else {
     LOG(FATAL) << "Unknown or unsupported queue type: " << FLAGS_queue_type;
   }
 
   s::ShortestPathOptions opts(
-      qt, arc_filter, FLAGS_nshortest, FLAGS_unique, false, FLAGS_delta,
+      qt, FLAGS_nshortest, FLAGS_unique, false, FLAGS_delta,
       false, weight_threshold, FLAGS_nstate);
 
   s::ShortestPath(*ifst, &ofst, &distance, opts);

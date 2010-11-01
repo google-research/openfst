@@ -38,118 +38,103 @@ struct ShortestPathOptions
   const WeightClass weight_threshold;
   const int64 state_threshold;
 
-  ShortestPathOptions(QueueType qt, ArcFilterType aft, size_t n = 1,
+  ShortestPathOptions(QueueType qt, size_t n = 1,
                       bool u = false, bool hasdist = false,
                       float d = fst::kDelta, bool fp = false,
                       WeightClass w = fst::script::WeightClass::Zero(),
                       int64 s = fst::kNoStateId)
-      : ShortestDistanceOptions(qt, aft, kNoStateId, d),
+      : ShortestDistanceOptions(qt, ANY_ARC_FILTER, kNoStateId, d),
         nshortest(n), unique(u), has_distance(hasdist), first_path(fp),
         weight_threshold(w), state_threshold(s) { }
 };
-
-// typedef args::Package<const FstClass&, MutableFstClass*,
-//                       vector<WeightClass>*, int64, bool, double,
-//                       WeightClass, int64> ShortestPathArgs;
-
-// template<class Arc>
-// void ShortestPath(ShortestPathArgs *args) {
-//   typedef typename Arc::Weight Weight;
-//   typedef typename Arc::StateId StateId;
-
-//   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
-//   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
-//   Weight weight_threshold = *(args->arg7.GetWeight<Weight>());
-
-//   vector<Weight> distance;
-
-//   AnyArcFilter<Arc> arc_filter;
-//   AutoQueue<StateId> state_queue(ifst, &distance, arc_filter);
-
-//   ShortestPathOptions<Arc, AutoQueue<StateId>, AnyArcFilter<Arc> >
-//       sopts(&state_queue, arc_filter, args->arg4, args->arg5,
-//       false, args->arg6, false, weight_threshold, args->arg8);
-//   ShortestPath(ifst, ofst, &distance, sopts);
-
-//   // Copy the weights back into the vector of WeightClass
-//   vector<WeightClass> *retval = args->arg3;
-//   retval->resize(distance.size());
-
-//   for (unsigned i = 0; i < distance.size(); ++i) {
-//     (*retval)[i] = WeightClass(distance[i]);
-//   }
-// }
-
 
 typedef args::Package<const FstClass &, MutableFstClass *,
                       vector<WeightClass> *, const ShortestPathOptions &>
   ShortestPathArgs1;
 
 
-template<class Arc, class Queue>
-void ShortestPathHelper(ShortestPathArgs1 *args) {
+template<class Arc>
+void ShortestPath(ShortestPathArgs1 *args) {
   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   const ShortestPathOptions &opts = args->arg4;
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Weight Weight;
+  typedef AnyArcFilter<Arc> ArcFilter;
 
   vector<typename Arc::Weight> weights;
   typename Arc::Weight weight_threshold =
-      *(opts.weight_threshold.GetWeight<typename Arc::Weight>());
+      *(opts.weight_threshold.GetWeight<Weight>());
 
-  switch (opts.arc_filter_type) {
-    case ANY_ARC_FILTER: {
-      Queue queue =
-          QueueConstructor<Queue, Arc, AnyArcFilter<Arc> >::Construct(
-              ifst, &weights);
-      fst::ShortestPathOptions<Arc, Queue, AnyArcFilter<Arc> > spopts(
-          &queue, AnyArcFilter<Arc>(), opts.nshortest, opts.unique,
+  switch (opts.queue_type) {
+    case AUTO_QUEUE: {
+      typedef AutoQueue<StateId> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter>::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
-
       ShortestPath(ifst, ofst, &weights, spopts);
-      break;
+      return;
     }
-    case EPSILON_ARC_FILTER: {
-      Queue queue =
-          QueueConstructor<Queue, Arc, EpsilonArcFilter<Arc> >::Construct(
-              ifst, &weights);
-
-      fst::ShortestPathOptions<Arc, Queue, EpsilonArcFilter<Arc> > spopts(
-          &queue, EpsilonArcFilter<Arc>(), opts.nshortest, opts.unique,
+    case FIFO_QUEUE: {
+      typedef FifoQueue<StateId> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter>::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
-
       ShortestPath(ifst, ofst, &weights, spopts);
-      break;
+      return;
     }
-    case INPUT_EPSILON_ARC_FILTER: {
-      Queue queue =
-          QueueConstructor<Queue, Arc, InputEpsilonArcFilter<Arc> >::Construct(
-              ifst, &weights);
-
-      fst::ShortestPathOptions<Arc, Queue,
-          InputEpsilonArcFilter<Arc> > spopts(
-              &queue, InputEpsilonArcFilter<Arc>(), opts.nshortest,
-              opts.unique, opts.has_distance, opts.delta, opts.first_path,
-              weight_threshold, opts.state_threshold);
-
+    case LIFO_QUEUE: {
+      typedef LifoQueue<StateId> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter >::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          opts.has_distance, opts.delta, opts.first_path,
+          weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
-      break;
+      return;
     }
-    case OUTPUT_EPSILON_ARC_FILTER: {
-      Queue queue =
-          QueueConstructor<Queue, Arc, OutputEpsilonArcFilter<Arc> >::Construct(
-              ifst, &weights);
-
-      fst::ShortestPathOptions<Arc, Queue,
-          OutputEpsilonArcFilter<Arc> > spopts(
-              &queue, OutputEpsilonArcFilter<Arc>(), opts.nshortest,
-              opts.unique, opts.has_distance, opts.delta, opts.first_path,
-              weight_threshold, opts.state_threshold);
-
+    case SHORTEST_FIRST_QUEUE: {
+      typedef NaturalShortestFirstQueue<StateId, Weight> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter>::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          opts.has_distance, opts.delta, opts.first_path,
+          weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
-      break;
+      return;
     }
+    case STATE_ORDER_QUEUE: {
+      typedef StateOrderQueue<StateId> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter>::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          opts.has_distance, opts.delta, opts.first_path,
+          weight_threshold, opts.state_threshold);
+      ShortestPath(ifst, ofst, &weights, spopts);
+      return;
+    }
+    case TOP_ORDER_QUEUE: {
+      typedef TopOrderQueue<StateId> Queue;
+      Queue queue = QueueConstructor<Queue, Arc,
+          ArcFilter>::Construct(ifst, &weights);
+      fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
+          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          opts.has_distance, opts.delta, opts.first_path,
+          weight_threshold, opts.state_threshold);
+      ShortestPath(ifst, ofst, &weights, spopts);
+      return;
+    }
+    default:
+      LOG(FATAL) << "Unknown queue type: " << opts.queue_type;
   }
 
   // Copy the weights back
@@ -158,47 +143,6 @@ void ShortestPathHelper(ShortestPathArgs1 *args) {
   args->arg3->resize(weights.size());
   for (unsigned i = 0; i < weights.size(); ++i) {
     (*args->arg3)[i] = WeightClass(weights[i]);
-  }
-}
-
-
-template<class Arc>
-void ShortestPath(ShortestPathArgs1 *args) {
-  const ShortestPathOptions &opts = args->arg4;
-  typedef typename Arc::StateId StateId;
-
-  // Must consider (opts.queue_type x opts.filter_type) options
-  switch (opts.queue_type) {
-    case TRIVIAL_QUEUE:
-      ShortestPathHelper<Arc, TrivialQueue<StateId> >(args);
-      return;
-
-    case FIFO_QUEUE:
-       ShortestPathHelper<Arc, FifoQueue<StateId> >(args);
-      return;
-
-    case LIFO_QUEUE:
-       ShortestPathHelper<Arc, LifoQueue<StateId> >(args);
-      return;
-
-//     case SHORTEST_FIRST_QUEUE:
-//        ShortestPathHelper<Arc, ShortestFirstQueue<StateId> >(args);
-//       return;
-
-    case TOP_ORDER_QUEUE:
-       ShortestPathHelper<Arc, TopOrderQueue<StateId> >(args);
-      return;
-
-    case STATE_ORDER_QUEUE:
-       ShortestPathHelper<Arc, StateOrderQueue<StateId> >(args);
-      return;
-
-    case AUTO_QUEUE:
-      ShortestPathHelper<Arc, AutoQueue<StateId> >(args);
-      return;
-
-    default:
-      LOG(FATAL) << "Unknown queue type: " << opts.queue_type;
   }
 }
 

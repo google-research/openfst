@@ -214,9 +214,12 @@ class EditFstImpl : public FstImpl<A> {
   // Properties always true of this Fst class
   static const uint64 kStaticProperties = kExpanded | kMutable;
 
-  // Causes this fst to inherit the properties from its wrapped fst.
+  // Causes this fst to inherit all the properties from its wrapped fst, except
+  // for the two properties that always apply to EditFst instances: kExpanded
+  // and kMutable.
   void InheritPropertiesFromWrapped() {
-    SetProperties(wrapped_->Properties(kFstProperties, false));
+    SetProperties(wrapped_->Properties(kCopyProperties, false) |
+                  kStaticProperties);
     SetInputSymbols(wrapped_->InputSymbols());
     SetOutputSymbols(wrapped_->OutputSymbols());
   }

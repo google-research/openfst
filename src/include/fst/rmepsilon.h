@@ -290,30 +290,6 @@ void RmEpsilon(MutableFst<Arc> *fst,
     Connect(fst);
 }
 
-// Similar to the above, but can optionally perform the operation
-// in the reverse direction.
-template <class Arc, class Queue>
-void RmEpsilon(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
-               vector<typename Arc::Weight> *distance,
-               bool reverse,
-               const RmEpsilonOptions<Arc, Queue> &opts) {
-  if (reverse) {
-    VectorFst< ReverseArc<Arc> > rfst;
-    Reverse(ifst, &rfst);
-
-    RmEpsilonOptions<ReverseArc<Arc>, Queue> reverse_opts(
-        opts.state_queue, opts.delta, opts.connect, opts.weight_threshold,
-        opts.source);
-
-    RmEpsilon(&rfst, distance, reverse_opts);
-    Reverse(rfst, ofst);
-    RmEpsilon(ofst, distance, opts);
-  } else {
-    *ofst = ifst;
-    RmEpsilon(ofst, distance, opts);
-  }
-}
-
 // Removes epsilon-transitions (when both the input and output label
 // are an epsilon) from a transducer. The result will be an equivalent
 // FST that has no such epsilon transitions. This version modifies its

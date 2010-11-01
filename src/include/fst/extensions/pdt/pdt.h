@@ -188,6 +188,179 @@ class PdtStateTable
   void operator=(const PdtStateTable<S, K> &table);  // disallow
 };
 
+
+// Store balancing parenthesis data for a PDT.
+template <class Arc>
+class PdtBalanceData {
+ public:
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Label Label;
+  typedef ssize_t StateNodeId;
+  typedef PdtStateTuple<StateId, StateNodeId> StateNode;
+
+  // Open paren key
+  struct ParenKey {
+    Label paren_id;            // ID of open paren
+    StateId state_id;          // destination state of open paren
+
+    ParenKey() : paren_id(kNoLabel), state_id(kNoStateId) {}
+
+    ParenKey(Label p, StateId s) : paren_id(p), state_id(s) {}
+
+    bool operator==(const ParenKey &p) const {
+      if (&p == this)
+        return true;
+      return p.paren_id == this->paren_id && p.state_id == this->state_id;
+    }
+
+    bool operator!=(const ParenKey &p) const { return !(p == *this); }
+  };
+
+  // Hash for paren multimap
+  struct ParenHash {
+    size_t operator()(const ParenKey &p) const {
+      return p.paren_id + p.state_id * kPrime0;
+    }
+  };
+
+  // Hash set for open parens
+  typedef unordered_set<ParenKey, ParenHash> OpenParenSet;
+
+  // Maps from open paren destination state to parenthesis ID.
+  typedef unordered_multimap<StateId, Label> OpenParenMap;
+
+  // Maps from open paren key to source states of matching close parens
+  typedef unordered_multimap<ParenKey, StateId, ParenHash> CloseParenMap;
+
+  // Maps from open paren key to state node ID
+  typedef unordered_map<ParenKey, StateNodeId, ParenHash> StateNodeMap;
+
+  ~PdtBalanceData() {
+    VLOG(1) << "# of balanced close paren states: " << node_map_.size();
+  }
+
+  void Clear() {
+    open_paren_map_.clear();
+    close_paren_map_.clear();
+  }
+
+  // Adds an open parenthesis with destination state 'open_dest'.
+  void OpenInsert(Label paren_id, StateId open_dest) {
+    ParenKey key(paren_id, open_dest);
+    if (!open_paren_set_.count(key)) {
+      open_paren_set_.insert(key);
+      open_paren_map_.insert(make_pair(open_dest, paren_id));
+    }
+  }
+
+  // Adds a matching closing parenthesis with source state
+  // 'close_source' that balances an open_parenthesis with destination
+  // state 'open_dest' if OpenInsert() previously called
+  // (o.w. CloseInsert() does nothing).
+  void CloseInsert(Label paren_id, StateId open_dest, StateId close_source) {
+    ParenKey key(paren_id, open_dest);
+    if (open_paren_set_.count(key))
+      close_paren_map_.insert(make_pair(key, close_source));
+  }
+
+  // Find close paren source states matching an open parenthesis.
+  // Methods that follow, iterate through those matching states.
+  // Should be called only after FinishInsert(open_dest).
+  bool Find(Label paren_id, StateId open_dest) {
+    ParenKey close_key(paren_id, open_dest);
+    StateNodeId node_id = node_map_[close_key];
+    if (node_id == kNoStateNodeId) {
+      node_.state_id = kNoStateId;
+      return false;
+    } else {
+      node_ = node_table_.Tuple(node_id);
+      return true;
+    }
+  }
+
+  bool Done() const { return node_.state_id == kNoStateId; }
+
+  StateId Value() const { return node_.state_id; }
+
+  void Next() {
+    if (node_.stack_id == kNoStateNodeId)
+      node_.state_id = kNoStateId;
+    else
+      node_ = node_table_.Tuple(node_.stack_id);
+  }
+
+  // Call when all open and close parenthesis insertions wrt open
+  // parentheses entering 'open_dest' are finished. Must be called
+  // before Find(open_dest). Stores close paren source states in a tree.
+  void FinishInsert(StateId open_dest) {
+    vector<StateId> close_sources;
+    for (typename OpenParenMap::iterator oit = open_paren_map_.find(open_dest);
+         oit != open_paren_map_.end() && oit->first == open_dest;) {
+      Label paren_id = oit->second;
+      close_sources.clear();
+      ParenKey okey(paren_id, open_dest);
+      open_paren_set_.erase(open_paren_set_.find(okey));
+      for (typename CloseParenMap::iterator cit = close_paren_map_.find(okey);
+           cit != close_paren_map_.end() && cit->first == okey;) {
+        close_sources.push_back(cit->second);
+        close_paren_map_.erase(cit++);
+      }
+      sort(close_sources.begin(), close_sources.end());
+      typename vector<StateId>::iterator unique_end =
+          unique(close_sources.begin(), close_sources.end());
+      StateNodeId node_id = kNoStateNodeId;
+      for (typename vector<StateId>::iterator sit = close_sources.begin();
+           sit != unique_end;
+           ++sit) {
+        StateNode node(*sit, node_id);
+        node_id = node_table_.FindState(node);
+      }
+      node_map_[okey] = node_id;
+      open_paren_map_.erase(oit++);
+    }
+  }
+
+ private:
+  static const size_t kPrime0;
+  static const StateNodeId kNoStateNodeId;
+
+  OpenParenSet open_paren_set_;                      // open par.at dest?
+
+  OpenParenMap open_paren_map_;                      // open parens per state
+  ParenKey open_dest_;                               // cur open dest. state
+  typename OpenParenMap::const_iterator open_iter_;  // cur open parens/state
+
+  CloseParenMap close_paren_map_;                    // close states/open
+                                                     //  paren and state
+
+  StateNodeMap node_map_;                            // paren, state to node ID
+  PdtStateTable<StateId, StateNodeId> node_table_;
+  StateNode node_;                                   // current state node
+
+};
+
+template<class Arc>
+const size_t PdtBalanceData<Arc>::kPrime0 = 7853;
+
+template<class Arc> const typename PdtBalanceData<Arc>::StateNodeId
+PdtBalanceData<Arc>::kNoStateNodeId = -1;
+
+
+// // Find balancing parentheses in a PDT. The PDT is assumed to
+// // be 'strongly regular' (i.e. is expandable as an FST).
+// template <class Arc>
+// class PdtBalance {
+//  public:
+//   typedef typename Arc::StateId StateId;
+
+//   PdtBalance(const Fst<Arc> &fst) {}
+
+//   const PdtBalanceData<Arc> Data() { return data_; }
+
+//  private:
+//   PdtBalanceData<Arc> data_;
+// };
+
 }  // namespace fst
 
 #endif  // FST_EXTENSIONS_PDT_PDT_H__

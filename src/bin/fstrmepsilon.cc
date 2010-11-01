@@ -27,8 +27,8 @@ DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
 DEFINE_bool(reverse, false, "Perform in the reverse direction");
 DEFINE_string(weight, "", "Weight parameter");
-DEFINE_string(queue_type, "auto", "Queue type: one of \"trivial\", "
-              "\"fifo\", \"lifo\", \"top\", \"auto\".");
+DEFINE_string(queue_type, "auto", "Queue type: one of: \"auto\", "
+              "\"fifo\", \"lifo\", \"shortest\", \"state\", \"top\"");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -60,16 +60,18 @@ int main(int argc, char **argv) {
 
   fst::QueueType qt;
 
-  if (FLAGS_queue_type == "trivial") {
-    qt = fst::TRIVIAL_QUEUE;
+  if (FLAGS_queue_type == "auto") {
+    qt = fst::AUTO_QUEUE;
   } else if (FLAGS_queue_type == "fifo") {
     qt = fst::FIFO_QUEUE;
   } else if (FLAGS_queue_type == "lifo") {
     qt = fst::LIFO_QUEUE;
+  } else if (FLAGS_queue_type == "shortest") {
+    qt = fst::SHORTEST_FIRST_QUEUE;
+  } else if (FLAGS_queue_type == "state") {
+    qt = fst::STATE_ORDER_QUEUE;
   } else if (FLAGS_queue_type == "top") {
     qt = fst::TOP_ORDER_QUEUE;
-  } else if (FLAGS_queue_type == "auto") {
-    qt = fst::AUTO_QUEUE;
   } else {
     LOG(FATAL) << "Unknown or unsupported queue type: " << FLAGS_queue_type;
   }

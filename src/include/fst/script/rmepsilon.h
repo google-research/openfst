@@ -66,14 +66,15 @@ void RmEpsilonHelper(MutableFst<Arc> *fst,
                      vector<typename Arc::Weight> *distance,
                      const RmEpsilonOptions &opts) {
   typedef typename Arc::StateId StateId;
+  typedef typename Arc::Weight Weight;
 
   typename Arc::Weight weight_thresh =
-      *(opts.weight_threshold.GetWeight<typename Arc::Weight>());
+      *(opts.weight_threshold.GetWeight<Weight>());
 
   switch (opts.queue_type) {
-    case TRIVIAL_QUEUE: {
-      TrivialQueue<StateId> queue;
-      fst::RmEpsilonOptions<Arc, TrivialQueue<StateId> > ropts(
+    case AUTO_QUEUE: {
+      AutoQueue<StateId> queue(*fst, distance, EpsilonArcFilter<Arc>());
+      fst::RmEpsilonOptions<Arc, AutoQueue<StateId> > ropts(
           &queue, opts.delta, opts.connect, weight_thresh,
           opts.state_threshold);
       RmEpsilon(fst, distance, ropts);
@@ -90,6 +91,23 @@ void RmEpsilonHelper(MutableFst<Arc> *fst,
     case LIFO_QUEUE: {
       LifoQueue<StateId> queue;
       fst::RmEpsilonOptions<Arc, LifoQueue<StateId> > ropts(
+          &queue, opts.delta, opts.connect, weight_thresh,
+          opts.state_threshold);
+      RmEpsilon(fst, distance, ropts);
+      break;
+    }
+    case SHORTEST_FIRST_QUEUE: {
+      NaturalShortestFirstQueue<StateId, Weight>  queue(*distance);
+      fst::RmEpsilonOptions<Arc, NaturalShortestFirstQueue<StateId,
+                                                               Weight> > ropts(
+          &queue, opts.delta, opts.connect, weight_thresh,
+          opts.state_threshold);
+      RmEpsilon(fst, distance, ropts);
+      break;
+    }
+    case STATE_ORDER_QUEUE: {
+      StateOrderQueue<StateId> queue;
+      fst::RmEpsilonOptions<Arc, StateOrderQueue<StateId> > ropts(
           &queue, opts.delta, opts.connect, weight_thresh,
           opts.state_threshold);
       RmEpsilon(fst, distance, ropts);
@@ -101,71 +119,6 @@ void RmEpsilonHelper(MutableFst<Arc> *fst,
           &queue, opts.delta, opts.connect, weight_thresh,
           opts.state_threshold);
       RmEpsilon(fst, distance, ropts);
-      break;
-    }
-    case AUTO_QUEUE: {
-      AutoQueue<StateId> queue(*fst, distance, EpsilonArcFilter<Arc>());
-      fst::RmEpsilonOptions<Arc, AutoQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(fst, distance, ropts);
-      break;
-    }
-    default:
-      LOG(FATAL) << "Unknown or unsupported queue type: " << opts.queue_type;
-  }
-}
-
-
-template<class Arc>
-void RmEpsilonHelper(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
-                     vector<typename Arc::Weight> *distance,
-                     bool reverse,
-                     const RmEpsilonOptions &opts) {
-  typedef typename Arc::StateId StateId;
-
-  typename Arc::Weight weight_thresh =
-      *(opts.weight_threshold.GetWeight<typename Arc::Weight>());
-
-  switch (opts.queue_type) {
-    case TRIVIAL_QUEUE: {
-      TrivialQueue<StateId> queue;
-      fst::RmEpsilonOptions<Arc, TrivialQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(ifst, ofst, distance, reverse, ropts);
-      break;
-    }
-    case FIFO_QUEUE: {
-      FifoQueue<StateId> queue;
-      fst::RmEpsilonOptions<Arc, FifoQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(ifst, ofst, distance, reverse, ropts);
-      break;
-    }
-    case LIFO_QUEUE: {
-      LifoQueue<StateId> queue;
-      fst::RmEpsilonOptions<Arc, LifoQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(ifst, ofst, distance, reverse, ropts);
-      break;
-    }
-    case TOP_ORDER_QUEUE: {
-      TopOrderQueue<StateId> queue(ifst, EpsilonArcFilter<Arc>());
-      fst::RmEpsilonOptions<Arc, TopOrderQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(ifst, ofst, distance, reverse, ropts);
-      break;
-    }
-    case AUTO_QUEUE: {
-      AutoQueue<StateId> queue(ifst, distance, EpsilonArcFilter<Arc>());
-      fst::RmEpsilonOptions<Arc, AutoQueue<StateId> > ropts(
-          &queue, opts.delta, opts.connect, weight_thresh,
-          opts.state_threshold);
-      RmEpsilon(ifst, ofst, distance, reverse, ropts);
       break;
     }
     default:
@@ -181,10 +134,18 @@ template<class Arc>
 void RmEpsilon(RmEpsilonArgs1 *args) {
   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
-
   vector<typename Arc::Weight> distance;
+  bool reverse = args->arg3;
 
-  RmEpsilonHelper(ifst, ofst, &distance, args->arg3, args->arg4);
+  if (reverse) {
+    VectorFst<Arc> rfst;
+    Reverse(ifst, &rfst);
+    RmEpsilonHelper(&rfst, &distance, args->arg4);
+    Reverse(rfst, ofst);
+  } else {
+    *ofst = ifst;
+  }
+  RmEpsilonHelper(ofst, &distance, args->arg4);
 }
 
 // 2
