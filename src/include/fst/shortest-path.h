@@ -163,12 +163,6 @@ void SingleShortestPath(const Fst<Arc> &ifst,
       }
     }
   }
-  // TODO(allauzen): are these two lines necessary?  They are
-  // initialized to this above and would only change if there is a
-  // negative weight cycle in which case you are screwed anyway.
-
-  //(*distance)[source] = Weight::One();
-  //parent[source] = kNoStateId;
 
   StateId s_p = kNoStateId, d_p = kNoStateId;
   for (StateId s = f_parent, d = kNoStateId;

@@ -23,8 +23,8 @@
 #include <fst/script/prune.h>
 
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
-DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
-DEFINE_string(weight, "", "Weight parameter");
+DEFINE_int64(nstate, fst::kNoStateId, "State number threshold");
+DEFINE_string(weight, "", "Weight threshold");
 
 
 int main(int argc, char **argv) {

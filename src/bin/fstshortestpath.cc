@@ -24,8 +24,8 @@
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 DEFINE_int64(nshortest, 1, "Return N-shortest paths");
 DEFINE_bool(unique, false, "Return unique strings");
-DEFINE_string(weight, "", "Weight parameter");
-DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
+DEFINE_string(weight, "", "Weight threshold");
+DEFINE_int64(nstate, fst::kNoStateId, "State number threshold");
 DEFINE_string(queue_type, "auto", "Queue type: one of \"auto\", "
               "\"fifo\", \"lifo\", \"shortest\', \"state\", \"top\"");
 

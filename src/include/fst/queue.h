@@ -287,8 +287,8 @@ class StateWeightCompare {
 };
 
 
-// Shortest-first queue discipline, templated on the StateId and Weight is
-// specialized to use the weight's natural order for the comparion function.
+// Shortest-first queue discipline, templated on the StateId and Weight, is
+// specialized to use the weight's natural order for the comparison function.
 template <typename S, typename W>
 class NaturalShortestFirstQueue :
       public ShortestFirstQueue<S, StateWeightCompare<S, NaturalLess<W> > > {
@@ -301,7 +301,6 @@ class NaturalShortestFirstQueue :
  private:
   NaturalLess<W> less_;
 };
-
 
 // Topological-order queue discipline, templated on the StateId.
 // States are ordered in the queue topologically. The FST must be acyclic.
@@ -371,7 +370,6 @@ class TopOrderQueue : public QueueBase<S> {
   virtual void Update_(StateId s) { Update(s); }
   virtual bool Empty_() const { return Empty(); }
   virtual void Clear_() { return Clear(); }
-
 };
 
 
@@ -524,6 +522,8 @@ private:
   virtual void Update_(StateId s) { Update(s); }
   virtual bool Empty_() const { return Empty(); }
   virtual void Clear_() { return Clear(); }
+
+  DISALLOW_COPY_AND_ASSIGN(SccQueue);
 };
 
 
@@ -669,6 +669,8 @@ public:
   virtual bool Empty_() const { return Empty(); }
 
   virtual void Clear_() { return Clear(); }
+
+  DISALLOW_COPY_AND_ASSIGN(AutoQueue);
 };
 
 
@@ -723,6 +725,164 @@ void AutoQueue<StateId>::SccQueueType(const Fst<A> &fst,
     }
   }
 }
+
+
+// An A* estimate is a function object that maps from a state ID to a
+// an estimate of the shortest distance to the final states.
+// The trivial A* estimate is always One().
+template <typename S, typename W>
+struct TrivialAStarEstimate {
+  W operator()(S s) const { return W::One(); }
+};
+
+
+// Given a vector that maps from states to weights representing the
+// shortest distance from the initial state, a Less comparison
+// function object between weights, and an estimate E of the
+// shortest distance to the final states, this class defines a
+// comparison function object between states.
+template <typename S, typename L, typename E>
+class AStarWeightCompare {
+ public:
+  typedef L Less;
+  typedef typename L::Weight Weight;
+  typedef S StateId;
+
+  AStarWeightCompare(const vector<Weight>& weights, const L &less,
+                     const E &estimate)
+      : weights_(weights), less_(less), estimate_(estimate) {}
+
+  bool operator()(const S x, const S y) const {
+    Weight wx = Times(weights_[x], estimate_(x));
+    Weight wy = Times(weights_[y], estimate_(y));
+    return less_(wx, wy);
+  }
+
+ private:
+  const vector<Weight>& weights_;
+  L less_;
+  const E &estimate_;
+};
+
+
+// A* queue discipline, templated on the StateId, Weight and an
+// estimate E of the shortest distance to the final states, is specialized
+// to use the weight's natural order for the comparison function.
+template <typename S, typename W, typename E>
+class NaturalAStarQueue :
+      public ShortestFirstQueue<S, AStarWeightCompare<S, NaturalLess<W>, E> > {
+ public:
+  typedef AStarWeightCompare<S, NaturalLess<W>, E> C;
+
+  NaturalAStarQueue(const vector<W> &distance, const E &estimate) :
+      ShortestFirstQueue<S, C>(C(distance, less_, estimate)) {}
+
+ private:
+  NaturalLess<W> less_;
+};
+
+
+// A state equivalence class is a function object that
+// maps from a state ID to an equivalence class (state) ID.
+// The trivial equivalence class maps a state to itself.
+template <typename S>
+struct TrivialStateEquivClass {
+  S operator()(S s) const { return s; }
+};
+
+
+// Pruning queue discipline: Enqueues a state 's' only when its
+// shortest distance (so far), as specified by 'distance', is less
+// than (as specified by 'comp') the shortest distance Times() the
+// 'threshold' to any state in the same equivalence class, as
+// specified by the function object 'class_func'. The underlying
+// queue discipline is specified by 'queue'. The ownership of 'queue'
+// is given to this class.
+template <typename Q, typename L, typename C>
+class PruneQueue : public QueueBase<typename Q::StateId> {
+ public:
+  typedef typename Q::StateId StateId;
+  typedef typename L::Weight Weight;
+
+  PruneQueue(const vector<Weight> &distance, Q *queue, L comp,
+	     const C &class_func, Weight threshold)
+    : QueueBase<StateId>(OTHER_QUEUE),
+      distance_(distance),
+      queue_(queue),
+      less_(comp),
+      class_func_(class_func),
+      threshold_(threshold) {}
+
+  ~PruneQueue() { delete queue_; }
+
+  StateId Head() const { return queue_->Head(); }
+
+  void Enqueue(StateId s) {
+    StateId c = class_func_(s);
+    if (c >= class_distance_.size())
+      class_distance_.resize(c + 1, Weight::Zero());
+    if (less_(distance_[s], class_distance_[c]))
+      class_distance_[c] = distance_[s];
+
+    // Enqueue only if below threshold limit
+    Weight limit = Times(class_distance_[c], threshold_);
+    if (less_(distance_[s], limit))
+      queue_->Enqueue(s);
+  }
+
+  void Dequeue() { queue_->Dequeue(); }
+
+  void Update(StateId s) {
+    StateId c = class_func_(s);
+    if (less_(distance_[s], class_distance_[c]))
+      class_distance_[c] = distance_[s];
+    queue_->Update(s);
+  }
+
+  bool Empty() const { return queue_->Empty(); }
+  void Clear() { queue_->Clear(); }
+
+ private:
+  // This allows base-class virtual access to non-virtual derived-
+  // class members of the same name. It makes the derived class more
+  // efficient to use but unsafe to further derive.
+  virtual StateId Head_() const { return Head(); }
+  virtual void Enqueue_(StateId s) { Enqueue(s); }
+  virtual void Dequeue_() { Dequeue(); }
+  virtual void Update_(StateId s) { Update(s); }
+  virtual bool Empty_() const { return Empty(); }
+  virtual void Clear_() { return Clear(); }
+
+  const vector<Weight> &distance_;         // shortest distance to state
+  Q *queue_;
+  L less_;
+  const C &class_func_;                    // eqv. class function object
+  Weight threshold_;                       // pruning weight threshold
+  vector<Weight> class_distance_;          // shortest distance to class
+
+  DISALLOW_COPY_AND_ASSIGN(PruneQueue);
+};
+
+
+// Pruning queue discipline (see above) using the weight's natural
+// order for the comparison function. The ownership of 'queue' is
+// given to this class.
+template <typename Q, typename W, typename C>
+class NaturalPruneQueue :
+      public PruneQueue<Q, NaturalLess<W>, C> {
+ public:
+  typedef typename Q::StateId StateId;
+  typedef W Weight;
+
+  NaturalPruneQueue(const vector<W> &distance, Q *queue,
+                    const C &class_func_, Weight threshold) :
+      PruneQueue<Q, NaturalLess<W>, C>(distance, queue, less_,
+                                       class_func_, threshold) {}
+
+ private:
+  NaturalLess<W> less_;
+};
+
 
 }  // namespace fst
 

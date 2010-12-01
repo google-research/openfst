@@ -87,6 +87,15 @@ class WeightTester {
     CHECK(Times(w1, Weight::Zero()) == Weight::Zero());
     CHECK(Times(Weight::Zero(), w1) == Weight::Zero());
 
+    // Check Power(w, 0) is Weight::One()
+    CHECK(Power(w1, 0) == Weight::One());
+
+    // Check Power(w, 1) is w
+    CHECK(Power(w1, 1) == w1);
+
+    // Check Power(w, 3) is Times(w, Times(w, w))
+    CHECK(Power(w1, 3) == Times(w1, Times(w1, w1)));
+
     // Checks distributivity.
     if (Weight::Properties() & kLeftSemiring)
       CHECK(ApproxEqual(Times(w1, Plus(w2, w3)),

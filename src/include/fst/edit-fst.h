@@ -44,6 +44,7 @@ class EditFstImpl : public FstImpl<A> {
   using FstImpl<A>::SetProperties;
   using FstImpl<A>::SetInputSymbols;
   using FstImpl<A>::SetOutputSymbols;
+  using FstImpl<A>::WriteHeader;
 
   typedef A Arc;
   typedef typename Arc::Weight Weight;
@@ -59,6 +60,7 @@ class EditFstImpl : public FstImpl<A> {
     FstImpl<A>::SetType("edit");
     wrapped_ = new MutableFstT();
     InheritPropertiesFromWrapped();
+    SetEmptyAndDeleteKeysForInternalMaps();
   }
 
   // Wraps the specified ExpandedFst. This constructor requires that the
@@ -84,6 +86,7 @@ class EditFstImpl : public FstImpl<A> {
                          kFstProperties);
 
     InheritPropertiesFromWrapped();
+    SetEmptyAndDeleteKeysForInternalMaps();
   }
 
   // A copy constructor for this implementation class, used to implement
@@ -95,6 +98,7 @@ class EditFstImpl : public FstImpl<A> {
         edited_final_weights_(impl.edited_final_weights_),
         num_new_states_(impl.num_new_states_) {
     InheritPropertiesFromWrapped();
+    SetEmptyAndDeleteKeysForInternalMaps();
   }
 
   ~EditFstImpl() {
@@ -143,8 +147,36 @@ class EditFstImpl : public FstImpl<A> {
     return wrapped_->NumStates() + num_new_states_;
   }
 
+  static EditFstImpl<A, MutableFstT> *Read(istream &strm,
+                                           const FstReadOptions &opts);
+
   bool Write(ostream &strm, const FstWriteOptions &opts) const {
-    return false;
+    FstHeader hdr;
+    hdr.SetStart(Start());
+    hdr.SetNumStates(NumStates());
+    FstWriteOptions header_opts(opts);
+    header_opts.write_isymbols = false;  // Let contained FST hold any symbols.
+    header_opts.write_osymbols = false;
+    WriteHeader(strm, header_opts, kFileVersion, &hdr);
+
+    // First, serialize wrapped fst to stream.
+    FstWriteOptions wrapped_opts(opts);
+    wrapped_opts.write_header = true;  // Force writing contained header.
+    wrapped_->Write(strm, wrapped_opts);
+    // Next, serialize all private data members of this class.
+    FstWriteOptions edits_opts(opts);
+    edits_opts.write_header = true;  // Force writing contained header.
+    edits_.Write(strm, edits_opts);
+    WriteType(strm, external_to_internal_ids_);
+    WriteType(strm, edited_final_weights_);
+    WriteType(strm, num_new_states_);
+
+    strm.flush();
+    if (!strm) {
+      LOG(ERROR) << "EditFst::Write: write failed: " << opts.source;
+      return false;
+    }
+    return true;
   }
   // end const Fst operations
 
@@ -213,6 +245,10 @@ class EditFstImpl : public FstImpl<A> {
     FinalWeightIterator;
   // Properties always true of this Fst class
   static const uint64 kStaticProperties = kExpanded | kMutable;
+  // Current file format version
+  static const int kFileVersion = 2;
+  // Minimum file format version supported
+  static const int kMinFileVersion = 2;
 
   // Causes this fst to inherit all the properties from its wrapped fst, except
   // for the two properties that always apply to EditFst instances: kExpanded
@@ -222,6 +258,9 @@ class EditFstImpl : public FstImpl<A> {
                   kStaticProperties);
     SetInputSymbols(wrapped_->InputSymbols());
     SetOutputSymbols(wrapped_->OutputSymbols());
+  }
+
+  void SetEmptyAndDeleteKeysForInternalMaps() {
   }
 
   // Returns the iterator of the map from external to internal state id's
@@ -287,7 +326,7 @@ class EditFstImpl : public FstImpl<A> {
   unordered_map<StateId, Weight> edited_final_weights_;
   // The number of new states added to this mutable fst impl, which is <= the
   // number of states in edits_.
-  int32 num_new_states_;
+  StateId num_new_states_;
 };
 
 template <class A, class M> const uint64 EditFstImpl<A, M>::kStaticProperties;
@@ -357,6 +396,57 @@ inline void EditFstImpl<A, MutableFstT>::DeleteStates() {
   FstImpl<A>::SetProperties(newProps);
 }
 
+template <typename A, typename MutableFstT>
+EditFstImpl<A, MutableFstT> *
+EditFstImpl<A, MutableFstT>::Read(istream &strm,
+                                  const FstReadOptions &opts) {
+  EditFstImpl<A, MutableFstT> *impl = new EditFstImpl();
+  FstHeader hdr;
+  if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) {
+    return 0;
+  }
+  impl->SetStart(hdr.Start());
+
+  // first, read in wrapped fst
+  FstReadOptions wrapped_opts(opts);
+  wrapped_opts.header = 0;  // Contained header was written out, so read it in.
+  Fst<A> *wrapped_fst = Fst<A>::Read(strm, wrapped_opts);
+  if (!wrapped_fst) {
+    return 0;
+  }
+  impl->wrapped_ = static_cast<ExpandedFst<A> *>(wrapped_fst);
+  // next read in MutabelFstT machine that stores edits
+  FstReadOptions edits_opts(opts);
+  edits_opts.header = 0;  // Contained header was written out, so read it in.
+
+  // Because our internal representation of edited states is a solid object
+  // of type MutableFstT (defaults to VectorFst<A>) and not a pointer,
+  // and because the static Read method allocates a new object on the heap,
+  // we need to call Read, check if there was a failure, use
+  // MutableFstT::operator= to assign the object (not the pointer) to the
+  // edits_ data member (which will increase the ref count by 1 on the impl)
+  // and, finally, delete the heap-allocated object.
+  MutableFstT *edits = MutableFstT::Read(strm, edits_opts);
+  if (!edits) {
+    delete wrapped_fst;
+    return 0;
+  }
+  impl->edits_ = *edits;
+  delete edits;
+  // finally, read in rest of private data members
+  ReadType(strm, &impl->external_to_internal_ids_);
+  ReadType(strm, &impl->edited_final_weights_);
+  ReadType(strm, &impl->num_new_states_);
+  if (!strm) {
+    LOG(ERROR) << "EditFst::Read: read failed: " << opts.source;
+    return 0;
+  }
+
+  impl->SetEmptyAndDeleteKeysForInternalMaps();
+
+  return impl;
+}
+
 // END EditFstImpl IMPLEMENTATION
 
 // Concrete, editable FST.  This class attaches interface to implementation.
@@ -397,9 +487,17 @@ class EditFst : public ImplToMutableFst< EditFstImpl<A> > {
     return *this;
   }
 
+  // Read an EditFst from an input stream; return NULL on error.
   static EditFst<A> *Read(istream &strm, const FstReadOptions &opts) {
-    LOG(ERROR) << ": cannot invoke EditFst::Read";
-    return NULL;
+    Impl* impl = Impl::Read(strm, opts);
+    return impl ? new EditFst<A>(impl) : 0;
+  }
+
+  // Read an EditFst from a file; return NULL on error.
+  // Empty filename reads from standard input.
+  static EditFst<A> *Read(const string &filename) {
+    Impl* impl = ImplToExpandedFst<Impl, MutableFst<A> >::Read(filename);
+    return impl ? new EditFst<A>(impl) : 0;
   }
 
   virtual void InitStateIterator(StateIteratorData<Arc> *data) const {
@@ -415,6 +513,8 @@ class EditFst : public ImplToMutableFst< EditFstImpl<A> > {
     GetImpl()->InitMutableArcIterator(s, data);
   }
  private:
+  explicit EditFst(Impl *impl) : ImplToMutableFst<Impl>(impl) {}
+
   // Makes visible to friends.
   Impl *GetImpl() const { return ImplToFst< Impl, MutableFst<A> >::GetImpl(); }
 

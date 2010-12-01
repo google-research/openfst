@@ -83,7 +83,7 @@ void PdtCompose(const FstClass & ifst1,
 
 typedef args::Package<const FstClass &,
                       const vector<pair<int64, int64> >&,
-                      MutableFstClass *, bool> PdtExpandArgs;
+                      MutableFstClass *, bool, bool> PdtExpandArgs;
 
 template<class Arc>
 void PdtExpand(PdtExpandArgs *args) {
@@ -96,12 +96,12 @@ void PdtExpand(PdtExpandArgs *args) {
     parens[i].first = args->arg2[i].first;
     parens[i].second = args->arg2[i].second;
   }
-  Expand(fst, parens, ofst, args->arg4);
+  Expand(fst, parens, ofst, args->arg4, args->arg5);
 }
 
 void PdtExpand(const FstClass &ifst,
                const vector<pair<int64, int64> > &parens,
-               MutableFstClass *ofst, bool connect);
+               MutableFstClass *ofst, bool connect, bool keep_parentheses);
 
 // PDT REPLACE
 

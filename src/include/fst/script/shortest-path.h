@@ -69,68 +69,74 @@ void ShortestPath(ShortestPathArgs1 *args) {
   switch (opts.queue_type) {
     case AUTO_QUEUE: {
       typedef AutoQueue<StateId> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter>::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     case FIFO_QUEUE: {
       typedef FifoQueue<StateId> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter>::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     case LIFO_QUEUE: {
       typedef LifoQueue<StateId> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter >::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     case SHORTEST_FIRST_QUEUE: {
       typedef NaturalShortestFirstQueue<StateId, Weight> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter>::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     case STATE_ORDER_QUEUE: {
       typedef StateOrderQueue<StateId> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter>::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     case TOP_ORDER_QUEUE: {
       typedef TopOrderQueue<StateId> Queue;
-      Queue queue = QueueConstructor<Queue, Arc,
+      Queue *queue = QueueConstructor<Queue, Arc,
           ArcFilter>::Construct(ifst, &weights);
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
-          &queue, ArcFilter(), opts.nshortest, opts.unique,
+          queue, ArcFilter(), opts.nshortest, opts.unique,
           opts.has_distance, opts.delta, opts.first_path,
           weight_threshold, opts.state_threshold);
       ShortestPath(ifst, ofst, &weights, spopts);
+      delete queue;
       return;
     }
     default:

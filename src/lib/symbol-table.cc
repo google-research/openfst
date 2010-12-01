@@ -190,15 +190,23 @@ bool SymbolTableImpl::Write(ostream &strm) const {
   int64 size = symbols_.size();
   WriteType(strm, size);
   // first write out dense keys
-  for (int64 i = 0; i < dense_key_limit_; ++i) {
+  int64 i = 0;
+  for (; i < dense_key_limit_; ++i) {
     WriteType(strm, string(symbols_[i]));
     WriteType(strm, i);
   }
   // next write out the remaining non densely packed keys
-  for (map<int64, const char*>::const_iterator it =
-           key_map_.begin(); it != key_map_.end(); ++it) {
-    WriteType(strm, string(it->second));
-    WriteType(strm, it->first);
+  for (map<const char *, int64, StrCmp>::const_iterator it =
+           symbol_map_.begin(); it != symbol_map_.end(); ++it) {
+    if (it->second < dense_key_limit_)
+      continue;
+    WriteType(strm, string(it->first));
+    WriteType(strm, it->second);
+    ++i;
+  }
+  if (i != size) {
+    LOG(ERROR) << "SymbolTable::Write:  write failed";
+    return false;
   }
   strm.flush();
   if (!strm) {

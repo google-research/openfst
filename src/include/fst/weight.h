@@ -138,6 +138,20 @@ class NaturalLess {
   }
 };
 
+
+// Power is the iterated product for arbitrary semirings such that
+// Power(w, 0) is One() for the semiring, and
+// Power(w, n) = Times(Power(w, n-1), w)
+
+template <class W>
+W Power(W w, size_t n) {
+  W result = W::One();
+  for (size_t i = 0; i < n; ++i) {
+    result = Times(result, w);
+  }
+  return result;
+}
+
 }  // namespace fst;
 
 #endif  // FST_LIB_WEIGHT_H__

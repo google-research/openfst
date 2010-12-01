@@ -28,7 +28,7 @@ using std::vector;
 
 DEFINE_bool(reverse, false, "Perform in the reverse direction");
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
-DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
+DEFINE_int64(nstate, fst::kNoStateId, "State number threhold");
 DEFINE_string(queue_type, "auto", "Queue type: one of: \"auto\", "
               "\"fifo\", \"lifo\", \"shortest\", \"state\", \"top\"");
 

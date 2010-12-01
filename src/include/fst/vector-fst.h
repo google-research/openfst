@@ -429,7 +429,7 @@ class VectorFst : public ImplToMutableFst< VectorFstImpl<A> > {
   friend class StateIterator< VectorFst<A> >;
   friend class ArcIterator< VectorFst<A> >;
   friend class MutableArcIterator< VectorFst<A> >;
-  template <class F, class G> void friend Cast(const F &, G *);
+  template <class F, class G> friend void Cast(const F &, G *);
 
   typedef A Arc;
   typedef typename A::StateId StateId;

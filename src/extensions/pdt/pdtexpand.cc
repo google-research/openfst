@@ -25,6 +25,7 @@
 
 DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs.");
 DEFINE_bool(connect, true, "Trim output");
+DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result.");
 
 
 int main(int argc, char **argv) {
@@ -56,7 +57,7 @@ int main(int argc, char **argv) {
   fst::ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false);
 
   s::VectorFstClass ofst(ifst->ArcType());
-  s::PdtExpand(*ifst, parens, &ofst, FLAGS_connect);
+  s::PdtExpand(*ifst, parens, &ofst, FLAGS_connect, FLAGS_keep_parentheses);
 
   ofst.Write(out_name);
 

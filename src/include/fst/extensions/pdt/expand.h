@@ -32,7 +32,19 @@ using std::vector;
 
 namespace fst {
 
-typedef CacheOptions ExpandFstOptions;
+template <class Arc>
+struct ExpandFstOptions : public CacheOptions {
+  bool keep_parentheses;
+  PdtStack<typename Arc::StateId, typename Arc::Label> *stack;
+  PdtStateTable<typename Arc::StateId, typename Arc::StateId> *state_table;
+
+  ExpandFstOptions(
+      const CacheOptions &opts = CacheOptions(),
+      bool kp = false,
+      PdtStack<typename Arc::StateId, typename Arc::Label> *s = 0,
+      PdtStateTable<typename Arc::StateId, typename Arc::StateId> *st = 0)
+      : CacheOptions(opts), keep_parentheses(kp), stack(s), state_table(st) {}
+};
 
 // Properties for an expanded PDT.
 inline uint64 ExpandProperties(uint64 inprops) {
@@ -69,9 +81,13 @@ class ExpandFstImpl
   ExpandFstImpl(const Fst<A> &fst,
                 const vector<pair<typename Arc::Label,
                                   typename Arc::Label> > &parens,
-                const ExpandFstOptions &opts)
+                const ExpandFstOptions<A> &opts)
       : CacheImpl<A>(opts), fst_(fst.Copy()),
-        stack_(parens) {
+        stack_(opts.stack ? opts.stack: new PdtStack<StateId, Label>(parens)),
+        state_table_(opts.state_table ? opts.state_table :
+                     new PdtStateTable<StateId, StackId>()),
+        own_stack_(opts.stack == 0), own_state_table_(opts.state_table == 0),
+        keep_parentheses_(opts.keep_parentheses) {
     SetType("expand");
 
     uint64 props = fst.Properties(kFstProperties, false);
@@ -84,7 +100,10 @@ class ExpandFstImpl
   ExpandFstImpl(const ExpandFstImpl &impl)
       : CacheImpl<A>(impl),
         fst_(impl.fst_->Copy(true)),
-        stack_(impl.stack_) {
+        stack_(new PdtStack<StateId, Label>(*impl.stack_)),
+        state_table_(new PdtStateTable<StateId, StackId>()),
+        own_stack_(true), own_state_table_(true),
+        keep_parentheses_(impl.keep_parentheses_) {
     SetType("expand");
     SetProperties(impl.Properties(), kCopyProperties);
     SetInputSymbols(impl.InputSymbols());
@@ -93,6 +112,10 @@ class ExpandFstImpl
 
   ~ExpandFstImpl() {
     delete fst_;
+    if (own_stack_)
+      delete stack_;
+    if (own_state_table_)
+      delete state_table_;
   }
 
   StateId Start() {
@@ -101,7 +124,7 @@ class ExpandFstImpl
       if (s == kNoStateId)
         return kNoStateId;
       StateTuple tuple(s, 0);
-      StateId start = state_table_.FindState(tuple);
+      StateId start = state_table_->FindState(tuple);
       SetStart(start);
     }
     return CacheImpl<A>::Start();
@@ -109,7 +132,7 @@ class ExpandFstImpl
 
   Weight Final(StateId s) {
     if (!HasFinal(s)) {
-      const StateTuple &tuple = state_table_.Tuple(s);
+      const StateTuple &tuple = state_table_->Tuple(s);
       Weight w = fst_->Final(tuple.state_id);
       if (w != Weight::Zero() && tuple.stack_id == 0)
         SetFinal(s, w);
@@ -147,28 +170,40 @@ class ExpandFstImpl
   // Computes the outgoing transitions from a state, creating new destination
   // states as needed.
   void ExpandState(StateId s) {
-    StateTuple tuple = state_table_.Tuple(s);
+    StateTuple tuple = state_table_->Tuple(s);
     for (ArcIterator< Fst<A> > aiter(*fst_, tuple.state_id);
          !aiter.Done(); aiter.Next()) {
       Arc arc = aiter.Value();
-      StackId stack_id = stack_.Find(tuple.stack_id, arc.ilabel);
-      if (stack_id == -1)                   // Non-matching close parenthesis
+      StackId stack_id = stack_->Find(tuple.stack_id, arc.ilabel);
+      if (stack_id == -1) {
+        // Non-matching close parenthesis
         continue;
-      else if (stack_id != tuple.stack_id)  // Stack push/pop
+      } else if ((stack_id != tuple.stack_id) && !keep_parentheses_) {
+        // Stack push/pop
         arc.ilabel = arc.olabel = 0;
+      }
 
       StateTuple ntuple(arc.nextstate, stack_id);
-      arc.nextstate = state_table_.FindState(ntuple);
+      arc.nextstate = state_table_->FindState(ntuple);
       AddArc(s, arc);
     }
     SetArcs(s);
   }
 
+  const PdtStack<StackId, Label> &GetStack() const { return *stack_; }
+
+  const PdtStateTable<StateId, StackId> &GetStateTable() const {
+    return *state_table_;
+  }
+
  private:
   const Fst<A> *fst_;
 
-  PdtStateTable<StateId, StackId> state_table_;
-  PdtStack<StackId, Label> stack_;
+  PdtStack<StackId, Label> *stack_;
+  PdtStateTable<StateId, StackId> *state_table_;
+  bool own_stack_;
+  bool own_state_table_;
+  bool keep_parentheses_;
 
   void operator=(const ExpandFstImpl<A> &);  // disallow
 };
@@ -189,20 +224,22 @@ class ExpandFst : public ImplToFst< ExpandFstImpl<A> > {
   friend class StateIterator< ExpandFst<A> >;
 
   typedef A Arc;
+  typedef typename A::Label Label;
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
+  typedef StateId StackId;
   typedef CacheState<A> State;
   typedef ExpandFstImpl<A> Impl;
 
   ExpandFst(const Fst<A> &fst,
             const vector<pair<typename Arc::Label,
                               typename Arc::Label> > &parens)
-      : ImplToFst<Impl>(new Impl(fst, parens, ExpandFstOptions())) {}
+      : ImplToFst<Impl>(new Impl(fst, parens, ExpandFstOptions<A>())) {}
 
   ExpandFst(const Fst<A> &fst,
             const vector<pair<typename Arc::Label,
                               typename Arc::Label> > &parens,
-            const ExpandFstOptions &opts)
+            const ExpandFstOptions<A> &opts)
       : ImplToFst<Impl>(new Impl(fst, parens, opts)) {}
 
   // See Fst<>::Copy() for doc.
@@ -218,6 +255,14 @@ class ExpandFst : public ImplToFst< ExpandFstImpl<A> > {
 
   virtual void InitArcIterator(StateId s, ArcIteratorData<A> *data) const {
     GetImpl()->InitArcIterator(s, data);
+  }
+
+  const PdtStack<StackId, Label> &GetStack() const {
+    return GetImpl()->GetStack();
+  }
+
+  const PdtStateTable<StateId, StackId> &GetStateTable() const {
+    return GetImpl()->GetStateTable();
   }
 
  private:
@@ -274,9 +319,11 @@ template<class Arc>
 void Expand(const Fst<Arc> &ifst,
              const vector<pair<typename Arc::Label,
                                typename Arc::Label> > &parens,
-            MutableFst<Arc> *ofst, bool connect = true) {
-  ExpandFstOptions opts;
+            MutableFst<Arc> *ofst, bool connect = true,
+            bool keep_parentheses = false) {
+  ExpandFstOptions<Arc> opts;
   opts.gc_limit = 0;
+  opts.keep_parentheses = keep_parentheses;
   *ofst = ExpandFst<Arc>(ifst, parens, opts);
 
   if (connect)

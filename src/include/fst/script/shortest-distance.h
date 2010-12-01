@@ -57,9 +57,9 @@ typedef args::Package<const FstClass &, vector<WeightClass> *,
 template<class Queue, class Arc, class ArcFilter>
 struct QueueConstructor {
   //  template<class Arc, class ArcFilter>
-  static Queue Construct(const Fst<Arc> &,
-                         const vector<typename Arc::Weight> *) {
-    return Queue();
+  static Queue *Construct(const Fst<Arc> &,
+                          const vector<typename Arc::Weight> *) {
+    return new Queue();
   }
 };
 
@@ -68,10 +68,10 @@ struct QueueConstructor {
 template<class Arc, class ArcFilter>
 struct QueueConstructor<AutoQueue<typename Arc::StateId>, Arc, ArcFilter> {
   //  template<class Arc, class ArcFilter>
-  static AutoQueue<typename Arc::StateId> Construct(
+  static AutoQueue<typename Arc::StateId> *Construct(
       const Fst<Arc> &fst,
       const vector<typename Arc::Weight> *distance) {
-    return AutoQueue<typename Arc::StateId>(fst, distance, ArcFilter());
+    return new AutoQueue<typename Arc::StateId>(fst, distance, ArcFilter());
   }
 };
 
@@ -81,19 +81,19 @@ struct QueueConstructor<NaturalShortestFirstQueue<typename Arc::StateId,
                         Arc, ArcFilter> {
   //  template<class Arc, class ArcFilter>
   static NaturalShortestFirstQueue<typename Arc::StateId, typename Arc::Weight>
-  Construct(const Fst<Arc> &fst,
+  *Construct(const Fst<Arc> &fst,
             const vector<typename Arc::Weight> *distance) {
-    return NaturalShortestFirstQueue<typename Arc::StateId,
-                                     typename Arc::Weight>(*distance);
+    return new NaturalShortestFirstQueue<typename Arc::StateId,
+                                         typename Arc::Weight>(*distance);
   }
 };
 
 template<class Arc, class ArcFilter>
 struct QueueConstructor<TopOrderQueue<typename Arc::StateId>, Arc, ArcFilter> {
   //  template<class Arc, class ArcFilter>
-  static TopOrderQueue<typename Arc::StateId> Construct(
+  static TopOrderQueue<typename Arc::StateId> *Construct(
       const Fst<Arc> &fst, const vector<typename Arc::Weight> *weights) {
-    return TopOrderQueue<typename Arc::StateId>(fst, ArcFilter());
+    return new TopOrderQueue<typename Arc::StateId>(fst, ArcFilter());
   }
 };
 
@@ -107,43 +107,47 @@ void ShortestDistanceHelper(ShortestDistanceArgs1 *args) {
 
   switch (opts.arc_filter_type) {
     case ANY_ARC_FILTER: {
-      Queue queue =
+      Queue *queue =
           QueueConstructor<Queue, Arc, AnyArcFilter<Arc> >::Construct(
               fst, &weights);
       fst::ShortestDistanceOptions<Arc, Queue, AnyArcFilter<Arc> > sdopts(
-          &queue, AnyArcFilter<Arc>(), opts.source, opts.delta);
+          queue, AnyArcFilter<Arc>(), opts.source, opts.delta);
       ShortestDistance(fst, &weights, sdopts);
+      delete queue;
       break;
     }
     case EPSILON_ARC_FILTER: {
-      Queue queue =
+      Queue *queue =
           QueueConstructor<Queue, Arc, AnyArcFilter<Arc> >::Construct(
               fst, &weights);
       fst::ShortestDistanceOptions<Arc, Queue,
           EpsilonArcFilter<Arc> > sdopts(
-              &queue, EpsilonArcFilter<Arc>(), opts.source, opts.delta);
+              queue, EpsilonArcFilter<Arc>(), opts.source, opts.delta);
       ShortestDistance(fst, &weights, sdopts);
+      delete queue;
       break;
     }
     case INPUT_EPSILON_ARC_FILTER: {
-      Queue queue =
+      Queue *queue =
           QueueConstructor<Queue, Arc, InputEpsilonArcFilter<Arc> >::Construct(
               fst, &weights);
       fst::ShortestDistanceOptions<Arc, Queue,
           InputEpsilonArcFilter<Arc> > sdopts(
-              &queue, InputEpsilonArcFilter<Arc>(), opts.source, opts.delta);
+              queue, InputEpsilonArcFilter<Arc>(), opts.source, opts.delta);
       ShortestDistance(fst, &weights, sdopts);
+      delete queue;
       break;
     }
     case OUTPUT_EPSILON_ARC_FILTER: {
-      Queue queue =
+      Queue *queue =
           QueueConstructor<Queue, Arc,
           OutputEpsilonArcFilter<Arc> >::Construct(
               fst, &weights);
       fst::ShortestDistanceOptions<Arc, Queue,
           OutputEpsilonArcFilter<Arc> > sdopts(
-              &queue, OutputEpsilonArcFilter<Arc>(), opts.source, opts.delta);
+              queue, OutputEpsilonArcFilter<Arc>(), opts.source, opts.delta);
       ShortestDistance(fst, &weights, sdopts);
+      delete queue;
       break;
     }
   }

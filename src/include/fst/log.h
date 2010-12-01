@@ -51,13 +51,14 @@ class LogMessage {
 #define VLOG(level) if ((level) <= FLAGS_v) LOG(INFO)
 
 // Checks
-#define CHECK(x) assert(x)
-#define CHECK_EQ(x, y) assert((x) == (y))
-#define CHECK_LT(x, y) assert((x) <= (y))
-#define CHECK_GT(x, y) assert((x) > (y))
-#define CHECK_LE(x, y) assert((x) <= (y))
-#define CHECK_GE(x, y) assert((x) >= (y))
-#define CHECK_NE(x, y) assert((x) != (y))
+inline void CHECK(bool x) { assert(x); }
+
+#define CHECK_EQ(x, y) CHECK((x) == (y))
+#define CHECK_LT(x, y) CHECK((x) < (y))
+#define CHECK_GT(x, y) CHECK((x) > (y))
+#define CHECK_LE(x, y) CHECK((x) <= (y))
+#define CHECK_GE(x, y) CHECK((x) >= (y))
+#define CHECK_NE(x, y) CHECK((x) != (y))
 
 // Ports
 #define ATTRIBUTE_DEPRECATED __attribute__((deprecated))

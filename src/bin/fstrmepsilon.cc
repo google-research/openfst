@@ -24,9 +24,9 @@
 
 DEFINE_bool(connect, true, "Trim output");
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
-DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
+DEFINE_int64(nstate, fst::kNoStateId, "State number threshold");
 DEFINE_bool(reverse, false, "Perform in the reverse direction");
-DEFINE_string(weight, "", "Weight parameter");
+DEFINE_string(weight, "", "Weight threshold");
 DEFINE_string(queue_type, "auto", "Queue type: one of: \"auto\", "
               "\"fifo\", \"lifo\", \"shortest\", \"state\", \"top\"");
 

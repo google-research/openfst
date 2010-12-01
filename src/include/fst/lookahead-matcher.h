@@ -511,6 +511,9 @@ class LabelLookAheadMatcher
 
   // Look-ahead methods.
   bool LookAheadLabel(Label label) const {
+    if (label == 0)
+      return true;
+
     if (label_reachable_) {
       if (!reach_set_state_) {
         label_reachable_->SetState(s_);

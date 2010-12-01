@@ -14,8 +14,8 @@
 // Copyright 2005-2010 Google, Inc.
 // Author: krr@google.com (Kasturi Rangan Raghavan)
 // \file
-// LogWeight along with sign information that represents
-// the value X in the linear domain as < sign(X), ln |X| >
+// LogWeight along with sign information that represents the value X in the
+// linear domain as <sign(X), -ln(|X|)>
 // The sign is a TropicalWeight:
 //  positive, TropicalWeight.Value() > 0.0, recommended value 1.0
 //  negative, TropicalWeight.Value() <= 0.0, recommended value -1.0
@@ -103,7 +103,8 @@ namespace fst {
                                     const SignedLogWeightTpl<T> &w2) {
     bool s1 = w1.Value1().Value() > 0.0;
     bool s2 = w2.Value1().Value() > 0.0;
-    T f1 = w1.Value2().Value(), f2 = w2.Value2().Value();
+    T f1 = w1.Value2().Value();
+    T f2 = w2.Value2().Value();
     if (f1 == FloatLimits<T>::kPosInfinity)
       return w2;
     else if (f2 == FloatLimits<T>::kPosInfinity)
@@ -137,20 +138,22 @@ namespace fst {
                                      const SignedLogWeightTpl<T> &w2) {
     bool s1 = w1.Value1().Value() > 0.0;
     bool s2 = w2.Value1().Value() > 0.0;
-    T f1 = w1.Value2().Value(), f2 = w2.Value2().Value();
-      if (s1 == s2)
-        return SignedLogWeightTpl<T>(TropicalWeight(1.0), (f1 + f2));
-      else
-        return SignedLogWeightTpl<T>(TropicalWeight(-1.0), (f1 + f2));
+    T f1 = w1.Value2().Value();
+    T f2 = w2.Value2().Value();
+    if (s1 == s2)
+      return SignedLogWeightTpl<T>(TropicalWeight(1.0), (f1 + f2));
+    else
+      return SignedLogWeightTpl<T>(TropicalWeight(-1.0), (f1 + f2));
   }
 
   template <class T>
   inline SignedLogWeightTpl<T> Divide(const SignedLogWeightTpl<T> &w1,
                                       const SignedLogWeightTpl<T> &w2,
-                                          DivideType typ = DIVIDE_ANY) {
+                                      DivideType typ = DIVIDE_ANY) {
     bool s1 = w1.Value1().Value() > 0.0;
     bool s2 = w2.Value1().Value() > 0.0;
-    T f1 = w1.Value2().Value(), f2 = w2.Value2().Value();
+    T f1 = w1.Value2().Value();
+    T f2 = w2.Value2().Value();
     if (f2 == FloatLimits<T>::kPosInfinity)
       return SignedLogWeightTpl<T>(TropicalWeight(1.0),
         FloatLimits<T>::kNumberBad);
@@ -158,9 +161,9 @@ namespace fst {
       return SignedLogWeightTpl<T>(TropicalWeight(1.0),
         FloatLimits<T>::kPosInfinity);
     else if (s1 == s2)
-        return SignedLogWeightTpl<T>(TropicalWeight(1.0), (f1 - f2));
-      else
-        return SignedLogWeightTpl<T>(TropicalWeight(-1.0), (f1 - f2));
+      return SignedLogWeightTpl<T>(TropicalWeight(1.0), (f1 - f2));
+    else
+      return SignedLogWeightTpl<T>(TropicalWeight(-1.0), (f1 - f2));
   }
 
   template <class T>

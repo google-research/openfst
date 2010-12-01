@@ -23,8 +23,8 @@
 #include <fst/script/determinize.h>
 
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
-DEFINE_int64(nstate, fst::kNoStateId, "State number parameter");
-DEFINE_string(weight, "", "Weight parameter");
+DEFINE_int64(nstate, fst::kNoStateId, "State number threshold");
+DEFINE_string(weight, "", "Weight threshold");
 DEFINE_int64(subsequential_label, 0,
              "Input label of arc corresponding to residual final output when"
              " producing a subsequential transducer");

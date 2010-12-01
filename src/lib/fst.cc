@@ -25,6 +25,7 @@
 #include <fst/const-fst.h>
 #include <fst/matcher-fst.h>
 #include <fst/vector-fst.h>
+#include <fst/edit-fst.h>
 
 // FST flag definitions
 
@@ -51,11 +52,13 @@ DEFINE_string(save_relabel_opairs, "",  "Save output relabel pairs to file");
 
 namespace fst {
 
-// Register VectorFst and ConstFst for common arcs types
+// Register VectorFst, ConstFst and EditFst for common arcs types
 REGISTER_FST(VectorFst, StdArc);
 REGISTER_FST(VectorFst, LogArc);
 REGISTER_FST(ConstFst, StdArc);
 REGISTER_FST(ConstFst, LogArc);
+REGISTER_FST(EditFst, StdArc);
+REGISTER_FST(EditFst, LogArc);
 
 // Register CompactFst for common arcs with the default (uint32) size type
 static FstRegisterer<
