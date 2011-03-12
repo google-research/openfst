@@ -190,7 +190,7 @@ class StringWeightIterator {
 };
 
 
-// Traverses string in forward direction.
+// Traverses string in backward direction.
 template <typename L, StringType S>
 class StringWeightReverseIterator {
  public:

@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
   WeightClass weight_threshold = FLAGS_weight.empty() ?
       WeightClass::Zero() :
-      WeightClass(ifst->WeightType(), FLAGS_weight);
+      WeightClass(ofst->WeightType(), FLAGS_weight);
 
   s::PruneOptions opts(weight_threshold, FLAGS_nstate, 0, FLAGS_delta);
 

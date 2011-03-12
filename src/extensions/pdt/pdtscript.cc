@@ -53,10 +53,16 @@ void PdtCompose(const FstClass &ifst1,
 
 void PdtExpand(const FstClass &ifst,
                const vector<pair<int64, int64> > &parens,
-               MutableFstClass *ofst, bool connect, bool keep_parentheses) {
-  PdtExpandArgs args(ifst, parens, ofst, connect, keep_parentheses);
+               MutableFstClass *ofst, const PdtExpandOptions &opts) {
+  PdtExpandArgs args(ifst, parens, ofst, opts);
 
   Apply<Operation<PdtExpandArgs> >("PdtExpand", ifst.ArcType(), &args);
+}
+
+void PdtExpand(const FstClass &ifst,
+               const vector<pair<int64, int64> > &parens,
+               MutableFstClass *ofst, bool connect) {
+  PdtExpand(ifst, parens, ofst, PdtExpandOptions(connect));
 }
 
 void PdtReplace(const vector<pair<int64, const FstClass*> > &fst_tuples,

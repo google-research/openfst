@@ -1,4 +1,4 @@
-AC_INIT([OpenFst], [1.2.6], [help@www.openfst.org])
+AC_INIT([OpenFst], [1.2.7], [help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
 
 AC_PROG_CXX
@@ -86,7 +86,8 @@ AS_IF([test "x$with_icu" != xno],
     [AC_DEFINE([HAVE_ICU],
       [1],
       [Define to 1 if you have the ICU library.])],
-    [AC_MSG_FAILURE([--with-icu was given, but ICU Library not found])])])
+    [AC_MSG_FAILURE(
+      [--with-icu was given, but ICU Library v. 4.2 or newer not found])])])
 
 AC_SUBST([libfstdir], [${libdir}/fst])
 

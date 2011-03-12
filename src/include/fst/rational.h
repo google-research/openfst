@@ -67,7 +67,7 @@ class RationalFstImpl : public FstImpl<A> {
         replace_(0),
         replace_options_(opts, 0) {
     SetType("rational");
-    fst_tuples_.push_back(make_pair<Label, const Fst<A>*>(0, 0));
+    fst_tuples_.push_back(pair<Label, const Fst<A>*>(0, 0));
   }
 
   RationalFstImpl(const RationalFstImpl<A> &impl)

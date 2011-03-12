@@ -125,7 +125,8 @@ class PdtShortestPathData {
         paren_(kNoLabel, kNoStateId, kNoStateId),
         gc_(gc),
         nstates_(0),
-        ngc_(0) {}
+        ngc_(0),
+        finished_(false) {}
 
   ~PdtShortestPathData() {
     VLOG(1) << "opm size: " << paren_map_.size();
@@ -174,38 +175,46 @@ class PdtShortestPathData {
   }
 
   void SetDistance(SearchState s, Weight w) {
+    CHECK(!finished_);
     SearchData *data = GetSearchData(s);
     data->distance = w;
   }
 
   void SetDistance(const ParenSpec &paren, Weight w) {
+    CHECK(!finished_);
     SearchData *data = GetSearchData(paren);
     data->distance = w;
   }
 
   void SetParent(SearchState s, SearchState p) {
+    CHECK(!finished_);
     SearchData *data = GetSearchData(s);
     data->parent = p;
   }
 
   void SetParent(const ParenSpec &paren, SearchState p) {
+    CHECK(!finished_);
     SearchData *data = GetSearchData(paren);
     data->parent = p;
   }
 
   void SetParenId(SearchState s, Label p) {
+    CHECK(!finished_);
     CHECK_LT(p, 32768);  // Ensure paren ID fits in an int16
     SearchData *data = GetSearchData(s);
     data->paren_id = p;
   }
 
   void SetFlags(SearchState s, uint8 f, uint8 mask) {
+    CHECK(!finished_);
     SearchData *data = GetSearchData(s);
     data->flags &= ~mask;
     data->flags |= f & mask;
   }
 
   void GC(StateId s);
+
+  void Finish() { finished_ = true; }
 
  private:
   static const Arc kNoArc;
@@ -231,7 +240,7 @@ class PdtShortestPathData {
 
   typedef unordered_map<SearchState, SearchData, SearchStateHash> SearchMap;
 
-  typedef unordered_multimap<StateId, StateId> SearchMultiMap;
+  typedef unordered_multimap<StateId, StateId> SearchMultimap;
 
   // Hash map from paren spec to open paren data
   typedef unordered_map<ParenSpec, SearchData, ParenHash> ParenMap;
@@ -239,26 +248,42 @@ class PdtShortestPathData {
   SearchData *GetSearchData(SearchState s) const {
     if (s == state_)
       return state_data_;
-    state_ = s;
-    state_data_ = &search_map_[s];
-    if (!(state_data_->flags & kInited)) {
-      ++nstates_;
-      if (gc_)
-        search_multimap_.insert(make_pair(s.start, s.state));
-      state_data_->flags = kInited;
+    if (finished_) {
+      typename SearchMap::iterator it = search_map_.find(s);
+      if (it == search_map_.end())
+        return &null_search_data_;
+      state_ = s;
+      return state_data_ = &(it->second);
+    } else {
+      state_ = s;
+      state_data_ = &search_map_[s];
+      if (!(state_data_->flags & kInited)) {
+        ++nstates_;
+        if (gc_)
+          search_multimap_.insert(make_pair(s.start, s.state));
+        state_data_->flags = kInited;
+      }
+      return state_data_;
     }
-    return state_data_;
   }
 
   SearchData *GetSearchData(ParenSpec paren) const {
     if (paren == paren_)
       return paren_data_;
-    paren_ = paren;
-    return paren_data_ = &paren_map_[paren];
+    if (finished_) {
+      typename ParenMap::iterator it = paren_map_.find(paren);
+      if (it == paren_map_.end())
+        return &null_search_data_;
+      paren_ = paren;
+      return state_data_ = &(it->second);
+    } else {
+      paren_ = paren;
+      return paren_data_ = &paren_map_[paren];
+    }
   }
 
   mutable SearchMap search_map_;            // Maps from search state to data
-  mutable SearchMultiMap search_multimap_;  // Maps from 'start' to subgraph
+  mutable SearchMultimap search_multimap_;  // Maps from 'start' to subgraph
   mutable ParenMap paren_map_;              // Maps paren spec to search data
   mutable SearchState state_;               // Last state accessed
   mutable SearchData *state_data_;          // Last state data accessed
@@ -267,6 +292,8 @@ class PdtShortestPathData {
   bool gc_;                                 // Allow GC?
   mutable size_t nstates_;                  // Total number of search states
   size_t ngc_;                              // Number of GC'd search states
+  mutable SearchData null_search_data_;     // Null search data
+  bool finished_;                           // Read-only access when true
 
   DISALLOW_COPY_AND_ASSIGN(PdtShortestPathData);
 };
@@ -279,7 +306,7 @@ void  PdtShortestPathData<Arc>::GC(StateId start) {
   if (!gc_)
     return;
   vector<StateId> final;
-  for (typename SearchMultiMap::iterator mmit = search_multimap_.find(start);
+  for (typename SearchMultimap::iterator mmit = search_multimap_.find(start);
        mmit != search_multimap_.end() && mmit->first == start;
        ++mmit) {
     SearchState s(mmit->second, start);
@@ -308,7 +335,7 @@ void  PdtShortestPathData<Arc>::GC(StateId start) {
   }
 
   // Sweep phase
-  typename SearchMultiMap::iterator mmit = search_multimap_.find(start);
+  typename SearchMultimap::iterator mmit = search_multimap_.find(start);
   while (mmit != search_multimap_.end() && mmit->first == start) {
     SearchState s(mmit->second, start);
     typename SearchMap::iterator mit = search_map_.find(s);
@@ -397,7 +424,14 @@ class PdtShortestPath {
     Init(ofst);
     GetDistance(start_);
     GetPath();
+    sp_data_.Finish();
   }
+
+  const PdtShortestPathData<Arc> &GetShortestPathData() const {
+    return sp_data_;
+  }
+
+  PdtBalanceData<Arc> *GetBalanceData() { return &balance_data_; }
 
  private:
   static const Arc kNoArc;
@@ -406,6 +440,7 @@ class PdtShortestPath {
   static const uint8 kExpanded;
   const uint8 kFinal;
 
+ public:
   // Hash key specifying close paren.
   struct ParenKey {
     ParenKey() : paren_id(kNoLabel), state_id(kNoStateId) {}
@@ -430,8 +465,13 @@ class PdtShortestPath {
   };
 
   // Hash multimap from close paren label to an paren arc.
-  typedef unordered_multimap<ParenKey, Arc, ParenHash> CloseParenMultiMap;
+  typedef unordered_multimap<ParenKey, Arc, ParenHash> CloseParenMultimap;
 
+  const CloseParenMultimap &GetCloseParenMultimap() const {
+    return close_paren_multimap_;
+  }
+
+ private:
   void Init(MutableFst<Arc> *ofst);
   void GetDistance(StateId start);
   void ProcFinal(SearchState s);
@@ -454,7 +494,7 @@ class PdtShortestPath {
   SearchState f_parent_;
   SpData sp_data_;
   unordered_map<Label, Label> paren_id_map_;
-  CloseParenMultiMap close_paren_multimap_;
+  CloseParenMultimap close_paren_multimap_;
   PdtBalanceData<Arc> balance_data_;
   ssize_t nenqueued_;
 
@@ -591,7 +631,7 @@ void PdtShortestPath<Arc, Queue>::ProcOpenParen(
       for(; !balance_data_.Done(); balance_data_.Next()) {
         SearchState cpstate(balance_data_.Value(), d.start);
         ParenKey key(paren_id, cpstate.state);
-        for (typename CloseParenMultiMap::const_iterator cpit =
+        for (typename CloseParenMultimap::const_iterator cpit =
                  close_paren_multimap_.find(key);
              cpit != close_paren_multimap_.end() && key == cpit->first;
              ++cpit) {

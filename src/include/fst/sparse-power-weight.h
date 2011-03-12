@@ -204,7 +204,14 @@ inline SparsePowerWeight<W, K> Times(const SparsePowerWeight<W, K> &w1,
   return Times(w1, w2);
 }
 
+template <class W, class K>
+inline SparsePowerWeight<W, K> Divide(const SparsePowerWeight<W, K> &w1,
+                                      const W &k,
+                                      DivideType divide_type = DIVIDE_ANY) {
+  SparsePowerWeight<W, K> w2(k);
+  return Divide(w1, w2, divide_type);
+}
+
 }  // namespace fst
 
 #endif  // FST_LIB_SPARSE_POWER_WEIGHT_H__
-

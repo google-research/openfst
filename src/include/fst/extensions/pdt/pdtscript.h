@@ -81,9 +81,19 @@ void PdtCompose(const FstClass & ifst1,
 
 // PDT EXPAND
 
+struct PdtExpandOptions {
+  bool connect;
+  bool keep_parentheses;
+  WeightClass weight_threshold;
+
+  PdtExpandOptions(bool c = true, bool k = false,
+                   WeightClass w = WeightClass::Zero())
+      : connect(c), keep_parentheses(k), weight_threshold(w) {}
+};
+
 typedef args::Package<const FstClass &,
                       const vector<pair<int64, int64> >&,
-                      MutableFstClass *, bool, bool> PdtExpandArgs;
+                      MutableFstClass *, PdtExpandOptions> PdtExpandArgs;
 
 template<class Arc>
 void PdtExpand(PdtExpandArgs *args) {
@@ -96,12 +106,19 @@ void PdtExpand(PdtExpandArgs *args) {
     parens[i].first = args->arg2[i].first;
     parens[i].second = args->arg2[i].second;
   }
-  Expand(fst, parens, ofst, args->arg4, args->arg5);
+  Expand(fst, parens, ofst,
+         ExpandOptions<Arc>(
+             args->arg4.connect, args->arg4.keep_parentheses,
+             *(args->arg4.weight_threshold.GetWeight<typename Arc::Weight>())));
 }
 
 void PdtExpand(const FstClass &ifst,
                const vector<pair<int64, int64> > &parens,
-               MutableFstClass *ofst, bool connect, bool keep_parentheses);
+               MutableFstClass *ofst, const PdtExpandOptions &opts);
+
+void PdtExpand(const FstClass &ifst,
+               const vector<pair<int64, int64> > &parens,
+               MutableFstClass *ofst, bool connect);
 
 // PDT REPLACE
 

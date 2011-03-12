@@ -83,8 +83,8 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
 
   // Calculate the safer, label-dependent check sum.
   labeled_check_sum_.Reset();
+  char line[kLineLen];
   for (int64 key = 0; key < dense_key_limit_; ++key) {
-    char line[kLineLen];
     snprintf(line, kLineLen, "%s\t%lld", symbols_[key], key);
     labeled_check_sum_.Update(line);
   }
@@ -93,7 +93,6 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
        it != key_map_.end();
        ++it) {
     if (it->first >= dense_key_limit_) {
-      char line[kLineLen];
       snprintf(line, kLineLen, "%s\t%lld", it->second, it->first);
       labeled_check_sum_.Update(line);
     }

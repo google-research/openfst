@@ -81,7 +81,7 @@ void Reweight(MutableFst<Arc> *fst,
                               DIVIDE_RIGHT);
         ait.SetValue(arc);
       }
-      if ((type == REWEIGHT_TO_INITIAL))
+      if (type == REWEIGHT_TO_INITIAL)
         fst->SetFinal(state, Divide(fst->Final(state), weight, DIVIDE_LEFT));
     }
     if (type == REWEIGHT_TO_FINAL)

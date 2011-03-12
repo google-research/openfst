@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = strcmp(argv[1], "-") == 0 ? "" : argv[1];
+  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
   string out_name = argc > 2 ? argv[2] : "";
 
   FstClass *ifst = FstClass::Read(in_name);
@@ -83,9 +83,9 @@ int main(int argc, char **argv) {
 
   // Relabel with symbol tables
   if (!FLAGS_relabel_isymbols.empty() || !FLAGS_relabel_osymbols.empty()) {
-    bool attach_new_isymbols = (ifst->InputSymbols() != 0);
+    bool attach_new_isymbols = (ofst->InputSymbols() != 0);
     const SymbolTable* old_isymbols = FLAGS_isymbols.empty()
-        ? ifst->InputSymbols()
+        ? ofst->InputSymbols()
         : SymbolTable::ReadText(FLAGS_isymbols, FLAGS_allow_negative_labels);
     const SymbolTable* relabel_isymbols = FLAGS_relabel_isymbols.empty()
         ? NULL

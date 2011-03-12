@@ -45,7 +45,7 @@ typedef ArcTpl<LogWeight> LogArc;
 
 template <class A, class C, class U = uint32> class CompactFst;
 template <class A, class U = uint32> class ConstFst;
-template <class A> class EditFst;
+template <class A, class W, class M> class EditFst;
 template <class A> class ExpandedFst;
 template <class A> class Fst;
 template <class A> class MutableFst;

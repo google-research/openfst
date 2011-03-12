@@ -209,6 +209,16 @@ void FarCompileStrings(const vector<string> &in_fnames,
         fst = reader.GetCompactFst();
       else
         fst = reader.GetVectorFst();
+      if (!fst) {
+        LOG(FATAL) << "FarCompileStrings: compiling string number " << n
+                   << " in file " << inputs[i] << " failed with token_type = "
+                   << (tt == FTT_BYTE ? "byte" :
+                       (tt == FTT_UTF8 ? "utf8" :
+                        (tt == FTT_SYMBOL ? "symbol" : "unknown")))
+                   << " and entry_type = "
+                   << (fet == FET_LINE ? "line" :
+                       (fet == FET_FILE ? "file" : "unknown"));
+      }
       sprintf(keybuf, "%0*d", key_size, n);
       string key;
       if (generate_keys > 0) {

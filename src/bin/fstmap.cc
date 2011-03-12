@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     mt = fst::INVERT_MAPPER;
   } else if (FLAGS_map_type == "plus") {
     w = FLAGS_weight.empty() ? s::WeightClass::Zero() :
-        s::WeightClass(ifst->WeightType(), FLAGS_weight);
+        s::WeightClass(ofst->WeightType(), FLAGS_weight);
     mt = fst::PLUS_MAPPER;
   } else if (FLAGS_map_type == "quantize") {
     mt = fst::QUANTIZE_MAPPER;
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     mt = fst::SUPERFINAL_MAPPER;
   } else if (FLAGS_map_type == "times") {
     w = FLAGS_weight.empty() ? s::WeightClass::One() :
-        s::WeightClass(ifst->WeightType(), FLAGS_weight);
+        s::WeightClass(ofst->WeightType(), FLAGS_weight);
     mt = fst::TIMES_MAPPER;
   } else {
     LOG(ERROR) << argv[0] << ": Unknown map type \""

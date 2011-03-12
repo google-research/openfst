@@ -30,7 +30,7 @@ int KeySize(const char *filename) {
   while (getline(istrm, s))
     ++nline;
   istrm.seekg(0);
-  return nline ? ceil(log10(nline)) : 1;
+  return nline ? ceil(log10(nline + 1)) : 1;
 }
 
 }  // namespace fst

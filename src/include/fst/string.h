@@ -58,7 +58,7 @@ class StringCompiler {
     labels->clear();
     if (token_type_ == BYTE) {
       for (size_t i = 0; i < str.size(); ++i)
-        labels->push_back(str[i]);
+        labels->push_back(static_cast<unsigned char>(str[i]));
     } else if (token_type_ == UTF8) {
       return UTF8StringToLabels(str, labels);
     } else {

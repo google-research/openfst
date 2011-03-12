@@ -52,7 +52,7 @@ void FarPrintStrings(
   const SymbolTable *syms = 0;
   if (!symbols_fname.empty()) {
     // allow negative flag?
-    syms = SymbolTable::ReadText(symbols_fname.c_str(), true);
+    syms = SymbolTable::ReadText(symbols_fname, true);
     if (!syms) exit(1);
   }
 

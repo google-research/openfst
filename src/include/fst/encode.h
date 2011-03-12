@@ -378,7 +378,7 @@ template <class A> class EncodeMapper {
     ifstream strm(filename.c_str(), ifstream::in | ifstream::binary);
     if (!strm) {
       LOG(ERROR) << "EncodeMap: Can't open file: " << filename;
-      return false;
+      return NULL;
     }
     return Read(strm, filename, type);
   }

@@ -404,8 +404,6 @@ class CompactFstImpl : public CacheImpl<A> {
   using FstImpl<A>::SetOutputSymbols;
   using FstImpl<A>::WriteHeader;
 
-  using VectorFstBaseImpl<typename CacheImpl<A>::State>::NumStates;
-
   using CacheImpl<A>::AddArc;
   using CacheImpl<A>::HasArcs;
   using CacheImpl<A>::HasFinal;
@@ -413,8 +411,6 @@ class CompactFstImpl : public CacheImpl<A> {
   using CacheImpl<A>::SetArcs;
   using CacheImpl<A>::SetFinal;
   using CacheImpl<A>::SetStart;
-
-  friend class StateIterator< CompactFst<A, C, U> >;
 
   typedef A Arc;
   typedef typename A::Weight Weight;
@@ -587,9 +583,17 @@ class CompactFstImpl : public CacheImpl<A> {
       return 0;
 
     impl->compactor_ = C::Read(strm);
+    if (!impl->compactor_) {
+      delete impl;
+      return 0;
+    }
     impl->own_compactor_ = true;
     impl->data_ = CompactFstData<A, C, U>::Read(strm, opts, hdr,
                                                 *impl->compactor_);
+    if (!impl->data_) {
+      delete impl;
+      return 0;
+    }
     return impl;
   }
 

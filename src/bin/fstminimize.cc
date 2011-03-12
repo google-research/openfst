@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
   }
 
   MutableFstClass *ofst2 = argc > 3 ?
-      new VectorFstClass(ifst->ArcType()) : 0;
+      new VectorFstClass(ofst1->ArcType()) : 0;
 
   s::Minimize(ofst1, ofst2, FLAGS_delta);
 

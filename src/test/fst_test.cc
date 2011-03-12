@@ -164,7 +164,7 @@ class FstTester {
     CHECK(Equal(*fst, afst2));
 
     // Assignment from self
-    afst2 = afst2;
+    afst2.operator=(afst2);
     CHECK(Equal(*fst, afst2));
   }
 

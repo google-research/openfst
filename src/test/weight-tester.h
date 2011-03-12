@@ -198,7 +198,7 @@ class WeightTester {
     x = Weight(w);
     CHECK(w == x);
 
-    x = x;
+    x.operator=(x);
     CHECK(w == x);
 
   }

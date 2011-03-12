@@ -169,7 +169,7 @@ struct Operation {
 // Macro for registering new types of operations.
 
 #define REGISTER_FST_OPERATION(Op, Arc, ArgPack)                        \
-  static Operation<ArgPack>::Registerer                                 \
+  static fst::script::Operation<ArgPack>::Registerer                \
   arc_dispatched_operation_ ## ArgPack ## Op ## Arc ## _registerer(     \
       make_pair(#Op, Arc::Type()), Op<Arc>)
 

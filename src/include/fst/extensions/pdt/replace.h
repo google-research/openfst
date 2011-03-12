@@ -55,6 +55,7 @@ void Replace(const vector<pair<typename Arc::Label,
   typedef typename Arc::Weight Weight;
 
   ofst->DeleteStates();
+  parens->clear();
 
   unordered_map<Label, size_t> label2id;
   for (size_t i = 0; i < ifst_array.size(); ++i)

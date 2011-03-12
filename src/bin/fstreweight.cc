@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   }
 
   vector<s::WeightClass> potential;
-  s::ReadPotentials(ifst->WeightType(), potentials_fname, &potential);
+  s::ReadPotentials(ofst->WeightType(), potentials_fname, &potential);
 
   fst::ReweightType reweight_type = FLAGS_to_final ?
       fst::REWEIGHT_TO_FINAL :
