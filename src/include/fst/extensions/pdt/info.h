@@ -142,27 +142,32 @@ PdtInfo<A>::PdtInfo(const Fst<A> &fst,
 
 template <class A>
 void PrintPdtInfo(const PdtInfo<A> &pdtinfo) {
-  FILE *fp = stdout;
-  fprintf(fp, "%-50s%s\n", "fst type",
-          pdtinfo.FstType().c_str());
-    fprintf(fp, "%-50s%s\n", "arc type",
-            pdtinfo.ArcType().c_str());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of states",
-          pdtinfo.NumStates());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of arcs",
-          pdtinfo.NumArcs());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of open parentheses",
-          pdtinfo.NumOpenParens());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of close parentheses",
-          pdtinfo.NumCloseParens());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of unique open parentheses",
-          pdtinfo.NumUniqueOpenParens());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of unique close parentheses",
-          pdtinfo.NumUniqueCloseParens());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of open parenthesis dest. states",
-          pdtinfo.NumOpenParenStates());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of close parenthesis source states",
-          pdtinfo.NumCloseParenStates());
+  ios_base::fmtflags old = cout.setf(ios::left);
+  cout.width(50);
+  cout << "fst type" << pdtinfo.FstType().c_str() << endl;
+  cout.width(50);
+  cout << "arc type" << pdtinfo.ArcType().c_str() << endl;
+  cout.width(50);
+  cout << "# of states" << pdtinfo.NumStates() << endl;
+  cout.width(50);
+  cout << "# of arcs" << pdtinfo.NumArcs() << endl;
+  cout.width(50);
+  cout << "# of open parentheses" << pdtinfo.NumOpenParens() << endl;
+  cout.width(50);
+  cout << "# of close parentheses" << pdtinfo.NumCloseParens() << endl;
+  cout.width(50);
+  cout << "# of unique open parentheses"
+       << pdtinfo.NumUniqueOpenParens() << endl;
+  cout.width(50);
+  cout << "# of unique close parentheses"
+       << pdtinfo.NumUniqueCloseParens() << endl;
+  cout.width(50);
+  cout << "# of open parenthesis dest. states"
+       << pdtinfo.NumOpenParenStates() << endl;
+  cout.width(50);
+  cout << "# of close parenthesis source states"
+       << pdtinfo.NumCloseParenStates() << endl;
+  cout.setf(old);
 }
 
 }  // namespace fst

@@ -340,7 +340,7 @@ CompactFstData<E, U> *CompactFstData<E, U>::Read(
 
   if (compactor.Size() == -1) {
     data->states_ = new Unsigned[data->nstates_ + 1];
-    if (hdr.Version() == 1 && !AlignInput(strm, kFileAlign)) {
+    if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm, kFileAlign)) {
       LOG(ERROR) << "CompactFst::Read: Alignment failed: " << opts.source;
       return 0;
     }
@@ -360,7 +360,7 @@ CompactFstData<E, U> *CompactFstData<E, U>::Read(
   data->compacts_ = new CompactElement[data->ncompacts_];
   // TODO: memory map this
   size_t b = data->ncompacts_ * sizeof(CompactElement);
-  if (hdr.Version() == 1 && !AlignInput(strm, kFileAlign)) {
+  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm, kFileAlign)) {
     LOG(ERROR) << "CompactFst::Read: Alignment failed: " << opts.source;
     return 0;
   }
@@ -376,8 +376,16 @@ template<class E, class U>
 bool CompactFstData<E, U>::Write(ostream &strm,
                                  const FstWriteOptions &opts) const {
   if (states_) {
+    if (opts.align && !AlignOutput(strm, kFileAlign)) {
+      LOG(ERROR) << "CompactFst::Write: Alignment failed: " << opts.source;
+      return false;
+    }
     strm.write(reinterpret_cast<char *>(states_),
                (nstates_ + 1) * sizeof(Unsigned));
+  }
+  if (opts.align && !AlignOutput(strm, kFileAlign)) {
+    LOG(ERROR) << "CompactFst::Write: Alignment failed: " << opts.source;
+    return false;
   }
   strm.write(reinterpret_cast<char *>(compacts_),
              ncompacts_ * sizeof(CompactElement));
@@ -583,6 +591,10 @@ class CompactFstImpl : public CacheImpl<A> {
     if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr))
       return 0;
 
+    // Ensures compatibility
+    if (hdr.Version() == kAlignedFileVersion)
+      hdr.SetFlags(hdr.GetFlags() | FstHeader::IS_ALIGNED);
+
     impl->compactor_ = C::Read(strm);
     if (!impl->compactor_) {
       delete impl;
@@ -603,7 +615,11 @@ class CompactFstImpl : public CacheImpl<A> {
     hdr.SetStart(data_->Start());
     hdr.SetNumStates(data_->NumStates());
     hdr.SetNumArcs(data_->NumArcs());
-    WriteHeader(strm, opts, kFileVersion, &hdr);
+
+    // Ensures compatibility
+    int file_version = opts.align ? kAlignedFileVersion : kFileVersion;
+    WriteHeader(strm, opts, file_version, &hdr);
+
     compactor_->Write(strm);
     return data_->Write(strm, opts);
   }
@@ -699,8 +715,10 @@ class CompactFstImpl : public CacheImpl<A> {
 
   // Properties always true of this Fst class
   static const uint64 kStaticProperties = kExpanded;
-  // Current file format version
+  // Current unaligned file format version
   static const int kFileVersion = 2;
+  // Current aligned file format version
+  static const int kAlignedFileVersion = 1;
   // Minimum file format version supported
   static const int kMinFileVersion = 1;
 
@@ -713,6 +731,8 @@ template <class A, class C, class U>
 const uint64 CompactFstImpl<A, C, U>::kStaticProperties;
 template <class A, class C, class U>
 const int CompactFstImpl<A, C, U>::kFileVersion;
+template <class A, class C, class U>
+const int CompactFstImpl<A, C, U>::kAlignedFileVersion;
 template <class A, class C, class U>
 const int CompactFstImpl<A, C, U>::kMinFileVersion;
 

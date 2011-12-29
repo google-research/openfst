@@ -51,26 +51,17 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  FstClass *ifst = FstClass::Read(in_name);
-  if (!ifst) return 1;
+  MutableFstClass *fst1 = MutableFstClass::Read(in_name, true);
+  if (!fst1) return 1;
 
-  MutableFstClass *ofst1 = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst1 = static_cast<MutableFstClass *>(ifst);
-  } else {
-    ofst1 = new VectorFstClass(*ifst);
-    delete ifst;
-  }
+  MutableFstClass *fst2 = argc > 3 ?
+      new VectorFstClass(fst1->ArcType()) : 0;
 
-  MutableFstClass *ofst2 = argc > 3 ?
-      new VectorFstClass(ofst1->ArcType()) : 0;
+  s::Minimize(fst1, fst2, FLAGS_delta);
 
-  s::Minimize(ofst1, ofst2, FLAGS_delta);
-
-  ofst1->Write(out1_name);
-  if (ofst2) {
-    ofst2->Write(out2_name);
-  }
+  fst1->Write(out1_name);
+  if (fst2)
+    fst2->Write(out2_name);
 
   return 0;
 }

@@ -79,11 +79,10 @@ template <class A> class FstPrinter {
     if (syms) {
       string symbol = syms->Find(id);
       if (symbol == "") {
-        LOG(ERROR) << "FstPrinter: Integer " << id
+        LOG(FATAL) << "FstPrinter: Integer " << id
                    << " is not mapped to any textual symbol"
                    << ", symbol table = " << syms->Name()
                    << ", destination = " << dest_;
-        exit(1);
       }
       *ostrm_ << symbol;
     } else {

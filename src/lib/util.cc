@@ -37,10 +37,9 @@ int64 StrToInt64(const string &s, const string &src, size_t nline,
 }
 
 void Int64ToStr(int64 n, string *s) {
-  const int kNumLen = 128;
-  char nstr[kNumLen];
-  snprintf(nstr, kNumLen, "%"FST_LL_FORMAT"d", n);
-  *s += nstr;
+  ostringstream nstr;
+  nstr << n;
+  *s = nstr.str();
 }
 
 void ConvertToLegalCSymbol(string *s) {

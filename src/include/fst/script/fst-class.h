@@ -37,11 +37,11 @@ namespace fst {
 namespace script {
 
 //
-// Abstract base class defining the set of functionalities
-// implemented in all impls, and passed through by all bases
-// Below FstClassBase the class hierarchy bifurcates; FCImplBase serves
-// as the base class for all implementations (of which FstContainer is
-// currently the only one) and FstClass serves as the base class for all
+// Abstract base class defining the set of functionalities implemented
+// in all impls, and passed through by all bases Below FstClassBase
+// the class hierarchy bifurcates; FstClassImplBase serves as the base
+// class for all implementations (of which FstClassImpl is currently
+// the only one) and FstClass serves as the base class for all
 // interfaces.
 //
 class FstClassBase {
@@ -67,10 +67,10 @@ class FstClassImplBase : public FstClassBase {
 
 //
 // CONTAINER CLASS
-// Wraps an old-style Fst<Arc>, hiding its arc type
-// Whether this Fst<Arc> pointer refers to a special kind of FST
-// (e.g. a MutableFst) is known by the type of interface class that
-// owns the pointer to this container.
+// Wraps an Fst<Arc>, hiding its arc type. Whether this Fst<Arc>
+// pointer refers to a special kind of FST (e.g. a MutableFst) is
+// known by the type of interface class that owns the pointer to this
+// container.
 //
 
 template<class Arc>
@@ -256,20 +256,17 @@ class MutableFstClass : public FstClass {
   template<class Arc>
   static MutableFstClass *Read(istream &stream,
                                const FstReadOptions &opts) {
-    CHECK(opts.header);
-    const FstHeader &hdr = *opts.header;
-
-    if (hdr.Properties() & kMutable) {
-      MutableFst<Arc> *f = MutableFst<Arc>::Read(stream, opts);
-      MutableFstClass *retval = new MutableFstClass(f);
-      delete f;
-      return retval;
-    } else {
-      LOG(ERROR) << "Attempt to read a MutableFstClass from a file that doesn't"
-                 << " contain a mutable FST type.";
+    MutableFst<Arc> *mfst = MutableFst<Arc>::Read(stream, opts);
+    if (!mfst) {
       return 0;
+    } else {
+      MutableFstClass *retval = new MutableFstClass(mfst);
+      delete mfst;
+      return retval;
     }
   }
+
+  static MutableFstClass *Read(const string &fname, bool convert = false);
 
   virtual void SetInputSymbols(SymbolTable *is) {
     GetImpl()->SetInputSymbols(is);
@@ -320,6 +317,8 @@ class VectorFstClass : public MutableFstClass {
       return retval;
     }
   }
+
+  static VectorFstClass *Read(const string &fname);
 
   // Converter / creator for known arc types
   template<class Arc>

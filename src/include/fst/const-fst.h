@@ -119,8 +119,11 @@ class ConstFstImpl : public FstImpl<A> {
 
   // Properties always true of this Fst class
   static const uint64 kStaticProperties = kExpanded;
-  // Current file format version
+  // Current unaligned file format version. The unaligned version was added and
+  // made the default since the aligned version does not work on pipes.
   static const int kFileVersion = 2;
+  // Current aligned file format version
+  static const int kAlignedFileVersion = 1;
   // Minimum file format version supported
   static const int kMinFileVersion = 1;
   // Byte alignment for states and arcs in file format (version 1 only)
@@ -139,6 +142,8 @@ template <class A, class U>
 const uint64 ConstFstImpl<A, U>::kStaticProperties;
 template <class A, class U>
 const int ConstFstImpl<A, U>::kFileVersion;
+template <class A, class U>
+const int ConstFstImpl<A, U>::kAlignedFileVersion;
 template <class A, class U>
 const int ConstFstImpl<A, U>::kMinFileVersion;
 template <class A, class U>
@@ -207,7 +212,11 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
   impl->states_ = new State[impl->nstates_];
   impl->arcs_ = new A[impl->narcs_];
 
-  if (hdr.Version() == 1 && !AlignInput(strm, kFileAlign)) {
+  // Ensures compatibility
+  if (hdr.Version() == kAlignedFileVersion)
+    hdr.SetFlags(hdr.GetFlags() | FstHeader::IS_ALIGNED);
+
+  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm, kFileAlign)) {
     LOG(ERROR) << "ConstFst::Read: Alignment failed: " << opts.source;
     return 0;
   }
@@ -217,7 +226,7 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     return 0;
   }
-  if (hdr.Version() == 1 && !AlignInput(strm, kFileAlign)) {
+  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm, kFileAlign)) {
     LOG(ERROR) << "ConstFst::Read: Alignment failed: " << opts.source;
     return 0;
   }
@@ -237,9 +246,20 @@ bool ConstFstImpl<A, U>::Write(ostream &strm,
   hdr.SetStart(start_);
   hdr.SetNumStates(nstates_);
   hdr.SetNumArcs(narcs_);
-  WriteHeader(strm, opts, kFileVersion, &hdr);
 
+  // Ensures compatibility
+  int file_version = opts.align ? kAlignedFileVersion : kFileVersion;
+  WriteHeader(strm, opts, file_version, &hdr);
+
+  if (opts.align && !AlignOutput(strm, kFileAlign)) {
+    LOG(ERROR) << "ConstFst::Write: Alignment failed: " << opts.source;
+    return false;
+  }
   strm.write(reinterpret_cast<char *>(states_), nstates_ * sizeof(State));
+  if (opts.align && !AlignOutput(strm, kFileAlign)) {
+    LOG(ERROR) << "ConstFst::Write: Alignment failed: " << opts.source;
+    return false;
+  }
   strm.write(reinterpret_cast<char *>(arcs_), narcs_ * sizeof(A));
 
   strm.flush();

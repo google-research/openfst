@@ -112,18 +112,36 @@ class MutableFst : public ExpandedFst<A> {
     return static_cast<MutableFst<A> *>(fst);
   }
 
-  // Read an ExpandedFst from a file; return NULL on error.
-  // Empty filename reads from standard input.
-  static MutableFst<A> *Read(const string &filename) {
-    if (!filename.empty()) {
-      ifstream strm(filename.c_str(), ifstream::in | ifstream::binary);
-      if (!strm) {
-        LOG(ERROR) << "MutableFst::Read: Can't open file: " << filename;
-        return 0;
+  // Read a MutableFst from a file; return NULL on error.
+  // Empty filename reads from standard input. If 'convert' is true,
+  // convert to a mutable FST of type 'convert_type' if file is
+  // a non-mutable FST.
+  static MutableFst<A> *Read(const string &filename, bool convert = false,
+                             const string &convert_type = "vector") {
+    if (convert == false) {
+      if (!filename.empty()) {
+        ifstream strm(filename.c_str(), ifstream::in | ifstream::binary);
+        if (!strm) {
+          LOG(ERROR) << "MutableFst::Read: Can't open file: " << filename;
+          return 0;
+        }
+        return Read(strm, FstReadOptions(filename));
+      } else {
+        return Read(std::cin, FstReadOptions("standard input"));
       }
-      return Read(strm, FstReadOptions(filename));
-    } else {
-      return Read(std::cin, FstReadOptions("standard input"));
+    } else {  // Converts to 'convert_type' if not mutable.
+      Fst<A> *ifst = Fst<A>::Read(filename);
+      if (!ifst) return 0;
+      if (ifst->Properties(kMutable, false)) {
+        return static_cast<MutableFst *>(ifst);
+      } else {
+        Fst<A> *ofst = Convert(*ifst, convert_type);
+        delete ifst;
+        if (!ofst) return 0;
+        if (!ofst->Properties(kMutable, false))
+          LOG(ERROR) << "MutableFst: bad convert type: " << convert_type;
+        return static_cast<MutableFst *>(ofst);
+      }
     }
   }
 

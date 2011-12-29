@@ -222,34 +222,38 @@ template <class A> class FstInfo {
 
 template <class A>
 void PrintFstInfo(const FstInfo<A> &fstinfo, bool pipe = false) {
-  FILE *fp = pipe ? stderr : stdout;
+  ostream &os = pipe ? cerr : cout;
 
-  fprintf(fp, "%-50s%s\n", "fst type",
-          fstinfo.FstType().c_str());
-    fprintf(fp, "%-50s%s\n", "arc type",
-            fstinfo.ArcType().c_str());
-  fprintf(fp, "%-50s%s\n", "input symbol table",
-          fstinfo.InputSymbols().c_str());
-  fprintf(fp, "%-50s%s\n", "output symbol table",
-          fstinfo.OutputSymbols().c_str());
+  ios_base::fmtflags old = os.setf(ios::left);
+  os.width(50);
+  os << "fst type" <<  fstinfo.FstType() << endl;
+  os.width(50);
+  os << "arc type" << fstinfo.ArcType() << endl;
+  os.width(50);
+  os << "input symbol table" << fstinfo.InputSymbols() << endl;
+  os.width(50);
+  os << "output symbol table" << fstinfo.OutputSymbols() << endl;
 
-  if (!fstinfo.LongInfo())
+  if (!fstinfo.LongInfo()) {
+    os.setf(old);
     return;
+  }
 
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of states",
-          fstinfo.NumStates());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of arcs",
-          fstinfo.NumArcs());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "initial state",
-          fstinfo.Start());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of final states",
-          fstinfo.NumFinal());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of input/output epsilons",
-          fstinfo.NumEpsilons());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of input epsilons",
-          fstinfo.NumInputEpsilons());
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", "# of output epsilons",
-          fstinfo.NumOutputEpsilons());
+  os.width(50);
+  os << "# of states" << fstinfo.NumStates() << endl;
+  os.width(50);
+  os << "# of arcs" << fstinfo.NumArcs() << endl;
+  os.width(50);
+  os << "initial state" << fstinfo.Start() << endl;
+  os.width(50);
+  os << "# of final states" << fstinfo.NumFinal() << endl;
+  os.width(50);
+  os << "# of input/output epsilons" << fstinfo.NumEpsilons() << endl;
+  os.width(50);
+  os << "# of input epsilons" << fstinfo.NumInputEpsilons() << endl;
+  os.width(50);
+  os << "# of output epsilons" << fstinfo.NumOutputEpsilons() << endl;
+  os.width(50);
 
   string arc_type = "";
   if (fstinfo.ArcFilterType() == "epsilon")
@@ -260,45 +264,52 @@ void PrintFstInfo(const FstInfo<A> &fstinfo, bool pipe = false) {
     arc_type = "output-epsilon ";
 
   string accessible_label = "# of " +  arc_type + "accessible states";
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", accessible_label.c_str(),
-          fstinfo.NumAccessible());
+  os.width(50);
+  os << accessible_label << fstinfo.NumAccessible() << endl;
   string coaccessible_label = "# of " +  arc_type + "coaccessible states";
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", coaccessible_label.c_str(),
-          fstinfo.NumCoAccessible());
+  os.width(50);
+  os << coaccessible_label << fstinfo.NumCoAccessible() << endl;
   string connected_label = "# of " +  arc_type + "connected states";
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", connected_label.c_str(),
-          fstinfo.NumConnected());
+  os.width(50);
+  os << connected_label << fstinfo.NumConnected() << endl;
   string numcc_label = "# of " +  arc_type + "connected components";
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", numcc_label.c_str(),
-          fstinfo.NumCc());
+  os.width(50);
+  os << numcc_label << fstinfo.NumCc() << endl;
   string numscc_label = "# of " +  arc_type + "strongly conn components";
-  fprintf(fp, "%-50s%"FST_LL_FORMAT"d\n", numscc_label.c_str(),
-          fstinfo.NumScc());
+  os.width(50);
+  os << numscc_label << fstinfo.NumScc() << endl;
 
-  fprintf(fp, "%-50s%c\n", "input matcher",
-          fstinfo.InputMatchType() == MATCH_INPUT ? 'y' :
-          fstinfo.InputMatchType() == MATCH_NONE ? 'n' : '?');
-  fprintf(fp, "%-50s%c\n", "output matcher",
-          fstinfo.OutputMatchType() == MATCH_OUTPUT ? 'y' :
-          fstinfo.OutputMatchType() == MATCH_NONE ? 'n' : '?');
-  fprintf(fp, "%-50s%c\n", "input lookahead",
-          fstinfo.InputLookAhead() ? 'y' : 'n');
-  fprintf(fp, "%-50s%c\n", "output lookahead",
-          fstinfo.OutputLookAhead() ? 'y' : 'n');
+  os.width(50);
+  os << "input matcher"
+     << (fstinfo.InputMatchType() == MATCH_INPUT ? 'y' :
+         fstinfo.InputMatchType() == MATCH_NONE ? 'n' : '?') << endl;
+  os.width(50);
+  os << "output matcher"
+     << (fstinfo.OutputMatchType() == MATCH_OUTPUT ? 'y' :
+         fstinfo.OutputMatchType() == MATCH_NONE ? 'n' : '?') << endl;
+  os.width(50);
+  os << "input lookahead"
+     << (fstinfo.InputLookAhead() ? 'y' : 'n') << endl;
+  os.width(50);
+  os << "output lookahead"
+     << (fstinfo.OutputLookAhead() ? 'y' : 'n') << endl;
 
   uint64 prop = 1;
   for (int i = 0; i < 64; ++i, prop <<= 1) {
     if (prop & kBinaryProperties) {
       char value = 'n';
       if (fstinfo.Properties() & prop) value = 'y';
-      fprintf(fp, "%-50s%c\n", PropertyNames[i], value);
+      os.width(50);
+      os << PropertyNames[i] << value << endl;
     } else if (prop & kPosTrinaryProperties) {
       char value = '?';
       if (fstinfo.Properties() & prop) value = 'y';
       else if (fstinfo.Properties() & prop << 1) value = 'n';
-      fprintf(fp, "%-50s%c\n", PropertyNames[i], value);
+      os.width(50);
+      os << PropertyNames[i] << value << endl;
     }
   }
+  os.setf(old);
 }
 
 }  // namespace fst

@@ -53,27 +53,19 @@ int main(int argc, char **argv) {
   string in_fname = argc > 1 && strcmp(argv[1], "-") != 0 ? argv[1] : "";
   string out_fname = argc > 2 ? argv[2] : "";
 
-  s::FstClass *ifst = s::FstClass::Read(in_fname);
-  if (!ifst) return 1;
-
-  s::MutableFstClass *ofst = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst = static_cast<s::MutableFstClass *>(ifst);
-  } else {
-    ofst = new s::VectorFstClass(*ifst);
-    delete ifst;
-  }
+  s::MutableFstClass *fst = s::MutableFstClass::Read(in_fname, true);
+  if (!fst) return 1;
 
   if (FLAGS_clear_isymbols)
-    ofst->SetInputSymbols(0);
+    fst->SetInputSymbols(0);
   else if (!FLAGS_isymbols.empty())
-    ofst->SetInputSymbols(
+    fst->SetInputSymbols(
         SymbolTable::ReadText(FLAGS_isymbols, FLAGS_allow_negative_labels));
 
   if (FLAGS_clear_osymbols)
-    ofst->SetOutputSymbols(0);
+    fst->SetOutputSymbols(0);
   else if (!FLAGS_osymbols.empty())
-    ofst->SetOutputSymbols(
+    fst->SetOutputSymbols(
         SymbolTable::ReadText(FLAGS_osymbols, FLAGS_allow_negative_labels));
 
   if (!FLAGS_relabel_ipairs.empty()) {
@@ -81,8 +73,8 @@ int main(int argc, char **argv) {
     vector<pair<Label, Label> > ipairs;
     fst::ReadLabelPairs(FLAGS_relabel_ipairs, &ipairs,
                             FLAGS_allow_negative_labels);
-    SymbolTable *isyms = RelabelSymbolTable(ofst->InputSymbols(), ipairs);
-    ofst->SetInputSymbols(isyms);
+    SymbolTable *isyms = RelabelSymbolTable(fst->InputSymbols(), ipairs);
+    fst->SetInputSymbols(isyms);
     delete isyms;
   }
 
@@ -91,11 +83,11 @@ int main(int argc, char **argv) {
     vector<pair<Label, Label> > opairs;
     fst::ReadLabelPairs(FLAGS_relabel_opairs, &opairs,
                             FLAGS_allow_negative_labels);
-    SymbolTable *osyms = RelabelSymbolTable(ofst->OutputSymbols(), opairs);
-    ofst->SetOutputSymbols(osyms);
+    SymbolTable *osyms = RelabelSymbolTable(fst->OutputSymbols(), opairs);
+    fst->SetOutputSymbols(osyms);
     delete osyms;
   }
 
-  ofst->Write(out_fname);
+   fst->Write(out_fname);
   return 0;
 }

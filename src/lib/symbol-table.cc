@@ -85,17 +85,18 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
 
   // Calculate the safer, label-dependent check sum.
   labeled_check_sum_.Reset();
-  char line[kLineLen];
   for (int64 key = 0; key < dense_key_limit_; ++key) {
-    snprintf(line, kLineLen, "%s\t%"FST_LL_FORMAT"d", symbols_[key], key);
-    labeled_check_sum_.Update(line); }
+    ostringstream line;
+    line << symbols_[key] << '\t' << key;
+    labeled_check_sum_.Update(line.str()); }
   for (map<int64, const char*>::const_iterator it =
        key_map_.begin();
        it != key_map_.end();
        ++it) {
     if (it->first >= dense_key_limit_) {
-      snprintf(line, kLineLen, "%s\t%"FST_LL_FORMAT"d", it->second, it->first);
-      labeled_check_sum_.Update(line);
+      ostringstream line;
+      line << it->second << '\t' << it->first;
+      labeled_check_sum_.Update(line.str());
     }
   }
   labeled_check_sum_string_ = labeled_check_sum_.Digest();
@@ -226,11 +227,10 @@ void SymbolTable::AddTable(const SymbolTable& table) {
 
 bool SymbolTable::WriteText(ostream &strm) const {
   for (SymbolTableIterator iter(*this); !iter.Done(); iter.Next()) {
-    char line[kLineLen];
-    snprintf(line, kLineLen, "%s%c%"FST_LL_FORMAT"d\n",
-             iter.Symbol().c_str(), FLAGS_fst_field_separator[0],
-             iter.Value());
-    strm.write(line, strlen(line));
+    ostringstream line;
+    line << iter.Symbol() << FLAGS_fst_field_separator[0] << iter.Value()
+         << '\n';
+    strm.write(line.str().c_str(), line.str().length());
   }
   return true;
 }

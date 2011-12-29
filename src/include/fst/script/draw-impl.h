@@ -129,19 +129,18 @@ template <class A> class FstDrawer {
     if (syms) {
       string symbol = syms->Find(id);
       if (symbol == "") {
-        LOG(ERROR) << "FstDrawer: Integer " << id
+        LOG(FATAL) << "FstDrawer: Integer " << id
                    << " is not mapped to any textual symbol"
                    << ", symbol table = " << syms->Name()
                    << ", destination = " << dest_;
-        exit(1);
       }
       string nsymbol;
       EscapeChars(symbol, &nsymbol);
       PrintString(nsymbol);
     } else {
-      char sid[kLineLen];
-      snprintf(sid, kLineLen, "%"FST_LL_FORMAT"d", id);
-      PrintString(sid);
+      ostringstream sid;
+      sid << id;
+      PrintString(sid.str());
     }
   }
 

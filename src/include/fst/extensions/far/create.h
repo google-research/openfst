@@ -42,9 +42,6 @@ void FarCreate(const vector<string> &in_fnames,
                const FarType &far_type,
                const string &key_prefix,
                const string &key_suffix) {
-  char keybuf[16];
-  CHECK(generate_keys < sizeof(keybuf));
-
   FarWriter<Arc> *far_writer =
       FarWriter<Arc>::Create(out_fname, far_type);
   if (!far_writer) return;
@@ -66,8 +63,11 @@ void FarCreate(const vector<string> &in_fnames,
     if (!ifst) return;
     string key;
     if (generate_keys > 0) {
-      sprintf(keybuf, "%0*d", generate_keys, i + 1);
-      key = keybuf;
+      ostringstream keybuf;
+      keybuf.width(generate_keys);
+      keybuf.fill('0');
+      keybuf << i + 1;
+      key = keybuf.str();
     } else {
       char* filename = new char[inputs[i].size() + 1];
       strcpy(filename, inputs[i].c_str());

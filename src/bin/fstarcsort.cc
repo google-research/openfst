@@ -31,7 +31,6 @@ DEFINE_string(sort_type, "ilabel",
 int main(int argc, char **argv) {
   using fst::script::FstClass;
   using fst::script::MutableFstClass;
-  using fst::script::VectorFstClass;
   using fst::script::ArcSort;
 
   string usage = "Sorts arcs of an FST.\n\n  Usage: ";
@@ -49,29 +48,20 @@ int main(int argc, char **argv) {
   string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
   string out_name = argc > 2 ? argv[2] : "";
 
-  FstClass *ifst = FstClass::Read(in_name);
-
-  if (!ifst) return 1;
-
-  MutableFstClass *ofst = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst = static_cast<MutableFstClass *>(ifst);
-  } else {
-    ofst = new VectorFstClass(*ifst);
-    delete ifst;
-  }
+  MutableFstClass *fst = MutableFstClass::Read(in_name, true);
+  if (!fst) return 1;
 
   if (FLAGS_sort_type == "ilabel") {
-    ArcSort(ofst, fst::script::ILABEL_COMPARE);
+    ArcSort(fst, fst::script::ILABEL_COMPARE);
   } else if (FLAGS_sort_type == "olabel") {
-    ArcSort(ofst, fst::script::OLABEL_COMPARE);
+    ArcSort(fst, fst::script::OLABEL_COMPARE);
   } else {
     LOG(ERROR) << argv[0] << ": Unknown sort type \""
                << FLAGS_sort_type << "\"\n";
     return 1;
   }
 
-  ofst->Write(out_name);
+  fst->Write(out_name);
 
   return 0;
 }

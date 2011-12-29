@@ -59,6 +59,8 @@ OpenFst - Release 1.2
      that fails on pipes. Made old version raises errors when read on 
      pipes (1.2.9).
    * Improved determinize hash (1.2.9)
+   * Removed stdio uses (1.2.10)
+   * Fixed library ordering issues esp. with newer GNU build tools (1.2.10)
 
 OpenFst - Release 1.1
    * Added compat.h to src/include/fst to fix missing defines

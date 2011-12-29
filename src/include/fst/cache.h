@@ -500,6 +500,7 @@ struct CacheState {
   mutable uint32 flags;
   mutable int ref_count;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(CacheState);
 };
 

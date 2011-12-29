@@ -38,10 +38,6 @@ void FarExtract(const vector<string> &ifilenames,
                 const string &end_key,
                 const string &filename_prefix,
                 const string &filename_suffix) {
-  char filenamebuf[16];
-  const char *ofilename = filenamebuf;
-  CHECK(generate_filenames < sizeof(filenamebuf));
-
   FarReader<Arc> *far_reader = FarReader<Arc>::Open(ifilenames);
   if (!far_reader) return;
 
@@ -63,14 +59,20 @@ void FarExtract(const vector<string> &ifilenames,
 
     okey = key;
 
+    string ofilename;
     if (generate_filenames) {
-      sprintf(filenamebuf, "%0*d", generate_filenames, i);
+      ostringstream tmp;
+      tmp.width(generate_filenames);
+      tmp.fill('0');
+      tmp << i;
+      ofilename = tmp.str();
     } else {
       if (nrep > 0) {
-        sprintf(filenamebuf, ".%d", nrep);
-        key += filenamebuf;
+        ostringstream tmp;
+        tmp << '.' << nrep;
+        key += tmp.str();
       }
-      ofilename = key.c_str();
+      ofilename = key;
     }
     fst.Write(filename_prefix + ofilename + filename_suffix);
   }

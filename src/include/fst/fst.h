@@ -40,6 +40,8 @@
 #include <fst/util.h>
 
 
+DECLARE_bool(fst_align);
+
 namespace fst {
 
 bool IsFstHeader(istream &, const string &);
@@ -72,16 +74,18 @@ struct FstReadOptions {
 
 
 struct FstWriteOptions {
-  string source;                 // where you're writing to
+  string source;                 // Where you're writing to
   bool write_header;             // Write the header?
   bool write_isymbols;           // Write input symbols?
   bool write_osymbols;           // Write output symbols?
+  bool align;                    // Write data aligned where appropriate;
+                                 // this may fail on pipes
 
   explicit FstWriteOptions(const string& src = "<unspecifed>",
                            bool hdr = true, bool isym = true,
-                           bool osym = true)
+                           bool osym = true, bool alig = FLAGS_fst_align)
       : source(src), write_header(hdr),
-        write_isymbols(isym), write_osymbols(osym) {}
+        write_isymbols(isym), write_osymbols(osym), align(alig) {}
 };
 
 //
@@ -92,8 +96,9 @@ struct FstWriteOptions {
 class FstHeader {
  public:
   enum {
-    HAS_ISYMBOLS = 1,                           // Has input symbol table
-    HAS_OSYMBOLS = 2                            // Has output symbol table
+    HAS_ISYMBOLS = 0x1,                           // Has input symbol table
+    HAS_OSYMBOLS = 0x2,                           // Has output symbol table
+    IS_ALIGNED   = 0x4,                           // Memory-aligned (where appropriate)
   } Flags;
 
   FstHeader() : version_(0), flags_(0), properties_(0), start_(-1),
@@ -658,6 +663,8 @@ template <class A> class FstImpl {
         file_flags |= FstHeader::HAS_ISYMBOLS;
       if (osymbols_ && opts.write_osymbols)
         file_flags |= FstHeader::HAS_OSYMBOLS;
+      if (opts.align)
+        file_flags |= FstHeader::IS_ALIGNED;
       hdr->SetFlags(file_flags);
       hdr->Write(strm, opts.source);
     }
@@ -684,6 +691,15 @@ bool FstImpl<A>::ReadHeader(istream &strm, const FstReadOptions& opts,
     *hdr = *opts.header;
   else if (!hdr->Read(strm, opts.source))
     return false;
+
+  if (FLAGS_v >= 2) {
+    LOG(INFO) << "FstImpl::ReadHeader: source: " << opts.source
+              << ", fst_type: " << hdr->FstType()
+              << ", arc_type: " << A::Type()
+              << ", version: " << hdr->Version()
+              << ", flags: " << hdr->GetFlags();
+  }
+
   if (hdr->FstType() != type_) {
     LOG(ERROR) << "FstImpl::ReadHeader: Fst not of type \"" << type_
                << "\": " << opts.source;

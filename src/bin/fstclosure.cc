@@ -28,7 +28,6 @@ DEFINE_bool(closure_plus, false,
 int main(int argc, char **argv) {
   using fst::script::FstClass;
   using fst::script::MutableFstClass;
-  using fst::script::VectorFstClass;
 
   string usage = "Creates the Kleene closure of an FST.\n\n  Usage: ";
   usage += argv[0];
@@ -44,23 +43,14 @@ int main(int argc, char **argv) {
   string in_fname = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
   string out_fname = argc > 2 ? argv[2] : "";
 
-  FstClass *ifst = FstClass::Read(in_fname);
-
-  if (!ifst) return 1;
-
-  MutableFstClass *ofst = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst = static_cast<MutableFstClass *>(ifst);
-  } else {
-    ofst = new VectorFstClass(*ifst);
-    delete ifst;
-  }
+  MutableFstClass *fst = MutableFstClass::Read(in_fname, true);
+  if (!fst) return 1;
 
   fst::ClosureType closure_type =
       FLAGS_closure_plus ? fst::CLOSURE_PLUS : fst::CLOSURE_STAR;
 
-  fst::script::Closure(ofst, closure_type);
-  ofst->Write(out_fname);
+  fst::script::Closure(fst, closure_type);
+  fst->Write(out_fname);
 
   return 0;
 }

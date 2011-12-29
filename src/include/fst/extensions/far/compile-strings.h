@@ -137,9 +137,6 @@ void FarCompileStrings(const vector<string> &in_fnames,
                        bool file_list_input,
                        const string &key_prefix,
                        const string &key_suffix) {
-  char keybuf[16];
-  CHECK(generate_keys < sizeof(keybuf));
-
   typename StringReader<Arc>::EntryType entry_type;
   if (fet == FET_LINE)
     entry_type = StringReader<Arc>::LINE;
@@ -171,7 +168,10 @@ void FarCompileStrings(const vector<string> &in_fnames,
   if (!symbols_fname.empty()) {
     syms = SymbolTable::ReadText(symbols_fname,
                                  allow_negative_labels);
-    if (!syms) exit(1);
+    if (!syms) {
+      LOG(FATAL) << "FarCompileStrings: error reading symbol table: "
+                 << symbols_fname;
+    }
   }
 
   FarWriter<Arc> *far_writer =
@@ -194,8 +194,6 @@ void FarCompileStrings(const vector<string> &in_fnames,
     int key_size = generate_keys ? generate_keys :
         (entry_type == StringReader<Arc>::FILE ? 1 :
          KeySize(inputs[i].c_str()));
-    CHECK(key_size < sizeof(keybuf));
-
     ifstream istrm(inputs[i].c_str());
 
     for (StringReader<Arc> reader(
@@ -219,17 +217,20 @@ void FarCompileStrings(const vector<string> &in_fnames,
                    << (fet == FET_LINE ? "line" :
                        (fet == FET_FILE ? "file" : "unknown"));
       }
-      sprintf(keybuf, "%0*d", key_size, n);
+      ostringstream keybuf;
+      keybuf.width(key_size);
+      keybuf.fill('0');
+      keybuf << n;
       string key;
       if (generate_keys > 0) {
-        key = keybuf;
+        key = keybuf.str();
       } else {
         char* filename = new char[inputs[i].size() + 1];
         strcpy(filename, inputs[i].c_str());
         key = basename(filename);
         if (entry_type != StringReader<Arc>::FILE) {
           key += "-";
-          key += keybuf;
+          key += keybuf.str();
         }
         delete[] filename;
       }

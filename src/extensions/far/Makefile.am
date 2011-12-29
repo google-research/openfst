@@ -1,5 +1,4 @@
 AM_CPPFLAGS = -I$(srcdir)/../../include $(ICU_CPPFLAGS)
-AM_LDFLAGS = $(ICU_LIBS) -lm -ldl
 
 libfstdir = @libfstdir@
 
@@ -20,21 +19,16 @@ endif
 if HAVE_BIN
 bin_PROGRAMS = farcompilestrings farcreate farextract farinfo farprintstrings
 
-farbindeps = libfstfarscript.la libfstfar.la ../../script/libfstscript.la \
-             ../../lib/libfst.la 
+LDADD = libfstfarscript.la libfstfar.la ../../script/libfstscript.la \
+        ../../lib/libfst.la -lm -ldl
 
 farcompilestrings_SOURCES = farcompilestrings.cc
-farcompilestrings_LDADD = $(farbindeps)
 
 farcreate_SOURCES = farcreate.cc
-farcreate_LDADD = $(farbindeps)
 
 farextract_SOURCES = farextract.cc
-farextract_LDADD = $(farbindeps)
 
 farinfo_SOURCES = farinfo.cc
-farinfo_LDADD = $(farbindeps)
 
 farprintstrings_SOURCES = farprintstrings.cc
-farprintstrings_LDADD = $(farbindeps)
 endif

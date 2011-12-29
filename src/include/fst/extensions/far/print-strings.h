@@ -47,13 +47,16 @@ void FarPrintStrings(
   else if (far_token_type == FTT_UTF8)
     token_type = StringPrinter<Arc>::UTF8;
   else
-    LOG(FATAL) << "FarPrintStrings:: unknown token type";
+    LOG(FATAL) << "FarPrintStrings: unknown token type";
 
   const SymbolTable *syms = 0;
   if (!symbols_fname.empty()) {
     // allow negative flag?
     syms = SymbolTable::ReadText(symbols_fname, true);
-    if (!syms) exit(1);
+    if (!syms) {
+      LOG(FATAL) << "FarPrintStrings: error reading symbol table: "
+                 << symbols_fname;
+    }
   }
 
   StringPrinter<Arc> string_printer(token_type, syms);

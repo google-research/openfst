@@ -70,10 +70,9 @@ template <class A> class FstCompiler {
       if (col.size() > 5 ||
           (col.size() > 4 && accep) ||
           (col.size() == 3 && !accep)) {
-        LOG(ERROR) << "FstCompiler: Bad number of columns, source = "
+        LOG(FATAL) << "FstCompiler: Bad number of columns, source = "
                    << source_
                    << ", line = " << nline_;
-        exit(1);
       }
       StateId s = StrToStateId(col[0]);
       while (s >= fst_.NumStates())
@@ -138,19 +137,17 @@ template <class A> class FstCompiler {
     if (syms) {
       n = syms->Find(s);
       if (n == -1 || (!allow_negative && n < 0)) {
-        LOG(ERROR) << "FstCompiler: Symbol \"" << s
+        LOG(FATAL) << "FstCompiler: Symbol \"" << s
                    << "\" is not mapped to any integer " << name
                    << ", symbol table = " << syms->Name()
                    << ", source = " << source_ << ", line = " << nline_;
-        exit(1);
       }
     } else {
       char *p;
       n = strtoll(s, &p, 10);
       if (p < s + strlen(s) || (!allow_negative && n < 0)) {
-        LOG(ERROR) << "FstCompiler: Bad " << name << " integer = \"" << s
+        LOG(FATAL) << "FstCompiler: Bad " << name << " integer = \"" << s
                    << "\", source = " << source_ << ", line = " << nline_;
-        exit(1);
       }
     }
     return n;
@@ -185,9 +182,8 @@ template <class A> class FstCompiler {
     istringstream strm(s);
     strm >> w;
     if (!strm || (!allow_zero && w == Weight::Zero())) {
-      LOG(ERROR) << "FstCompiler: Bad weight = \"" << s
+      LOG(FATAL) << "FstCompiler: Bad weight = \"" << s
                  << "\", source = " << source_ << ", line = " << nline_;
-      exit(1);
     }
     return w;
   }

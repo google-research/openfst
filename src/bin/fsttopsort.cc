@@ -26,7 +26,6 @@ int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::MutableFstClass;
-  using fst::script::VectorFstClass;
 
   string usage = "Topologically sorts an FST.\n\n  Usage: ";
   usage += argv[0];
@@ -42,21 +41,13 @@ int main(int argc, char **argv) {
   string in_fname = argc > 1 && strcmp(argv[1], "-") != 0 ? argv[1] : "";
   string out_fname = argc > 2 ? argv[2] : "";
 
-  FstClass *ifst = FstClass::Read(in_fname);
-  if (!ifst) return 1;
+  MutableFstClass *fst = MutableFstClass::Read(in_fname, true);
+  if (!fst) return 1;
 
-  MutableFstClass *ofst = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst = static_cast<MutableFstClass *>(ifst);
-  } else {
-    ofst = new VectorFstClass(*ifst);
-    delete ifst;
-  }
-
-  bool acyclic = TopSort(ofst);
+  bool acyclic = TopSort(fst);
   if (!acyclic)
     LOG(WARNING) << argv[0] << ": Input FST is cyclic";
-  ofst->Write(out_fname);
+  fst->Write(out_fname);
 
   return 0;
 }

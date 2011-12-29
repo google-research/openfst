@@ -1,4 +1,4 @@
-AC_INIT([OpenFst], [1.2.9], [help@www.openfst.org])
+AC_INIT([OpenFst], [1.2.10], [help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
 
 AC_PROG_CXX

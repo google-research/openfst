@@ -18,19 +18,12 @@
 // Various type definitions (mostly for Google compatibility).
 
 #include <cstdlib>       // for ssize_t
-#include <limits.h>      // for LONG_MAX
 #include <stdint.h>      // *int*_t
 
 #include <fst/compat.h>  // for DISALLOW_COPY_AND_ASSIGN
 
 #ifndef FST_LIB_TYPES_H__
 #define FST_LIB_TYPES_H__
-
-#if LONG_MAX == (1<<31) - 1
-#define FST_LL_FORMAT "ll"
-#else
-#define FST_LL_FORMAT "l"
-#endif
 
 typedef int8_t int8;
 typedef int16_t int16;

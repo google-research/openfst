@@ -79,7 +79,32 @@ FstClass *FstClass::Read(const string &fname) {
 }
 
 //
-// VECTOR FST CONSTRUCTORS
+//  MUTABLE FST CLASS METHODS
+//
+
+MutableFstClass *MutableFstClass::Read(const string &fname, bool convert) {
+  if (convert == false) {
+    if (!fname.empty()) {
+      ifstream in(fname.c_str(), ifstream::in | ifstream::binary);
+      return ReadFst<MutableFstClass>(in, fname);
+    } else {
+      return ReadFst<MutableFstClass>(std::cin, "standard input");
+    }
+  } else {  // Converts to VectorFstClass if not mutable.
+    FstClass *ifst = FstClass::Read(fname);
+    if (!ifst) return 0;
+    if (ifst->Properties(fst::kMutable, false)) {
+      return static_cast<MutableFstClass *>(ifst);
+    } else {
+      MutableFstClass *ofst = new VectorFstClass(*ifst);
+      delete ifst;
+      return ofst;
+    }
+  }
+}
+
+//
+// VECTOR FST CLASS METHODS
 //
 
 IORegistration<VectorFstClass>::Entry GetVFSTRegisterEntry(
@@ -102,6 +127,15 @@ VectorFstClass::VectorFstClass(const FstClass &other)
 
 VectorFstClass::VectorFstClass(const string &arc_type)
     : MutableFstClass(GetVFSTRegisterEntry(arc_type).creator()) { }
+
+VectorFstClass *VectorFstClass::Read(const string &fname) {
+  if (!fname.empty()) {
+    ifstream in(fname.c_str(), ifstream::in | ifstream::binary);
+    return ReadFst<VectorFstClass>(in, fname);
+  } else {
+    return ReadFst<VectorFstClass>(std::cin, "standard input");
+  }
+}
 
 }  // namespace script
 }  // namespace fst

@@ -1,5 +1,4 @@
 AM_CPPFLAGS = -I$(srcdir)/../../include $(ICU_CPPFLAGS)
-AM_LDFLAGS = -lm -ldl
 
 libfstdir = @libfstdir@
 libfst_LTLIBRARIES = libfstconst.la const8-fst.la const16-fst.la const64-fst.la

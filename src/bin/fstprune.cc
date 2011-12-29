@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::MutableFstClass;
-  using fst::script::VectorFstClass;
   using fst::script::WeightClass;
 
   string usage = "Prunes states and arcs of an FST.\n\n  Usage: ";
@@ -48,26 +47,18 @@ int main(int argc, char **argv) {
   string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
   string out_name = argc > 2 ? argv[2] : "";
 
-  FstClass *ifst = FstClass::Read(in_name);
-  if (!ifst) return 1;
-
-  MutableFstClass *ofst = 0;
-  if (ifst->Properties(fst::kMutable, false)) {
-    ofst = static_cast<MutableFstClass *>(ifst);
-  } else {
-    ofst = new VectorFstClass(*ifst);
-    delete ifst;
-  }
+  MutableFstClass *fst = MutableFstClass::Read(in_name, true);
+  if (!fst) return 1;
 
   WeightClass weight_threshold = FLAGS_weight.empty() ?
       WeightClass::Zero() :
-      WeightClass(ofst->WeightType(), FLAGS_weight);
+      WeightClass(fst->WeightType(), FLAGS_weight);
 
   s::PruneOptions opts(weight_threshold, FLAGS_nstate, 0, FLAGS_delta);
 
-  s::Prune(ofst, opts);
+  s::Prune(fst, opts);
 
-  ofst->Write(out_name);
+  fst->Write(out_name);
 
   return 0;
 }

@@ -46,23 +46,24 @@ namespace fst {
 //   typedef B ToArc;
 //
 //   // Typical constructor
-//   StateMapper(const Fst<Arc> &fst);
+//   StateMapper(const Fst<A> &fst);
 //   // Required copy constructor that allows updating Fst argument;
 //   // pass only if relevant and changed.
-//   StateMapper(const StateMapper &mapper, const Fst<Arc> *fst = 0);
+//   StateMapper(const StateMapper &mapper, const Fst<A> *fst = 0);
 //
-//   // Specifies initial state of resuls
-//   StateId Start() const;
+//   // Specifies initial state of result
+//   B::StateId Start() const;
 //   // Specifies state's final weight in result
-//   B Final(StateId s) const;
+//   B::Weight Final(B::StateId s) const;
 //
-//   // These methods Iterate through a state's arcs in result
+//   // These methods iterate through a state's arcs in result
 //   // Specifies state to iterate over
-//   void SetState(s);
+//   void SetState(B::StateId s);
 //   // End of arcs?
 //   bool Done() const;
 //   // Current arc
-//   const Weight::B &Value() const;
+
+//   const B &Value() const;
 //   // Advance to next arc (when !Done)
 //   void Next();
 //

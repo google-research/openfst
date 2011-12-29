@@ -1,5 +1,4 @@
 AM_CPPFLAGS = -I$(srcdir)/../../include $(ICU_CPPFLAGS)
-AM_LDFLAGS = -lm -ldl
 
 libfstdir = @libfstdir@
 libfst_LTLIBRARIES = libfstlookahead.la arc_lookahead-fst.la \

@@ -1,5 +1,4 @@
 AM_CPPFLAGS = -I$(srcdir)/../../include $(ICU_CPPFLAGS)
-AM_LDFLAGS = -lm -ldl
 
 libfstdir = @libfstdir@
 libfst_LTLIBRARIES = libfstcompact.la compact8_acceptor-fst.la compact8_string-fst.la compact8_unweighted-fst.la compact8_unweighted_acceptor-fst.la compact8_weighted_string-fst.la compact16_acceptor-fst.la compact16_string-fst.la compact16_unweighted-fst.la compact16_unweighted_acceptor-fst.la compact16_weighted_string-fst.la compact64_acceptor-fst.la compact64_string-fst.la compact64_unweighted-fst.la compact64_unweighted_acceptor-fst.la compact64_weighted_string-fst.la
