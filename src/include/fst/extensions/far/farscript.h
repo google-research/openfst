@@ -173,18 +173,22 @@ bool FarEqual(const string &filename1,
 
 typedef args::Package<const vector<string> &, int32,
                       const string&, const string&, const string&,
-                      const string&> FarExtractArgs;
+                      const string&, const string&> FarExtractArgs;
 
 template<class Arc>
 void FarExtract(FarExtractArgs *args) {
   fst::FarExtract<Arc>(
-      args->arg1, args->arg2, args->arg3, args->arg4, args->arg5, args->arg6);
+      args->arg1, args->arg2, args->arg3, args->arg4, args->arg5, args->arg6,
+      args->arg7);
 }
 
 void FarExtract(const vector<string> &ifilenames,
                 const string &arc_type,
-                int32 generate_filenames, const string &begin_key,
-                const string &end_key, const string &filename_prefix,
+                int32 generate_filenames,
+                const string &keys,
+                const string &key_separator,
+                const string &range_delimiter,
+                const string &filename_prefix,
                 const string &filename_suffix);
 
 typedef args::Package<const vector<string> &, const string &,

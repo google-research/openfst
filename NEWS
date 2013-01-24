@@ -17,6 +17,12 @@ OpenFst - Release 1.3
   * Added 'fst' as possible far writer type (1.3.2)
   * phi matcher can now accept 0 as the phi label (1.3.2)
   * Added ngram-fst extension (1.3.2)
+  * Improved performance of PDT composition (1.3.3)
+  * Memory-map support (1.3.3)
+  * Fixed cross-FST serialization issues (1.3.3)
+  * Fixed NGramFst off-by-one issue (1.3.3)
+  * farextract now allows one to specify a list of comma-separated keys,
+    including key ranges (1.3.3)
 
 OpenFst - Release 1.2
    * Added lookahead matching and filtering for faster composition

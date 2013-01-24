@@ -41,7 +41,7 @@ void PdtCompose(const FstClass &ifst1,
                 const FstClass &ifst2,
                 const vector<pair<int64, int64> > &parens,
                 MutableFstClass *ofst,
-                const ComposeOptions &copts,
+                const PdtComposeOptions &copts,
                 bool left_pdt) {
   if (!ArcTypesMatch(ifst1, ifst2, "PdtCompose") ||
       !ArcTypesMatch(ifst1, *ofst, "PdtCompose")) return;

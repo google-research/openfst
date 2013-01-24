@@ -43,6 +43,7 @@ DEFINE_bool(allow_negative_labels, false,
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
+  using fst::SymbolTableTextOptions;
   using fst::script::FstClass;
   using fst::script::MutableFstClass;
 
@@ -71,24 +72,24 @@ int main(int argc, char **argv) {
   if (!fst) return 1;
 
   // Relabel with symbol tables
+  SymbolTableTextOptions opts;
+  opts.allow_negative = FLAGS_allow_negative_labels;
   if (!FLAGS_relabel_isymbols.empty() || !FLAGS_relabel_osymbols.empty()) {
     bool attach_new_isymbols = (fst->InputSymbols() != 0);
     const SymbolTable* old_isymbols = FLAGS_isymbols.empty()
         ? fst->InputSymbols()
-        : SymbolTable::ReadText(FLAGS_isymbols, FLAGS_allow_negative_labels);
+        : SymbolTable::ReadText(FLAGS_isymbols, opts);
     const SymbolTable* relabel_isymbols = FLAGS_relabel_isymbols.empty()
         ? NULL
-        : SymbolTable::ReadText(FLAGS_relabel_isymbols,
-                                FLAGS_allow_negative_labels);
+        : SymbolTable::ReadText(FLAGS_relabel_isymbols, opts);
 
     bool attach_new_osymbols = (fst->OutputSymbols() != 0);
     const SymbolTable* old_osymbols = FLAGS_osymbols.empty()
         ? fst->OutputSymbols()
-        : SymbolTable::ReadText(FLAGS_osymbols, FLAGS_allow_negative_labels);
+        : SymbolTable::ReadText(FLAGS_osymbols, opts);
     const SymbolTable* relabel_osymbols = FLAGS_relabel_osymbols.empty()
         ? NULL
-        : SymbolTable::ReadText(FLAGS_relabel_osymbols,
-                                FLAGS_allow_negative_labels);
+        : SymbolTable::ReadText(FLAGS_relabel_osymbols, opts);
 
     s::Relabel(fst,
                old_isymbols, relabel_isymbols, attach_new_isymbols,

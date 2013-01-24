@@ -59,46 +59,54 @@ void Map(MapArgs *args) {
   float delta =  args->args.arg3;
   typename Arc::Weight w = *(args->args.arg4.GetWeight<typename Arc::Weight>());
 
+  Fst<Arc> *fst = NULL;
+  Fst<LogArc> *lfst = NULL;
+  Fst<Log64Arc> *l64fst = NULL;
+  Fst<StdArc> *sfst = NULL;
   if (map_type == ARC_SUM_MAPPER) {
-    args->retval = new FstClass(
-        script::StateMap(ifst, ArcSumMapper<Arc>(ifst)));
+    args->retval = new FstClass(*(fst =
+        script::StateMap(ifst, ArcSumMapper<Arc>(ifst))));
   } else if (map_type == IDENTITY_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, IdentityArcMapper<Arc>()));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, IdentityArcMapper<Arc>())));
   } else if (map_type == INVERT_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, InvertWeightMapper<Arc>()));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, InvertWeightMapper<Arc>())));
   } else if (map_type == PLUS_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, PlusMapper<Arc>(w)));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, PlusMapper<Arc>(w))));
   } else if (map_type == QUANTIZE_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, QuantizeMapper<Arc>(delta)));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, QuantizeMapper<Arc>(delta))));
   } else if (map_type == RMWEIGHT_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, RmWeightMapper<Arc>()));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, RmWeightMapper<Arc>())));
   } else if (map_type == SUPERFINAL_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, SuperFinalMapper<Arc>()));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, SuperFinalMapper<Arc>())));
   } else if (map_type == TIMES_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, TimesMapper<Arc>(w)));
+    args->retval = new FstClass(*(fst =
+        script::ArcMap(ifst, TimesMapper<Arc>(w))));
   } else if (map_type == TO_LOG_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, WeightConvertMapper<Arc, LogArc>()));
+    args->retval = new FstClass(*(lfst =
+        script::ArcMap(ifst, WeightConvertMapper<Arc, LogArc>())));
   } else if (map_type == TO_LOG64_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, WeightConvertMapper<Arc, Log64Arc>()));
+    args->retval = new FstClass(*(l64fst =
+        script::ArcMap(ifst, WeightConvertMapper<Arc, Log64Arc>())));
   } else if (map_type == TO_STD_MAPPER) {
-    args->retval = new FstClass(
-        script::ArcMap(ifst, WeightConvertMapper<Arc, StdArc>()));
+    args->retval = new FstClass(*(sfst =
+        script::ArcMap(ifst, WeightConvertMapper<Arc, StdArc>())));
   } else {
     FSTERROR() << "Error: unknown/unsupported mapper type: "
                << map_type;
     VectorFst<Arc> *ofst = new VectorFst<Arc>;
     ofst->SetProperties(kError, kError);
-    args->retval = new FstClass(ofst);
+    args->retval = new FstClass(*(fst =ofst));
   }
+  delete sfst;
+  delete l64fst;
+  delete lfst;
+  delete fst;
 }
 
 

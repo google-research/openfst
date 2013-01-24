@@ -36,9 +36,12 @@ const int kLineLen = 8096;
 // Identifies stream data as a symbol table (and its endianity)
 static const int32 kSymbolTableMagicNumber = 2125658996;
 
+SymbolTableTextOptions::SymbolTableTextOptions()
+    : allow_negative(false), fst_field_separator(FLAGS_fst_field_separator) { }
+
 SymbolTableImpl* SymbolTableImpl::ReadText(istream &strm,
                                            const string &filename,
-                                           bool allow_negative) {
+                                           const SymbolTableTextOptions &opts) {
   SymbolTableImpl* impl = new SymbolTableImpl(filename);
 
   int64 nline = 0;
@@ -46,27 +49,29 @@ SymbolTableImpl* SymbolTableImpl::ReadText(istream &strm,
   while (strm.getline(line, kLineLen)) {
     ++nline;
     vector<char *> col;
-    string separator = FLAGS_fst_field_separator + "\n";
+    string separator = opts.fst_field_separator + "\n";
     SplitToVector(line, separator.c_str(), &col, true);
     if (col.size() == 0)  // empty line
       continue;
     if (col.size() != 2) {
       LOG(ERROR) << "SymbolTable::ReadText: Bad number of columns ("
-                 << col.size() << " skipping), "
+                 << col.size() << "), "
                  << "file = " << filename << ", line = " << nline
                  << ":<" << line << ">";
-      continue;
+      delete impl;
+      return 0;
     }
     const char *symbol = col[0];
     const char *value = col[1];
     char *p;
     int64 key = strtoll(value, &p, 10);
     if (p < value + strlen(value) ||
-        (!allow_negative && key < 0) || key == -1) {
+        (!opts.allow_negative && key < 0) || key == -1) {
       LOG(ERROR) << "SymbolTable::ReadText: Bad non-negative integer \""
-                 << value << "\" (skipping), "
+                 << value << "\", "
                  << "file = " << filename << ", line = " << nline;
-      continue;
+      delete impl;
+      return 0;
     }
     impl->AddSymbol(symbol, key);
   }
@@ -241,10 +246,20 @@ void SymbolTable::AddTable(const SymbolTable& table) {
     impl_->AddSymbol(iter.Symbol());
 }
 
-bool SymbolTable::WriteText(ostream &strm) const {
+bool SymbolTable::WriteText(ostream &strm,
+                            const SymbolTableTextOptions &opts) const {
+  if (opts.fst_field_separator.empty()) {
+    LOG(ERROR) << "Missing required field separator";
+    return false;
+  }
+  bool once_only = false;
   for (SymbolTableIterator iter(*this); !iter.Done(); iter.Next()) {
     ostringstream line;
-    line << iter.Symbol() << FLAGS_fst_field_separator[0] << iter.Value()
+    if (iter.Value() < 0 && !opts.allow_negative && !once_only) {
+      LOG(WARNING) << "Negative symbol table entry when not allowed";
+      once_only = true;
+    }
+    line << iter.Symbol() << opts.fst_field_separator[0] << iter.Value()
          << '\n';
     strm.write(line.str().data(), line.str().length());
   }

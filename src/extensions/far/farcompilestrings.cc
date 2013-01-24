@@ -32,7 +32,7 @@ DEFINE_string(key_suffix, "", "Suffix to append to keys");
 DEFINE_int32(generate_keys, 0,
              "Generate N digit numeric keys (def: use file basenames)");
 DEFINE_string(far_type, "default",
-              "FAR file format type: one of: \"default\", \"fst\""
+              "FAR file format type: one of: \"default\", \"fst\", "
               "\"stlist\", \"sttable\"");
 DEFINE_bool(allow_negative_labels, false,
             "Allow negative labels (not recommended; may cause conflicts)");

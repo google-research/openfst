@@ -76,10 +76,14 @@ bool FarEqual(const string &filename1, const string &filename2,
 
 void FarExtract(const vector<string> &ifilenames,
                 const string &arc_type,
-                int32 generate_filenames, const string &begin_key,
-                const string &end_key, const string &filename_prefix,
+                int32 generate_filenames,
+                const string &keys,
+                const string &key_separator,
+                const string &range_delimiter,
+                const string &filename_prefix,
                 const string &filename_suffix) {
-  FarExtractArgs args(ifilenames, generate_filenames, begin_key, end_key,
+  FarExtractArgs args(ifilenames, generate_filenames, keys,
+                      key_separator, range_delimiter,
                       filename_prefix, filename_suffix);
 
   Apply<Operation<FarExtractArgs> >("FarExtract", arc_type, &args);

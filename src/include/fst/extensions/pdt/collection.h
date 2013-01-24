@@ -102,6 +102,8 @@ class Collection {
     }
   }
 
+  I Size() const { return node_table_.Size(); }
+
  private:
   static const I kNoNodeId;
   static const size_t kPrime;

@@ -344,8 +344,8 @@ void ConvertToLegalCSymbol(string *s);
 // UTILITIES FOR STREAM I/O
 //
 
-bool AlignInput(istream &strm, int align);
-bool AlignOutput(ostream &strm, int align);
+bool AlignInput(istream &strm);
+bool AlignOutput(ostream &strm);
 
 //
 // UTILITIES FOR PROTOCOL BUFFER I/O
@@ -380,6 +380,17 @@ public:
         max_key_ = key;
   }
 
+  void Erase(Key key) {
+    set_.erase(key);
+    if (set_.empty()) {
+        min_key_ = max_key_ = NoKey;
+    } else if (key == min_key_) {
+      ++min_key_;
+    } else if (key == max_key_) {
+      --max_key_;
+    }
+  }
+
   void Clear() {
     set_.clear();
     min_key_ = max_key_ = NoKey;
@@ -393,9 +404,25 @@ public:
       return set_.find(key);
   }
 
+  bool Member(Key key) const {
+    if (min_key_ == NoKey || key < min_key_ || max_key_ < key) {
+      return false;   // out of range
+    } else if (min_key_ != NoKey && max_key_ + 1 == min_key_ + set_.size()) {
+      return true;    // dense range
+    } else {
+      return set_.find(key) != set_.end();
+    }
+  }
+
   const_iterator Begin() const { return set_.begin(); }
 
   const_iterator End() const { return set_.end(); }
+
+  // All stored keys are greater than or equal to this value.
+  Key LowerBound() const { return min_key_; }
+
+  // All stored keys are less than or equal to this value.
+  Key UpperBound() const { return max_key_; }
 
 private:
   set<Key> set_;

@@ -63,13 +63,16 @@ int main(int argc, char **argv) {
   }
   const SymbolTable *isyms = 0, *osyms = 0, *ssyms = 0;
 
+  fst::SymbolTableTextOptions opts;
+  opts.allow_negative = FLAGS_allow_negative_labels;
+
   if (!FLAGS_isymbols.empty()) {
-    isyms = SymbolTable::ReadText(FLAGS_isymbols, FLAGS_allow_negative_labels);
+    isyms = SymbolTable::ReadText(FLAGS_isymbols, opts);
     if (!isyms) exit(1);
   }
 
   if (!FLAGS_osymbols.empty()) {
-    osyms = SymbolTable::ReadText(FLAGS_osymbols, FLAGS_allow_negative_labels);
+    osyms = SymbolTable::ReadText(FLAGS_osymbols, opts);
     if (!osyms) exit(1);
   }
 

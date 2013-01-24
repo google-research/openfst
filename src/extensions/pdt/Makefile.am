@@ -25,5 +25,5 @@ libfstdir = @libfstdir@
 if HAVE_SCRIPT
 libfst_LTLIBRARIES = libfstpdtscript.la
 libfstpdtscript_la_SOURCES = pdtscript.cc
-libfstpdtscript_la_LDFLAGS = -version-info 0:0:0
+libfstpdtscript_la_LDFLAGS = -version-info 1:0:0
 endif

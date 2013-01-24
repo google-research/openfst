@@ -31,6 +31,9 @@ using std::pair; using std::make_pair;
 DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs.");
 DEFINE_bool(left_pdt, true, "1st arg is PDT (o.w. 2nd arg).");
 DEFINE_bool(connect, true, "Trim output");
+DEFINE_string(compose_filter, "paren",
+              "Composition filter, one of: \"expand\", \"expand_paren\", "
+              "\"paren\"");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -70,7 +73,22 @@ int main(int argc, char **argv) {
   fst::ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false);
 
   s::VectorFstClass ofst(ifst1->ArcType());
-  fst::ComposeOptions copts(false);
+
+  fst::PdtComposeFilter compose_filter;
+
+  if (FLAGS_compose_filter == "expand") {
+    compose_filter = fst::EXPAND_FILTER;
+  } else if (FLAGS_compose_filter == "expand_paren") {
+    compose_filter = fst::EXPAND_PAREN_FILTER;
+  } else if (FLAGS_compose_filter == "paren") {
+    compose_filter = fst::PAREN_FILTER;
+  } else {
+    LOG(ERROR) << argv[0] << "Unknown compose filter type: "
+               << FLAGS_compose_filter;
+    return 1;
+  }
+
+  fst::PdtComposeOptions copts(false, compose_filter);
 
   s::PdtCompose(*ifst1, *ifst2, parens, &ofst, copts, FLAGS_left_pdt);
 

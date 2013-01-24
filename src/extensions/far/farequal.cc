@@ -30,8 +30,8 @@ DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 int main(int argc, char **argv) {
   namespace s = fst::script;
 
-  string usage = "Prints some basic information about the FSTs in an FST ";
-  usage += "archive.\n\n Usage:";
+  string usage = "Compares the FSTs in two FST archives for equality.";
+  usage += "\n\n Usage:";
   usage += argv[0];
   usage += " in1.far in2.far\n";
   usage += "  Flags: begin_key end_key";

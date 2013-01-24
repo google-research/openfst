@@ -52,6 +52,9 @@ DEFINE_bool(fst_align, false, "Write FST data aligned where appropriate");
 DEFINE_string(save_relabel_ipairs, "",  "Save input relabel pairs to file");
 DEFINE_string(save_relabel_opairs, "",  "Save output relabel pairs to file");
 
+DEFINE_string(fst_read_mode, "read",
+              "Default file reading mode for mappable files");
+
 namespace fst {
 
 // Register VectorFst, ConstFst and EditFst for common arcs types
@@ -162,6 +165,29 @@ bool FstHeader::Write(ostream &strm, const string &source) const {
   WriteType(strm, numstates_);
   WriteType(strm, numarcs_);
   return true;
+}
+
+FstReadOptions::FstReadOptions(const string& src, const FstHeader *hdr,
+                               const SymbolTable* isym, const SymbolTable* osym)
+  : source(src), header(hdr), isymbols(isym), osymbols(osym) {
+  mode = ReadMode(FLAGS_fst_read_mode);
+}
+
+FstReadOptions::FstReadOptions(const string& src, const SymbolTable* isym,
+                               const SymbolTable* osym)
+  : source(src), header(0), isymbols(isym), osymbols(osym) {
+  mode = ReadMode(FLAGS_fst_read_mode);
+}
+
+FstReadOptions::FileReadMode FstReadOptions::ReadMode(const string &mode) {
+  if (mode == "read") {
+    return READ;
+  }
+  if (mode == "map") {
+    return MAP;
+  }
+  LOG(ERROR) << "Unknown file read mode " << mode;
+  return READ;
 }
 
 }  // namespace fst

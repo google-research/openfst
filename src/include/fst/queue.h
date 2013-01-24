@@ -23,6 +23,7 @@
 #define FST_LIB_QUEUE_H__
 
 #include <deque>
+using std::deque;
 #include <vector>
 using std::vector;
 
@@ -791,13 +792,13 @@ struct TrivialStateEquivClass {
 };
 
 
-// Pruning queue discipline: Enqueues a state 's' only when its
-// shortest distance (so far), as specified by 'distance', is less
-// than (as specified by 'comp') the shortest distance Times() the
-// 'threshold' to any state in the same equivalence class, as
-// specified by the function object 'class_func'. The underlying
-// queue discipline is specified by 'queue'. The ownership of 'queue'
-// is given to this class.
+// Distance-based pruning queue discipline: Enqueues a state 's'
+// only when its shortest distance (so far), as specified by
+// 'distance', is less than (as specified by 'comp') the shortest
+// distance Times() the 'threshold' to any state in the same
+// equivalence class, as specified by the function object
+// 'class_func'. The underlying queue discipline is specified by
+// 'queue'. The ownership of 'queue' is given to this class.
 template <typename Q, typename L, typename C>
 class PruneQueue : public QueueBase<typename Q::StateId> {
  public:
@@ -883,6 +884,54 @@ class NaturalPruneQueue :
   NaturalLess<W> less_;
 };
 
+
+// Filter-based pruning queue discipline: Enqueues a state 's' only
+// if allowed by the filter, specified by the function object 'state_filter'.
+// The underlying queue discipline is specified by 'queue'. The ownership
+// of 'queue' is given to this class.
+template <typename Q, typename F>
+class FilterQueue : public QueueBase<typename Q::StateId> {
+ public:
+  typedef typename Q::StateId StateId;
+
+  FilterQueue(Q *queue, const F &state_filter)
+    : QueueBase<StateId>(OTHER_QUEUE),
+      queue_(queue),
+      state_filter_(state_filter) {}
+
+  ~FilterQueue() { delete queue_; }
+
+  StateId Head() const { return queue_->Head(); }
+
+  // Enqueues only if allowed by state filter.
+  void Enqueue(StateId s) {
+    if (state_filter_(s)) {
+      queue_->Enqueue(s);
+    }
+  }
+
+  void Dequeue() { queue_->Dequeue(); }
+
+  void Update(StateId s) {}
+  bool Empty() const { return queue_->Empty(); }
+  void Clear() { queue_->Clear(); }
+
+ private:
+  // This allows base-class virtual access to non-virtual derived-
+  // class members of the same name. It makes the derived class more
+  // efficient to use but unsafe to further derive.
+  virtual StateId Head_() const { return Head(); }
+  virtual void Enqueue_(StateId s) { Enqueue(s); }
+  virtual void Dequeue_() { Dequeue(); }
+  virtual void Update_(StateId s) { Update(s); }
+  virtual bool Empty_() const { return Empty(); }
+  virtual void Clear_() { return Clear(); }
+
+  Q *queue_;
+  const F &state_filter_;             // Filter to prune states
+
+  DISALLOW_COPY_AND_ASSIGN(FilterQueue);
+};
 
 }  // namespace fst
 

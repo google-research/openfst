@@ -3,9 +3,9 @@ LDADD = ../script/libfstscript.la ../lib/libfst.la -lm -ldl
 
 if HAVE_BIN
 bin_PROGRAMS = fstarcsort fstclosure fstcompile fstcompose fstconcat \
-fstconnect fstconvert fstdeterminize fstdifference fstdraw fstencode \
-fstepsnormalize fstequal fstequivalent fstinfo fstintersect fstinvert \
-fstmap fstminimize fstprint fstproject fstprune fstpush fstrandgen \
+fstconnect fstconvert fstdeterminize fstdifference fstdraw \
+fstencode fstepsnormalize fstequal fstequivalent fstinfo fstintersect \
+fstinvert fstmap fstminimize fstprint fstproject fstprune fstpush fstrandgen \
 fstrelabel fstreplace fstreverse fstreweight fstrmepsilon \
 fstshortestdistance fstshortestpath fstsymbols fstsynchronize fsttopsort \
 fstunion
@@ -27,6 +27,8 @@ fstconvert_SOURCES = fstconvert.cc
 fstdeterminize_SOURCES = fstdeterminize.cc
 
 fstdifference_SOURCES = fstdifference.cc
+
+# fstdisambiguate_SOURCES = fstdisambiguate.cc
 
 fstdraw_SOURCES = fstdraw.cc
 

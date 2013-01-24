@@ -128,6 +128,13 @@ class WeightClass {
     return w;
   }
 
+  const string &Type() const {
+    if (impl_) return impl_->Type();
+    static const string no_type = "none";
+    return no_type;
+  }
+
+
   ~WeightClass() { if (impl_) delete impl_; }
  private:
   enum ElementType { ZERO, ONE, OTHER };

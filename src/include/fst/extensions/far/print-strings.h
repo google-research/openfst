@@ -58,7 +58,9 @@ void FarPrintStrings(
   const SymbolTable *syms = 0;
   if (!symbols_fname.empty()) {
     // allow negative flag?
-    syms = SymbolTable::ReadText(symbols_fname, true);
+    SymbolTableTextOptions opts;
+    opts.allow_negative = true;
+    syms = SymbolTable::ReadText(symbols_fname, opts);
     if (!syms) {
       FSTERROR() << "FarPrintStrings: error reading symbol table: "
                  << symbols_fname;

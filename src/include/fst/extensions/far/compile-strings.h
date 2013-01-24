@@ -189,8 +189,9 @@ void FarCompileStrings(const vector<string> &in_fnames,
   const SymbolTable *syms = 0;
   typename Arc::Label unknown_label = kNoLabel;
   if (!symbols_fname.empty()) {
-    syms = SymbolTable::ReadText(symbols_fname,
-                                 allow_negative_labels);
+    SymbolTableTextOptions opts;
+    opts.allow_negative = allow_negative_labels;
+    syms = SymbolTable::ReadText(symbols_fname, opts);
     if (!syms) {
       FSTERROR() << "FarCompileStrings: error reading symbol table: "
                  << symbols_fname;

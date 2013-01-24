@@ -22,6 +22,7 @@
 #define FST_LIB_SHORTEST_DISTANCE_H__
 
 #include <deque>
+using std::deque;
 #include <vector>
 using std::vector;
 

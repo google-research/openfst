@@ -117,8 +117,10 @@ uint64 DeterminizeProperties(uint64 inprops, bool has_subsequential_label) {
   uint64 outprops = kAccessible;
   if (((kAcceptor | kNoIEpsilons) & inprops) || has_subsequential_label)
     outprops |= kIDeterministic;
-  outprops |= (kError | kAcceptor | kNoEpsilons | kAcyclic |
+  outprops |= (kError | kAcceptor | kAcyclic |
                kInitialAcyclic | kCoAccessible | kString) & inprops;
+  if (inprops & kNoIEpsilons)
+    outprops |= kNoEpsilons & inprops;
   if (inprops & kAccessible)
      outprops |= (kNotAcceptor | kEpsilons | kIEpsilons | kOEpsilons |
                   kCyclic) & inprops;

@@ -295,6 +295,10 @@ class StateMapFstImpl : public CacheImpl<B> {
     SetArcs(s);
   }
 
+  const Fst<A> &GetFst() const {
+    return *fst_;
+  }
+
  private:
   void Init() {
     SetType("statemap");
@@ -364,10 +368,10 @@ class StateMapFst : public ImplToFst< StateMapFstImpl<A, B, C> > {
     GetImpl()->InitArcIterator(s, data);
   }
 
- private:
-  // Makes visible to friends.
+ protected:
   Impl *GetImpl() const { return ImplToFst<Impl>::GetImpl(); }
 
+ private:
   void operator=(const StateMapFst<A, B, C> &fst);  // disallow
 };
 
@@ -531,7 +535,7 @@ class ArcUniqueMapper {
   explicit ArcUniqueMapper(const Fst<A> &fst) : fst_(fst), i_(0) {}
 
   // Allows updating Fst argument; pass only if changed.
-  ArcUniqueMapper(const ArcSumMapper<A> &mapper,
+  ArcUniqueMapper(const ArcUniqueMapper<A> &mapper,
                   const Fst<A> *fst = 0)
       : fst_(fst ? *fst : mapper.fst_), i_(0) {}
 

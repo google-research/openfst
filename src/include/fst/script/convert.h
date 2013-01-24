@@ -34,7 +34,7 @@ void Convert(ConvertArgs *args) {
   const string &new_type = args->args.arg2;
 
   Fst<Arc> *result = Convert(fst, new_type);
-  args->retval = new FstClass(result);
+  args->retval = new FstClass(*result);
   delete result;
 }
 

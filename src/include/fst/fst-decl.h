@@ -56,7 +56,6 @@ template <class A> class ClosureFst;
 template <class A> class ComposeFst;
 template <class A> class ConcatFst;
 template <class A> class DeterminizeFst;
-template <class A> class DeterminizeFst;
 template <class A> class DifferenceFst;
 template <class A> class IntersectFst;
 template <class A> class InvertFst;

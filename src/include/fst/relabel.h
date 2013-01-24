@@ -34,6 +34,10 @@ using std::vector;
 #include <fst/test-properties.h>
 
 
+#include <tr1/unordered_map>
+using std::tr1::unordered_map;
+using std::tr1::unordered_multimap;
+
 namespace fst {
 
 //

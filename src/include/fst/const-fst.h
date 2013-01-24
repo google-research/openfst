@@ -28,6 +28,7 @@ using std::vector;
 
 #include <fst/expanded-fst.h>
 #include <fst/fst-decl.h>  // For optional argument declarations
+#include <fst/mapped-file.h>
 #include <fst/test-properties.h>
 #include <fst/util.h>
 
@@ -55,7 +56,8 @@ class ConstFstImpl : public FstImpl<A> {
   typedef U Unsigned;
 
   ConstFstImpl()
-      : states_(0), arcs_(0), nstates_(0), narcs_(0), start_(kNoStateId) {
+      : states_region_(0), arcs_region_(0), states_(0), arcs_(0), nstates_(0),
+        narcs_(0), start_(kNoStateId) {
     string type = "const";
     if (sizeof(U) != sizeof(uint32)) {
       string size;
@@ -69,8 +71,8 @@ class ConstFstImpl : public FstImpl<A> {
   explicit ConstFstImpl(const Fst<A> &fst);
 
   ~ConstFstImpl() {
-    delete[] states_;
-    delete[] arcs_;
+    delete arcs_region_;
+    delete states_region_;
   }
 
   StateId Start() const { return start_; }
@@ -86,8 +88,6 @@ class ConstFstImpl : public FstImpl<A> {
   size_t NumOutputEpsilons(StateId s) const { return states_[s].noepsilons; }
 
   static ConstFstImpl<A, U> *Read(istream &strm, const FstReadOptions &opts);
-
-  bool Write(ostream &strm, const FstWriteOptions &opts) const;
 
   A *Arcs(StateId s) { return arcs_ + states_[s].pos; }
 
@@ -127,9 +127,9 @@ class ConstFstImpl : public FstImpl<A> {
   static const int kAlignedFileVersion = 1;
   // Minimum file format version supported
   static const int kMinFileVersion = 1;
-  // Byte alignment for states and arcs in file format (version 1 only)
-  static const int kFileAlign = 16;
 
+  MappedFile *states_region_;    // Mapped file for states
+  MappedFile *arcs_region_;      // Mapped file for arcs
   State *states_;                // States represenation
   A *arcs_;                      // Arcs representation
   StateId nstates_;              // Number of states
@@ -147,8 +147,6 @@ template <class A, class U>
 const int ConstFstImpl<A, U>::kAlignedFileVersion;
 template <class A, class U>
 const int ConstFstImpl<A, U>::kMinFileVersion;
-template <class A, class U>
-const int ConstFstImpl<A, U>::kFileAlign;
 
 
 template<class A, class U>
@@ -175,8 +173,10 @@ ConstFstImpl<A, U>::ConstFstImpl(const Fst<A> &fst) : nstates_(0), narcs_(0) {
          aiter.Next())
       ++narcs_;
   }
-  states_ = new State[nstates_];
-  arcs_ = new A[narcs_];
+  states_region_ = MappedFile::Allocate(nstates_ * sizeof(*states_));
+  arcs_region_ = MappedFile::Allocate(narcs_ * sizeof(*arcs_));
+  states_ = reinterpret_cast<State*>(states_region_->mutable_data());
+  arcs_ = reinterpret_cast<A*>(arcs_region_->mutable_data());
   size_t pos = 0;
   for (StateId s = 0; s < nstates_; ++s) {
     states_[s].final = fst.Final(s);
@@ -212,39 +212,40 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
   impl->start_ = hdr.Start();
   impl->nstates_ = hdr.NumStates();
   impl->narcs_ = hdr.NumArcs();
-  impl->states_ = new State[impl->nstates_];
-  impl->arcs_ = new A[impl->narcs_];
 
   // Ensures compatibility
   if (hdr.Version() == kAlignedFileVersion)
     hdr.SetFlags(hdr.GetFlags() | FstHeader::IS_ALIGNED);
 
-  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) &&
-      !AlignInput(strm, kFileAlign)) {
+  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
     LOG(ERROR) << "ConstFst::Read: Alignment failed: " << opts.source;
     delete impl;
     return 0;
   }
+
   size_t b = impl->nstates_ * sizeof(typename ConstFstImpl<A, U>::State);
-  strm.read(reinterpret_cast<char *>(impl->states_), b);
-  if (!strm) {
+  impl->states_region_ = MappedFile::Map(&strm, opts, b);
+  if (!strm || impl->states_region_ == NULL) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     delete impl;
     return 0;
   }
-  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) &&
-      !AlignInput(strm, kFileAlign)) {
+  impl->states_ = reinterpret_cast<State*>(
+      impl->states_region_->mutable_data());
+  if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
     LOG(ERROR) << "ConstFst::Read: Alignment failed: " << opts.source;
     delete impl;
     return 0;
   }
+
   b = impl->narcs_ * sizeof(A);
-  strm.read(reinterpret_cast<char *>(impl->arcs_), b);
-  if (!strm) {
+  impl->arcs_region_ = MappedFile::Map(&strm, opts, b);
+  if (!strm || impl->arcs_region_ == NULL) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     delete impl;
     return 0;
   }
+  impl->arcs_ = reinterpret_cast<A*>(impl->arcs_region_->mutable_data());
   return impl;
 }
 
@@ -320,6 +321,17 @@ class ConstFst : public ImplToExpandedFst< ConstFstImpl<A, U> > {
     ImplToFst< Impl, ExpandedFst<A> >::SetImpl(impl, own_impl);
   }
 
+  // Use overloading to extract the type of the argument.
+  static Impl* GetImplIfConstFst(const ConstFst &const_fst) {
+    return const_fst.GetImpl();
+  }
+
+  // Note that this does not give privileged treatment to subtypes of ConstFst.
+  template<typename NonConstFst>
+  static Impl* GetImplIfConstFst(const NonConstFst& fst) {
+    return NULL;
+  }
+
   void operator=(const ConstFst<A, U> &fst);  // disallow
 };
 
@@ -330,24 +342,22 @@ template <class A, class U>
 template <class F>
 bool ConstFst<A, U>::WriteFst(const F &fst, ostream &strm,
                               const FstWriteOptions &opts) {
-  static const int kFileVersion = 2;
-  static const int kAlignedFileVersion = 1;
-  static const int kFileAlign = 16;
-  int file_version = opts.align ? kAlignedFileVersion : kFileVersion;
+  int file_version = opts.align ? ConstFstImpl<A, U>::kAlignedFileVersion :
+      ConstFstImpl<A, U>::kFileVersion;
   size_t num_arcs = -1, num_states = -1;
   size_t start_offset = 0;
   bool update_header = true;
-  if (fst.Type() == ConstFst<A, U>().Type()) {
-    const ConstFst<A, U> *const_fst =
-        reinterpret_cast<const ConstFst<A, U> *>(&fst);
-    num_arcs = const_fst->GetImpl()->narcs_;
-    num_states = const_fst->GetImpl()->nstates_;
+  if (Impl* impl = GetImplIfConstFst(fst)) {
+    num_arcs = impl->narcs_;
+    num_states = impl->nstates_;
     update_header = false;
   } else if ((start_offset = strm.tellp()) == -1) {
     // precompute values needed for header when we cannot seek to rewrite it.
+    num_arcs = 0;
+    num_states = 0;
     for (StateIterator<F> siter(fst); !siter.Done(); siter.Next()) {
       num_arcs += fst.NumArcs(siter.Value());
-      num_states++;
+      ++num_states;
     }
     update_header = false;
   }
@@ -361,8 +371,11 @@ bool ConstFst<A, U>::WriteFst(const F &fst, ostream &strm,
     Int64ToStr(8 * sizeof(U), &size);
     type += size;
   }
-  FstImpl<A>::WriteFstHeader(fst, strm, opts, file_version, type, &hdr);
-  if (opts.align && !AlignOutput(strm, kFileAlign)) {
+  uint64 properties = fst.Properties(kCopyProperties, true) |
+      ConstFstImpl<A, U>::kStaticProperties;
+  FstImpl<A>::WriteFstHeader(fst, strm, opts, file_version, type, properties,
+                             &hdr);
+  if (opts.align && !AlignOutput(strm)) {
     LOG(ERROR) << "Could not align file during write after header";
     return false;
   }
@@ -376,11 +389,11 @@ bool ConstFst<A, U>::WriteFst(const F &fst, ostream &strm,
     state.noepsilons = fst.NumOutputEpsilons(siter.Value());
     strm.write(reinterpret_cast<const char *>(&state), sizeof(state));
     pos += state.narcs;
-    states++;
+    ++states;
   }
   hdr.SetNumStates(states);
   hdr.SetNumArcs(pos);
-  if (opts.align && !AlignOutput(strm, kFileAlign)) {
+  if (opts.align && !AlignOutput(strm)) {
     LOG(ERROR) << "Could not align file during write after writing states";
   }
   for (StateIterator<F> siter(fst); !siter.Done(); siter.Next()) {
@@ -392,12 +405,12 @@ bool ConstFst<A, U>::WriteFst(const F &fst, ostream &strm,
   }
   strm.flush();
   if (!strm) {
-    LOG(ERROR) << "WriteAsVectorFst write failed: " << opts.source;
+    LOG(ERROR) << "ConstFst Write write failed: " << opts.source;
     return false;
   }
   if (update_header) {
     return FstImpl<A>::UpdateFstHeader(fst, strm, opts, file_version, type,
-                                       &hdr, start_offset);
+                                       properties, &hdr, start_offset);
   } else {
     if (hdr.NumStates() != num_states) {
       LOG(ERROR) << "Inconsistent number of states observed during write";

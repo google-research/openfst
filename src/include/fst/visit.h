@@ -238,18 +238,28 @@ class CopyVisitor {
 };
 
 
-// Visits input FST up to a state limit following queue order.
+// Visits input FST up to a state limit following queue order. If
+// 'access_only' is true, aborts on visiting first state not
+// accessible from the initial state.
 template <class A>
 class PartialVisitor {
  public:
   typedef A Arc;
   typedef typename A::StateId StateId;
 
-  explicit PartialVisitor(StateId maxvisit) : maxvisit_(maxvisit) {}
+  explicit PartialVisitor(StateId maxvisit, bool access_only = false)
+      : maxvisit_(maxvisit),
+        access_only_(access_only),
+        start_(kNoStateId) {}
 
-  void InitVisit(const Fst<A> &ifst) { nvisit_ = 0; }
+  void InitVisit(const Fst<A> &ifst) {
+    nvisit_ = 0;
+    start_ = ifst.Start();
+  }
 
-  bool InitState(StateId s, StateId) {
+  bool InitState(StateId s, StateId root) {
+    if (access_only_ && root != start_)
+      return false;
     ++nvisit_;
     return nvisit_ <= maxvisit_;
   }
@@ -262,7 +272,10 @@ class PartialVisitor {
 
  private:
   StateId maxvisit_;
+  bool access_only_;
   StateId nvisit_;
+  StateId start_;
+
 };
 
 

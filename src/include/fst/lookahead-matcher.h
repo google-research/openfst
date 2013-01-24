@@ -96,35 +96,35 @@ namespace fst {
 // LOOK-AHEAD FLAGS (see also kMatcherFlags in matcher.h):
 //
 // Matcher is a lookahead matcher when 'match_type' is MATCH_INPUT.
-const uint32 kInputLookAheadMatcher =      0x00000001;
+const uint32 kInputLookAheadMatcher =     0x00000010;
 
 // Matcher is a lookahead matcher when 'match_type' is MATCH_OUTPUT.
-const uint32 kOutputLookAheadMatcher =     0x00000002;
+const uint32 kOutputLookAheadMatcher =    0x00000020;
 
 // A non-trivial implementation of LookAheadWeight() method defined and
 // should be used?
-const uint32 kLookAheadWeight =            0x00000004;
+const uint32 kLookAheadWeight =           0x00000040;
 
 // A non-trivial implementation of LookAheadPrefix() method defined and
 // should be used?
-const uint32 kLookAheadPrefix =            0x00000008;
+const uint32 kLookAheadPrefix =           0x00000080;
 
 // Look-ahead of matcher FST non-epsilon arcs?
-const uint32 kLookAheadNonEpsilons =       0x00000010;
+const uint32 kLookAheadNonEpsilons =      0x00000100;
 
 // Look-ahead of matcher FST epsilon arcs?
-const uint32 kLookAheadEpsilons =          0x00000020;
+const uint32 kLookAheadEpsilons =         0x00000200;
 
 // Ignore epsilon paths for the lookahead prefix? Note this gives
 // correct results in composition only with an appropriate composition
 // filter since it depends on the filter blocking the ignored paths.
-const uint32 kLookAheadNonEpsilonPrefix =  0x00000040;
+const uint32 kLookAheadNonEpsilonPrefix = 0x00000400;
 
 // For LabelLookAheadMatcher, save relabeling data to file
-const uint32 kLookAheadKeepRelabelData =  0x00000080;
+const uint32 kLookAheadKeepRelabelData =  0x00000800;
 
 // Flags used for lookahead matchers.
-const uint32 kLookAheadFlags =            0x000000ff;
+const uint32 kLookAheadFlags =            0x00000ff0;
 
 // LookAhead Matcher interface, templated on the Arc definition; used
 // for lookahead matcher specializations that are returned by the

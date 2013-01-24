@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <deque>
+using std::deque;
 #include <tr1/unordered_map>
 using std::tr1::unordered_map;
 using std::tr1::unordered_multimap;

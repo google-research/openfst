@@ -27,6 +27,7 @@ using std::tr1::unordered_multimap;
 #include <map>
 #include <set>
 
+#include <fst/compat.h>
 #include <fst/state-table.h>
 #include <fst/fst.h>
 

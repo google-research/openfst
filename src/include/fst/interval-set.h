@@ -81,12 +81,12 @@ class IntervalSet {
 
   const vector<Interval> *Intervals() const { return &intervals_; }
 
-  const bool Empty() const { return intervals_.empty(); }
+  bool Empty() const { return intervals_.empty(); }
 
-  const T Size() const { return intervals_.size(); }
+  T Size() const { return intervals_.size(); }
 
   // Number of points in the intervals (undefined if not normalized).
-  const T Count() const { return count_; }
+  T Count() const { return count_; }
 
   void Clear() {
     intervals_.clear();

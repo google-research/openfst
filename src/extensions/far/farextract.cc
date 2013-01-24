@@ -27,11 +27,11 @@ DEFINE_string(filename_prefix, "", "Prefix to append to filenames");
 DEFINE_string(filename_suffix, "", "Suffix to append to filenames");
 DEFINE_int32(generate_filenames, 0,
              "Generate N digit numeric filenames (def: use keys)");
-DEFINE_string(begin_key, "",
-              "First key to extract (def: first key in archive)");
-DEFINE_string(end_key, "",
-              "Last key to extract (def: last key in archive)");
-
+DEFINE_string(keys, "",
+              "Extract set of keys separated by comma (default) "
+              "including ranges delimited by dash (default)" );
+DEFINE_string(key_separator, ",", "Separator for individual keys");
+DEFINE_string(range_delimiter, "-", "Delimiter for ranges of keys");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -51,8 +51,8 @@ int main(int argc, char **argv) {
   const string &arc_type = fst::LoadArcTypeFromFar(ifilenames[0]);
 
   s::FarExtract(ifilenames, arc_type, FLAGS_generate_filenames,
-                FLAGS_begin_key, FLAGS_end_key, FLAGS_filename_prefix,
-                FLAGS_filename_suffix);
+                FLAGS_keys, FLAGS_key_separator, FLAGS_range_delimiter,
+                FLAGS_filename_prefix, FLAGS_filename_suffix);
 
   return 0;
 }

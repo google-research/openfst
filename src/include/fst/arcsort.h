@@ -118,9 +118,11 @@ typedef CacheOptions ArcSortFstOptions;
 // and exclusive of caching.
 template <class A, class C>
 class ArcSortFst : public StateMapFst<A, A, ArcSortMapper<A, C> > {
+  using StateMapFst<A, A, ArcSortMapper<A, C> >::GetImpl;
  public:
   typedef A Arc;
- typedef ArcSortMapper<A, C> M;
+  typedef typename Arc::StateId StateId;
+  typedef ArcSortMapper<A, C> M;
 
   ArcSortFst(const Fst<A> &fst, const C &comp)
       : StateMapFst<A, A, M>(fst, ArcSortMapper<A, C>(fst, comp)) {}
@@ -135,6 +137,18 @@ class ArcSortFst : public StateMapFst<A, A, ArcSortMapper<A, C> > {
   // Get a copy of this ArcSortFst. See Fst<>::Copy() for further doc.
   virtual ArcSortFst<A, C> *Copy(bool safe = false) const {
     return new ArcSortFst(*this, safe);
+  }
+
+  virtual size_t NumArcs(StateId s) const {
+    return GetImpl()->GetFst().NumArcs(s);
+  }
+
+  virtual size_t NumInputEpsilons(StateId s) const {
+    return GetImpl()->GetFst().NumInputEpsilons(s);
+  }
+
+  virtual size_t NumOutputEpsilons(StateId s) const {
+    return GetImpl()->GetFst().NumOutputEpsilons(s);
   }
 };
 

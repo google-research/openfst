@@ -51,6 +51,8 @@ class FstTester {
     testfst_ = new F(vfst);
   }
 
+  explicit FstTester(F *testfst) : testfst_(testfst) { }
+
   ~FstTester() {
     delete testfst_;
   }
@@ -207,6 +209,7 @@ class FstTester {
   template <class G>
   void TestIO(const G &fst) const {
     const string filename = FLAGS_tmpdir + "/test.fst";
+    const string aligned = FLAGS_tmpdir + "/aligned.fst";
     {
       // write/read
       CHECK(fst.Write(filename));
@@ -230,6 +233,44 @@ class FstTester {
       TestBase(*hfst);
       delete gfst;
       delete hfst;
+    }
+
+    {
+      // check mmaping by first writing the file with the aligned attribute set
+      {
+        ofstream ostr(aligned.c_str());
+        FstWriteOptions opts;
+        opts.source = aligned;
+        opts.align = true;
+        CHECK(fst.Write(ostr, opts));
+      }
+      ifstream istr(aligned.c_str());
+      FstReadOptions opts;
+      opts.mode = FstReadOptions::ReadMode("map");
+      opts.source = aligned;
+      G *gfst = G::Read(istr, opts);
+      CHECK(gfst);
+      TestBase(*gfst);
+      delete gfst;
+    }
+
+    // check mmaping of unaligned files to make sure it does not fail.
+    {
+      {
+        ofstream ostr(aligned.c_str());
+        FstWriteOptions opts;
+        opts.source = aligned;
+        opts.align = false;
+        CHECK(fst.Write(ostr, opts));
+      }
+      ifstream istr(aligned.c_str());
+      FstReadOptions opts;
+      opts.mode = FstReadOptions::ReadMode("map");
+      opts.source = aligned;
+      G *gfst = G::Read(istr, opts);
+      CHECK(gfst);
+      TestBase(*gfst);
+      delete gfst;
     }
 
     // expanded write/read/test

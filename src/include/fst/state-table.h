@@ -22,6 +22,7 @@
 #define FST_LIB_STATE_TABLE_H__
 
 #include <deque>
+using std::deque;
 #include <vector>
 using std::vector;
 
@@ -58,14 +59,14 @@ namespace fst {
 // struct StateTuple {
 //   typedef typename S StateId;
 //
-//   // Required constructor.
+//   // Required constructors.
 //   StateTuple();
+//   StateTuple(const StateTuple &);
 // };
 
 
 // An implementation using a hash map for the tuple to state ID mapping.
-// The state tuple T must have == defined and the default constructor
-// must produce a tuple that will never be seen. H is the hash function.
+// The state tuple T must have == defined. H is the hash function.
 template <class T, class H>
 class HashStateTable : public HashBiTable<typename T::StateId, T, H> {
  public:
@@ -76,15 +77,18 @@ class HashStateTable : public HashBiTable<typename T::StateId, T, H> {
   using HashBiTable<StateId, T, H>::Size;
 
   HashStateTable() : HashBiTable<StateId, T, H>() {}
+
+  // Reserves space for table_size elements.
+  explicit HashStateTable(size_t table_size)
+      : HashBiTable<StateId, T, H>(table_size) {}
+
   StateId FindState(const StateTuple &tuple) { return FindId(tuple); }
   const StateTuple &Tuple(StateId s) const { return FindEntry(s); }
 };
 
 
-// An implementation using a hash set for the tuple to state ID
-// mapping. The state tuple T must have == defined and the default
-// constructor must produce a tuple that will never be seen. H is the
-// hash function.
+// An implementation using a hash map for the tuple to state ID mapping.
+// The state tuple T must have == defined. H is the hash function.
 template <class T, class H>
 class CompactHashStateTable
     : public CompactHashBiTable<typename T::StateId, T, H> {
@@ -97,7 +101,7 @@ class CompactHashStateTable
 
   CompactHashStateTable() : CompactHashBiTable<StateId, T, H>() {}
 
-  // Reserves space for table_size elements.
+  // Reserves space for 'table_size' elements.
   explicit CompactHashStateTable(size_t table_size)
       : CompactHashBiTable<StateId, T, H>(table_size) {}
 
@@ -122,7 +126,10 @@ class VectorStateTable
   using VectorBiTable<StateId, T, FP>::Size;
   using VectorBiTable<StateId, T, FP>::Fingerprint;
 
-  explicit VectorStateTable(FP *fp = 0) : VectorBiTable<StateId, T, FP>(fp) {}
+  // Reserves space for 'table_size' elements.
+  explicit VectorStateTable(FP *fp = 0, size_t table_size = 0)
+      : VectorBiTable<StateId, T, FP>(fp, table_size) {}
+
   StateId FindState(const StateTuple &tuple) { return FindId(tuple); }
   const StateTuple &Tuple(StateId s) const { return FindEntry(s); }
 };
@@ -268,7 +275,9 @@ class GenericComposeStateTable : public H {
 
   GenericComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2) {}
 
-  GenericComposeStateTable(const GenericComposeStateTable<A, F> &table) {}
+  // Reserves space for 'table_size' elements.
+  GenericComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2,
+                           size_t table_size) : H(table_size) {}
 
   bool Error() const { return false; }
 
@@ -342,17 +351,18 @@ VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
   typedef typename A::StateId StateId;
   typedef F FilterState;
   typedef ComposeStateTuple<StateId, F> StateTuple;
+  typedef VectorStateTable<StateTuple,
+                           ComposeFingerprint<StateId, F> > StateTable;
 
-  ProductComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2)
-      : VectorStateTable<ComposeStateTuple<StateId, F>,
-                         ComposeFingerprint<StateId, F> >
-  (new ComposeFingerprint<StateId, F>(CountStates(fst1),
-                                      CountStates(fst2))) { }
+  // Reserves space for 'table_size' elements.
+  ProductComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2,
+                           size_t table_size = 0)
+      : StateTable(new ComposeFingerprint<StateId, F>(CountStates(fst1),
+                                                      CountStates(fst2)),
+                   table_size) {}
 
   ProductComposeStateTable(const ProductComposeStateTable<A, F> &table)
-      : VectorStateTable<ComposeStateTuple<StateId, F>,
-                         ComposeFingerprint<StateId, F> >
-        (new ComposeFingerprint<StateId, F>(table.Fingerprint())) {}
+      : StateTable(new ComposeFingerprint<StateId, F>(table.Fingerprint())) {}
 
   bool Error() const { return false; }
 
@@ -375,6 +385,8 @@ VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
   typedef typename A::StateId StateId;
   typedef F FilterState;
   typedef ComposeStateTuple<StateId, F> StateTuple;
+  typedef VectorStateTable<StateTuple,
+                           ComposeState1Fingerprint<StateId, F> > StateTable;
 
   StringDetComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2)
       : error_(false) {
@@ -389,7 +401,7 @@ VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
   }
 
   StringDetComposeStateTable(const StringDetComposeStateTable<A, F> &table)
-   : error_(table.error_) {}
+      : StateTable(table), error_(table.error_) {}
 
   bool Error() const { return error_; }
 
@@ -409,12 +421,14 @@ VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
 template <typename A, typename F>
 class DetStringComposeStateTable : public
 VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
-                 ComposeState1Fingerprint<typename A::StateId, F> > {
+                 ComposeState2Fingerprint<typename A::StateId, F> > {
  public:
   typedef A Arc;
   typedef typename A::StateId StateId;
   typedef F FilterState;
   typedef ComposeStateTuple<StateId, F> StateTuple;
+  typedef VectorStateTable<StateTuple,
+                           ComposeState2Fingerprint<StateId, F> > StateTable;
 
   DetStringComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2)
       :error_(false) {
@@ -429,7 +443,7 @@ VectorStateTable<ComposeStateTuple<typename A::StateId, F>,
   }
 
   DetStringComposeStateTable(const DetStringComposeStateTable<A, F> &table)
-      : error_(table.error_) {}
+      : StateTable(table), error_(table.error_) {}
 
   bool Error() const { return error_; }
 
@@ -455,8 +469,6 @@ ErasableStateTable<ComposeStateTuple<typename A::StateId, F>,
   typedef ComposeStateTuple<StateId, F> StateTuple;
 
   ErasableComposeStateTable(const Fst<A> &fst1, const Fst<A> &fst2) {}
-
-  ErasableComposeStateTable(const ErasableComposeStateTable<A, F> &table) {}
 
   bool Error() const { return false; }
 

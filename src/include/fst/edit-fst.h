@@ -25,6 +25,10 @@ using std::vector;
 
 #include <fst/cache.h>
 
+#include <tr1/unordered_map>
+using std::tr1::unordered_map;
+using std::tr1::unordered_multimap;
+
 namespace fst {
 
 // The EditFst class enables non-destructive edit operations on a wrapped
@@ -431,7 +435,8 @@ class EditFstImpl : public FstImpl<A> {
   // A copy constructor for this implementation class, used to implement
   // the Copy() method of the Fst interface.
   EditFstImpl(const EditFstImpl &impl)
-      : wrapped_(static_cast<WrappedFstT *>(impl.wrapped_->Copy(true))),
+      : FstImpl<A>(),
+        wrapped_(static_cast<WrappedFstT *>(impl.wrapped_->Copy(true))),
         data_(impl.data_) {
     data_->IncrRefCount();
     SetProperties(impl.Properties());

@@ -48,7 +48,7 @@ typedef args::Package<const FstClass &,
                       const FstClass &,
                       const vector<pair<int64, int64> >&,
                       MutableFstClass *,
-                      const ComposeOptions &,
+                      const PdtComposeOptions &,
                       bool> PdtComposeArgs;
 
 template<class Arc>
@@ -76,7 +76,7 @@ void PdtCompose(const FstClass & ifst1,
                 const FstClass & ifst2,
                 const vector<pair<int64, int64> > &parens,
                 MutableFstClass *ofst,
-                const ComposeOptions &copts,
+                const PdtComposeOptions &copts,
                 bool left_pdt);
 
 // PDT EXPAND

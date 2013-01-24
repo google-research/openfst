@@ -273,9 +273,10 @@ class VectorFstImpl : public VectorFstBaseImpl< VectorState<A> > {
     SetProperties(DeleteArcsProperties(Properties()));
   }
 
- private:
   // Properties always true of this Fst class
   static const uint64 kStaticProperties = kExpanded | kMutable;
+
+ private:
   // Current file format version
   static const int kFileVersion = 2;
   // Minimum file format version supported
@@ -542,7 +543,10 @@ bool VectorFst<A>::WriteFst(const F &fst, ostream &strm,
     hdr.SetNumStates(CountStates(fst));
     update_header = false;
   }
-  FstImpl<A>::WriteFstHeader(fst, strm, opts, kFileVersion, "vector", &hdr);
+  uint64 properties = fst.Properties(kCopyProperties, false) |
+      VectorFstImpl<A>::kStaticProperties;
+  FstImpl<A>::WriteFstHeader(fst, strm, opts, kFileVersion, "vector",
+                             properties, &hdr);
   StateId num_states = 0;
   for (StateIterator<F> siter(fst); !siter.Done(); siter.Next()) {
     typename A::StateId s = siter.Value();
@@ -566,7 +570,7 @@ bool VectorFst<A>::WriteFst(const F &fst, ostream &strm,
   if (update_header) {
     hdr.SetNumStates(num_states);
     return FstImpl<A>::UpdateFstHeader(fst, strm, opts, kFileVersion, "vector",
-                                       &hdr, start_offset);
+                                       properties, &hdr, start_offset);
   } else {
     if (num_states != hdr.NumStates()) {
       LOG(ERROR) << "Inconsistent number of states observed during write";

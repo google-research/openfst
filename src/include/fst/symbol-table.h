@@ -57,6 +57,13 @@ struct SymbolTableReadOptions {
   string source;
 };
 
+struct SymbolTableTextOptions {
+  SymbolTableTextOptions();
+
+  bool allow_negative;
+  string fst_field_separator;
+};
+
 class SymbolTableImpl {
  public:
   SymbolTableImpl(const string &name)
@@ -89,9 +96,9 @@ class SymbolTableImpl {
     return (key == -1) ? AddSymbol(symbol, available_key_++) : key;
   }
 
-  static SymbolTableImpl* ReadText(istream &strm,
-                                   const string &name,
-                                   bool allow_negative = false);
+  static SymbolTableImpl* ReadText(
+      istream &strm, const string &name,
+      const SymbolTableTextOptions &opts = SymbolTableTextOptions());
 
   static SymbolTableImpl* Read(istream &strm,
                                const SymbolTableReadOptions& opts);
@@ -239,12 +246,10 @@ class SymbolTable {
 
   // Read an ascii representation of the symbol table from an istream. Pass a
   // name to give the resulting SymbolTable.
-  static SymbolTable* ReadText(istream &strm,
-                               const string& name,
-                               bool allow_negative = false) {
-    SymbolTableImpl* impl = SymbolTableImpl::ReadText(strm,
-                                                      name,
-                                                      allow_negative);
+  static SymbolTable* ReadText(
+      istream &strm, const string& name,
+      const SymbolTableTextOptions &opts = SymbolTableTextOptions()) {
+    SymbolTableImpl* impl = SymbolTableImpl::ReadText(strm, name, opts);
     if (!impl)
       return 0;
     else
@@ -253,13 +258,13 @@ class SymbolTable {
 
   // read an ascii representation of the symbol table
   static SymbolTable* ReadText(const string& filename,
-                               bool allow_negative = false) {
+      const SymbolTableTextOptions &opts = SymbolTableTextOptions()) {
     ifstream strm(filename.c_str(), ifstream::in);
     if (!strm) {
       LOG(ERROR) << "SymbolTable::ReadText: Can't open file " << filename;
       return 0;
     }
-    return ReadText(strm, filename, allow_negative);
+    return ReadText(strm, filename, opts);
   }
 
 
@@ -352,7 +357,9 @@ class SymbolTable {
   }
 
   // Dump an ascii text representation of the symbol table via a stream
-  virtual bool WriteText(ostream &strm) const;
+  virtual bool WriteText(
+      ostream &strm,
+      const SymbolTableTextOptions &opts = SymbolTableTextOptions()) const;
 
   // Dump an ascii text representation of the symbol table
   bool WriteText(const string& filename) const {

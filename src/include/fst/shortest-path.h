@@ -458,7 +458,7 @@ void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
   } else {
     vector<Weight> ddistance;
     DeterminizeFstOptions<ReverseArc> dopts(opts.delta);
-    DeterminizeFst<ReverseArc> dfst(rfst, *distance, &ddistance, dopts);
+    DeterminizeFst<ReverseArc> dfst(rfst, distance, &ddistance, dopts);
     NShortestPath(dfst, ofst, ddistance, n, opts.delta,
                   opts.weight_threshold, opts.state_threshold);
   }

@@ -26,6 +26,7 @@ using std::vector;
 
 #include <fst/compat.h>
 #include <fst/fstlib.h>
+#include <fst/mapped-file.h>
 #include <fst/extensions/ngram/bitmap-index.h>
 
 // NgramFst implements a n-gram language model based upon the LOUDS data
@@ -76,7 +77,7 @@ class NGramFstImpl : public FstImpl<A> {
   typedef typename A::StateId StateId;
   typedef typename A::Weight Weight;
 
-  NGramFstImpl() : data_(0), owned_(false) {
+  NGramFstImpl() : data_region_(0), data_(0), owned_(false) {
     SetType("ngram");
     SetInputSymbols(NULL);
     SetOutputSymbols(NULL);
@@ -89,6 +90,7 @@ class NGramFstImpl : public FstImpl<A> {
     if (owned_) {
       delete [] data_;
     }
+    delete data_region_;
   }
 
   static NGramFstImpl<A>* Read(istream &strm,  // NOLINT
@@ -104,7 +106,8 @@ class NGramFstImpl : public FstImpl<A> {
     strm.read(reinterpret_cast<char *>(&num_futures), sizeof(num_futures));
     strm.read(reinterpret_cast<char *>(&num_final), sizeof(num_final));
     size_t size = Storage(num_states, num_futures, num_final);
-    char* data = new char[size];
+    MappedFile *data_region = MappedFile::Allocate(size);
+    char *data = reinterpret_cast<char *>(data_region->mutable_data());
     // Copy num_states, num_futures and num_final back into data.
     memcpy(data, reinterpret_cast<char *>(&num_states), sizeof(num_states));
     memcpy(data + sizeof(num_states), reinterpret_cast<char *>(&num_futures),
@@ -116,7 +119,7 @@ class NGramFstImpl : public FstImpl<A> {
       delete impl;
       return NULL;
     }
-    impl->Init(data, true /* owned */);
+    impl->Init(data, false, data_region);
     return impl;
   }
 
@@ -227,7 +230,13 @@ class NGramFstImpl : public FstImpl<A> {
     return data_;
   }
 
-  void Init(const char* data, bool owned);
+  void Init(const char* data, bool owned, MappedFile *file = 0);
+
+  const vector<Label> &GetContext(StateId s, NGramFstInst<A> *inst) const {
+    SetInstFuture(s, inst);
+    SetInstContext(inst);
+    return inst->context_;
+  }
 
  private:
   StateId Transition(const vector<Label> &context, Label future) const;
@@ -242,6 +251,7 @@ class NGramFstImpl : public FstImpl<A> {
   // Minimum file format version supported.
   static const int kMinFileVersion = 4;
 
+  MappedFile *data_region_;
   const char* data_;
   bool owned_;  // True if we own data_
   uint64 num_states_, num_futures_, num_final_;
@@ -261,7 +271,7 @@ class NGramFstImpl : public FstImpl<A> {
 
 template<typename A>
 NGramFstImpl<A>::NGramFstImpl(const Fst<A> &fst, vector<StateId>* order_out)
-    : data_(0), owned_(false) {
+    : data_region_(0), data_(0), owned_(false) {
   typedef A Arc;
   typedef typename Arc::Label Label;
   typedef typename Arc::Weight Weight;
@@ -286,11 +296,15 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A> &fst, vector<StateId>* order_out)
   // epsilons.
   StateId unigram = fst.Start();
   while (1) {
-    ArcIterator<Fst<A> > aiter(fst, unigram);
-    if (aiter.Done()) {
-      FSTERROR() << "Start state has no arcs";
+    if (unigram == kNoStateId) {
+      FSTERROR() << "Could not identify unigram state.";
       SetProperties(kError, kError);
       return;
+    }
+    ArcIterator<Fst<A> > aiter(fst, unigram);
+    if (aiter.Done()) {
+      LOG(WARNING) << "Unigram state " << unigram << " has no arcs.";
+      break;
     }
     if (aiter.Value().ilabel != 0) break;
     unigram = aiter.Value().nextstate;
@@ -385,7 +399,8 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A> &fst, vector<StateId>* order_out)
   Weight weight;
   Label label = kNoLabel;
   const size_t storage = Storage(num_states, num_futures, num_final);
-  char* data = new char[storage];
+  MappedFile *data_region = MappedFile::Allocate(storage);
+  char *data = reinterpret_cast<char *>(data_region->mutable_data());
   memset(data, 0, storage);
   size_t offset = 0;
   memcpy(data + offset, reinterpret_cast<char *>(&num_states),
@@ -482,14 +497,17 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A> &fst, vector<StateId>* order_out)
     return;
   }
 
-  Init(data, true /* owned */);
+  Init(data, false, data_region);
 }
 
 template<typename A>
-inline void NGramFstImpl<A>::Init(const char* data, bool owned) {
+inline void NGramFstImpl<A>::Init(const char* data, bool owned,
+                                  MappedFile *data_region) {
   if (owned_) {
     delete [] data_;
   }
+  delete data_region_;
+  data_region_ = data_region;
   owned_ = owned;
   data_ = data;
   size_t offset = 0;
@@ -507,7 +525,7 @@ inline void NGramFstImpl<A>::Init(const char* data, bool owned) {
   future_ = reinterpret_cast<const uint64*>(data_ + offset);
   offset += BitmapIndex::StorageSize(future_bits) * sizeof(bits);
   final_ = reinterpret_cast<const uint64*>(data_ + offset);
-  offset += BitmapIndex::StorageSize(num_states_ + 1) * sizeof(bits);
+  offset += BitmapIndex::StorageSize(num_states_) * sizeof(bits);
   context_words_ = reinterpret_cast<const Label*>(data_ + offset);
   offset += (num_states_ + 1) * sizeof(*context_words_);
   future_words_ = reinterpret_cast<const Label*>(data_ + offset);
@@ -597,12 +615,16 @@ class NGramFst : public ImplToExpandedFst<NGramFstImpl<A> > {
 
   // Non-standard constructor to initialize NGramFst directly from data.
   NGramFst(const char* data, bool owned) : ImplToExpandedFst<Impl>(new Impl()) {
-    GetImpl()->Init(data, owned);
+    GetImpl()->Init(data, owned, NULL);
   }
 
   // Get method that gets the data associated with Init().
   const char* GetData(size_t* data_size) const {
     return GetImpl()->GetData(data_size);
+  }
+
+  const vector<Label> GetContext(StateId s) const {
+    return GetImpl()->GetContext(s, &inst_);
   }
 
   virtual size_t NumArcs(StateId s) const {

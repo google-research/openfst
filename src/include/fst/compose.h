@@ -122,7 +122,7 @@ class ComposeFstImplBase : public CacheImpl<A> {
 
   ComposeFstImplBase(const Fst<A> &fst1, const Fst<A> &fst2,
                      const CacheOptions &opts)
-      :CacheImpl<A>(opts) {
+      : CacheImpl<A>(opts) {
     VLOG(2) << "ComposeFst(" << this << "): Begin";
     SetType("compose");
 
@@ -137,7 +137,7 @@ class ComposeFstImplBase : public CacheImpl<A> {
   }
 
   ComposeFstImplBase(const ComposeFstImplBase<A> &impl)
-      : CacheImpl<A>(impl) {
+      : CacheImpl<A>(impl, true) {
     SetProperties(impl.Properties(), kCopyProperties);
     SetInputSymbols(impl.InputSymbols());
     SetOutputSymbols(impl.OutputSymbols());
@@ -275,6 +275,13 @@ class ComposeFstImpl : public ComposeFstImplBase<typename M1::Arc> {
       OrderedExpand(s, fst2_, s2, fst1_, s1, matcher2_, true);
   }
 
+  const FST1 &GetFst1() { return fst1_; }
+  const FST2 &GetFst2() { return fst2_; }
+  M1 *GetMatcher1() { return matcher1_; }
+  M2 *GetMatcher2() { return matcher2_; }
+  F *GetFilter() { return filter_; }
+  T *GetStateTable() { return state_table_; }
+
  private:
   // This does that actual matching of labels in the composition. The
   // arguments are ordered so matching is called on state 'sa' of
@@ -360,6 +367,10 @@ class ComposeFstImpl : public ComposeFstImplBase<typename M1::Arc> {
     return Times(final1, final2);
   }
 
+  // Identifies and verifies the capabilities of the matcher to be used for
+  // composition.
+  void SetMatchType();
+
   F *filter_;
   Matcher1 *matcher1_;
   Matcher2 *matcher2_;
@@ -385,23 +396,15 @@ ComposeFstImpl<M1, M2, F, T>::ComposeFstImpl(
       fst2_(matcher2_->GetFst()),
       state_table_(opts.state_table ? opts.state_table :
                    new T(fst1_, fst2_)) {
-  MatchType type1 = matcher1_->Type(false);
-  MatchType type2 = matcher2_->Type(false);
-  if (type1 == MATCH_OUTPUT && type2  == MATCH_INPUT) {
-    match_type_ = MATCH_BOTH;
-  } else if (type1 == MATCH_OUTPUT) {
-    match_type_ = MATCH_OUTPUT;
-  } else if (type2 == MATCH_INPUT) {
-    match_type_ = MATCH_INPUT;
-  } else if (matcher1_->Type(true) == MATCH_OUTPUT) {
-    match_type_ = MATCH_OUTPUT;
-  } else if (matcher2_->Type(true) == MATCH_INPUT) {
-    match_type_ = MATCH_INPUT;
-  } else {
-    FSTERROR() << "ComposeFst: 1st argument cannot match on output labels "
-               << "and 2nd argument cannot match on input labels (sort?).";
+  SetMatchType();
+  if (match_type_ == MATCH_NONE)
     SetProperties(kError, kError);
-  }
+  VLOG(2) << "ComposeFst(" << this << "): Match type: "
+          << (match_type_ == MATCH_OUTPUT ? "output" :
+              (match_type_ == MATCH_INPUT ? "input" :
+               (match_type_ == MATCH_BOTH ? "both" :
+                (match_type_ == MATCH_NONE ? "none" : "unknown"))));
+
   uint64 fprops1 = fst1.Properties(kFstProperties, false);
   uint64 fprops2 = fst2.Properties(kFstProperties, false);
   uint64 mprops1 = matcher1_->Properties(fprops1);
@@ -410,6 +413,55 @@ ComposeFstImpl<M1, M2, F, T>::ComposeFstImpl(
   SetProperties(filter_->Properties(cprops), kCopyProperties);
   if (state_table_->Error()) SetProperties(kError, kError);
   VLOG(2) << "ComposeFst(" << this << "): Initialized";
+}
+
+template <class M1, class M2, class F, class T>
+void ComposeFstImpl<M1, M2, F, T>::SetMatchType() {
+  MatchType type1 = matcher1_->Type(false);
+  MatchType type2 = matcher2_->Type(false);
+  uint32 flags1 = matcher1_->Flags();
+  uint32 flags2 = matcher2_->Flags();
+  if (flags1 & flags2 & kRequireMatch) {
+    FSTERROR() << "ComposeFst: only one argument can require matching.";
+    match_type_ = MATCH_NONE;
+  } else if (flags1 & kRequireMatch) {
+    if (matcher1_->Type(true) != MATCH_OUTPUT) {
+      FSTERROR() << "ComposeFst: 1st argument requires matching but cannot.";
+      match_type_ = MATCH_NONE;
+    }
+    match_type_ = MATCH_OUTPUT;
+  } else if (flags2 & kRequireMatch) {
+    if (matcher2_->Type(true) != MATCH_INPUT) {
+      FSTERROR() << "ComposeFst: 2nd argument requires matching but cannot.";
+      match_type_ = MATCH_NONE;
+    }
+    match_type_ = MATCH_INPUT;
+  } else if (flags1 & flags2 & kPreferMatch &&
+             type1 == MATCH_OUTPUT && type2  == MATCH_INPUT) {
+    match_type_ = MATCH_BOTH;
+  } else if (flags1 & kPreferMatch && type1 == MATCH_OUTPUT) {
+    match_type_ = MATCH_OUTPUT;
+  } else if  (flags2 & kPreferMatch && type2 == MATCH_INPUT) {
+    match_type_ = MATCH_INPUT;
+  } else if (type1 == MATCH_OUTPUT && type2  == MATCH_INPUT) {
+    match_type_ = MATCH_BOTH;
+  } else if (type1 == MATCH_OUTPUT) {
+    match_type_ = MATCH_OUTPUT;
+  } else if (type2 == MATCH_INPUT) {
+    match_type_ = MATCH_INPUT;
+  } else if (flags1 & kPreferMatch && matcher1_->Type(true) == MATCH_OUTPUT) {
+    match_type_ = MATCH_OUTPUT;
+  } else if  (flags2 & kPreferMatch && matcher2_->Type(true) == MATCH_INPUT) {
+    match_type_ = MATCH_INPUT;
+  } else if (matcher1_->Type(true) == MATCH_OUTPUT) {
+    match_type_ = MATCH_OUTPUT;
+  } else if (matcher2_->Type(true) == MATCH_INPUT) {
+    match_type_ = MATCH_INPUT;
+  } else {
+    FSTERROR() << "ComposeFst: 1st argument cannot match on output labels "
+               << "and 2nd argument cannot match on input labels (sort?).";
+    match_type_ = MATCH_NONE;
+  }
 }
 
 
@@ -539,16 +591,19 @@ class ComposeFst : public ImplToFst< ComposeFstImplBase<A> > {
     switch (LookAheadMatchType(fst1, fst2)) {  // Check for lookahead matchers
       default:
       case MATCH_NONE: {     // Default composition (no look-ahead)
+        VLOG(2) << "ComposeFst: Default composition (no look-ahead)";
         ComposeFstOptions<Arc> nopts(opts);
         return CreateBase1(fst1, fst2, nopts);
       }
       case MATCH_OUTPUT: {   // Lookahead on fst1
+        VLOG(2) << "ComposeFst: Lookahead on fst1";
         typedef typename DefaultLookAhead<Arc, MATCH_OUTPUT>::FstMatcher M;
         typedef typename DefaultLookAhead<Arc, MATCH_OUTPUT>::ComposeFilter F;
         ComposeFstOptions<Arc, M, F> nopts(opts);
         return CreateBase1(fst1, fst2, nopts);
       }
       case MATCH_INPUT: {    // Lookahead on fst2
+        VLOG(2) << "ComposeFst: Lookahead on fst2";
         typedef typename DefaultLookAhead<Arc, MATCH_INPUT>::FstMatcher M;
         typedef typename DefaultLookAhead<Arc, MATCH_INPUT>::ComposeFilter F;
         ComposeFstOptions<Arc, M, F> nopts(opts);
