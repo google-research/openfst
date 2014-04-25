@@ -26,8 +26,10 @@
 using std::vector;
 
 #include <fst/dfs-visit.h>
+#include <fst/connect.h>
 #include <fst/fst.h>
 #include <fst/interval-set.h>
+#include <fst/vector-fst.h>
 
 
 namespace fst {
@@ -135,6 +137,7 @@ class IntervalReachVisitor {
 // Tests reachability of final states from a given state. To test for
 // reachability from a state s, first do SetState(s). Then a final
 // state f can be reached from state s of FST iff Reach(f) is true.
+// The input can be cyclic, but no cycle may contain a final state.
 template <class A, typename I = typename A::StateId>
 class StateReachable {
  public:
@@ -147,21 +150,23 @@ class StateReachable {
 
   StateReachable(const Fst<A> &fst)
       : error_(false) {
-    IntervalReachVisitor<Arc> reach_visitor(fst, &isets_, &state2index_);
-    DfsVisit(fst, &reach_visitor);
-    if (reach_visitor.Error()) error_ = true;
+    if (fst.Properties(kAcyclic, true)) {
+      AcyclicStateReachable(fst);
+    } else {
+      CyclicStateReachable(fst);
+    }
   }
 
   StateReachable(const StateReachable<A> &reachable) {
     FSTERROR() << "Copy constructor for state reachable class "
-               << "not yet implemented.";
+               << "not implemented.";
     error_ = true;
   }
 
   // Set current state.
   void SetState(StateId s) { s_ = s; }
 
-  // Can reach this label from current state?
+  // Can reach this final state from current state?
   bool Reach(StateId s) {
     if (s >= state2index_.size())
       return false;
@@ -185,6 +190,50 @@ class StateReachable {
   bool Error() const { return error_; }
 
  private:
+  void AcyclicStateReachable(const Fst<A> &fst) {
+    IntervalReachVisitor<Arc> reach_visitor(fst, &isets_, &state2index_);
+    DfsVisit(fst, &reach_visitor);
+    if (reach_visitor.Error()) error_ = true;
+  }
+
+  void CyclicStateReachable(const Fst<A> &fst) {
+    // Finds state reachability on the acyclic condensation FST
+    VectorFst<Arc> cfst;
+    vector<StateId> scc;
+    Condense(fst, &cfst, &scc);
+    StateReachable reachable(cfst);
+    if (reachable.Error()) {
+      error_ = true;
+      return;
+    }
+
+    // Gets the number of states per SCC.
+    vector<size_t> nscc;
+    for (StateId s = 0; s < scc.size(); ++s) {
+      StateId c = scc[s];
+      while (c >= nscc.size()) nscc.push_back(0);
+      ++nscc[c];
+    }
+
+    // Constructs the interval sets and state index mapping for
+    // the original FST from the condensation FST.
+    state2index_.resize(scc.size(), -1);
+    isets_.resize(scc.size());
+    for (StateId s = 0; s < scc.size(); ++s) {
+      StateId c = scc[s];
+      isets_[s] = reachable.IntervalSets()[c];
+      state2index_[s] = reachable.State2Index()[c];
+
+      // Checks that each final state in an input FST is not
+      // contained in a cycle (i.e. not in a non-trivial SCC).
+      if (cfst.Final(c) != Weight::Zero() && nscc[c] > 1) {
+        FSTERROR() << "StateReachable: final state contained in a cycle";
+        error_ = true;
+        return;
+      }
+    }
+  }
+
   StateId s_;                                 // Current state
   vector< IntervalSet<I> > isets_;            // Interval sets per state
   vector<I> state2index_;                     // Finds index for a final state

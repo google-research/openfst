@@ -61,12 +61,15 @@ namespace fst {
 
 // Performs queue-dependent visitation. Visitor class argument
 // determines actions and contains any return data. ArcFilter
-// determines arcs that are considered.
+// determines arcs that are considered. If 'access_only' is true,
+// performs visitation only to states accessible from the initial
+// state.
 //
 // Note this is more general than DfsVisit() in dfs-visit.h but lacks
 // some DFS-specific Visitor behavior.
 template <class Arc, class V, class Q, class ArcFilter>
-void Visit(const Fst<Arc> &fst, V *visitor, Q *queue, ArcFilter filter) {
+void Visit(const Fst<Arc> &fst, V *visitor, Q *queue, ArcFilter filter,
+           bool access_only = false) {
 
   typedef typename Arc::StateId StateId;
   typedef ArcIterator< Fst<Arc> > AIterator;
@@ -89,6 +92,7 @@ void Visit(const Fst<Arc> &fst, V *visitor, Q *queue, ArcFilter filter) {
 
   vector<unsigned char> state_status;
   vector<AIterator *> arc_iterator;
+  MemoryPool<AIterator> aiter_pool;        // Pool for arc iterators
 
   StateId nstates = start + 1;             // # of known states in general case
   bool expanded = false;
@@ -118,11 +122,11 @@ void Visit(const Fst<Arc> &fst, V *visitor, Q *queue, ArcFilter filter) {
       }
       // Creates arc iterator if needed.
       if (arc_iterator[s] == 0 && !(state_status[s] & kArcIterDone) && visit)
-        arc_iterator[s] = new AIterator(fst, s);
+        arc_iterator[s] = new(&aiter_pool) AIterator(fst, s);
       // Deletes arc iterator if done.
       AIterator *aiter = arc_iterator[s];
       if ((aiter && aiter->Done()) || !visit) {
-        delete aiter;
+        Destroy(aiter, &aiter_pool);
         arc_iterator[s] = 0;
         state_status[s] |= kArcIterDone;
       }
@@ -158,11 +162,15 @@ void Visit(const Fst<Arc> &fst, V *visitor, Q *queue, ArcFilter filter) {
       aiter->Next();
       // Destroys an iterator ASAP for efficiency.
       if (aiter->Done()) {
-        delete aiter;
+        Destroy(aiter, &aiter_pool);
         arc_iterator[s] = 0;
         state_status[s] |= kArcIterDone;
       }
     }
+
+    if (access_only)
+      break;
+
     // Finds next tree root
     for (root = root == start ? 0 : root + 1;
          root < nstates && state_status[root] != kWhiteState;
@@ -238,44 +246,49 @@ class CopyVisitor {
 };
 
 
-// Visits input FST up to a state limit following queue order. If
-// 'access_only' is true, aborts on visiting first state not
-// accessible from the initial state.
+// Visits input FST up to a state limit following queue order.
 template <class A>
 class PartialVisitor {
  public:
   typedef A Arc;
   typedef typename A::StateId StateId;
 
-  explicit PartialVisitor(StateId maxvisit, bool access_only = false)
-      : maxvisit_(maxvisit),
-        access_only_(access_only),
+  explicit PartialVisitor(StateId maxvisit)
+      : fst_(0),
+        maxvisit_(maxvisit),
         start_(kNoStateId) {}
 
   void InitVisit(const Fst<A> &ifst) {
-    nvisit_ = 0;
+    fst_ = &ifst;
+    ninit_ = 0;
+    nfinish_ = 0;
     start_ = ifst.Start();
   }
 
   bool InitState(StateId s, StateId root) {
-    if (access_only_ && root != start_)
-      return false;
-    ++nvisit_;
-    return nvisit_ <= maxvisit_;
+    ++ninit_;
+    return ninit_ <= maxvisit_;
   }
 
-  bool WhiteArc(StateId s, const Arc &arc) { return true; }
+  bool WhiteArc(StateId s, const Arc &arc) {return true; }
   bool GreyArc(StateId s, const Arc &arc) { return true; }
   bool BlackArc(StateId s, const Arc &arc) { return true; }
-  void FinishState(StateId s) {}
-  void FinishVisit() {}
+
+  void FinishState(StateId s) {
+    fst_->Final(s);  // Visits super-final arc
+    ++nfinish_;
+  }
+
+  void FinishVisit() { }
+  StateId NumInitialized() { return ninit_; }
+  StateId NumFinished() { return nfinish_; }
 
  private:
+  const Fst<Arc> *fst_;
   StateId maxvisit_;
-  bool access_only_;
-  StateId nvisit_;
+  StateId ninit_;
+  StateId nfinish_;
   StateId start_;
-
 };
 
 

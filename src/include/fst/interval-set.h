@@ -218,7 +218,7 @@ void IntervalSet<T>::Intersect(const IntervalSet<T> &iset,
       interval.end = min(it1->end, it2->end);
       ointervals->push_back(interval);
       oset->count_ += interval.end - interval.begin;
-      if (it1->end < it2->end)
+      if ((it1->end) < (it2->end))
         ++it1;
       else
         ++it2;
@@ -240,14 +240,14 @@ void IntervalSet<T>::Complement(T maxval, IntervalSet<T> *oset) const {
        it != intervals_.end();
        ++it) {
     interval.end = min(it->begin, maxval);
-    if (interval.begin < interval.end) {
+    if ((interval.begin) < (interval.end)) {
       ointervals->push_back(interval);
       oset->count_ += interval.end - interval.begin;
     }
     interval.begin = it->end;
   }
   interval.end = maxval;
-  if (interval.begin < interval.end) {
+  if ((interval.begin) < (interval.end)) {
     ointervals->push_back(interval);
     oset->count_ += interval.end - interval.begin;
   }
@@ -346,9 +346,10 @@ bool IntervalSet<T>::Contains(const IntervalSet<T> &iset) const {
   typename vector<Interval>::const_iterator it2 = intervals->begin();
 
   while (it1 != intervals_.end() && it2 != intervals->end()) {
-    if (it1->end <= it2->begin) {  // no overlap - it1 first
+    if ((it1->end) <= (it2->begin)) {  // no overlap - it1 first
       ++it1;
-    } else if (it2->begin < it1->begin || it2->end > it1->end) {  // no C
+    } else if ((it2->begin) < (it1->begin) ||
+               (it2->end) > (it1->end)) {  // no C
       return false;
     } else if (it2->end == it1->end) {
       ++it1;

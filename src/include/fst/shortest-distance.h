@@ -272,6 +272,10 @@ void ShortestDistance(
 // false (true) and k-closed (i.e., 1 + x + x^2 + ... + x^(k +1) = 1 +
 // x + x^2 + ... + x^k).
 //
+// Arc weights must satisfy the property that the sum of the weights of one or
+// more paths from some state S to T is never Zero(). In particular, arc weights
+// are never Zero().
+//
 // The algorithm is from Mohri, "Semiring Framweork and Algorithms for
 // Shortest-Distance Problems", Journal of Automata, Languages and
 // Combinatorics 7(3):321-350, 2002. The complexity of algorithm

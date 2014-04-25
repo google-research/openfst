@@ -23,6 +23,8 @@
 
 #include <algorithm>
 #include <set>
+#include <utility>
+using std::pair; using std::make_pair;
 
 #include <fst/mutable-fst.h>  // for all internal FST accessors
 
@@ -58,7 +60,7 @@ namespace fst {
 //   // Returns the match type that can be provided (depending on
 //   // compatibility of the input FST). It is either
 //   // the requested match type, MATCH_NONE, or MATCH_UNKNOWN.
-//   // If 'test' is false, a constant time test is performed, but
+//   // If 'test' is false, a costly testing is avoided, but
 //   // MATCH_UNKNOWN may be returned. If 'test' is true,
 //   // a definite answer is returned, but may involve more costly
 //   // computation (e.g., visiting the Fst).
@@ -78,6 +80,13 @@ namespace fst {
 //   // Initially and after SetState() the iterator methods
 //   // have undefined behavior until Find() is called.
 //
+//   // Indicates preference for being the side used for matching in
+//   // composition/intersection. If the value is kRequirePriority,
+//   // then it is manditory that it be used.
+//   // Calling this method when 's' is not the current state of matcher
+//   // invalidates the state of the matcher.
+//   ssize_t Priority(StateId s);
+//
 //   // Return matcher FST.
 //   const F& GetFst() const;
 //   // This specifies the known Fst properties as viewed from this
@@ -88,14 +97,15 @@ namespace fst {
 //
 // MATCHER FLAGS (see also kLookAheadFlags in lookahead-matcher.h)
 //
-// Matcher prefers being used as the matching side in composition.
-const uint32 kPreferMatch  = 0x00000001;
-
-// Matcher needs to be used as the matching side in composition.
-const uint32 kRequireMatch = 0x00000002;
+// Matcher needs to be used as the matching side in composition for
+// at least one state (has kRequirePriority).
+const uint32 kRequireMatch = 0x00000001;
 
 // Flags used for basic matchers (see also lookahead.h).
-const uint32 kMatcherFlags = kPreferMatch | kRequireMatch;
+const uint32 kMatcherFlags = kRequireMatch;
+
+// Matcher priority that is manditory.
+const ssize_t kRequirePriority = -1;
 
 // Matcher interface, templated on the Arc definition; used
 // for matcher specializations that are returned by the
@@ -117,6 +127,8 @@ class MatcherBase {
   bool Done() const { return Done_(); }
   const A& Value() const { return Value_(); }
   void Next() { Next_(); }
+  ssize_t Priority(StateId s) { return Priority_(s); }
+
   virtual const Fst<A> &GetFst() const = 0;
   virtual uint64 Properties(uint64 props) const = 0;
   virtual uint32 Flags() const { return 0; }
@@ -126,6 +138,10 @@ class MatcherBase {
   virtual bool Done_() const = 0;
   virtual const A& Value_() const  = 0;
   virtual void Next_()  = 0;
+
+  virtual ssize_t Priority_(StateId s) {
+    return GetFst().NumArcs(s);
+  }
 };
 
 
@@ -155,7 +171,8 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
         match_label_(kNoLabel),
         narcs_(0),
         loop_(kNoLabel, 0, Weight::One(), kNoStateId),
-        error_(false) {
+        error_(false),
+        aiter_pool_(1) {
     switch(match_type_) {
       case MATCH_INPUT:
       case MATCH_NONE:
@@ -179,11 +196,11 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
         match_label_(kNoLabel),
         narcs_(0),
         loop_(matcher.loop_),
-        error_(matcher.error_) {}
+        error_(matcher.error_),
+        aiter_pool_(1) { }
 
   virtual ~SortedMatcher() {
-    if (aiter_)
-      delete aiter_;
+    Destroy(aiter_, &aiter_pool_);
     delete fst_;
   }
 
@@ -217,9 +234,8 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
       FSTERROR() << "SortedMatcher: bad match type";
       error_ = true;
     }
-    if (aiter_)
-      delete aiter_;
-    aiter_ = new ArcIterator<F>(*fst_, s);
+    Destroy(aiter_, &aiter_pool_);
+    aiter_ = new(&aiter_pool_) ArcIterator<F>(*fst_, s);
     aiter_->SetFlags(kArcNoCache, kArcNoCache);
     narcs_ = internal::NumArcs(*fst_, s);
     loop_.nextstate = s;
@@ -286,6 +302,10 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
       aiter_->Next();
   }
 
+  ssize_t Priority(StateId s) {
+    return internal::NumArcs(*fst_, s);
+  }
+
   virtual const F &GetFst() const { return *fst_; }
 
   virtual uint64 Properties(uint64 inprops) const {
@@ -302,6 +322,7 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
   virtual bool Done_() const { return Done(); }
   virtual const Arc& Value_() const { return Value(); }
   virtual void Next_() { Next(); }
+  virtual ssize_t Priority_(StateId s) { return Priority(s); }
 
   bool Search();
 
@@ -316,6 +337,7 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
   bool current_loop_;             // Current arc is the implicit loop
   bool exact_match_;              // Exact match or lower bound?
   bool error_;                    // Error encountered
+  MemoryPool< ArcIterator<F> > aiter_pool_;  // Pool of arc iterators
 
   void operator=(const SortedMatcher<F> &);  // Disallow
 };
@@ -408,7 +430,8 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
       : matcher_(matcher ? matcher : new M(fst, match_type)),
         match_type_(match_type),
         rho_label_(rho_label),
-        error_(false) {
+        error_(false),
+        s_(kNoStateId) {
     if (match_type == MATCH_BOTH) {
       FSTERROR() << "RhoMatcher: bad match type";
       match_type_ = MATCH_NONE;
@@ -433,7 +456,8 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
         match_type_(matcher.match_type_),
         rho_label_(matcher.rho_label_),
         rewrite_both_(matcher.rewrite_both_),
-        error_(matcher.error_) {}
+        error_(matcher.error_),
+        s_(kNoStateId) {}
 
   virtual ~RhoMatcher() {
     delete matcher_;
@@ -446,6 +470,8 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
   virtual MatchType Type(bool test) const { return matcher_->Type(test); }
 
   void SetState(StateId s) {
+    if (s_ == s) return;
+    s_ = s;
     matcher_->SetState(s);
     has_rho_ = rho_label_ != kNoLabel;
   }
@@ -491,13 +517,25 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
 
   void Next() { matcher_->Next(); }
 
+  ssize_t Priority(StateId s) {
+    s_ = s;
+    matcher_->SetState(s);
+    has_rho_ = matcher_->Find(rho_label_);
+    if (has_rho_) {
+      return kRequirePriority;
+    } else {
+      return matcher_->Priority(s);
+    }
+  }
+
   virtual const FST &GetFst() const { return matcher_->GetFst(); }
 
   virtual uint64 Properties(uint64 props) const;
 
   virtual uint32 Flags() const {
-    if (rho_label_ == kNoLabel || match_type_ == MATCH_NONE)
+    if (rho_label_ == kNoLabel || match_type_ == MATCH_NONE) {
       return matcher_->Flags();
+    }
     return matcher_->Flags() | kRequireMatch;
   }
 
@@ -507,6 +545,7 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
   virtual bool Done_() const { return Done(); }
   virtual const Arc& Value_() const { return Value(); }
   virtual void Next_() { Next(); }
+  virtual ssize_t Priority_(StateId s) { return Priority(s); }
 
   M *matcher_;
   MatchType match_type_;  // Type of match requested
@@ -516,6 +555,7 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
   Label rho_match_;       // Current label that matches rho transition
   mutable Arc rho_arc_;   // Arc to return when rho match
   bool error_;            // Error encountered
+  StateId s_;             // Current state
 
   void operator=(const RhoMatcher<M> &);  // Disallow
 };
@@ -582,7 +622,8 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
       : matcher_(matcher ? matcher : new M(fst, match_type)),
         match_type_(match_type),
         sigma_label_(sigma_label),
-        error_(false) {
+        error_(false),
+        s_(kNoStateId) {
     if (match_type == MATCH_BOTH) {
       FSTERROR() << "SigmaMatcher: bad match type";
       match_type_ = MATCH_NONE;
@@ -607,7 +648,8 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
         match_type_(matcher.match_type_),
         sigma_label_(matcher.sigma_label_),
         rewrite_both_(matcher.rewrite_both_),
-        error_(matcher.error_) {}
+        error_(matcher.error_),
+        s_(kNoStateId) {}
 
   virtual ~SigmaMatcher() {
     delete matcher_;
@@ -620,6 +662,8 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
   virtual MatchType Type(bool test) const { return matcher_->Type(test); }
 
   void SetState(StateId s) {
+    if (s == s_) return;
+    s_ = s;
     matcher_->SetState(s);
     has_sigma_ =
         sigma_label_ != kNoLabel ? matcher_->Find(sigma_label_) : false;
@@ -676,6 +720,15 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
     }
   }
 
+  ssize_t Priority(StateId s) {
+    if (sigma_label_ != kNoLabel) {
+      SetState(s);
+      return has_sigma_ ? kRequirePriority : matcher_->Priority(s);
+    } else  {
+      return matcher_->Priority(s);
+    }
+  }
+
   virtual const FST &GetFst() const { return matcher_->GetFst(); }
 
   virtual uint64 Properties(uint64 props) const;
@@ -683,10 +736,7 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
   virtual uint32 Flags() const {
     if (sigma_label_ == kNoLabel || match_type_ == MATCH_NONE)
       return matcher_->Flags();
-    // kRequireMatch temporarily disabled until issues
-    // in //speech/gaudi/annotation/util/denorm are resolved.
-    // return matcher_->Flags() | kRequireMatch;
-    return matcher_->Flags();
+    return matcher_->Flags() | kRequireMatch;
   }
 
 private:
@@ -695,6 +745,7 @@ private:
   virtual bool Done_() const { return Done(); }
   virtual const Arc& Value_() const { return Value(); }
   virtual void Next_() { Next(); }
+  virtual ssize_t Priority_(StateId s) { return Priority(s); }
 
   M *matcher_;
   MatchType match_type_;   // Type of match requested
@@ -705,6 +756,7 @@ private:
   mutable Arc sigma_arc_;  // Arc to return when sigma match
   Label match_label_;      // Label being matched
   bool error_;             // Error encountered
+  StateId s_;              // Current state
 
   void operator=(const SigmaMatcher<M> &);  // disallow
 };
@@ -809,6 +861,7 @@ class PhiMatcher : public MatcherBase<typename M::Arc> {
   virtual MatchType Type(bool test) const { return matcher_->Type(test); }
 
   void SetState(StateId s) {
+    if (state_ == s) return;
     matcher_->SetState(s);
     state_ = s;
     has_phi_ = phi_label_ != kNoLabel;
@@ -847,6 +900,17 @@ class PhiMatcher : public MatcherBase<typename M::Arc> {
 
   void Next() { matcher_->Next(); }
 
+  ssize_t Priority(StateId s) {
+    if (phi_label_ != kNoLabel) {
+      matcher_->SetState(s);
+      has_phi_ = matcher_->Find(phi_label_);
+      state_ = s;
+      return has_phi_ ? kRequirePriority : matcher_->Priority(s);
+    } else {
+      return matcher_->Priority(s);
+    }
+  }
+
   virtual const FST &GetFst() const { return matcher_->GetFst(); }
 
   virtual uint64 Properties(uint64 props) const;
@@ -863,6 +927,7 @@ private:
   virtual bool Done_() const { return Done(); }
   virtual const Arc& Value_() const { return Value(); }
   virtual void Next_() { Next(); }
+  virtual ssize_t Priority_(StateId s) { return Priority(s); }
 
   M *matcher_;
   MatchType match_type_;  // Type of match requested
@@ -1067,7 +1132,11 @@ class MultiEpsMatcher {
     }
   }
 
+  ssize_t Priority(StateId s) { return matcher_->Priority(s); }
+
   const FST &GetFst() const { return matcher_->GetFst(); }
+
+  const M *GetMatcher() const { return matcher_; }
 
   uint64 Properties(uint64 props) const { return matcher_->Properties(props); }
 
@@ -1144,6 +1213,102 @@ bool MultiEpsMatcher<M>::Find(Label match_label) {
 }
 
 
+// This class discards any implicit matches (e.g. the implicit epsilon
+// self-loops in the SortedMatcher). Matchers are most often used in
+// composition/intersection where the implicit matches are needed
+// e.g. for epsilon processing. However, if a matcher is simply being
+// used to look-up explicit label matches, this class saves the user
+// from having to check for and discard the unwanted implicit matches
+// themselves.
+template <class M>
+class ExplicitMatcher : public MatcherBase<typename M::Arc> {
+ public:
+  typedef typename M::FST FST;
+  typedef typename M::Arc Arc;
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Label Label;
+  typedef typename Arc::Weight Weight;
+
+  ExplicitMatcher(const FST &fst,
+               MatchType match_type,
+               M *matcher = 0)
+      : matcher_(matcher ? matcher : new M(fst, match_type)),
+        match_type_(match_type),
+        error_(false) {
+  }
+
+  ExplicitMatcher(const ExplicitMatcher<M> &matcher, bool safe = false)
+      : matcher_(new M(*matcher.matcher_, safe)),
+        match_type_(matcher.match_type_),
+        error_(matcher.error_) {}
+
+  virtual ~ExplicitMatcher() {
+    delete matcher_;
+  }
+
+  virtual ExplicitMatcher<M> *Copy(bool safe = false) const {
+    return new ExplicitMatcher<M>(*this, safe);
+  }
+
+  virtual MatchType Type(bool test) const { return matcher_->Type(test); }
+
+  void SetState(StateId s) {
+    matcher_->SetState(s);
+  }
+
+  bool Find(Label match_label) {
+    matcher_->Find(match_label);
+    CheckArc();
+    return !Done();
+  }
+
+  bool Done() const { return matcher_->Done(); }
+
+  const Arc& Value() const { return matcher_->Value(); }
+
+  void Next() {
+    matcher_->Next();
+    CheckArc();
+  }
+
+  ssize_t Priority(StateId s) { return  matcher_->Priority(s); }
+
+  virtual const FST &GetFst() const { return matcher_->GetFst(); }
+
+  virtual uint64 Properties(uint64 inprops) const {
+    return matcher_->Properties(inprops);
+  }
+
+  virtual uint32 Flags() const {
+    return matcher_->Flags();
+  }
+
+ private:
+  // Checks current arc if available and explicit.
+  // If not available, stops. If not explicit, checks next ones.
+  void CheckArc() {
+    for (; !matcher_->Done(); matcher_->Next()) {
+      Label label = match_type_ == MATCH_INPUT ?
+          matcher_->Value().ilabel : matcher_->Value().olabel;
+      if (label != kNoLabel) return;
+    }
+  }
+
+  virtual void SetState_(StateId s) { SetState(s); }
+  virtual bool Find_(Label label) { return Find(label); }
+  virtual bool Done_() const { return Done(); }
+  virtual const Arc& Value_() const { return Value(); }
+  virtual void Next_() { Next(); }
+  virtual ssize_t Priority_(StateId s) { return Priority(s); }
+
+  M *matcher_;
+  MatchType match_type_;   // Type of match requested
+  bool error_;             // Error encountered
+
+  void operator=(const ExplicitMatcher<M> &);  // disallow
+};
+
+
 // Generic matcher, templated on the FST definition
 // - a wrapper around pointer to specific one.
 // Here is a typical use: \code
@@ -1188,6 +1353,7 @@ class Matcher {
   bool Done() const { return base_->Done(); }
   const Arc& Value() const { return base_->Value(); }
   void Next() { base_->Next(); }
+  ssize_t Priority(StateId s) { return base_->Priority(s); }
   const F &GetFst() const { return static_cast<const F &>(base_->GetFst()); }
   uint64 Properties(uint64 props) const { return base_->Properties(props); }
   uint32 Flags() const { return base_->Flags() & kMatcherFlags; }

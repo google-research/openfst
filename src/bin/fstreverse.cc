@@ -28,6 +28,8 @@
 #include <fstream>
 #include <sstream>
 
+DEFINE_bool(require_superinitial, true, "Always create a superinitial state");
+
 int main(int argc, char **argv) {
   using fst::script::FstClass;
   using fst::script::VectorFstClass;
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
 
   VectorFstClass *out = new VectorFstClass(ifst->ArcType());
 
-  Reverse(*ifst, out);
+  Reverse(*ifst, out, FLAGS_require_superinitial);
 
   out->Write(out_name);
 

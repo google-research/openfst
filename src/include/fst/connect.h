@@ -314,6 +314,46 @@ void Connect(MutableFst<Arc> *fst) {
   fst->SetProperties(kAccessible | kCoAccessible, kAccessible | kCoAccessible);
 }
 
+
+// Returns an acyclic FST where each SCC in the input FST has been
+// condensed to a single state with transitions between SCCs retained
+// and within SCCs dropped.  Also returns the mapping from an input
+// state 's' to an output state 'scc[s]'.
+template<class Arc>
+void Condense(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
+              vector<typename Arc::StateId> *scc) {
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Weight Weight;
+
+  ofst->DeleteStates();
+  uint64 props = 0;
+  SccVisitor<Arc> scc_visitor(scc, 0, 0, &props);
+  DfsVisit(ifst, &scc_visitor);
+  for (StateId s = 0; s < scc->size(); ++s) {
+    StateId c = (*scc)[s];
+    while (c >= ofst->NumStates())
+      ofst->AddState();
+    if (s == ifst.Start())
+      ofst->SetStart(c);
+    Weight final = ifst.Final(s);
+    if (final != Weight::Zero())
+      ofst->SetFinal(c, Plus(ofst->Final(c), final));
+    for (ArcIterator< Fst<Arc> > aiter(ifst, s);
+         !aiter.Done();
+         aiter.Next()) {
+      Arc arc = aiter.Value();
+      StateId nextc = (*scc)[arc.nextstate];
+      if (nextc != c) {
+        while (nextc >= ofst->NumStates())
+          ofst->AddState();
+        arc.nextstate = nextc;
+        ofst->AddArc(c, arc);
+      }
+    }
+  }
+  ofst->SetProperties(kAcyclic | kInitialAcyclic, kAcyclic | kInitialAcyclic);
+}
+
 }  // namespace fst
 
 #endif  // FST_LIB_CONNECT_H__

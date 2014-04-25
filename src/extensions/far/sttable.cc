@@ -20,7 +20,7 @@ namespace fst {
 
 bool IsSTTable(const string &filename) {
   ifstream strm(filename.c_str());
-  if (!strm)
+  if (!strm.good())
     return false;
 
   int32 magic_number = 0;

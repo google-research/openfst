@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include <fst/fst.h>
+#include <fst/compat.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -35,10 +35,12 @@ namespace fst {
 // casted pointer to a region contained within [mmap, mmap + size).
 // If size is 0, then mmap refers and data refer to a block of memory managed
 // externally by some other allocator.
+// offset is used when allocating memory to providing padding for alignment.
 struct MemoryRegion {
   void *data;
   void *mmap;
   size_t size;
+  int offset;
 };
 
 class MappedFile {
@@ -55,14 +57,16 @@ class MappedFile {
 
   // Returns a MappedFile object that contains the contents of the input
   // stream s starting from the current file position with size bytes.
-  // The file name must also be provided in the FstReadOptions as opts.source
-  // or else mapping will fail.  If mapping is not possible, then a MappedFile
-  // object with a new[]'ed  block of memory will be created.
-  static MappedFile* Map(istream* s, const FstReadOptions& opts, size_t size);
+  // the memorymap bool is advisory, and Map will default to allocating and
+  // reading.  source needs to contain the filename that was used to open
+  // the istream.
+  static MappedFile* Map(istream* s, bool memorymap, const string& source,
+                         size_t size);
 
   // Creates a MappedFile object with a new[]'ed block of memory of size.
+  // Align can be used to specify a desired block alignment.
   // RECOMMENDED FOR INTERNAL USE ONLY, may change in future releases.
-  static MappedFile* Allocate(size_t size);
+  static MappedFile* Allocate(size_t size, int align = kArchAlignment);
 
   // Creates a MappedFile object pointing to a borrowed reference to data.
   // This block of memory is not owned by the MappedFile object and will not

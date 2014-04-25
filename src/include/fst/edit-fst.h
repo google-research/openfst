@@ -25,9 +25,9 @@ using std::vector;
 
 #include <fst/cache.h>
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 
 namespace fst {
 

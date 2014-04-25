@@ -184,6 +184,15 @@ typename Arc::StateId CountStates(const Fst<Arc> &fst) {
   }
 }
 
+// Function to return the number of arcs in an FST.
+template <class Arc>
+typename Arc::StateId CountArcs(const Fst<Arc> &fst) {
+  size_t narcs = 0;
+  for (StateIterator< Fst<Arc> > siter(fst); !siter.Done(); siter.Next())
+    narcs += fst.NumArcs(siter.Value());
+  return narcs;
+}
+
 }  // namespace fst
 
 #endif  // FST_LIB_EXPANDED_FST_H__

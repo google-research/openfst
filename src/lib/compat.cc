@@ -26,19 +26,3 @@ void FailedNewHandler() {
   cerr << "Memory allocation failed\n";
   exit(1);
 }
-
-namespace fst {
-
-void SplitToVector(char* full, const char* delim, vector<char*>* vec,
-                    bool omit_empty_strings) {
-  char *p = full;
-  while (p) {
-    if (p = strpbrk(full, delim))
-      p[0] = '\0';
-    if (!omit_empty_strings || full[0] != '\0')
-      vec->push_back(full);
-    if (p)
-      full = p + 1;
-  }
-}
-}  // namespace fst

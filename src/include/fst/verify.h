@@ -82,7 +82,7 @@ bool Verify(const Fst<Arc> &fst, bool allow_negative_labels = false) {
                    << " is missing from output symbol table \""
                    << osyms->Name() << "\"";
         return false;
-      } else if (!arc.weight.Member() || arc.weight == Weight::Zero()) {
+      } else if (!arc.weight.Member()) {
         LOG(ERROR) << "Verify: Fst weight of arc at position "
                    << na << " of state " << s << " is invalid";
         return false;

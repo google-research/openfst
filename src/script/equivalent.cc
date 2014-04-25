@@ -25,7 +25,7 @@ bool Equivalent(const FstClass &fst1, const FstClass &fst2,
                 float delta) {
   if (!ArcTypesMatch(fst1, fst2, "Equivalent")) return false;
 
-  EquivalentInnerArgs args(fst1, fst2, kDelta);
+  EquivalentInnerArgs args(fst1, fst2, delta);
   EquivalentArgs args_with_retval(args);
 
   Apply<Operation<EquivalentArgs> >("Equivalent", fst1.ArcType(),

@@ -31,6 +31,19 @@ DEFINE_bool(fst_error_fatal, true,
 
 namespace fst {
 
+void SplitToVector(char* full, const char* delim, vector<char*>* vec,
+                   bool omit_empty_strings) {
+  char *p = full;
+  while (p) {
+    if ((p = strpbrk(full, delim)))
+      p[0] = '\0';
+    if (!omit_empty_strings || full[0] != '\0')
+      vec->push_back(full);
+    if (p)
+      full = p + 1;
+  }
+}
+
 int64 StrToInt64(const string &s, const string &src, size_t nline,
                  bool allow_negative, bool *error) {
   int64 n;

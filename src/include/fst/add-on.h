@@ -46,7 +46,7 @@ class NullAddOn {
 
   static NullAddOn *Read(istream &istrm) {
     return new NullAddOn();
-  };
+  }
 
   bool Write(ostream &ostrm) const { return true; }
 
@@ -103,7 +103,7 @@ class AddOnPair {
     if (a2)
       a2->DecrRefCount();
     return a;
-  };
+  }
 
   bool Write(ostream &ostrm) const {
     bool have_addon1 = a1_;

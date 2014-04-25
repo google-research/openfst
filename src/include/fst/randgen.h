@@ -332,7 +332,7 @@ class RandGenFstImpl : public CacheImpl<B> {
   using FstImpl<B>::SetInputSymbols;
   using FstImpl<B>::SetOutputSymbols;
 
-  using CacheBaseImpl< CacheState<B> >::AddArc;
+  using CacheBaseImpl< CacheState<B> >::PushArc;
   using CacheBaseImpl< CacheState<B> >::HasArcs;
   using CacheBaseImpl< CacheState<B> >::HasFinal;
   using CacheBaseImpl< CacheState<B> >::HasStart;
@@ -462,7 +462,7 @@ class RandGenFstImpl : public CacheImpl<B> {
         const A &aarc = aiter.Value();
         Weight weight = weighted_ ? to_weight_(-log(prob)) : Weight::One();
         B barc(aarc.ilabel, aarc.olabel, weight, state_table_.size());
-        AddArc(s, barc);
+        PushArc(s, barc);
         RandState<A> *nrstate =
             new RandState<A>(aarc.nextstate, count, rstate.length + 1,
                              pos, &rstate);
@@ -480,7 +480,7 @@ class RandGenFstImpl : public CacheImpl<B> {
           }
           for (size_t n = 0; n < count; ++n) {
             B barc(0, 0, Weight::One(), superfinal_);
-            AddArc(s, barc);
+            PushArc(s, barc);
           }
         }
       }
@@ -515,7 +515,8 @@ class RandGenFst : public ImplToFst< RandGenFstImpl<A, B, S> > {
   typedef typename A::Label Label;
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
-  typedef CacheState<B> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
   typedef RandGenFstImpl<A, B, S> Impl;
 
   RandGenFst(const Fst<A> &fst, const RandGenFstOptions<S> &opts)

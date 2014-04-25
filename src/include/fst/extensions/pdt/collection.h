@@ -107,7 +107,7 @@ class Collection {
  private:
   static const I kNoNodeId;
   static const size_t kPrime;
-  static std::tr1::hash<T> hash_;
+  static std::hash<T> hash_;
 
   NodeTable node_table_;
 
@@ -118,7 +118,7 @@ template<class I, class T> const I Collection<I, T>::kNoNodeId = -1;
 
 template <class I, class T> const size_t Collection<I, T>::kPrime = 7853;
 
-template <class I, class T> std::tr1::hash<T> Collection<I, T>::hash_;
+template <class I, class T> std::hash<T> Collection<I, T>::hash_;
 
 }  // namespace fst
 

@@ -59,7 +59,7 @@ class FarHeader {
       return true;
     } else if (IsSTList(filename)) {  // Check if STList
       ReadSTListHeader(filename, &fsthdr);
-      fartype_ = "sttable";
+      fartype_ = "stlist";
       arctype_ = fsthdr.ArcType().empty() ? "unknown" : fsthdr.ArcType();
       return true;
     } else if (IsFst(filename)) {  // Check if Fst
@@ -273,13 +273,10 @@ FarWriter<A> *FarWriter<A>::Create(const string &filename, FarType type) {
         return STListFarWriter<A>::Create(filename);
     case FAR_STTABLE:
       return STTableFarWriter<A>::Create(filename);
-      break;
     case FAR_STLIST:
       return STListFarWriter<A>::Create(filename);
-      break;
     case FAR_FST:
       return FstFarWriter<A>::Create(filename);
-      break;
     default:
       LOG(ERROR) << "FarWriter::Create: unknown far type";
       return 0;
@@ -479,7 +476,10 @@ class FstFarReader : public FarReader<A> {
 
  private:
   void ReadFst() {
-    if (fst_) delete fst_;
+    if (fst_) {
+      delete fst_;
+      fst_ = 0;
+    }
     if (pos_ >= keys_.size()) return;
     streams_[pos_]->seekg(0);
     fst_ = Fst<A>::Read(*streams_[pos_], FstReadOptions());

@@ -21,10 +21,11 @@
 namespace fst {
 namespace script {
 
-void Reverse(const FstClass &fst1, MutableFstClass *fst2) {
+void Reverse(const FstClass &fst1, MutableFstClass *fst2,
+             bool require_superinitial) {
   if (!ArcTypesMatch(fst1, *fst2, "Reverse")) return;
 
-  ReverseArgs args(fst1, fst2);
+  ReverseArgs args(fst1, fst2, require_superinitial);
 
   Apply<Operation<ReverseArgs> >("Reverse", fst1.ArcType(), &args);
 }

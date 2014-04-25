@@ -8,6 +8,15 @@ fst/extensions/far/print-strings.h fst/extensions/far/stlist.h \
 fst/extensions/far/sttable.h
 endif
 
+if HAVE_LINEAR
+linear_include_headers = fst/extensions/linear/linear-fst-data-builder.h \
+fst/extensions/linear/linear-fst-data.h \
+fst/extensions/linear/linear-fst.h \
+fst/extensions/linear/linearscript.h \
+fst/extensions/linear/loglinear-apply.h \
+fst/extensions/linear/trie.h
+endif
+
 if HAVE_NGRAM
 ngram_include_headers = fst/extensions/ngram/bitmap-index.h \
 fst/extensions/ngram/ngram-fst.h \
@@ -55,20 +64,22 @@ fst/union-find.h fst/compact-fst.h fst/expanded-fst.h fst/minimize.h \
 fst/replace.h fst/union.h fst/compat.h fst/factor-weight.h fst/state-map.h \
 fst/mutable-fst.h fst/reverse.h fst/util.h fst/complement.h \
 fst/flags.h fst/partition.h fst/reweight.h fst/vector-fst.h \
-fst/compose-filter.h fst/float-weight.h fst/product-weight.h \
+fst/filter-state.h fst/compose-filter.h fst/float-weight.h fst/product-weight.h \
 fst/rmepsilon.h fst/verify.h fst/compose.h fst/fst-decl.h \
 fst/project.h fst/rmfinalepsilon.h fst/visit.h fst/concat.h \
 fst/fst.h fst/properties.h fst/shortest-distance.h fst/weight.h \
 fst/connect.h fst/fstlib.h fst/prune.h fst/shortest-path.h \
-fst/const-fst.h fst/heap.h fst/push.h fst/state-table.h fst/slist.h \
+fst/const-fst.h fst/heap.h fst/push.h fst/state-table.h \
 fst/pair-weight.h fst/config.h fst/tuple-weight.h fst/power-weight.h \
 fst/lookahead-matcher.h fst/types.h fst/add-on.h fst/label-reachable.h \
 fst/accumulator.h fst/interval-set.h fst/state-reachable.h \
 fst/lookahead-filter.h fst/generic-register.h fst/edit-fst.h \
 fst/replace-util.h fst/icu.h fst/string.h fst/signed-log-weight.h \
 fst/sparse-tuple-weight.h fst/sparse-power-weight.h fst/expectation-weight.h \
-fst/symbol-table-ops.h fst/bi-table.h fst/mapped-file.h \
+fst/symbol-table-ops.h fst/bi-table.h fst/mapped-file.h fst/memory.h \
+fst/filter-state.h fst/disambiguate.h \
 $(far_include_headers) \
+$(linear_include_headers) \
 $(ngram_include_headers) \
 $(pdt_include_headers) \
 $(script_include_headers)

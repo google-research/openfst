@@ -53,9 +53,6 @@ namespace fst {
 
 using namespace std;
 
-void SplitToVector(char *line, const char *delim,
-                   std::vector<char *> *vec, bool omit_empty_strings);
-
 // Downcasting
 template<typename To, typename From>
 inline To down_cast(From* f) {
@@ -111,21 +108,5 @@ class CheckSummer {
 };
 
 }  // namespace fst
-
-
-// Define missing hash functions if needed
-#ifndef HAVE_STD__TR1__HASH_LONG_LONG_UNSIGNED_
-namespace std {
-namespace tr1 {
-
-template <class T> class hash;
-
-template<> struct hash<uint64> {
-  size_t operator()(uint64 x) const { return x; }
-};
-
-}
-}
-#endif  // HAVE_STD__TR1__HASH_LONG_LONG_UNSIGNED_
 
 #endif  // FST_LIB_COMPAT_H__

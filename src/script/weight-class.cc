@@ -34,7 +34,7 @@ WeightClass::WeightClass(const string &weight_type,
   StrToWeightImplBaseT stw = reg->GetEntry(weight_type);
 
   impl_ = stw(weight_str, "WeightClass", 0);
-};
+}
 
 ostream& operator << (ostream &o, const WeightClass &c) {
   c.impl_->Print(&o);

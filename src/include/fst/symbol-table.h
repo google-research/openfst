@@ -23,6 +23,10 @@
 #define FST_LIB_SYMBOL_TABLE_H__
 
 #include <cstring>
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
+#include <memory>
 #include <string>
 #include <utility>
 using std::pair; using std::make_pair;
@@ -64,6 +68,44 @@ struct SymbolTableTextOptions {
   string fst_field_separator;
 };
 
+namespace internal {
+
+// List of symbols with a dense hash for looking up symbol index.
+// Hash uses linear probe, rehashes at 0.75% occupancy, avg 6 bytes overhead
+// per entry.  Rehash in place from symbol list.
+//
+// Symbols are stored as c strings to avoid adding memory overhead, but the
+// performance penalty for this is high because rehash must call strlen on
+// every symbol.  AddSymbol can be another 2x faster if symbol lengths were
+// stored.
+class DenseSymbolMap {
+ public:
+  DenseSymbolMap();
+  DenseSymbolMap(const DenseSymbolMap& x);
+  ~DenseSymbolMap();
+
+  pair<int64, bool> InsertOrFind(const string& key);
+  int64 Find(const string& key) const;
+
+  const size_t size() const { return symbols_.size(); }
+  const string GetSymbol(size_t idx) const {
+    return string(symbols_[idx], strlen(symbols_[idx]));
+  }
+
+ private:
+  void Rehash();
+  const char* NewSymbol(const string& sym);
+
+  int64 empty_;
+  vector<const char*> symbols_;
+  std::hash<string> str_hash_;
+  vector<int64> buckets_;
+  uint64 hash_mask_;
+  int size_;
+};
+
+}  // namespace internal
+
 class SymbolTableImpl {
  public:
   SymbolTableImpl(const string &name)
@@ -74,26 +116,17 @@ class SymbolTableImpl {
 
   explicit SymbolTableImpl(const SymbolTableImpl& impl)
       : name_(impl.name_),
-        available_key_(0),
-        dense_key_limit_(0),
-        check_sum_finalized_(false) {
-    for (size_t i = 0; i < impl.symbols_.size(); ++i) {
-      AddSymbol(impl.symbols_[i], impl.Find(impl.symbols_[i]));
-    }
-  }
+        available_key_(impl.available_key_),
+        dense_key_limit_(impl.dense_key_limit_),
+        symbols_(impl.symbols_),
+        idx_key_(impl.idx_key_),
+        key_map_(impl.key_map_),
+        check_sum_finalized_(false) {}
 
-  ~SymbolTableImpl() {
-    for (size_t i = 0; i < symbols_.size(); ++i)
-      delete[] symbols_[i];
-  }
-
-  // TODO(johans): Add flag to specify whether the symbol
-  //               should be indexed as string or int or both.
   int64 AddSymbol(const string& symbol, int64 key);
 
   int64 AddSymbol(const string& symbol) {
-    int64 key = Find(symbol);
-    return (key == -1) ? AddSymbol(symbol, available_key_++) : key;
+    return AddSymbol(symbol, available_key_);
   }
 
   static SymbolTableImpl* ReadText(
@@ -105,43 +138,38 @@ class SymbolTableImpl {
 
   bool Write(ostream &strm) const;
 
-  //
   // Return the string associated with the key. If the key is out of
   // range (<0, >max), return an empty string.
   string Find(int64 key) const {
-    if (key >=0 && key < dense_key_limit_)
-      return string(symbols_[key]);
-
-    map<int64, const char*>::const_iterator it =
-        key_map_.find(key);
-    if (it == key_map_.end()) {
-      return "";
+    int64 idx = key;
+    if (key < 0 || key >= dense_key_limit_) {
+      map<int64, int64>::const_iterator iter
+          = key_map_.find(key);
+      if (iter == key_map_.end()) return "";
+      idx = iter->second;
     }
-    return string(it->second);
+    if (idx < 0 || idx >= symbols_.size()) return "";
+    return symbols_.GetSymbol(idx);
   }
 
-  //
   // Return the key associated with the symbol. If the symbol
   // does not exists, return SymbolTable::kNoSymbol.
   int64 Find(const string& symbol) const {
-    return Find(symbol.c_str());
+    int64 idx = symbols_.Find(symbol);
+    if (idx == -1 || idx < dense_key_limit_) return idx;
+    return idx_key_[idx - dense_key_limit_];
   }
 
-  //
   // Return the key associated with the symbol. If the symbol
   // does not exists, return SymbolTable::kNoSymbol.
   int64 Find(const char* symbol) const {
-    map<const char *, int64, StrCmp>::const_iterator it =
-        symbol_map_.find(symbol);
-    if (it == symbol_map_.end()) {
-      return -1;
-    }
-    return it->second;
+    return Find(string(symbol));
   }
 
   int64 GetNthKey(ssize_t pos) const {
-    if ((pos < 0) || (pos >= symbols_.size())) return -1;
-    else return Find(symbols_[pos]);
+    if (pos < 0 || pos >= symbols_.size()) return -1;
+    if (pos < dense_key_limit_) return pos;
+    return Find(symbols_.GetSymbol(pos));
   }
 
   const string& Name() const { return name_; }
@@ -181,18 +209,13 @@ class SymbolTableImpl {
   // if the checksum is up-to-date (requiring no recomputation).
   void MaybeRecomputeCheckSum() const;
 
-  struct StrCmp {
-    bool operator()(const char *s1, const char *s2) const {
-      return strcmp(s1, s2) < 0;
-    }
-  };
-
   string name_;
   int64 available_key_;
   int64 dense_key_limit_;
-  vector<const char *> symbols_;
-  map<int64, const char*> key_map_;
-  map<const char *, int64, StrCmp> symbol_map_;
+
+  internal::DenseSymbolMap symbols_;
+  vector<int64> idx_key_;
+  map<int64, int64> key_map_;
 
   mutable RefCounter ref_count_;
   mutable bool check_sum_finalized_;
@@ -222,7 +245,7 @@ class SymbolTable {
   SymbolTable() : impl_(new SymbolTableImpl("<unspecified>")) {}
 
   // Construct symbol table with a unique name.
-  SymbolTable(const string& name) : impl_(new SymbolTableImpl(name)) {}
+  explicit SymbolTable(const string& name) : impl_(new SymbolTableImpl(name)) {}
 
   // Create a reference counted copy.
   SymbolTable(const SymbolTable& table) : impl_(table.impl_) {
@@ -260,7 +283,7 @@ class SymbolTable {
   static SymbolTable* ReadText(const string& filename,
       const SymbolTableTextOptions &opts = SymbolTableTextOptions()) {
     ifstream strm(filename.c_str(), ifstream::in);
-    if (!strm) {
+    if (!strm.good()) {
       LOG(ERROR) << "SymbolTable::ReadText: Can't open file " << filename;
       return 0;
     }
@@ -289,7 +312,7 @@ class SymbolTable {
   // read a binary dump of the symbol table
   static SymbolTable* Read(const string& filename) {
     ifstream strm(filename.c_str(), ifstream::in | ifstream::binary);
-    if (!strm) {
+    if (!strm.good()) {
       LOG(ERROR) << "SymbolTable::Read: Can't open file " << filename;
       return 0;
     }
@@ -349,7 +372,7 @@ class SymbolTable {
 
   bool Write(const string& filename) const {
     ofstream strm(filename.c_str(), ofstream::out | ofstream::binary);
-    if (!strm) {
+    if (!strm.good()) {
       LOG(ERROR) << "SymbolTable::Write: Can't open file " << filename;
       return false;
     }
@@ -364,7 +387,7 @@ class SymbolTable {
   // Dump an ascii text representation of the symbol table
   bool WriteText(const string& filename) const {
     ofstream strm(filename.c_str());
-    if (!strm) {
+    if (!strm.good()) {
       LOG(ERROR) << "SymbolTable::WriteText: Can't open file " << filename;
       return false;
     }
@@ -529,8 +552,6 @@ inline SymbolTable *StringToSymbolTable(const string &s) {
   istringstream istrm(s);
   return SymbolTable::Read(istrm, SymbolTableReadOptions());
 }
-
-
 
 }  // namespace fst
 

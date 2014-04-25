@@ -21,9 +21,9 @@
 #ifndef FST_SCRIPT_COMPILE_IMPL_H_
 #define FST_SCRIPT_COMPILE_IMPL_H_
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <sstream>
 #include <string>
 #include <vector>
@@ -52,14 +52,46 @@ template <class A> class FstCompiler {
 
   // WARNING: use of 'allow_negative_labels = true' not recommended; may
   // cause conflicts
-  FstCompiler(istream &istrm, const string &source,
-            const SymbolTable *isyms, const SymbolTable *osyms,
-            const SymbolTable *ssyms, bool accep, bool ikeep,
-              bool okeep, bool nkeep, bool allow_negative_labels = false)
-      : nline_(0), source_(source),
-        isyms_(isyms), osyms_(osyms), ssyms_(ssyms),
-        nstates_(0), keep_state_numbering_(nkeep),
-        allow_negative_labels_(allow_negative_labels) {
+  // If add_symbols_ is true, then the symbols will be dynamically added
+  // to the symbol tables.  This is only useful if you set the (i/o)keep flag
+  // to attach the final symbol table, or use the accessors.  (The input
+  // symbol tables are const and therefore not changed.)
+  FstCompiler(istream &istrm, const string &source,  // NOLINT
+              const SymbolTable *isyms, const SymbolTable *osyms,
+              const SymbolTable *ssyms, bool accep, bool ikeep,
+              bool okeep, bool nkeep, bool allow_negative_labels = false) {
+    SymbolTable* misyms = isyms ? isyms->Copy() : NULL;
+    SymbolTable* mosyms = osyms ? osyms->Copy() : NULL;
+    SymbolTable* mssyms = ssyms ? ssyms->Copy() : NULL;
+    Init(istrm, source, misyms, mosyms, mssyms, accep, ikeep, okeep, nkeep,
+         allow_negative_labels, false);
+    delete mssyms;
+    delete mosyms;
+    delete misyms;
+  }
+
+  FstCompiler(istream &istrm, const string &source,  // NOLINT
+              SymbolTable *isyms, SymbolTable *osyms,
+              SymbolTable *ssyms, bool accep, bool ikeep,
+              bool okeep, bool nkeep, bool allow_negative_labels,
+              bool add_symbols) {
+    Init(istrm, source, isyms, osyms, ssyms, accep, ikeep, okeep, nkeep,
+         allow_negative_labels, add_symbols);
+  }
+
+  void Init(istream &istrm, const string &source, SymbolTable *isyms,  // NOLINT
+            SymbolTable *osyms, SymbolTable *ssyms, bool accep, bool ikeep,
+            bool okeep, bool nkeep, bool allow_negative_labels,
+            bool add_symbols) {
+    nline_ = 0;
+    source_ = source;
+    isyms_ = isyms;
+    osyms_ = osyms;
+    ssyms_ = ssyms;
+    nstates_ = 0;
+    keep_state_numbering_ = nkeep;
+    allow_negative_labels_ = allow_negative_labels;
+    add_symbols_ = add_symbols;
     char line[kLineLen];
     while (istrm.getline(line, kLineLen)) {
       ++nline_;
@@ -104,7 +136,7 @@ template <class A> class FstCompiler {
         arc.ilabel = StrToILabel(col[2]);
         if (accep) {
           arc.olabel = arc.ilabel;
-          arc.weight = StrToWeight(col[3], false);
+          arc.weight = StrToWeight(col[3], true);
         } else {
           arc.olabel = StrToOLabel(col[3]);
           arc.weight = Weight::One();
@@ -115,7 +147,7 @@ template <class A> class FstCompiler {
         arc.nextstate = d = StrToStateId(col[1]);
         arc.ilabel = StrToILabel(col[2]);
         arc.olabel = StrToOLabel(col[3]);
-        arc.weight = StrToWeight(col[4], false);
+        arc.weight = StrToWeight(col[4], true);
         fst_.AddArc(s, arc);
       }
       while (d >= fst_.NumStates())
@@ -135,12 +167,12 @@ template <class A> class FstCompiler {
   // Maximum line length in text file.
   static const int kLineLen = 8096;
 
-  int64 StrToId(const char *s, const SymbolTable *syms,
+  int64 StrToId(const char *s, SymbolTable *syms,
                 const char *name, bool allow_negative = false) const {
     int64 n = 0;
 
     if (syms) {
-      n = syms->Find(s);
+      n = (add_symbols_) ? syms->AddSymbol(s) : syms->Find(s);
       if (n == -1 || (!allow_negative && n < 0)) {
         FSTERROR() << "FstCompiler: Symbol \"" << s
                    << "\" is not mapped to any integer " << name
@@ -200,13 +232,14 @@ template <class A> class FstCompiler {
   mutable VectorFst<A> fst_;
   size_t nline_;
   string source_;                      // text FST source name
-  const SymbolTable *isyms_;           // ilabel symbol table
-  const SymbolTable *osyms_;           // olabel symbol table
-  const SymbolTable *ssyms_;           // slabel symbol table
+  SymbolTable *isyms_;           // ilabel symbol table (not owned)
+  SymbolTable *osyms_;           // olabel symbol table (not owned)
+  SymbolTable *ssyms_;           // slabel symbol table (not owned)
   unordered_map<StateId, StateId> states_;  // state ID map
   StateId nstates_;                    // number of seen states
   bool keep_state_numbering_;
   bool allow_negative_labels_;         // not recommended; may cause conflicts
+  bool add_symbols_;         // add to symbol tables on-the fly
 
   DISALLOW_COPY_AND_ASSIGN(FstCompiler);
 };

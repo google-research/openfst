@@ -46,7 +46,7 @@ SymbolTableImpl* SymbolTableImpl::ReadText(istream &strm,
 
   int64 nline = 0;
   char line[kLineLen];
-  while (strm.getline(line, kLineLen)) {
+  while (!strm.getline(line, kLineLen).fail()) {
     ++nline;
     vector<char *> col;
     string separator = opts.fst_field_separator + "\n";
@@ -93,26 +93,29 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
 
   // Calculate the original label-agnostic check sum.
   CheckSummer check_sum;
-  for (int64 i = 0; i < symbols_.size(); ++i)
-    check_sum.Update(symbols_[i], strlen(symbols_[i]) + 1);
+  for (int64 i = 0; i < symbols_.size(); ++i) {
+    const string& sym = symbols_.GetSymbol(i);
+    check_sum.Update(sym.data(), sym.size());
+    check_sum.Update("", 1);
+  }
   check_sum_string_ = check_sum.Digest();
 
   // Calculate the safer, label-dependent check sum.
   CheckSummer labeled_check_sum;
-  for (int64 key = 0; key < dense_key_limit_; ++key) {
+  for (int64 i = 0; i < dense_key_limit_; i++) {
     ostringstream line;
-    line << symbols_[key] << '\t' << key;
+    line << symbols_.GetSymbol(i) << '\t' << i;
     labeled_check_sum.Update(line.str().data(), line.str().size());
   }
-  for (map<int64, const char*>::const_iterator it =
-       key_map_.begin();
-       it != key_map_.end();
-       ++it) {
-    if (it->first >= dense_key_limit_) {
-      ostringstream line;
-      line << it->second << '\t' << it->first;
-      labeled_check_sum.Update(line.str().data(), line.str().size());
-    }
+  for (map<int64, int64>::const_iterator i
+         = key_map_.begin(); i != key_map_.end(); ++i) {
+    // TODO(tombagby, 2013-11-22) This line maintains a bug that ignores
+    // negative labels in the checksum that too many tests rely on.
+    if (i->first < dense_key_limit_) continue;
+
+    ostringstream line;
+    line << symbols_.GetSymbol(i->second) << '\t' << i->first;
+    labeled_check_sum.Update(line.str().data(), line.str().size());
   }
   labeled_check_sum_string_ = labeled_check_sum.Digest();
 
@@ -120,48 +123,34 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
 }
 
 int64 SymbolTableImpl::AddSymbol(const string& symbol, int64 key) {
-  map<const char *, int64, StrCmp>::const_iterator it =
-      symbol_map_.find(symbol.c_str());
-  if (it == symbol_map_.end()) {  // only add if not in table
-    check_sum_finalized_ = false;
-
-    char *csymbol = new char[symbol.size() + 1];
-    strcpy(csymbol, symbol.c_str());
-    symbols_.push_back(csymbol);
-    key_map_[key] = csymbol;
-    symbol_map_[csymbol] = key;
-
-    if (key >= available_key_) {
-      available_key_ = key + 1;
-    }
+  if (key == -1) return key;
+  const pair<int, bool>& insert_key = symbols_.InsertOrFind(symbol);
+  if (!insert_key.second) {
+    int64 key_already = GetNthKey(insert_key.first);
+    if (key_already == key) return key;
+    VLOG(1) << "SymbolTable::AddSymbol: symbol = " << symbol
+            << " already in symbol_map_ with key = " << key_already
+            << " but supplied new key = " << key << " (ignoring new key)";
+    return key_already;
+  }
+  if (key == (symbols_.size() - 1)  && key == dense_key_limit_) {
+    dense_key_limit_++;
   } else {
-    // Log if symbol already in table with different key
-    if (it->second != key) {
-      VLOG(1) << "SymbolTable::AddSymbol: symbol = " << symbol
-              << " already in symbol_map_ with key = "
-              << it->second
-              << " but supplied new key = " << key
-              << " (ignoring new key)";
-    }
+    idx_key_.push_back(key);
+    key_map_[key] = symbols_.size() - 1;
   }
+  if (key >= available_key_) {
+    available_key_ = key + 1;
+  }
+  check_sum_finalized_ = false;
   return key;
-}
-
-static bool IsInRange(const vector<pair<int64, int64> >& ranges,
-                      int64 key) {
-  if (ranges.size() == 0) return true;
-  for (size_t i = 0; i < ranges.size(); ++i) {
-    if (key >= ranges[i].first && key <= ranges[i].second)
-      return true;
-  }
-  return false;
 }
 
 SymbolTableImpl* SymbolTableImpl::Read(istream &strm,
                                        const SymbolTableReadOptions& opts) {
   int32 magic_number = 0;
   ReadType(strm, &magic_number);
-  if (!strm) {
+  if (strm.fail()) {
     LOG(ERROR) << "SymbolTable::Read: read failed";
     return 0;
   }
@@ -171,7 +160,7 @@ SymbolTableImpl* SymbolTableImpl::Read(istream &strm,
   ReadType(strm, &impl->available_key_);
   int64 size;
   ReadType(strm, &size);
-  if (!strm) {
+  if (strm.fail()) {
     LOG(ERROR) << "SymbolTable::Read: read failed";
     delete impl;
     return 0;
@@ -183,24 +172,12 @@ SymbolTableImpl* SymbolTableImpl::Read(istream &strm,
   for (size_t i = 0; i < size; ++i) {
     ReadType(strm, &symbol);
     ReadType(strm, &key);
-    if (!strm) {
+    if (strm.fail()) {
       LOG(ERROR) << "SymbolTable::Read: read failed";
       delete impl;
       return 0;
     }
-
-    char *csymbol = new char[symbol.size() + 1];
-    strcpy(csymbol, symbol.c_str());
-    impl->symbols_.push_back(csymbol);
-    if (key == impl->dense_key_limit_ &&
-        key == impl->symbols_.size() - 1)
-      impl->dense_key_limit_ = impl->symbols_.size();
-    else
-      impl->key_map_[key] = csymbol;
-
-    if (IsInRange(opts.string_hash_ranges, key)) {
-      impl->symbol_map_[csymbol] = key;
-    }
+    impl->AddSymbol(symbol, key);
   }
   return impl;
 }
@@ -211,27 +188,13 @@ bool SymbolTableImpl::Write(ostream &strm) const {
   WriteType(strm, available_key_);
   int64 size = symbols_.size();
   WriteType(strm, size);
-  // first write out dense keys
-  int64 i = 0;
-  for (; i < dense_key_limit_; ++i) {
-    WriteType(strm, string(symbols_[i]));
-    WriteType(strm, i);
-  }
-  // next write out the remaining non densely packed keys
-  for (map<const char *, int64, StrCmp>::const_iterator it =
-           symbol_map_.begin(); it != symbol_map_.end(); ++it) {
-    if ((it->second >= 0) && (it->second < dense_key_limit_))
-      continue;
-    WriteType(strm, string(it->first));
-    WriteType(strm, it->second);
-    ++i;
-  }
-  if (i != size) {
-    LOG(ERROR) << "SymbolTable::Write:  write failed";
-    return false;
+  for (int64 i = 0; i < symbols_.size(); ++i) {
+    int64 key = (i < dense_key_limit_) ? i : idx_key_[i - dense_key_limit_];
+    WriteType(strm, symbols_.GetSymbol(i));
+    WriteType(strm, key);
   }
   strm.flush();
-  if (!strm) {
+  if (strm.fail()) {
     LOG(ERROR) << "SymbolTable::Write: write failed";
     return false;
   }
@@ -240,8 +203,8 @@ bool SymbolTableImpl::Write(ostream &strm) const {
 
 const int64 SymbolTable::kNoSymbol;
 
-
 void SymbolTable::AddTable(const SymbolTable& table) {
+  MutateCheck();
   for (SymbolTableIterator iter(table); !iter.Done(); iter.Next())
     impl_->AddSymbol(iter.Symbol());
 }
@@ -265,4 +228,85 @@ bool SymbolTable::WriteText(ostream &strm,
   }
   return true;
 }
+
+namespace internal {
+
+DenseSymbolMap::DenseSymbolMap()
+    : empty_(-1),
+      buckets_(1 << 4),
+      hash_mask_(buckets_.size() - 1) {
+  std::uninitialized_fill(buckets_.begin(), buckets_.end(), empty_);
+}
+
+DenseSymbolMap::DenseSymbolMap(const DenseSymbolMap& x)
+    : empty_(-1),
+      symbols_(x.symbols_.size()),
+      buckets_(x.buckets_),
+      hash_mask_(x.hash_mask_),
+      size_(x.size_) {
+  for (int i = 0; i < symbols_.size(); i++) {
+    size_t sz = strlen(x.symbols_[i]) + 1;
+    char *cpy = new char[sz];
+    memcpy(cpy, x.symbols_[i], sz);
+    symbols_[i] = cpy;
+  }
+}
+
+DenseSymbolMap::~DenseSymbolMap() {
+  for (int i = 0; i < symbols_.size(); i++) {
+    delete[] symbols_[i];
+  }
+}
+
+pair<int64, bool> DenseSymbolMap::InsertOrFind(const string& key) {
+  static const float kMaxOccupancyRatio = 0.75;  // Grow when 75% full.
+  if (symbols_.size() >= kMaxOccupancyRatio * buckets_.size()) Rehash();
+  size_t idx = str_hash_(key) & hash_mask_;
+  while (buckets_[idx] != empty_) {
+    const int64 stored_value = buckets_[idx];
+    if (!strcmp(symbols_[stored_value], key.c_str())) {
+      return make_pair(stored_value, false);
+    }
+    idx = (idx + 1) & hash_mask_;
+  }
+  int64 next = symbols_.size();
+  buckets_[idx] = next;
+  symbols_.push_back(NewSymbol(key));
+  return make_pair(next, true);
+}
+
+int64 DenseSymbolMap::Find(const string& key) const {
+  size_t idx = str_hash_(key) & hash_mask_;
+  while (buckets_[idx] != empty_) {
+    const int64 stored_value = buckets_[idx];
+    if (!strcmp(symbols_[stored_value], key.c_str())) {
+      return stored_value;
+    }
+    idx = (idx + 1) & hash_mask_;
+  }
+  return buckets_[idx];
+}
+
+void DenseSymbolMap::Rehash() {
+  size_t sz = buckets_.size();
+  buckets_.resize(2 * sz);
+  hash_mask_ = buckets_.size() - 1;
+  std::uninitialized_fill(buckets_.begin(), buckets_.end(), empty_);
+  for (int i = 0; i < symbols_.size(); i++) {
+    size_t idx = str_hash_(string(symbols_[i])) & hash_mask_;
+    while (buckets_[idx] != empty_) {
+      idx = (idx + 1) & hash_mask_;
+    }
+    buckets_[idx] = i;
+  }
+}
+
+const char* DenseSymbolMap::NewSymbol(const string& sym) {
+  size_t num = sym.size() + 1;
+  char *newstr = new char[num];
+  memcpy(newstr, sym.c_str(), num);
+  return newstr;
+}
+
+}  // namespace internal
 }  // namespace fst

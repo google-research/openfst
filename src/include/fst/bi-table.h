@@ -25,12 +25,16 @@
 #include <deque>
 using std::deque;
 #include <functional>
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <vector>
 using std::vector;
 
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <fst/memory.h>
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 
 namespace fst {
 
@@ -85,14 +89,14 @@ class HashBiTable {
   }
 
   I FindId(const T &entry, bool insert = true) {
+    if (!insert) {
+      typename unordered_map<T, I, H, E>::const_iterator it = entry2id_.find(entry);
+      return it == entry2id_.end() ? -1 : it->second - 1;
+    }
     I &id_ref = entry2id_[entry];
-    if (id_ref == 0) {  // T not found
-      if (insert) {     // store and assign it a new ID
-        id2entry_.push_back(entry);
-        id_ref = id2entry_.size();
-      } else {
-        return -1;
-      }
+    if (id_ref == 0) {  // T not found  store and assign it a new ID
+      id2entry_.push_back(entry);
+      id_ref = id2entry_.size();
     }
     return id_ref - 1;  // NB: id_ref = ID + 1
   }
@@ -114,14 +118,13 @@ class HashBiTable {
 
 
 // Enables alternative hash set representations below.
-// typedef enum { HS_STL = 0, HS_DENSE = 1, HS_SPARSE = 2 } HSType;
 typedef enum { HS_STL = 0, HS_DENSE = 1, HS_SPARSE = 2 } HSType;
 
 // Default hash set is STL hash_set
 template<class K, class H, class E, HSType>
-struct  HashSet : public unordered_set<K, H, E> {
+struct  HashSet : public unordered_set<K, H, E, PoolAllocator<K> > {
   HashSet(size_t n = 0, const H &h = H(), const E &e = E())
-      : unordered_set<K, H, E>(n, h, e)  { }
+      : unordered_set<K, H, E, PoolAllocator<K> >(n, h, e)  { }
 
   void rehash(size_t n) { }
 };
@@ -334,12 +337,12 @@ class VectorHashBiTable {
   friend class HashFunc;
   friend class HashEqual;
 
-  explicit VectorHashBiTable(S *s, FP *fp = 0, H *h = 0,
+  explicit VectorHashBiTable(S *s, FP *fp, H *h,
                              size_t vector_size = 0,
                              size_t entry_size = 0)
       : selector_(s),
-        fp_(fp ? fp : new FP()),
-        h_(h ? h : new H()),
+        fp_(fp),
+        h_(h),
         hash_func_(*this),
         hash_equal_(*this),
         keys_(0, hash_func_, hash_equal_) {

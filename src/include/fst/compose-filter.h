@@ -24,131 +24,11 @@
 
 #include <fst/fst.h>
 #include <fst/fst-decl.h>  // For optional argument declarations
+#include <fst/filter-state.h>
 #include <fst/matcher.h>
 
 
 namespace fst {
-
-
-// COMPOSITION FILTER STATE - this represents the state of
-// the composition filter. It has the form:
-//
-// class FilterState {
-//  public:
-//   // Required constructors
-//   FilterState();
-//   FilterState(const FilterState &f);
-//   // An invalid filter state.
-//   static const FilterState NoState();
-//   // Maps state to integer for hashing.
-//   size_t Hash() const;
-//   // Equality of filter states.
-//   bool operator==(const FilterState &f) const;
-//   // Inequality of filter states.
-//   bool operator!=(const FilterState &f) const;
-//   // Assignment to filter states.
-//   FilterState& operator=(const FilterState& f);
-// };
-
-
-// Filter state that is a signed integral type.
-template <typename T>
-class IntegerFilterState {
- public:
-  IntegerFilterState() : state_(kNoStateId) {}
-  explicit IntegerFilterState(T s) : state_(s) {}
-
-  static const IntegerFilterState NoState() { return IntegerFilterState(); }
-
-  size_t Hash() const { return static_cast<size_t>(state_); }
-
-  bool operator==(const IntegerFilterState &f) const {
-    return state_ == f.state_;
-  }
-
-  bool operator!=(const IntegerFilterState &f) const {
-    return state_ != f.state_;
-  }
-
-  T GetState() const { return state_; }
-
-  void SetState(T state) { state_ = state; }
-
-private:
-  T state_;
-};
-
-typedef IntegerFilterState<signed char> CharFilterState;
-typedef IntegerFilterState<short> ShortFilterState;
-typedef IntegerFilterState<int> IntFilterState;
-
-
-// Filter state that is a weight (class).
-template <class W>
-class WeightFilterState {
- public:
-  WeightFilterState() : weight_(W::Zero()) {}
-  explicit WeightFilterState(W w) : weight_(w) {}
-
-  static const WeightFilterState NoState() { return WeightFilterState(); }
-
-  size_t Hash() const { return weight_.Hash(); }
-
-  bool operator==(const WeightFilterState &f) const {
-    return weight_ == f.weight_;
-  }
-
-  bool operator!=(const WeightFilterState &f) const {
-    return weight_ != f.weight_;
-  }
-
-  W GetWeight() const { return weight_; }
-
-  void SetWeight(W w) { weight_ = w; }
-
-private:
-  W weight_;
-};
-
-
-// Filter state that is the combination of two filter states.
-template <class F1, class F2>
-class PairFilterState {
- public:
-  PairFilterState() : f1_(F1::NoState()), f2_(F2::NoState()) {}
-
-  PairFilterState(const F1 &f1, const F2 &f2) : f1_(f1), f2_(f2) {}
-
-  static const PairFilterState NoState() { return PairFilterState(); }
-
-  size_t Hash() const {
-    size_t h1 = f1_.Hash();
-    size_t h2 = f2_.Hash();
-    const int lshift = 5;
-    const int rshift = CHAR_BIT * sizeof(size_t) - 5;
-    return h1 << lshift ^ h1 >> rshift ^ h2;
-  }
-
-  bool operator==(const PairFilterState &f) const {
-    return f1_ == f.f1_ && f2_ == f.f2_;
-  }
-
-  bool operator!=(const PairFilterState &f) const {
-    return f1_ != f.f1_ || f2_ != f.f2_;
-  }
-
-  const F1 &GetState1() const { return f1_; }
-  const F2 &GetState2() const { return f2_; }
-
-  void SetState(const F1 &f1, const F2 &f2) {
-    f1_ = f1;
-    f2_ = f2;
-  }
-
-private:
-  F1 f1_;
-  F2 f2_;
-};
 
 
 // COMPOSITION FILTERS - these determine which matches are allowed to
@@ -202,8 +82,73 @@ private:
 //   uint64 Properties(uint64 props) const;
 // };
 
+
+// This filter allows only exact matching of symbols from FST1 with on
+// FST2; e.g. no special interpretation of epsilons.  (Template arg
+// default declared in fst-decl.h.)
+template <class M1, class M2 /* = M1 */>
+class NullComposeFilter {
+ public:
+  typedef typename M1::FST FST1;
+  typedef typename M2::FST FST2;
+  typedef typename FST1::Arc Arc;
+  typedef CharFilterState FilterState;
+  typedef M1 Matcher1;
+  typedef M2 Matcher2;
+
+  typedef typename Arc::StateId StateId;
+  typedef typename Arc::Label Label;
+  typedef typename Arc::Weight Weight;
+
+  NullComposeFilter(const FST1 &fst1, const FST2 &fst2,
+                         M1 *matcher1 = 0, M2 *matcher2 = 0)
+      : matcher1_(matcher1 ? matcher1 : new M1(fst1, MATCH_OUTPUT)),
+        matcher2_(matcher2 ? matcher2 : new M2(fst2, MATCH_INPUT)),
+        fst1_(matcher1_->GetFst()),
+        fst2_(matcher2_->GetFst()) {}
+
+  NullComposeFilter(const NullComposeFilter<M1, M2> &filter,
+                         bool safe = false)
+      : matcher1_(filter.matcher1_->Copy(safe)),
+        matcher2_(filter.matcher2_->Copy(safe)),
+        fst1_(matcher1_->GetFst()),
+        fst2_(matcher2_->GetFst()) {}
+
+  ~NullComposeFilter() {
+    delete matcher1_;
+    delete matcher2_;
+  }
+
+  FilterState Start() const { return FilterState(0); }
+
+  void SetState(StateId, StateId, const FilterState &) { }
+
+  FilterState FilterArc(Arc *arc1, Arc *arc2) const {
+    return (arc1->olabel == kNoLabel || arc2->ilabel == kNoLabel) ?
+        FilterState::NoState() : FilterState(0);
+  }
+
+  void FilterFinal(Weight *, Weight *) const {}
+
+  // Return resp matchers. Ownership stays with filter.
+  Matcher1 *GetMatcher1() { return matcher1_; }
+  Matcher2 *GetMatcher2() { return matcher2_; }
+
+  uint64 Properties(uint64 props) const { return props; }
+
+ private:
+  Matcher1 *matcher1_;
+  Matcher2 *matcher2_;
+  const FST1 &fst1_;
+  const FST2 &fst2_;
+
+  void operator=(const NullComposeFilter<M1, M2> &);  // disallow
+};
+
+
 // This filter requires epsilons on FST1 to be read before epsilons on FST2.
-template <class M1, class M2>
+// (Template arg default declared in fst-decl.h.)
+template <class M1, class M2 /* = M1 */>
 class SequenceComposeFilter {
  public:
   typedef typename M1::FST FST1;
@@ -288,7 +233,8 @@ class SequenceComposeFilter {
 
 
 // This filter requires epsilons on FST2 to be read before epsilons on FST1.
-template <class M1, class M2>
+// (Template arg default declared in fst-decl.h.)
+template <class M1, class M2 /* = M1 */>
 class AltSequenceComposeFilter {
  public:
   typedef typename M1::FST FST1;
@@ -373,8 +319,8 @@ void operator=(const AltSequenceComposeFilter<M1, M2> &);  // disallow
 
 
 // This filter requires epsilons on FST1 to be matched with epsilons on FST2
-// whenever possible.
-template <class M1, class M2>
+// whenever possible. (Template arg default declared in fst-decl.h.)
+template <class M1, class M2 /* = M1 */>
 class MatchComposeFilter {
  public:
   typedef typename M1::FST FST1;

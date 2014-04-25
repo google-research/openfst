@@ -10,6 +10,10 @@ if HAVE_FAR
 fardir = far
 endif
 
+if HAVE_LINEAR
+lineardir = linear
+endif
+
 if HAVE_LOOKAHEAD
 lookaheaddir = lookahead
 endif
@@ -22,4 +26,4 @@ if HAVE_PDT
 pdtdir = pdt
 endif
 
-SUBDIRS = $(compactdir) $(constdir) $(fardir) $(lookaheaddir) $(ngramdir) $(pdtdir)
+SUBDIRS = $(compactdir) $(constdir) $(fardir) $(lineardir) $(lookaheaddir) $(ngramdir) $(pdtdir)

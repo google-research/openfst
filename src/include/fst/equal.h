@@ -1,4 +1,4 @@
-// test.h
+// equal.h
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ bool Equal(const Fst<Arc> &fst1, const Fst<Arc> &fst2, float delta = kDelta) {
                 << ", weight2 = " << arc2.weight;
         return false;
       } else  if (arc1.nextstate != arc2.nextstate) {
-        VLOG(1) << "Equal: mismatched input label:"
+        VLOG(1) << "Equal: mismatched next states:"
                 << " state = " << s1
                 << ", arc = " << a
                 << ", nextstate1 = " << arc1.nextstate

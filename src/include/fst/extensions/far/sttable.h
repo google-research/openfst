@@ -56,7 +56,7 @@ class STTableWriter {
         error_(false) {
     WriteType(stream_, kSTTableMagicNumber);
     WriteType(stream_, kSTTableFileVersion);
-    if (!stream_) {
+    if (stream_.fail()) {
       FSTERROR() << "STTableWriter::STTableWriter: error writing to file: "
                  << filename;
       error_=true;
@@ -148,10 +148,10 @@ class STTableReader {
       streams_[i]->seekg(-static_cast<int>(sizeof(int64)) *
                          (num_entries + 1), ios_base::end);
       positions_[i].resize(num_entries);
-      for (size_t j = 0; (j < num_entries) && (*streams_[i]); ++j)
+      for (size_t j = 0; (j < num_entries) && (!streams_[i]->fail()); ++j)
         ReadType(*streams_[i], &(positions_[i][j]));
       streams_[i]->seekg(positions_[i][0]);
-      if (!*streams_[i]) {
+      if (streams_[i]->fail()) {
         FSTERROR() << "STTableReader::STTableReader: error reading file: "
                    << filenames[i];
         error_ = true;
@@ -205,7 +205,7 @@ class STTableReader {
     if (error_) return;
     if (streams_[current_]->tellg() <= positions_[current_].back()) {
       ReadType(*(streams_[current_]), &(keys_[current_]));
-      if (!*streams_[current_]) {
+      if (streams_[current_]->fail()) {
         FSTERROR() << "STTableReader: error reading file: "
                    << sources_[current_];
         error_ = true;
@@ -279,7 +279,7 @@ class STTableReader {
     heap_.clear();
     for (size_t i = 0; i < streams_.size(); ++i) {
       ReadType(*streams_[i], &(keys_[i]));
-      if (!*streams_[i]) {
+      if (streams_[i]->fail()) {
         FSTERROR() << "STTableReader: error reading file: " << sources_[i];
         error_ = true;
         return;
@@ -301,7 +301,7 @@ class STTableReader {
     entry_ = entry_reader_(*streams_[current_]);
     if (!entry_)
       error_ = true;
-    if (!*streams_[current_]) {
+    if (streams_[current_]->fail()) {
       FSTERROR() << "STTableReader: error reading entry for key: "
                  << keys_[current_] << ", file: " << sources_[current_];
       error_ = true;
@@ -346,7 +346,7 @@ bool ReadSTTableHeader(const string &filename, H *header) {
   int64 i = -1;
   strm.seekg(-static_cast<int>(sizeof(int64)), ios_base::end);
   ReadType(strm, &i);  // Read number of entries
-  if (!strm) {
+  if (strm.fail()) {
     LOG(ERROR) << "ReadSTTableHeader: error reading file: " << filename;
     return false;
   }
@@ -357,7 +357,7 @@ bool ReadSTTableHeader(const string &filename, H *header) {
   string key;
   ReadType(strm, &key);
   header->Read(strm, filename + ":" + key);
-  if (!strm) {
+  if (strm.fail()) {
     LOG(ERROR) << "ReadSTTableHeader: error reading file: " << filename;
     return false;
   }

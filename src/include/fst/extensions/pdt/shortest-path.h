@@ -25,12 +25,12 @@
 #include <fst/extensions/pdt/paren.h>
 #include <fst/extensions/pdt/pdt.h>
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 #include <stack>
 #include <vector>
 using std::vector;
@@ -412,7 +412,7 @@ class PdtShortestPath {
       paren_id_map_[p.first] = i;
       paren_id_map_[p.second] = i;
     }
-  };
+  }
 
   ~PdtShortestPath() {
     VLOG(1) << "# of input states: " << CountStates(*ifst_);

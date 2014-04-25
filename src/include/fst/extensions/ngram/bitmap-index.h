@@ -17,6 +17,8 @@
 #ifndef FST_EXTENSIONS_NGRAM_BITMAP_INDEX_H_
 #define FST_EXTENSIONS_NGRAM_BITMAP_INDEX_H_
 
+#include <utility>
+using std::pair; using std::make_pair;
 #include <vector>
 using std::vector;
 
@@ -108,6 +110,10 @@ class BitmapIndex {
   // Returns the offset to the nth clear bit (zero based)
   // or Bits() if index > number of
   size_t Select0(size_t bit_index) const;
+
+  // Returns the offset of the nth and nth+1 clear bit (zero based),
+  // equivalent to two calls to Select0, but more efficient.
+  pair<size_t, size_t> Select0s(size_t bit_index) const;
 
   // Rebuilds from index for the associated Bitmap, should be called
   // whenever changes have been made to the Bitmap or else behavior

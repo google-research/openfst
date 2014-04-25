@@ -264,6 +264,10 @@ class ShortestPathCompare {
 // The weights need to be left and right distributive (kSemiring) and
 // have the path (kPath) property.
 //
+// Arc weights must satisfy the property that the sum of the weights of one or
+// more paths from some state S to T is never Zero(). In particular, arc weights
+// are never Zero().
+//
 // The algorithm is from Mohri and Riley, "An Efficient Algorithm for
 // the n-best-strings problem", ICSLP 2002. The algorithm relies on
 // the shortest-distance algorithm. There are some issues with the

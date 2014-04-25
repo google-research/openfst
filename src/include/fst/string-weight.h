@@ -27,6 +27,7 @@
 #include <fst/product-weight.h>
 #include <fst/weight.h>
 
+
 namespace fst {
 
 const int kStringInfinity = -1;      // Label for the infinite string

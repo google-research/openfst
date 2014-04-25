@@ -224,7 +224,8 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
   }
 
   size_t b = impl->nstates_ * sizeof(typename ConstFstImpl<A, U>::State);
-  impl->states_region_ = MappedFile::Map(&strm, opts, b);
+  impl->states_region_ = MappedFile::Map(
+      &strm, opts.mode == FstReadOptions::MAP, opts.source, b);
   if (!strm || impl->states_region_ == NULL) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     delete impl;
@@ -239,7 +240,8 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
   }
 
   b = impl->narcs_ * sizeof(A);
-  impl->arcs_region_ = MappedFile::Map(&strm, opts, b);
+  impl->arcs_region_ = MappedFile::Map(
+      &strm, opts.mode == FstReadOptions::MAP, opts.source, b);
   if (!strm || impl->arcs_region_ == NULL) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     delete impl;
@@ -252,9 +254,9 @@ ConstFstImpl<A, U> *ConstFstImpl<A, U>::Read(istream &strm,
 // Simple concrete immutable FST.  This class attaches interface to
 // implementation and handles reference counting, delegating most
 // methods to ImplToExpandedFst. The unsigned type U is used to
-// represent indices into the arc array (uint32 by default, declared
+// represent indices into the arc array (default declared
 // in fst-decl.h).
-template <class A, class U>
+template <class A, class U /* = uint32 */>
 class ConstFst : public ImplToExpandedFst< ConstFstImpl<A, U> > {
  public:
   friend class StateIterator< ConstFst<A, U> >;

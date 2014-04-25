@@ -22,9 +22,9 @@
 #define FST_LIB_FACTOR_WEIGHT_H__
 
 #include <algorithm>
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <string>
 #include <utility>
 using std::pair; using std::make_pair;
@@ -404,7 +404,8 @@ class FactorWeightFst : public ImplToFst< FactorWeightFstImpl<A, F> > {
   typedef A Arc;
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
   typedef FactorWeightFstImpl<A, F> Impl;
 
   FactorWeightFst(const Fst<A> &fst)

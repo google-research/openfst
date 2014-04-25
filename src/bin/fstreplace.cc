@@ -18,7 +18,35 @@
 
 #include <fst/script/replace.h>
 
-DEFINE_bool(epsilon_on_replace, false, "Create an espilon arc when recursing");
+DEFINE_string(call_arc_labeling, "input",
+              "Which labels to make non-epsilon on the call arc. "
+              "One of: \"input\" (default), \"output\", \"both\", \"neither\"");
+DEFINE_string(return_arc_labeling, "neither",
+              "Which labels to make non-epsilon on the return arc. "
+              "One of: \"input\", \"output\", \"both\", \"neither\" (default)");
+DEFINE_int64(return_label, 0, "Label to put on return arc");
+DEFINE_bool(epsilon_on_replace, false,
+            "For backward compatability: call/return arcs are epsilon arcs");
+
+// Assigns replace_label_type from enum values based on command line switches
+fst::ReplaceLabelType replace_type(string *arc_labeling, char *binname,
+                                       string errmsg, bool epsilon_on_replace) {
+  fst::ReplaceLabelType replace_label_type;
+  if ((*arc_labeling) == "neither" || epsilon_on_replace) {
+    replace_label_type = fst::REPLACE_LABEL_NEITHER;
+  } else if ((*arc_labeling) == "input") {
+    replace_label_type = fst::REPLACE_LABEL_INPUT;
+  } else if ((*arc_labeling) == "output") {
+    replace_label_type = fst::REPLACE_LABEL_OUTPUT;
+  } else if ((*arc_labeling) == "both") {
+    replace_label_type = fst::REPLACE_LABEL_BOTH;
+  } else {
+    LOG(ERROR) << binname << errmsg
+               << "arc labeling option: " << (*arc_labeling);
+    exit(1);
+  }
+  return replace_label_type;
+}
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -56,8 +84,17 @@ int main(int argc, char **argv) {
     fst_tuples.push_back(make_pair(lab, ifst));
   }
 
+  fst::ReplaceLabelType call_label_type =
+     replace_type(&FLAGS_call_arc_labeling, argv[0], ": bad call ",
+                  FLAGS_epsilon_on_replace);
+  fst::ReplaceLabelType return_label_type =
+      replace_type(&FLAGS_return_arc_labeling, argv[0], ": bad return ",
+                   FLAGS_epsilon_on_replace);
+
   VectorFstClass ofst(ifst->ArcType());
-  Replace(fst_tuples, &ofst, root, FLAGS_epsilon_on_replace);
+  s::ReplaceOptions opts(root, call_label_type, return_label_type,
+                         FLAGS_return_label);
+  s::Replace(fst_tuples, &ofst, opts);
 
   ofst.Write(out_fname);
 

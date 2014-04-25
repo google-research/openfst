@@ -64,7 +64,11 @@ int main(int argc, char **argv) {
   if (!ifst2) return 1;
 
   if (!FLAGS_random) {
-    return s::Equivalent(*ifst1, *ifst2, FLAGS_delta) ? 0 : 2;
+    bool result = s::Equivalent(*ifst1, *ifst2, FLAGS_delta);
+    if (!result)
+      VLOG(1) << "FSTs are not equivalent.";
+
+    return result ? 0 : 2;
   } else {
     s::RandArcSelection ras;
 
@@ -80,12 +84,16 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    return s::RandEquivalent(
+    bool result = s::RandEquivalent(
         *ifst1, *ifst2,
         FLAGS_seed,
         FLAGS_npath,
         FLAGS_delta,
         fst::RandGenOptions<s::RandArcSelection>(
-            ras, FLAGS_max_length)) ? 0 : 2;
+            ras, FLAGS_max_length));
+    if (!result)
+      VLOG(1) << "FSTs are not equivalent.";
+
+    return result ? 0 : 2;
   }
 }

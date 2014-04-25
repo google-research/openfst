@@ -57,6 +57,30 @@ class EpsMapper {
   MapSymbolsAction OutputSymbolsAction() const { return MAP_COPY_SYMBOLS;}
 };
 
+// Generic - no lookahead.
+template <class Arc>
+void LookAheadCompose(const Fst<Arc> &ifst1, const Fst<Arc> &ifst2,
+                      MutableFst<Arc> *ofst) {
+  Compose(ifst1, ifst2, ofst);
+}
+
+// Specialized and epsilon olabel acyclic - lookahead.
+void LookAheadCompose(const Fst<StdArc> &ifst1, const Fst<StdArc> &ifst2,
+                      MutableFst<StdArc> *ofst) {
+  vector<StdArc::StateId> order;
+  bool acyclic;
+  TopOrderVisitor<StdArc> visitor(&order, &acyclic);
+  DfsVisit(ifst1, &visitor, OutputEpsilonArcFilter<StdArc>());
+  if (acyclic) {  // no ifst1 output epsilon cycles?
+    StdOLabelLookAheadFst lfst1(ifst1);
+    StdVectorFst lfst2(ifst2);
+    LabelLookAheadRelabeler<StdArc>::Relabel(&lfst2, lfst1, true);
+    Compose(lfst1, lfst2, ofst);
+  } else {
+    Compose(ifst1, ifst2, ofst);
+  }
+}
+
 // This class tests a variety of identities and properties that must
 // hold for various algorithms on weighted FSTs.
 template <class Arc, class WeightGenerator>
@@ -468,7 +492,6 @@ class WeightedTester {
     {
       VLOG(1) << "Check composition is associative.";
       ComposeFst<Arc> C1(S1, S2);
-
       ComposeFst<Arc> C2(C1, S3);
       ComposeFst<Arc> C3(S2, S3);
       ComposeFst<Arc> C4(S1, C3);
@@ -528,6 +551,14 @@ class WeightedTester {
       CHECK(Equiv(C1, C2));
       CHECK(Equiv(C1, C3));
     }
+
+    {
+      VLOG(1) << "Check look-ahead filters lead to equivalent results.";
+      VectorFst<Arc> C1, C2;
+      Compose(S1, S2, &C1);
+      LookAheadCompose(S1, S2, &C2);
+      CHECK(Equiv(C1, C2));
+    }
   }
 
   // Tests sorting operations
@@ -570,11 +601,14 @@ class WeightedTester {
 
     {
       VLOG(1) << "Check reverse(reverse(T)) = T";
-      VectorFst< ReverseArc<Arc> > R1;
-      VectorFst<Arc> R2;
-      Reverse(T, &R1);
-      Reverse(R1, &R2);
-      CHECK(Equiv(T, R2));
+      for (int i = 0; i < 2; ++i) {
+        VectorFst< ReverseArc<Arc> > R1;
+        VectorFst<Arc> R2;
+        bool require_superinitial = i == 1;
+        Reverse(T, &R1, require_superinitial);
+        Reverse(R1, &R2, require_superinitial);
+        CHECK(Equiv(T, R2));
+      }
     }
   }
 
@@ -638,6 +672,16 @@ class WeightedTester {
       DeterminizeFst<Arc> D(A);
       CHECK(Equiv(A, D));
 
+      if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
+        VLOG(1)  << "Check pruning in determinization";
+        VectorFst<Arc> P;
+        Weight threshold = (*weight_generator_)();
+        DeterminizeOptions<Arc> opts;
+        opts.weight_threshold = threshold;
+        Determinize(A, &P, opts);
+        CHECK(P.Properties(kIDeterministic, true));
+        CHECK(PruneEquiv(A, P, threshold));
+      }
 
       int n;
       {
@@ -669,6 +713,27 @@ class WeightedTester {
         VectorFst<Arc> M(DRD);
         CHECK_EQ(n + 1, M.NumStates());  // Accounts for the epsilon transition
                                          // to the initial state
+      }
+    }
+
+    if ((wprops & kSemiring) == kSemiring && tprops & kAcyclic) {
+      VLOG(1) << "Check disambiguated FSA is equivalent to its input.";
+      VectorFst<Arc> R(A), D;
+      RmEpsilon(&R);
+      Disambiguate(R, &D);
+      CHECK(Equiv(R, D));
+      VLOG(1) << "Check disambiguated FSA is unambiguous";
+      CHECK(Unambiguous(D));
+
+      if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
+        VLOG(1)  << "Check pruning in disambiguation";
+        VectorFst<Arc> P;
+        Weight threshold = (*weight_generator_)();
+        DisambiguateOptions<Arc> opts;
+        opts.weight_threshold = threshold;
+        Disambiguate(R, &P, opts);
+        CHECK(PruneEquiv(A, P, threshold));
+        CHECK(Unambiguous(P));
       }
     }
 
@@ -744,19 +809,12 @@ class WeightedTester {
         CHECK(Equiv(P1, P2));
       }
       {
-        VLOG(1) << "Check: ShortestDistance(T- prune(T))"
-                << " > ShortestDistance(T) times Thresold";
-        Weight thresold = (*weight_generator_)();
+        VLOG(1) << "Check: ShortestDistance(A - prune(A))"
+                << " > ShortestDistance(A) times Threshold";
+        Weight threshold = (*weight_generator_)();
         VectorFst<Arc> P;
-        Prune(A, &P, thresold);
-        DifferenceFst<Arc> C(A, DeterminizeFst<Arc>
-                             (RmEpsilonFst<Arc>
-                              (ArcMapFst<Arc, Arc,
-                               RmWeightMapper<Arc> >
-                               (P, RmWeightMapper<Arc>()))));
-        Weight sum1 = Times(ShortestDistance(A), thresold);
-        Weight sum2 = ShortestDistance(C);
-        CHECK(Plus(sum1, sum2) == sum1);
+        Prune(A, &P, threshold);
+        CHECK(PruneEquiv(A, P, threshold));
       }
     }
     if (tprops & kAcyclic) {
@@ -814,15 +872,46 @@ class WeightedTester {
 
   // Tests if two FSTS are equivalent by checking if random
   // strings from one FST are transduced the same by both FSTs.
-  bool Equiv(const Fst<Arc> &fst1, const Fst<Arc> &fst2) {
+  template <class A>
+  bool Equiv(const Fst<A> &fst1, const Fst<A> &fst2) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     CHECK(Verify(fst1));
     CHECK(Verify(fst2));
 
-    UniformArcSelector<Arc> uniform_selector(seed_);
-    RandGenOptions< UniformArcSelector<Arc> >
+    UniformArcSelector<A> uniform_selector(seed_);
+    RandGenOptions< UniformArcSelector<A> >
         opts(uniform_selector, kRandomPathLength);
     return RandEquivalent(fst1, fst2, kNumRandomPaths, kTestDelta, opts);
+  }
+
+  // Tests FSA is unambiguous
+  bool Unambiguous(const Fst<Arc> &fst) {
+    VectorFst<StdArc> sfst, dfst;
+    VectorFst<LogArc> lfst1, lfst2;
+    Map(fst, &sfst, RmWeightMapper<Arc, StdArc>());
+    Determinize(sfst, &dfst);
+    Map(fst, &lfst1, RmWeightMapper<Arc, LogArc>());
+    Map(dfst, &lfst2, RmWeightMapper<StdArc, LogArc>());
+    return Equiv(lfst1, lfst2);
+  }
+
+  // Tests ShortestDistance(A - P) >
+  // ShortestDistance(A) times Threshold.
+  template <class A>
+  bool PruneEquiv(const Fst<A> &fst, const Fst<A> &pfst,
+                   Weight threshold) {
+    VLOG(1) << "Check FSTs for sanity (including property bits).";
+    CHECK(Verify(fst));
+    CHECK(Verify(pfst));
+
+    DifferenceFst<Arc> D(fst, DeterminizeFst<Arc>
+                         (RmEpsilonFst<Arc>
+                          (ArcMapFst<Arc, Arc,
+                                     RmWeightMapper<Arc> >
+                           (pfst, RmWeightMapper<Arc>()))));
+    Weight sum1 = Times(ShortestDistance(fst), threshold);
+    Weight sum2 = ShortestDistance(D);
+    return Plus(sum1, sum2) == sum1;
   }
 
   // Random seed
@@ -1037,6 +1126,15 @@ class UnweightedTester<StdArc> {
       VLOG(1) << "Check determinized FSA is equivalent to its input.";
       DeterminizeFst<Arc> D(A);
       CHECK(Equiv(A, D));
+    }
+
+    {
+      VLOG(1) << "Check disambiguated FSA is equivalent to its input.";
+      VectorFst<Arc> R(A), D;
+      RmEpsilon(&R);
+
+      Disambiguate(R, &D);
+      CHECK(Equiv(R, D));
     }
 
     {

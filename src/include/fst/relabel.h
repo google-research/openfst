@@ -21,9 +21,9 @@
 #ifndef FST_LIB_RELABEL_H__
 #define FST_LIB_RELABEL_H__
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <string>
 #include <utility>
 using std::pair; using std::make_pair;
@@ -34,9 +34,9 @@ using std::vector;
 #include <fst/test-properties.h>
 
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 
 namespace fst {
 
@@ -207,7 +207,9 @@ class RelabelFstImpl : public CacheImpl<A> {
   typedef typename A::Label   Label;
   typedef typename A::Weight  Weight;
   typedef typename A::StateId StateId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
+
 
   RelabelFstImpl(const Fst<A>& fst,
                  const vector<pair<Label, Label> >& ipairs,
@@ -392,7 +394,8 @@ class RelabelFst : public ImplToFst< RelabelFstImpl<A> > {
   typedef typename A::Label   Label;
   typedef typename A::Weight  Weight;
   typedef typename A::StateId StateId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
   typedef RelabelFstImpl<A> Impl;
 
   RelabelFst(const Fst<A>& fst,

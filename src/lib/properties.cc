@@ -251,7 +251,9 @@ uint64 RandGenProperties(uint64 inprops, bool weighted) {
 // Properties for a replace FST.
 uint64 ReplaceProperties(const vector<uint64>& inprops,
                          ssize_t root,
-                         bool epsilon_on_replace,
+                         bool epsilon_on_call,
+                         bool epsilon_on_return,
+                         bool replace_transducer,
                          bool no_empty_fsts) {
   if (inprops.size() == 0)
     return kNullProperties;
@@ -268,7 +270,7 @@ uint64 ReplaceProperties(const vector<uint64>& inprops,
     uint64 props =  0;
     bool string = true;
     for (size_t i = 0; i < inprops.size(); ++i) {
-      if (epsilon_on_replace == false)
+      if (replace_transducer)
         props |= kNotAcceptor & inprops[i];
       props |= (kNonIDeterministic | kNonODeterministic | kEpsilons |
                 kIEpsilons | kOEpsilons | kWeighted | kCyclic |
@@ -280,9 +282,9 @@ uint64 ReplaceProperties(const vector<uint64>& inprops,
     if (string)
       outprops |= kString;
   }
-  bool acceptor = epsilon_on_replace;
-  bool ideterministic = !epsilon_on_replace;
-  bool no_iepsilons = !epsilon_on_replace;
+  bool acceptor = !replace_transducer;
+  bool ideterministic = !epsilon_on_call && epsilon_on_return;
+  bool no_iepsilons = !epsilon_on_call && !epsilon_on_return;
   bool acyclic = true;
   bool unweighted = true;
   for (size_t i = 0; i < inprops.size(); ++i) {
@@ -296,6 +298,8 @@ uint64 ReplaceProperties(const vector<uint64>& inprops,
       acyclic = false;
     if (!(inprops[i] & kUnweighted))
       unweighted = false;
+    if (i != root && !(inprops[i] & kNoIEpsilons))
+      ideterministic = false;
   }
   if (acceptor)
     outprops |= kAcceptor;
@@ -326,11 +330,12 @@ uint64 RelabelProperties(uint64 inprops) {
 }
 
 // Properties for a reversed FST. (the superinitial state limits this set)
-uint64 ReverseProperties(uint64 inprops) {
+uint64 ReverseProperties(uint64 inprops, bool has_superinitial) {
   uint64 outprops =
     (kExpanded | kMutable | kError | kAcceptor | kNotAcceptor | kEpsilons |
-     kIEpsilons | kOEpsilons | kWeighted | kUnweighted |
-     kCyclic | kAcyclic) & inprops;
+     kIEpsilons | kOEpsilons | kUnweighted | kCyclic | kAcyclic) & inprops;
+  if (has_superinitial)
+    outprops |= kWeighted & inprops;
   return outprops;
 }
 
@@ -382,8 +387,8 @@ uint64 UnionProperties(uint64 inprops1, uint64 inprops2, bool delayed) {
   bool empty1 = delayed;  // Can fst1 be the empty machine?
   bool empty2 = delayed;  // Can fst2 be the empty machine?
   if (!delayed) {
-    outprops |= (kExpanded | kMutable | kNotTopSorted | kNotString) & inprops1;
-    outprops |= (kNotTopSorted | kNotString) & inprops2;
+    outprops |= (kExpanded | kMutable | kNotTopSorted) & inprops1;
+    outprops |= kNotTopSorted & inprops2;
   }
   if (!empty1 && !empty2) {
     outprops |= kEpsilons | kIEpsilons | kOEpsilons;

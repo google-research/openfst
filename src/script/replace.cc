@@ -22,8 +22,7 @@ namespace fst {
 namespace script {
 
 void Replace(const vector<pair<int64, const FstClass *> > &tuples,
-             MutableFstClass *ofst, const int64 &root,
-             bool epsilon_on_replace) {
+             MutableFstClass *ofst, const ReplaceOptions& opts) {
   for (unsigned i = 0; i < tuples.size() - 1; ++i) {
     if (!ArcTypesMatch(*tuples[i].second, *tuples[i+1].second, "Replace")) {
       return;
@@ -32,7 +31,7 @@ void Replace(const vector<pair<int64, const FstClass *> > &tuples,
 
   if (!ArcTypesMatch(*tuples[0].second, *ofst, "Replace")) return;
 
-  ReplaceArgs args(tuples, ofst, root, epsilon_on_replace);
+  ReplaceArgs args(tuples, ofst, opts);
 
   Apply<Operation<ReplaceArgs> >("Replace", ofst->ArcType(), &args);
 }

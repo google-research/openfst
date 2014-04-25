@@ -21,6 +21,8 @@
 #include <string.h>
 #include <algorithm>
 #include <string>
+#include <utility>
+using std::pair; using std::make_pair;
 #include <vector>
 using std::vector;
 
@@ -30,7 +32,7 @@ using std::vector;
 #include <fst/extensions/ngram/bitmap-index.h>
 
 // NgramFst implements a n-gram language model based upon the LOUDS data
-// structure.  Please refer to "Unary Data Strucutres for Language Models"
+// structure.  Please refer to "Unary Data Structures for Language Models"
 // http://research.google.com/pubs/archive/37218.pdf
 
 namespace fst {
@@ -115,7 +117,7 @@ class NGramFstImpl : public FstImpl<A> {
     memcpy(data + sizeof(num_states) + sizeof(num_futures),
            reinterpret_cast<char *>(&num_final), sizeof(num_final));
     strm.read(data + offset, size - offset);
-    if (!strm) {
+    if (strm.fail()) {
       delete impl;
       return NULL;
     }
@@ -129,8 +131,8 @@ class NGramFstImpl : public FstImpl<A> {
     hdr.SetStart(Start());
     hdr.SetNumStates(num_states_);
     WriteHeader(strm, opts, kFileVersion, &hdr);
-    strm.write(data_, Storage(num_states_, num_futures_, num_final_));
-    return strm;
+    strm.write(data_, StorageSize());
+    return !strm.fail();
   }
 
   StateId Start() const {
@@ -147,9 +149,9 @@ class NGramFstImpl : public FstImpl<A> {
 
   size_t NumArcs(StateId state, NGramFstInst<A> *inst = NULL) const {
     if (inst == NULL) {
-      const size_t next_zero = future_index_.Select0(state + 1);
-      const size_t this_zero = future_index_.Select0(state);
-      return next_zero - this_zero - 1;
+      const pair<size_t, size_t> zeros = (state == 0) ?
+          select_root_ : future_index_.Select0s(state);
+      return zeros.second - zeros.first - 1;
     }
     SetInstFuture(state, inst);
     return inst->num_futures_ + ((state == 0) ? 0 : 1);
@@ -197,10 +199,9 @@ class NGramFstImpl : public FstImpl<A> {
   void SetInstFuture(StateId state, NGramFstInst<A> *inst) const {
     if (inst->state_ != state) {
       inst->state_ = state;
-      const size_t next_zero = future_index_.Select0(state + 1);
-      const size_t this_zero = future_index_.Select0(state);
-      inst->num_futures_ = next_zero - this_zero - 1;
-      inst->offset_ = future_index_.Rank1(future_index_.Select0(state) + 1);
+      const pair<size_t, size_t> zeros = future_index_.Select0s(state);
+      inst->num_futures_ = zeros.second - zeros.first - 1;
+      inst->offset_ = future_index_.Rank1(zeros.first + 1);
     }
   }
 
@@ -226,7 +227,7 @@ class NGramFstImpl : public FstImpl<A> {
 
   // Access to the underlying representation
   const char* GetData(size_t* data_size) const {
-    *data_size = Storage(num_states_, num_futures_, num_final_);
+    *data_size = StorageSize();
     return data_;
   }
 
@@ -237,6 +238,12 @@ class NGramFstImpl : public FstImpl<A> {
     SetInstContext(inst);
     return inst->context_;
   }
+
+  size_t StorageSize() const {
+    return Storage(num_states_, num_futures_, num_final_);
+  }
+
+  void GetStates(const vector<Label>& context, vector<StateId> *states) const;
 
  private:
   StateId Transition(const vector<Label> &context, Label future) const;
@@ -255,9 +262,8 @@ class NGramFstImpl : public FstImpl<A> {
   const char* data_;
   bool owned_;  // True if we own data_
   uint64 num_states_, num_futures_, num_final_;
-  size_t root_num_children_;
+  pair<size_t, size_t> select_root_;
   const Label *root_children_;
-  size_t root_first_child_;
   // borrowed references
   const uint64 *context_, *future_, *final_;
   const Label *context_words_, *future_words_;
@@ -541,35 +547,34 @@ inline void NGramFstImpl<A>::Init(const char* data, bool owned,
   future_index_.BuildIndex(future_, future_bits);
   final_index_.BuildIndex(final_, num_states_);
 
-  const size_t node_rank = context_index_.Rank1(0);
-  root_first_child_ = context_index_.Select0(node_rank) + 1;
-  if (context_index_.Get(root_first_child_) == false) {
-    FSTERROR() << "Missing unigrams";
+  select_root_ = context_index_.Select0s(0);
+  if (context_index_.Rank1(0) != 0 || select_root_.first != 1 ||
+      context_index_.Get(2) == false) {
+    FSTERROR() << "Malformed file";
     SetProperties(kError, kError);
     return;
   }
-  const size_t last_child = context_index_.Select0(node_rank + 1) - 1;
-  root_num_children_ = last_child - root_first_child_ + 1;
-  root_children_ = context_words_ + context_index_.Rank1(root_first_child_);
+  root_children_ = context_words_ + context_index_.Rank1(2);
 }
 
 template<typename A>
 inline typename A::StateId NGramFstImpl<A>::Transition(
         const vector<Label> &context, Label future) const {
-  size_t num_children = root_num_children_;
   const Label *children = root_children_;
+  size_t num_children = select_root_.second - 2;
   const Label *loc = lower_bound(children, children + num_children, future);
   if (loc == children + num_children || *loc != future) {
     return context_index_.Rank1(0);
   }
-  size_t node = root_first_child_ + loc - children;
+  size_t node = 2 + loc - children;
   size_t node_rank = context_index_.Rank1(node);
-  size_t first_child = context_index_.Select0(node_rank) + 1;
+  pair<size_t, size_t> zeros = (node_rank == 0) ? select_root_ :
+      context_index_.Select0s(node_rank);
+  size_t first_child = zeros.first + 1;
   if (context_index_.Get(first_child) == false) {
     return context_index_.Rank1(node);
   }
-  size_t last_child = context_index_.Select0(node_rank + 1) - 1;
-  num_children = last_child - first_child + 1;
+  size_t last_child = zeros.second - 1;
   for (int word = context.size() - 1; word >= 0; --word) {
     children = context_words_ + context_index_.Rank1(first_child);
     loc = lower_bound(children, children + last_child - first_child + 1,
@@ -580,11 +585,54 @@ inline typename A::StateId NGramFstImpl<A>::Transition(
     }
     node = first_child + loc - children;
     node_rank = context_index_.Rank1(node);
-    first_child = context_index_.Select0(node_rank) + 1;
+    pair<size_t, size_t> zeros = (node_rank == 0) ? select_root_ :
+        context_index_.Select0s(node_rank);
+    first_child = zeros.first + 1;
     if (context_index_.Get(first_child) == false) break;
-    last_child = context_index_.Select0(node_rank + 1) - 1;
+    last_child = zeros.second - 1;
   }
   return context_index_.Rank1(node);
+}
+
+template<typename A>
+inline void NGramFstImpl<A>::GetStates(
+    const vector<Label> &context,
+    vector<typename A::StateId>* states) const {
+  states->clear();
+  states->push_back(0);
+  typename vector<Label>::const_reverse_iterator cit = context.rbegin();
+  const Label *children = root_children_;
+  size_t num_children = select_root_.second - 2;
+  const Label *loc = lower_bound(children, children + num_children, *cit);
+  if (loc == children + num_children || *loc != *cit) return;
+  size_t node = 2 + loc - children;
+  states->push_back(context_index_.Rank1(node));
+  if (context.size() == 1) return;
+  size_t node_rank = context_index_.Rank1(node);
+  pair<size_t, size_t> zeros = node_rank == 0 ? select_root_ :
+      context_index_.Select0s(node_rank);
+  size_t first_child = zeros.first + 1;
+  ++cit;
+  if (context_index_.Get(first_child) != false) {
+    size_t last_child = zeros.second - 1;
+    while (cit != context.rend()) {
+      children = context_words_ + context_index_.Rank1(first_child);
+      loc = lower_bound(children, children + last_child - first_child + 1,
+                        *cit);
+      if (loc == children + last_child - first_child + 1 || *loc != *cit) {
+        break;
+      }
+      ++cit;
+      node = first_child + loc - children;
+      states->push_back(context_index_.Rank1(node));
+      node_rank = context_index_.Rank1(node);
+      pair<size_t, size_t> zeros = node_rank == 0 ? select_root_ :
+          context_index_.Select0s(node_rank);
+      first_child = zeros.first + 1;
+      if (context_index_.Get(first_child) == false) break;
+      last_child = zeros.second - 1;
+    }
+  }
 }
 
 /*****************************************************************************/
@@ -627,6 +675,12 @@ class NGramFst : public ImplToExpandedFst<NGramFstImpl<A> > {
     return GetImpl()->GetContext(s, &inst_);
   }
 
+  // Consumes as much as possible of context from right to left, returns the
+  // the states corresponding to the increasingly conditioned input sequence.
+  void GetStates(const vector<Label>& context, vector<StateId> *state) const {
+    return GetImpl()->GetStates(context, state);
+  }
+
   virtual size_t NumArcs(StateId s) const {
     return GetImpl()->NumArcs(s, &inst_);
   }
@@ -643,7 +697,7 @@ class NGramFst : public ImplToExpandedFst<NGramFstImpl<A> > {
   static NGramFst<A>* Read(const string &filename) {
     if (!filename.empty()) {
       ifstream strm(filename.c_str(), ifstream::in | ifstream::binary);
-      if (!strm) {
+      if (!strm.good()) {
         LOG(ERROR) << "NGramFst::Read: Can't open file: " << filename;
         return 0;
       }
@@ -670,6 +724,10 @@ class NGramFst : public ImplToExpandedFst<NGramFstImpl<A> > {
 
   virtual MatcherBase<A>* InitMatcher(MatchType match_type) const {
     return new NGramFstMatcher<A>(*this, match_type);
+  }
+
+  size_t StorageSize() const {
+    return GetImpl()->StorageSize();
   }
 
  private:
@@ -762,6 +820,7 @@ class NGramFstMatcher : public MatcherBase<A> {
         done_ = false;
       }
     } else {
+      current_loop_ = false;
       const Label *start = fst_.GetImpl()->future_words_ + inst_.offset_;
       const Label *end = start + inst_.num_futures_;
       const Label* search = lower_bound(start, end, label);
@@ -792,6 +851,8 @@ class NGramFstMatcher : public MatcherBase<A> {
       done_ = true;
     }
   }
+
+  ssize_t Priority_(StateId s) { return fst_.NumArcs(s); }
 
   const NGramFst<A>& fst_;
   NGramFstInst<A> inst_;

@@ -21,6 +21,7 @@
 #ifndef FST_SCRIPT_INFO_IMPL_H_
 #define FST_SCRIPT_INFO_IMPL_H_
 
+#include <map>
 #include <string>
 #include <vector>
 using std::vector;
@@ -60,6 +61,7 @@ template <class A> class FstInfo {
                         fst.OutputSymbols()->Name() : "none"),
         nstates_(0), narcs_(0), start_(kNoStateId), nfinal_(0),
         nepsilons_(0), niepsilons_(0), noepsilons_(0),
+        ilabel_mult_(0.0), olabel_mult_(0.0),
         naccess_(0), ncoaccess_(0), nconnect_(0), ncc_(0), nscc_(0),
         input_match_type_(MATCH_NONE), output_match_type_(MATCH_NONE),
         input_lookahead_(false), output_lookahead_(false),
@@ -94,6 +96,8 @@ template <class A> class FstInfo {
       StateId s = siter.Value();
       if (fst.Final(s) != Weight::Zero())
         ++nfinal_;
+      map<Label, int64> ilabel_count;
+      map<Label, int64> olabel_count;
       for (ArcIterator< Fst<A> > aiter(fst, s);
            !aiter.Done();
            aiter.Next()) {
@@ -105,7 +109,24 @@ template <class A> class FstInfo {
           ++niepsilons_;
         if (arc.olabel == 0)
           ++noepsilons_;
+        ++ilabel_count[arc.ilabel];
+        ++olabel_count[arc.olabel];
       }
+      for (typename map<Label, int64>::iterator it = ilabel_count.begin();
+           it != ilabel_count.end();
+           ++it) {
+        ilabel_mult_ += it->second * it->second;
+      }
+      for (typename map<Label, int64>::iterator it = olabel_count.begin();
+           it != olabel_count.end();
+           ++it) {
+        olabel_mult_ += it->second * it->second;
+      }
+    }
+
+    if (narcs_ > 0) {
+      ilabel_mult_ /= narcs_;
+      olabel_mult_ /= narcs_;
     }
 
     {
@@ -175,7 +196,7 @@ template <class A> class FstInfo {
   const string& ArcType() const { return A::Type(); }
   const string& InputSymbols() const { return input_symbols_; }
   const string& OutputSymbols() const { return output_symbols_; }
-  const bool LongInfo() const { return long_info_; }
+  bool LongInfo() const { return long_info_; }
   const string& ArcFilterType() const { return arc_filter_type_; }
 
   // Long info
@@ -190,6 +211,9 @@ template <class A> class FstInfo {
   int64 NumEpsilons() const { CheckLong();  return nepsilons_; }
   int64 NumInputEpsilons() const { CheckLong(); return niepsilons_; }
   int64 NumOutputEpsilons() const { CheckLong(); return noepsilons_; }
+  double InputLabelMultiplicity() const { CheckLong(); return ilabel_mult_; }
+  double OutputLabelMultiplicity() const { CheckLong(); return olabel_mult_; }
+
   int64 NumAccessible() const { CheckLong(); return naccess_; }
   int64 NumCoAccessible() const { CheckLong(); return ncoaccess_; }
   int64 NumConnected() const { CheckLong(); return nconnect_; }
@@ -213,6 +237,8 @@ template <class A> class FstInfo {
   int64 nepsilons_;
   int64 niepsilons_;
   int64 noepsilons_;
+  double ilabel_mult_;
+  double olabel_mult_;
   int64 naccess_;
   int64 ncoaccess_;
   int64 nconnect_;
@@ -261,6 +287,10 @@ void PrintFstInfo(const FstInfo<A> &fstinfo, bool pipe = false) {
   os << "# of input epsilons" << fstinfo.NumInputEpsilons() << endl;
   os.width(50);
   os << "# of output epsilons" << fstinfo.NumOutputEpsilons() << endl;
+  os.width(50);
+  os << "input label multiplicity" << fstinfo.InputLabelMultiplicity() << endl;
+  os.width(50);
+  os << "output label multiplicity" << fstinfo.OutputLabelMultiplicity() << endl;
   os.width(50);
 
   string arc_type = "";

@@ -131,7 +131,7 @@ inline PowerWeight<W, n> Times(const W &s, const PowerWeight<W, n> &w) {
   PowerWeight<W, n> sw;
   for (size_t i = 0; i < n; ++i)
     sw.SetValue(i, Times(s, w.Value(i)));
-  return w;
+  return sw;
 }
 
 // Semimodule right scalar product
@@ -140,7 +140,7 @@ inline PowerWeight<W, n> Times(const PowerWeight<W, n> &w, const W &s) {
   PowerWeight<W, n> ws;
   for (size_t i = 0; i < n; ++i)
     ws.SetValue(i, Times(w.Value(i), s));
-  return w;
+  return ws;
 }
 
 // Semimodule dot product

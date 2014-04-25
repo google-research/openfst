@@ -25,12 +25,12 @@
 
 #include <vector>
 using std::vector;
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 #include <map>
 
 #include <fst/connect.h>
@@ -40,10 +40,55 @@ using std::tr1::unordered_multiset;
 
 namespace fst {
 
+// This specifies what labels to output on the call or return arc
+// REPLACE_LABEL_NEITHER puts epsilon labels on both input and output
+// REPLACE_LABEL_BOTH puts non-epsilon labels on both input and output
+// REPLACE_LABEL_INPUT puts non-epsilon on input and epsilon on output
+// REPLACE_LABEL_OUTPUT puts epsilon on input and non-epsilon on output
+// Note that REPLACE_LABEL_INPUT and REPLACE_LABEL_OUTPUT produce transducers
+enum ReplaceLabelType { REPLACE_LABEL_NEITHER = 1, REPLACE_LABEL_INPUT = 2,
+                        REPLACE_LABEL_OUTPUT = 3, REPLACE_LABEL_BOTH = 4 };
+
+// By default ReplaceUtil will copy the input label of the 'replace arc'.
+// The call_label_type and return_label_type options specify how to manage
+// the labels of the call arc and the return arc of the replace FST
+template <class A>
+struct ReplaceUtilOptions : CacheOptions {
+  int64 root;    // root rule for expansion
+  ReplaceLabelType call_label_type;  // how to label call arc
+  ReplaceLabelType return_label_type;  // how to label return arc
+  int64 return_label;  // specifies label to put on return arc
+
+  ReplaceUtilOptions(int64 r, ReplaceLabelType call_label_type,
+                     ReplaceLabelType return_label_type, int64 return_label)
+      : root(r),
+        call_label_type(call_label_type),
+        return_label_type(return_label_type),
+        return_label(return_label) {}
+
+  explicit ReplaceUtilOptions(int64 r)
+      : root(r),
+        call_label_type(REPLACE_LABEL_INPUT),
+        return_label_type(REPLACE_LABEL_NEITHER),
+        return_label(0) {}
+
+  ReplaceUtilOptions(int64 r, bool epsilon_replace_arc)  // b/w compatibility
+      : root(r),
+        call_label_type((epsilon_replace_arc) ? REPLACE_LABEL_NEITHER :
+                        REPLACE_LABEL_INPUT),
+        return_label_type(REPLACE_LABEL_NEITHER),
+        return_label(0) {}
+
+  ReplaceUtilOptions()
+      : root(kNoLabel),
+        call_label_type(REPLACE_LABEL_INPUT),
+        return_label_type(REPLACE_LABEL_NEITHER),
+        return_label(0) {}
+};
+
 template <class Arc>
 void Replace(const vector<pair<typename Arc::Label, const Fst<Arc>* > >&,
-             MutableFst<Arc> *, typename Arc::Label, bool);
-
+             MutableFst<Arc> *, fst::ReplaceUtilOptions<Arc> opts);
 
 // Utility class for the recursive replacement of Fsts (RTNs). The
 // user provides a set of Label, Fst pairs at construction. These are
@@ -64,16 +109,16 @@ class ReplaceUtil {
 
   // Constructs from mutable Fsts; Fst ownership given to ReplaceUtil.
   ReplaceUtil(const vector<MutableFstPair> &fst_pairs,
-              Label root_label, bool epsilon_on_replace = false);
+              const ReplaceUtilOptions<Arc> &opts);
 
   // Constructs from Fsts; Fst ownership retained by caller.
   ReplaceUtil(const vector<FstPair> &fst_pairs,
-              Label root_label, bool epsilon_on_replace = false);
+              const ReplaceUtilOptions<Arc> &opts);
 
   // Constructs from ReplaceFst internals; ownership retained by caller.
   ReplaceUtil(const vector<const Fst<Arc> *> &fst_array,
-              const NonTerminalHash &nonterminal_hash, Label root_fst,
-              bool epsilon_on_replace = false);
+              const NonTerminalHash &nonterminal_hash,
+              const ReplaceUtilOptions<Arc> &opts);
 
   ~ReplaceUtil() {
     for (Label i = 0; i < fst_array_.size(); ++i)
@@ -175,7 +220,9 @@ class ReplaceUtil {
 
   Label root_label_;                              // root non-terminal
   Label root_fst_;                                // root Fst ID
-  bool epsilon_on_replace_;                       // see Replace()
+  ReplaceLabelType call_label_type_;              // see Replace()
+  ReplaceLabelType return_label_type_;            // see Replace()
+  int64 return_label_;                            // see Replace()
   vector<const Fst<Arc> *> fst_array_;            // Fst per ID
   vector<MutableFst<Arc> *> mutable_fst_array_;   // MutableFst per ID
   vector<Label> nonterminal_array_;               // Fst ID to non-terminal
@@ -191,9 +238,11 @@ class ReplaceUtil {
 template <class Arc>
 ReplaceUtil<Arc>::ReplaceUtil(
     const vector<MutableFstPair> &fst_pairs,
-    Label root_label, bool epsilon_on_replace)
-    : root_label_(root_label),
-      epsilon_on_replace_(epsilon_on_replace),
+    const ReplaceUtilOptions<Arc> &opts)
+    : root_label_(opts.root),
+      call_label_type_(opts.call_label_type),
+      return_label_type_(opts.return_label_type),
+      return_label_(opts.return_label),
       depprops_(0),
       have_stats_(false) {
   fst_array_.push_back(0);
@@ -215,9 +264,11 @@ ReplaceUtil<Arc>::ReplaceUtil(
 template <class Arc>
 ReplaceUtil<Arc>::ReplaceUtil(
     const vector<FstPair> &fst_pairs,
-    Label root_label, bool epsilon_on_replace)
-    : root_label_(root_label),
-      epsilon_on_replace_(epsilon_on_replace),
+    const ReplaceUtilOptions<Arc> &opts)
+    : root_label_(opts.root),
+      call_label_type_(opts.call_label_type),
+      return_label_type_(opts.return_label_type),
+      return_label_(opts.return_label),
       depprops_(0),
       have_stats_(false) {
   fst_array_.push_back(0);
@@ -229,7 +280,7 @@ ReplaceUtil<Arc>::ReplaceUtil(
     nonterminal_array_.push_back(label);
     fst_array_.push_back(fst->Copy());
   }
-  root_fst_ = nonterminal_hash_[root_label];
+  root_fst_ = nonterminal_hash_[root_label_];
   if (!root_fst_)
     FSTERROR() << "ReplaceUtil: no root FST for label: " << root_label_;
 }
@@ -237,10 +288,12 @@ ReplaceUtil<Arc>::ReplaceUtil(
 template <class Arc>
 ReplaceUtil<Arc>::ReplaceUtil(
     const vector<const Fst<Arc> *> &fst_array,
-    const NonTerminalHash &nonterminal_hash, Label root_fst,
-    bool epsilon_on_replace)
-    : root_fst_(root_fst),
-      epsilon_on_replace_(epsilon_on_replace),
+    const NonTerminalHash &nonterminal_hash,
+    const ReplaceUtilOptions<Arc> &opts)
+    : root_fst_(opts.root),
+      call_label_type_(opts.call_label_type),
+      return_label_type_(opts.return_label_type),
+      return_label_(opts.return_label),
       nonterminal_array_(fst_array.size()),
       nonterminal_hash_(nonterminal_hash),
       depprops_(0),
@@ -469,7 +522,9 @@ void ReplaceUtil<Arc>::ReplaceLabels(const vector<Label> &labels) {
     const Fst<Arc> *fst = fst_array_[s];
     fst_pairs.push_back(make_pair(label, fst));
 
-    Replace(fst_pairs, mutable_fst_array_[s], label, epsilon_on_replace_);
+    Replace(fst_pairs, mutable_fst_array_[s],
+            ReplaceUtilOptions<Arc>(label, call_label_type_,
+                                    return_label_type_, return_label_));
   }
   ClearDependencies();
 }

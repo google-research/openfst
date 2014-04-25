@@ -20,9 +20,9 @@
 #include <vector>
 using std::vector;
 #include <string>
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 
 
 #include <fst/fst.h>

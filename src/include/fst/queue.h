@@ -877,11 +877,8 @@ class NaturalPruneQueue :
 
   NaturalPruneQueue(const vector<W> &distance, Q *queue,
                     const C &class_func_, Weight threshold) :
-      PruneQueue<Q, NaturalLess<W>, C>(distance, queue, less_,
+      PruneQueue<Q, NaturalLess<W>, C>(distance, queue, NaturalLess<W>(),
                                        class_func_, threshold) {}
-
- private:
-  NaturalLess<W> less_;
 };
 
 

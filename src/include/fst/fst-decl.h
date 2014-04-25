@@ -22,6 +22,9 @@
 #ifndef FST_LIB_FST_DECL_H__
 #define FST_LIB_FST_DECL_H__
 
+#include <memory>  // for allocator<>
+#include <sys/types.h>
+
 #include <fst/types.h>
 
 namespace fst {
@@ -43,17 +46,22 @@ template <class W> class ArcTpl;
 typedef ArcTpl<TropicalWeight> StdArc;
 typedef ArcTpl<LogWeight> LogArc;
 
-template <class A, class C, class U = uint32> class CompactFst;
+template <class E, class U> class DefaultCompactStore;
+template <
+  class A, class C, class U = uint32,
+  class S = DefaultCompactStore<typename C::Element, U> > class CompactFst;
 template <class A, class U = uint32> class ConstFst;
 template <class A, class W, class M> class EditFst;
 template <class A> class ExpandedFst;
 template <class A> class Fst;
 template <class A> class MutableFst;
-template <class A> class VectorFst;
+template <class A, class M = std::allocator<A> > class VectorState;
+template <class A, class S = VectorState<A> > class VectorFst;
 
+template <class A> class DefaultCacheStore;
 template <class A, class C> class ArcSortFst;
 template <class A> class ClosureFst;
-template <class A> class ComposeFst;
+template <class A, class C = DefaultCacheStore<A> > class ComposeFst;
 template <class A> class ConcatFst;
 template <class A> class DeterminizeFst;
 template <class A> class DifferenceFst;
@@ -63,7 +71,7 @@ template <class A, class B, class C> class ArcMapFst;
 template <class A> class ProjectFst;
 template <class A, class B, class S> class RandGenFst;
 template <class A> class RelabelFst;
-template <class A, class T> class ReplaceFst;
+template <class A, class T, class C = DefaultCacheStore<A> > class ReplaceFst;
 template <class A> class RmEpsilonFst;
 template <class A> class UnionFst;
 
@@ -77,22 +85,11 @@ template <class A> class WeightedStringCompactor;
 
 template <class A, class P> class DefaultReplaceStateTable;
 
-typedef CompactFst<StdArc, AcceptorCompactor<StdArc> >
-StdCompactAcceptorFst;
-typedef CompactFst< StdArc, StringCompactor<StdArc> >
-StdCompactStringFst;
-typedef CompactFst<StdArc, UnweightedAcceptorCompactor<StdArc> >
-StdCompactUnweightedAcceptorFst;
-typedef CompactFst<StdArc, UnweightedCompactor<StdArc> >
-StdCompactUnweightedFst;
-typedef CompactFst< StdArc, WeightedStringCompactor<StdArc> >
-StdCompactWeightedStringFst;
 typedef ConstFst<StdArc> StdConstFst;
 typedef ExpandedFst<StdArc> StdExpandedFst;
 typedef Fst<StdArc> StdFst;
 typedef MutableFst<StdArc> StdMutableFst;
 typedef VectorFst<StdArc> StdVectorFst;
-
 
 template <class C> class StdArcSortFst;
 typedef ClosureFst<StdArc> StdClosureFst;
@@ -115,6 +112,7 @@ typedef IntegerFilterState<short> ShortFilterState;
 typedef IntegerFilterState<int> IntFilterState;
 
 template <class F> class Matcher;
+template <class M1, class M2 = M1> class NullComposeFilter;
 template <class M1, class M2 = M1> class SequenceComposeFilter;
 template <class M1, class M2 = M1> class AltSequenceComposeFilter;
 template <class M1, class M2 = M1> class MatchComposeFilter;

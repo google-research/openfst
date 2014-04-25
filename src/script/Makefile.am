@@ -4,7 +4,7 @@ if HAVE_SCRIPT
 lib_LTLIBRARIES = libfstscript.la
 libfstscript_la_SOURCES = arcsort.cc closure.cc compile.cc compose.cc \
 concat.cc connect.cc convert.cc decode.cc determinize.cc difference.cc \
-draw.cc encode.cc epsnormalize.cc equal.cc equivalent.cc \
+disambiguate.cc draw.cc encode.cc epsnormalize.cc equal.cc equivalent.cc \
 fst-class.cc info.cc intersect.cc invert.cc map.cc minimize.cc print.cc \
 project.cc prune.cc push.cc randequivalent.cc randgen.cc relabel.cc \
 replace.cc reverse.cc reweight.cc rmepsilon.cc script-impl.cc \

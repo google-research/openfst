@@ -378,7 +378,7 @@ class AcyclicMinimizer {
 
     const vector<StateId>& height() const { return height_; }
 
-    const size_t num_states() const { return num_states_; }
+    size_t num_states() const { return num_states_; }
 
    private:
     vector<StateId> height_;

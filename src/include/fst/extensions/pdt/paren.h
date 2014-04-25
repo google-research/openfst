@@ -23,12 +23,12 @@
 #define FST_EXTENSIONS_PDT_PAREN_H_
 
 #include <algorithm>
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 #include <set>
 
 #include <fst/extensions/pdt/pdt.h>

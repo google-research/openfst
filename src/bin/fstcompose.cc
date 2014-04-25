@@ -26,7 +26,7 @@
 
 DEFINE_string(compose_filter, "auto",
               "Composition filter, one of: \"alt_sequence\", \"auto\", "
-              "\"match\", \"sequence\"");
+              "\"match\", \"null\", \"sequence\"");
 DEFINE_bool(connect, true, "Trim output");
 
 
@@ -77,6 +77,8 @@ int main(int argc, char **argv) {
     compose_filter = fst::AUTO_FILTER;
   } else if (FLAGS_compose_filter == "match") {
     compose_filter = fst::MATCH_FILTER;
+  } else if (FLAGS_compose_filter == "null") {
+    compose_filter = fst::NULL_FILTER;
   } else if (FLAGS_compose_filter == "sequence") {
     compose_filter = fst::SEQUENCE_FILTER;
   } else {

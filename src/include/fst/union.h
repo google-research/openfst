@@ -32,7 +32,7 @@ using std::vector;
 namespace fst {
 
 // Computes the union (sum) of two FSTs.  This version writes the
-// union to an output MurableFst. If A transduces string x to y with
+// union to an output MutableFst. If A transduces string x to y with
 // weight a and B transduces string w to v with weight b, then their
 // union transduces x to y with weight a and w to v with weight b.
 //
@@ -47,7 +47,7 @@ void Union(MutableFst<Arc> *fst1, const Fst<Arc> &fst2) {
   typedef typename Arc::Weight Weight;
 
   // TODO(riley): restore when voice actions issues fixed
-  // Check that the symbol table are compatible
+  // Check that the symbol tables are compatible
   if (!CompatSymbols(fst1->InputSymbols(), fst2.InputSymbols()) ||
       !CompatSymbols(fst1->OutputSymbols(), fst2.OutputSymbols())) {
     LOG(ERROR) << "Union: input/output symbol tables of 1st argument "
@@ -124,7 +124,7 @@ typedef RationalFstOptions UnionFstOptions;
 //
 // Complexity:
 // - Time: O(v1 + e1 + v2 + e2)
-// - Sapce: O(v1 + v2)
+// - Space: O(v1 + v2)
 // where vi = # of states visited and ei = # of arcs visited of the
 // ith FST. Constant time and space to visit an input state or arc
 // is assumed and exclusive of caching.

@@ -73,22 +73,22 @@ class NullMatcherFstInit {
 
 // Class to add a matcher M to an Fst F. Creates a new Fst of type name N.
 // Optional function object I can be used to initialize the Fst.
+// Parameter A allows defining the kind of add-on to use.
 template <class F, class M, const char* N,
-          class I = NullMatcherFstInit<M> >
+          class I = NullMatcherFstInit<M>,
+          class A = AddOnPair<typename M::MatcherData,
+                              typename M::MatcherData> >
 class MatcherFst
-    : public ImplToExpandedFst<
-               AddOnImpl<F,
-                         AddOnPair<typename M::MatcherData,
-                                   typename M::MatcherData> > > {
+    : public ImplToExpandedFst<AddOnImpl<F, A> > {
  public:
-  friend class StateIterator< MatcherFst<F, M, N, I> >;
-  friend class ArcIterator< MatcherFst<F, M, N, I> >;
+  friend class StateIterator< MatcherFst<F, M, N, I, A> >;
+  friend class ArcIterator< MatcherFst<F, M, N, I, A> >;
 
   typedef F FST;
   typedef M FstMatcher;
   typedef typename F::Arc Arc;
   typedef typename Arc::StateId StateId;
-  typedef AddOnPair<typename M::MatcherData, typename M::MatcherData> D;
+  typedef A D;
   typedef AddOnImpl<F, D> Impl;
 
   MatcherFst() : ImplToExpandedFst<Impl>(new Impl(F(), N)) {}
@@ -100,26 +100,26 @@ class MatcherFst
       : ImplToExpandedFst<Impl>(CreateImpl(fst, N)) {}
 
   // See Fst<>::Copy() for doc.
-  MatcherFst(const MatcherFst<F, M, N, I> &fst, bool safe = false)
+  MatcherFst(const MatcherFst<F, M, N, I, A> &fst, bool safe = false)
       : ImplToExpandedFst<Impl>(fst, safe) {}
 
   // Get a copy of this MatcherFst. See Fst<>::Copy() for further doc.
-  virtual MatcherFst<F, M, N, I> *Copy(bool safe = false) const {
-    return new MatcherFst<F, M, N, I>(*this, safe);
+  virtual MatcherFst<F, M, N, I, A> *Copy(bool safe = false) const {
+    return new MatcherFst<F, M, N, I, A>(*this, safe);
   }
 
   // Read a MatcherFst from an input stream; return NULL on error
-  static MatcherFst<F, M, N, I> *Read(istream &strm,
+  static MatcherFst<F, M, N, I, A> *Read(istream &strm,
                                       const FstReadOptions &opts) {
     Impl *impl = Impl::Read(strm, opts);
-    return impl ? new MatcherFst<F, M, N, I>(impl) : 0;
+    return impl ? new MatcherFst<F, M, N, I, A>(impl) : 0;
   }
 
   // Read a MatcherFst from a file; return NULL on error
   // Empty filename reads from standard input
-  static MatcherFst<F, M, N, I> *Read(const string &filename) {
+  static MatcherFst<F, M, N, I, A> *Read(const string &filename) {
     Impl *impl = ImplToExpandedFst<Impl>::Read(filename);
-    return impl ? new MatcherFst<F, M, N, I>(impl) : 0;
+    return impl ? new MatcherFst<F, M, N, I, A>(impl) : 0;
   }
 
   virtual bool Write(ostream &strm, const FstWriteOptions &opts) const {
@@ -178,7 +178,7 @@ class MatcherFst
     ImplToFst< Impl, ExpandedFst<Arc> >::SetImpl(impl, own_impl);
   }
 
-  void operator=(const MatcherFst<F, M, N, I> &fst);  // disallow
+  void operator=(const MatcherFst<F, M, N, I, A> &fst);  // disallow
 };
 
 

@@ -23,9 +23,9 @@
 #ifndef FST_LIB_ARC_MAP_H__
 #define FST_LIB_ARC_MAP_H__
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <string>
 #include <utility>
 using std::pair; using std::make_pair;
@@ -165,8 +165,8 @@ void ArcMap(MutableFst<A> *fst, C* mapper) {
           } else {
             fst->SetFinal(s, final_arc.weight);
           }
-          break;
         }
+        break;
       }
       case MAP_REQUIRE_SUPERFINAL: {
         if (s != superfinal) {
@@ -314,8 +314,6 @@ class ArcMapFstImpl : public CacheImpl<B> {
   using FstImpl<B>::SetProperties;
   using FstImpl<B>::SetInputSymbols;
   using FstImpl<B>::SetOutputSymbols;
-
-  using VectorFstBaseImpl<typename CacheImpl<B>::State>::NumStates;
 
   using CacheImpl<B>::PushArc;
   using CacheImpl<B>::HasArcs;
@@ -558,7 +556,8 @@ class ArcMapFst : public ImplToFst< ArcMapFstImpl<A, B, C> > {
   typedef B Arc;
   typedef typename B::Weight Weight;
   typedef typename B::StateId StateId;
-  typedef CacheState<B> State;
+  typedef DefaultCacheStore<B> Store;
+  typedef typename Store::State State;
   typedef ArcMapFstImpl<A, B, C> Impl;
 
   ArcMapFst(const Fst<A> &fst, const C &mapper, const ArcMapFstOptions& opts)
@@ -829,7 +828,7 @@ struct FromGallicMapper {
 
     if (l == kStringInfinity || l == kStringBad ||
         arc.ilabel != arc.olabel || w1.Size() > 1) {
-      FSTERROR() << "FromGallicMapper: unrepesentable weight";
+      FSTERROR() << "FromGallicMapper: unrepresentable weight";
       error_ = true;
     }
 
@@ -925,7 +924,7 @@ struct GallicToNewSymbolsMapper {
     }
 
     if (l == kStringInfinity || l == kStringBad || arc.ilabel != arc.olabel) {
-      FSTERROR() << "GallicToNewSymbolMapper: unrepesentable weight";
+      FSTERROR() << "GallicToNewSymbolMapper: unrepresentable weight";
       error_ = true;
     }
 

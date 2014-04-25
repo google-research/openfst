@@ -169,13 +169,15 @@ bool FstHeader::Write(ostream &strm, const string &source) const {
 
 FstReadOptions::FstReadOptions(const string& src, const FstHeader *hdr,
                                const SymbolTable* isym, const SymbolTable* osym)
-  : source(src), header(hdr), isymbols(isym), osymbols(osym) {
+  : source(src), header(hdr), isymbols(isym), osymbols(osym),
+    read_isymbols(true), read_osymbols(true) {
   mode = ReadMode(FLAGS_fst_read_mode);
 }
 
 FstReadOptions::FstReadOptions(const string& src, const SymbolTable* isym,
                                const SymbolTable* osym)
-  : source(src), header(0), isymbols(isym), osymbols(osym) {
+  : source(src), header(0), isymbols(isym), osymbols(osym),
+    read_isymbols(true), read_osymbols(true) {
   mode = ReadMode(FLAGS_fst_read_mode);
 }
 

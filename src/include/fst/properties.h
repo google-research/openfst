@@ -345,9 +345,11 @@ uint64 RandGenProperties(uint64 inprops, bool weighted);
 uint64 RelabelProperties(uint64 inprops);
 uint64 ReplaceProperties(const vector<uint64>& inprops,
                          ssize_t root,
-                         bool epsilon_on_replace,
+                         bool epsilon_on_call,
+                         bool epsilon_on_return,
+                         bool replace_transducer,
                          bool no_empty_fst);
-uint64 ReverseProperties(uint64 inprops);
+uint64 ReverseProperties(uint64 inprops, bool has_superinitial);
 uint64 ReweightProperties(uint64 inprops);
 uint64 RmEpsilonProperties(uint64 inprops, bool delayed = false);
 uint64 ShortestPathProperties(uint64 props);

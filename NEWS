@@ -1,3 +1,23 @@
+OpenFst - Release 1.4
+   * Port to C++11 (1.4.0)
+   * Disambiguate function added (1.4.0)
+   * Isomorphic function added (1.4.0)
+   * Matcher interface augmented with Priority method.
+   * Special matchers (rho/sigma/phi) can match special symbols 
+     on both input FSTs in composition/intersection provided at each 
+     state pair they only match one side (1.4.0)
+   * Added ExplicitMatcher to suppress implicit matches (e.g. epsilon self-loops) (1.4.0)
+   * Linear{Tagger,Classifier}Fst extensions added (1.4.0)
+   * Generalized state-reachable to work when input is cyclic (so long
+     as no final state is in a cycle). This ensures label-reachable
+     (and hence label lookahead) works with cyclic input (1.4.0).
+   * Added Condense to build the condensation graph (SCC's condensed to single states) 
+     of an FST (1.4.0).
+   * Added an option to Reverse to specify whether a super-initial state should 
+     always be created (1.4.0).
+   * Fixed bugs in FirstCacheStore, PowerWeight, and StringCompiler (1.4.0).
+   * Changed SymbolTable to use faster data structure (1.4.0).
+
 OpenFst - Release 1.3
    * Support for non-fatal exits on errors: (1.3.1)
       * Added FLAGS_fst_error_fatal: FST errors are
@@ -24,7 +44,7 @@ OpenFst - Release 1.3
   * farextract now allows one to specify a list of comma-separated keys,
     including key ranges (1.3.3)
   * Fixed bug in PDT replace that could cause close paren IDs to collide
-    with oopen paren IDs (1.3.4)
+    with open paren IDs (1.3.4)
 
 OpenFst - Release 1.2
    * Added lookahead matching and filtering for faster composition

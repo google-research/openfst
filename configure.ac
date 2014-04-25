@@ -1,5 +1,7 @@
-AC_INIT([OpenFst], [1.3.4], [help@www.openfst.org])
+AC_INIT([OpenFst], [1.4.0], [help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
+
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 
 AC_PROG_CXX
 AC_DISABLE_STATIC
@@ -18,6 +20,7 @@ AC_CONFIG_FILES([
   src/extensions/compact/Makefile
   src/extensions/const/Makefile
   src/extensions/far/Makefile
+  src/extensions/linear/Makefile
   src/extensions/lookahead/Makefile
   src/extensions/ngram/Makefile
   src/extensions/pdt/Makefile
@@ -25,11 +28,6 @@ AC_CONFIG_FILES([
 ])
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
-
-AC_CHECK_TYPES([std::tr1::hash<long long unsigned>], [], [],
-               [[#include <tr1/unordered_map>]])
-AC_CHECK_TYPES([__gnu_cxx::slist<int>], [], [],
-               [[#include <ext/slist>]])
 
 AC_ARG_ENABLE(
 	[bin],
@@ -49,7 +47,7 @@ AC_ARG_ENABLE(
 	[],
 	[enable_compact_fsts=no])
 AM_CONDITIONAL([HAVE_COMPACT], [test "x$enable_compact_fsts" != xno])
-				
+
 AC_ARG_ENABLE(
 	[const-fsts],
 	[AS_HELP_STRING(
@@ -58,10 +56,19 @@ AC_ARG_ENABLE(
 	[],
 	[enable_const_fsts=no])
 AM_CONDITIONAL([HAVE_CONST], [test "x$enable_const_fsts" != xno])
-				
+
 AC_ARG_ENABLE([far], [AS_HELP_STRING([--enable-far], [enable FAR extensions])],
               [], [enable_far=no])
 AM_CONDITIONAL([HAVE_FAR], [test "x$enable_far" != xno])
+
+AC_ARG_ENABLE(
+	[linear-fsts],
+	[AS_HELP_STRING(
+		[--enable-linear-fsts],
+		[enable all LinearTagger/ClassifierFst extensions])],
+	[],
+	[enable_linear_fsts=no])
+AM_CONDITIONAL([HAVE_LINEAR], [test "x$enable_linear_fsts" != xno])
 
 AC_ARG_ENABLE(
 	[ngram-fsts],
@@ -80,7 +87,7 @@ AC_ARG_ENABLE(
 	[],
 	[enable_lookahead_fsts=no])
 AM_CONDITIONAL([HAVE_LOOKAHEAD], [test "x$enable_lookahead_fsts" != xno])
-				
+
 AC_ARG_ENABLE([pdt], [AS_HELP_STRING([--enable-pdt], [enable PDT extensions])],
               [], [enable_pdt=no])
 AM_CONDITIONAL([HAVE_PDT], [test "x$enable_pdt" != xno])

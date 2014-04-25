@@ -120,9 +120,9 @@ void FarExtract(const vector<string> &ifilenames,
         LOG(ERROR) << "FarExtract: Illegal range specification: " << key;
         return;
       }
-      delete key_cstr;
+      delete [] key_cstr;
     }
-    delete keys_cstr;
+    delete [] keys_cstr;
     return;
   }
   // Nothing specified: extract everything.

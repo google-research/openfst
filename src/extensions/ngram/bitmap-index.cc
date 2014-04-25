@@ -22,41 +22,32 @@
 #include <fst/extensions/ngram/nthbit.h>
 
 namespace fst {
+namespace {
+const size_t kPrimaryBlockBits = BitmapIndex::kStorageBitSize *
+    BitmapIndex::kSecondaryBlockSize;
 
-// These two internal classes implemented inverted views of the
-// primary and secondary indexes.  That is, they provide iterators
-// that have operator*'s that return the number zeros rather than
-// the number of ones.
-
-class primary_index_inverted : public vector<uint32>::const_iterator {
- public:
-  primary_index_inverted() {}
-  primary_index_inverted(vector<uint32>::const_iterator loc,
-                         vector<uint32>::const_iterator begin) :
-    vector<uint32>::const_iterator(loc), begin_(begin) {}
-  uint32 operator*() {
-    return BitmapIndex::kStorageBitSize * BitmapIndex::kSecondaryBlockSize *
-           (1 + std::distance<vector<uint32>::const_iterator>(begin_, *this)) -
-           vector<uint32>::const_iterator::operator*();
+// If [begin, begin+size) is a monotonically increasing running sum of
+// popcounts for a bitmap, this will return the index of the word that contains
+// the value'th zero.  If value is larger then the number of zeros in the
+// bitmap, size will be returned.  The idea is that the number of zerocounts
+// (i.e. the popcount of logical NOT of values) is offset * kStorageBitSize
+// minus the value for each element of the running sum.
+template<size_t BlockSize, typename Iter, typename T>
+Iter InvertedSearch(Iter first, Iter last, T value) {
+  const Iter begin = first;
+  while (first != last) {
+    // Invariant: [first, last) is the search range.
+    Iter mid = first + ((last - first) / 2);
+    size_t mid_value = BlockSize * (1 + (mid - begin)) - *mid;
+    if (mid_value < value) {
+      first = ++mid;
+    } else {
+      last = mid;
+    }
   }
- private:
-  vector<uint32>::const_iterator begin_;
-};
-
-class secondary_index_inverted : public vector<uint16>::const_iterator {
- public:
-  secondary_index_inverted() : vector<uint16>::const_iterator() {}
-  secondary_index_inverted(vector<uint16>::const_iterator loc,
-                           vector<uint16>::const_iterator block_begin) :
-    vector<uint16>::const_iterator(loc), block_begin_(block_begin) {}
-  uint16 operator*() {
-    return ((1 + std::distance<vector<uint16>::const_iterator>(
-        block_begin_, *this)) << BitmapIndex::kStorageLogBitSize) -
-        vector<uint16>::const_iterator::operator*();
-  }
- private:
-  vector<uint16>::const_iterator block_begin_;
-};
+  return first;
+}
+}  // namespace
 
 size_t BitmapIndex::Rank1(size_t end) const {
   if (end == 0) return 0;
@@ -96,28 +87,84 @@ size_t BitmapIndex::Select0(size_t bit_index) const {
   uint32 offset = 0;
   const uint32 block = find_inverted_primary_block(bit_index + 1);
   if (block > 0) {
-    remzeros -= *primary_index_inverted(primary_index_.begin() + block - 1,
-                                        primary_index_.begin());
+    remzeros -= kPrimaryBlockBits * block - primary_index_[block - 1];
     offset += block * kSecondaryBlockSize;
   }
   // search the inverted secondary index
   uint32 word = find_inverted_secondary_block(offset, remzeros);
   if (word > 0) {
-    vector<uint16>::const_iterator block_begin =
-        secondary_index_.begin() + offset;
-    remzeros -= *secondary_index_inverted(block_begin + word - 1, block_begin);
+    remzeros -= BitmapIndex::kStorageBitSize * word -
+        secondary_index_[offset + word - 1];
     offset += word;
   }
   int nth = nth_bit(~bits_[offset], remzeros);
   return (offset << BitmapIndex::kStorageLogBitSize) + nth;
 }
 
+pair<size_t, size_t> BitmapIndex::Select0s(size_t bit_index) const {
+  const uint64 zero = 0;
+  const uint64 ones = ~zero;
+  size_t zeros_count = Bits() - GetOnesCount();
+  if (bit_index >= zeros_count) return make_pair(Bits(), Bits());
+  if (bit_index + 1 >= zeros_count) {
+    return make_pair(Select0(bit_index), Bits());
+  }
+  // search inverted primary index for relevant block
+  uint32 remzeros = bit_index + 1;
+  uint32 offset = 0;
+  const uint32 block = find_inverted_primary_block(bit_index + 1);
+  size_t num_zeros_in_block =
+      kPrimaryBlockBits * (1 + block) - primary_index_[block];
+  if (block > 0) {
+    size_t num_zeros_next =
+        kPrimaryBlockBits * block - primary_index_[block - 1];
+    num_zeros_in_block -= num_zeros_next;
+    remzeros -= num_zeros_next;
+    offset += block * kSecondaryBlockSize;
+  }
+  // search the inverted secondary index
+  uint32 word = find_inverted_secondary_block(offset, remzeros);
+  uint32 sum_zeros_next_word = BitmapIndex::kStorageBitSize * (1 + word) -
+      secondary_index_[offset + word];
+  uint32 sum_zeros_this_word = 0;
+  if (word > 0) {
+    sum_zeros_this_word = BitmapIndex::kStorageBitSize * word -
+        secondary_index_[offset + word - 1];
+    remzeros -= sum_zeros_this_word;
+    offset += word;
+  }
+  int nth = nth_bit(~bits_[offset], remzeros);
+  size_t current_zero = (offset << BitmapIndex::kStorageLogBitSize) + nth;
+
+  size_t next_zero;
+  // Does the current block contain the next zero?
+  if (num_zeros_in_block > remzeros + 1) {
+    if (sum_zeros_next_word - sum_zeros_this_word >= remzeros + 1) {
+      // the next zero is in this word
+      next_zero = (offset << BitmapIndex::kStorageLogBitSize) +
+          nth_bit(~bits_[offset], remzeros + 1);
+    } else {
+      // Find the first field that is not all ones by linear scan.
+      // In the worst case, this may scan 8Kbytes.  The alternative is
+      // to inspect secondary_index_ looking for a place to jump to, but
+      // that would probably use more cache.
+      while (bits_[++offset] == ones) {}
+      next_zero = (offset << BitmapIndex::kStorageLogBitSize) +
+          __builtin_ctzll(~bits_[offset]);
+    }
+  } else {
+    // the next zero is in a different block, a full search is required.
+    next_zero = Select0(bit_index + 1);
+  }
+  return make_pair(current_zero, next_zero);
+}
+
 size_t BitmapIndex::get_index_ones_count(size_t array_index) const {
   uint32 sum = 0;
   if (array_index > 0) {
-    sum += secondary_index_[array_index-1];
+    sum += secondary_index_[array_index - 1];
     uint32 end_block = (array_index - 1) / kSecondaryBlockSize;
-    if (end_block > 0) sum += primary_index_[end_block-1];
+    if (end_block > 0) sum += primary_index_[end_block - 1];
   }
   return sum;
 }
@@ -125,16 +172,14 @@ size_t BitmapIndex::get_index_ones_count(size_t array_index) const {
 void BitmapIndex::BuildIndex(const uint64 *bits, size_t size) {
   bits_ = bits;
   size_ = size;
-  secondary_index_.clear();
-  secondary_index_.reserve(ArraySize());
-  primary_index_.clear();
-  primary_index_.reserve(primary_index_size());
+  primary_index_.resize(primary_index_size());
+  secondary_index_.resize(ArraySize());
   const uint64 zero = 0;
   const uint64 ones = ~zero;
   uint32 popcount = 0;
-  for (uint32 block_begin = 0; block_begin < ArraySize();
-       block_begin += kSecondaryBlockSize) {
+  for (uint32 block = 0; block * kSecondaryBlockSize < ArraySize(); block++) {
     uint32 block_popcount = 0;
+    uint32 block_begin = block * kSecondaryBlockSize;
     uint32 block_end = block_begin + kSecondaryBlockSize;
     if (block_end > ArraySize()) block_end = ArraySize();
     for (uint32 j = block_begin; j < block_end; ++j) {
@@ -143,17 +188,17 @@ void BitmapIndex::BuildIndex(const uint64 *bits, size_t size) {
         mask = ones >> (-size_ & BitmapIndex::kStorageBlockMask);
       }
       block_popcount += __builtin_popcountll(bits_[j] & mask);
-      secondary_index_.push_back(block_popcount);
+      secondary_index_[j] = block_popcount;
     }
     popcount += block_popcount;
-    primary_index_.push_back(popcount);
+    primary_index_[block] = popcount;
   }
 }
 
 size_t BitmapIndex::find_secondary_block(
     size_t block_begin, size_t rem_bit_index) const {
   size_t block_end = block_begin + kSecondaryBlockSize;
-  if (block_end > secondary_index_.size()) block_end = secondary_index_.size();
+  if (block_end > ArraySize()) block_end = ArraySize();
   return std::distance(secondary_index_.begin() + block_begin,
                        std::lower_bound(secondary_index_.begin() + block_begin,
                                         secondary_index_.begin() + block_end,
@@ -163,25 +208,24 @@ size_t BitmapIndex::find_secondary_block(
 size_t BitmapIndex::find_inverted_secondary_block(
     size_t block_begin, size_t rem_bit_index) const {
   size_t block_end = block_begin + kSecondaryBlockSize;
-  if (block_end > secondary_index_.size()) block_end = secondary_index_.size();
-  secondary_index_inverted start(secondary_index_.begin() + block_begin,
-                                 secondary_index_.begin() + block_begin);
-  secondary_index_inverted end(secondary_index_.begin() + block_end,
-                               secondary_index_.begin() + block_begin);
-  return std::distance(start,
-                       std::lower_bound(start, end, rem_bit_index));
+  if (block_end > ArraySize()) block_end = ArraySize();
+  return std::distance(
+      secondary_index_.begin() + block_begin,
+      InvertedSearch<BitmapIndex::kStorageBitSize>(
+          secondary_index_.begin() + block_begin,
+          secondary_index_.begin() + block_end, rem_bit_index));
 }
 
 inline size_t BitmapIndex::find_primary_block(size_t bit_index) const {
-  return std::distance(primary_index_.begin(),
-                       std::lower_bound(primary_index_.begin(),
-                                        primary_index_.end(), bit_index));
+  return std::distance(primary_index_.begin(), std::lower_bound(
+      primary_index_.begin(), primary_index_.begin() + primary_index_size(),
+      bit_index));
 }
 
 size_t BitmapIndex::find_inverted_primary_block(size_t bit_index) const {
-  primary_index_inverted start(primary_index_.begin(), primary_index_.begin());
-  primary_index_inverted end(primary_index_.end(), primary_index_.begin());
-  return std::distance(start, std::lower_bound(start, end, bit_index));
+  return std::distance(primary_index_.begin(),
+                       InvertedSearch<kPrimaryBlockBits>(
+                           primary_index_.begin(), primary_index_.end(),
+                           bit_index));
 }
-
 }  // end namespace fst

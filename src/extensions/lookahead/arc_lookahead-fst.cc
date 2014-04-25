@@ -25,4 +25,4 @@ using fst::StdArc;
 
 // Register ArcLookAhead Fsts with common arc types
 static FstRegisterer<StdArcLookAheadFst> ArcLookAheadFst_StdArc_registerer;
-static FstRegisterer<LogArcLookAheadFst> ArcLookAheadrFst_LogArc_registerer;
+static FstRegisterer<LogArcLookAheadFst> ArcLookAheadFst_LogArc_registerer;

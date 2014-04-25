@@ -21,17 +21,19 @@
 #ifndef FST_LIB_UTIL_H__
 #define FST_LIB_UTIL_H__
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
-#include <tr1/unordered_set>
-using std::tr1::unordered_set;
-using std::tr1::unordered_multiset;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
+#include <unordered_set>
+using std::unordered_set;
+using std::unordered_multiset;
 #include <list>
 #include <map>
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
+using std::pair; using std::make_pair;
 #include <vector>
 using std::vector;
 
@@ -42,6 +44,7 @@ using std::vector;
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
 
 //
 // UTILITY FOR ERROR HANDLING
@@ -87,7 +90,7 @@ READ_POD_TYPE(float);
 READ_POD_TYPE(double);
 
 // String case.
-inline istream &ReadType(istream &strm, string *s) {
+inline istream &ReadType(istream &strm, string *s) {  // NOLINT
   s->clear();
   int32 ns = 0;
   strm.read(reinterpret_cast<char *>(&ns), sizeof(ns));
@@ -98,6 +101,24 @@ inline istream &ReadType(istream &strm, string *s) {
   }
   return strm;
 }
+
+// Declare some types that write to an output stream
+
+#define DECL_READ_TYPE2(C)                                                  \
+template <typename S, typename T>                                           \
+inline istream &ReadType(istream &strm, C<S, T> *c)  // NOLINT
+
+#define DECL_READ_TYPE3(C)                                                  \
+template <typename S, typename T, typename U>                               \
+inline istream &ReadType(istream &strm, C<S, T, U> *c)
+
+DECL_READ_TYPE2(vector);
+DECL_READ_TYPE2(list);
+
+DECL_READ_TYPE3(set);
+DECL_READ_TYPE3(unordered_set);
+DECL_READ_TYPE3(map);
+DECL_READ_TYPE3(unordered_map);
 
 // Pair case.
 template <typename S, typename T>
@@ -200,9 +221,27 @@ inline ostream &WriteType(ostream &strm, const string &s) {
   return strm.write(s.data(), ns);
 }
 
+// Declare some types that write to an output stream
+
+#define DECL_WRITE_TYPE2(C)                                                  \
+template <typename S, typename T>                                            \
+inline ostream &WriteType(ostream &strm, const C<S, T> &c)
+
+#define DECL_WRITE_TYPE3(C)                                                  \
+template <typename S, typename T, typename U>                                \
+inline ostream &WriteType(ostream &strm, const C<S, T, U> &c)  // NOLINT
+
+DECL_WRITE_TYPE2(vector);
+DECL_WRITE_TYPE2(list);
+
+DECL_WRITE_TYPE3(set);
+DECL_WRITE_TYPE3(unordered_set);
+DECL_WRITE_TYPE3(map);
+DECL_WRITE_TYPE3(unordered_map);
+
 // Pair case.
 template <typename S, typename T>
-inline ostream &WriteType(ostream &strm, const pair<S, T> &p) {
+inline ostream &WriteType(ostream &strm, const pair<S, T> &p) {  // NOLINT
   WriteType(strm, p.first);
   WriteType(strm, p.second);
   return strm;
@@ -268,17 +307,22 @@ void WeightToStr(Weight w, string *s) {
   s->append(strm.str().data(), strm.str().size());
 }
 
-// Utilities for reading/writing label pairs
+// Utilities for reading/writing integer pairs (typically labels)
+
+// Modifies line, vec consists of pointers to of buffer beginning
+// with line.
+void SplitToVector(char *line, const char *delim,
+                   vector<char *> *vec, bool omit_empty_strings);
 
 // Returns true on success
-template <typename Label>
-bool ReadLabelPairs(const string& filename,
-                    vector<pair<Label, Label> >* pairs,
+template <typename I>
+bool ReadIntPairs(const string& filename,
+                    vector<pair<I, I> >* pairs,
                     bool allow_negative = false) {
   ifstream strm(filename.c_str());
 
   if (!strm) {
-    LOG(ERROR) << "ReadLabelPairs: Can't open file: " << filename;
+    LOG(ERROR) << "ReadIntPairs: Can't open file: " << filename;
     return false;
   }
 
@@ -291,33 +335,34 @@ bool ReadLabelPairs(const string& filename,
     ++nline;
     vector<char *> col;
     SplitToVector(line, "\n\t ", &col, true);
-    if (col.size() == 0 || col[0][0] == '\0')  // empty line
+    // empty line or comment?
+    if (col.size() == 0 || col[0][0] == '\0' || col[0][0] == '#')
       continue;
     if (col.size() != 2) {
-      LOG(ERROR) << "ReadLabelPairs: Bad number of columns, "
+      LOG(ERROR) << "ReadIntPairs: Bad number of columns, "
                  << "file = " << filename << ", line = " << nline;
       return false;
     }
 
     bool err;
-    Label frmlabel = StrToInt64(col[0], filename, nline, allow_negative, &err);
+    I i1 = StrToInt64(col[0], filename, nline, allow_negative, &err);
     if (err) return false;
-    Label tolabel = StrToInt64(col[1], filename, nline, allow_negative, &err);
+    I i2 = StrToInt64(col[1], filename, nline, allow_negative, &err);
     if (err) return false;
-    pairs->push_back(make_pair(frmlabel, tolabel));
+    pairs->push_back(make_pair(i1, i2));
   }
   return true;
 }
 
 // Returns true on success
-template <typename Label>
-bool WriteLabelPairs(const string& filename,
-                     const vector<pair<Label, Label> >& pairs) {
+template <typename I>
+bool WriteIntPairs(const string& filename,
+                   const vector<pair<I, I> >& pairs) {
   ostream *strm = &cout;
   if (!filename.empty()) {
     strm = new ofstream(filename.c_str());
     if (!*strm) {
-      LOG(ERROR) << "WriteLabelPairs: Can't open file: " << filename;
+      LOG(ERROR) << "WriteIntPairs: Can't open file: " << filename;
       return false;
     }
   }
@@ -326,13 +371,28 @@ bool WriteLabelPairs(const string& filename,
     *strm << pairs[n].first << "\t" << pairs[n].second << "\n";
 
   if (!*strm) {
-    LOG(ERROR) << "WriteLabelPairs: Write failed: "
+    LOG(ERROR) << "WriteIntPairs: Write failed: "
                << (filename.empty() ? "standard output" : filename);
     return false;
   }
   if (strm != &cout)
     delete strm;
   return true;
+}
+
+// Utilities for reading/writing label pairs
+
+template <typename Label>
+bool ReadLabelPairs(const string& filename,
+                    vector<pair<Label, Label> >* pairs,
+                    bool allow_negative = false) {
+  return ReadIntPairs(filename, pairs, allow_negative);
+}
+
+template <typename Label>
+bool WriteLabelPairs(const string& filename,
+                     vector<pair<Label, Label> >& pairs) {
+  return WriteIntPairs(filename, pairs);
 }
 
 // Utilities for converting a type name to a legal C symbol.

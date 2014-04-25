@@ -29,8 +29,21 @@ using std::vector;
 namespace fst {
 namespace script {
 
+struct ReplaceOptions {
+  int64 root;    // root rule for expansion
+  fst::ReplaceLabelType call_label_type;  // how to label call arc
+  fst::ReplaceLabelType return_label_type;  // how to label return arc
+  int64 return_label;  // specifies label to put on return arc
+
+  ReplaceOptions(int64 r, fst::ReplaceLabelType c =
+                 fst::REPLACE_LABEL_INPUT,
+                 fst::ReplaceLabelType t =
+                 fst::REPLACE_LABEL_NEITHER, int64 l = 0)
+      : root(r), call_label_type(c), return_label_type(t), return_label(l) {}
+};
+
 typedef args::Package<const vector<pair<int64, const FstClass *> > &,
-                      MutableFstClass *, const int64, bool> ReplaceArgs;
+                      MutableFstClass *, const ReplaceOptions &> ReplaceArgs;
 
 template<class Arc>
 void Replace(ReplaceArgs *args) {
@@ -48,13 +61,15 @@ void Replace(ReplaceArgs *args) {
   }
 
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
-
-  Replace(fst_tuples, ofst, args->arg3, args->arg4);
+  const ReplaceOptions &opts = args->arg3;
+  fst::ReplaceFstOptions<Arc> repargs(opts.root, opts.call_label_type,
+                                          opts.return_label_type,
+                                          opts.return_label);
+  Replace(fst_tuples, ofst, repargs);
 }
 
 void Replace(const vector<pair<int64, const FstClass *> > &tuples,
-             MutableFstClass *ofst, const int64 &root,
-             bool epsilon_on_replace = false);
+             MutableFstClass *ofst, const ReplaceOptions &opts);
 
 }  // namespace script
 }  // namespace fst

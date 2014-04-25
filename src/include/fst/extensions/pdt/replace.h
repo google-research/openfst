@@ -21,9 +21,9 @@
 #ifndef FST_EXTENSIONS_PDT_REPLACE_H__
 #define FST_EXTENSIONS_PDT_REPLACE_H__
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 
 #include <fst/replace.h>
 

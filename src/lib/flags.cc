@@ -49,7 +49,7 @@ void SetFlags(const char *usage, int *argc, char ***argv,
     string val = "";
 
     // split argval (arg=val) into arg and val
-    int pos = argval.find("=");
+    size_t pos = argval.find("=");
     if (pos != string::npos) {
       arg = argval.substr(0, pos);
       val = argval.substr(pos + 1);

@@ -8,7 +8,7 @@ fstencode fstepsnormalize fstequal fstequivalent fstinfo fstintersect \
 fstinvert fstmap fstminimize fstprint fstproject fstprune fstpush fstrandgen \
 fstrelabel fstreplace fstreverse fstreweight fstrmepsilon \
 fstshortestdistance fstshortestpath fstsymbols fstsynchronize fsttopsort \
-fstunion
+fstunion fstdisambiguate
 
 fstarcsort_SOURCES = fstarcsort.cc
 
@@ -28,7 +28,7 @@ fstdeterminize_SOURCES = fstdeterminize.cc
 
 fstdifference_SOURCES = fstdifference.cc
 
-# fstdisambiguate_SOURCES = fstdisambiguate.cc
+fstdisambiguate_SOURCES = fstdisambiguate.cc
 
 fstdraw_SOURCES = fstdraw.cc
 

@@ -65,6 +65,7 @@
 #include <fst/connect.h>
 #include <fst/determinize.h>
 #include <fst/difference.h>
+#include <fst/disambiguate.h>
 #include <fst/encode.h>
 #include <fst/epsnormalize.h>
 #include <fst/equal.h>

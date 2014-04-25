@@ -21,10 +21,11 @@
 #ifndef FST_LIB_RMEPSILON_H__
 #define FST_LIB_RMEPSILON_H__
 
-#include <tr1/unordered_map>
-using std::tr1::unordered_map;
-using std::tr1::unordered_multimap;
-#include <fst/slist.h>
+#include <forward_list>
+using std::forward_list;
+#include <unordered_map>
+using std::unordered_map;
+using std::unordered_multimap;
 #include <stack>
 #include <string>
 #include <utility>
@@ -142,7 +143,7 @@ class RmEpsilonState {
   EpsilonArcFilter<Arc> eps_filter_;
   stack<StateId> eps_queue_;      // Queue used to visit the epsilon-closure
   vector<bool> visited_;          // '[i] = true' if state 'i' has been visited
-  slist<StateId> visited_states_; // List of visited states
+  std::forward_list<StateId> visited_states_;  // List of visited states
   vector<Arc> arcs_;              // Arcs of state being expanded
   Weight final_;                  // Final weight of state being expanded
   StateId expand_id_;             // Unique ID for each call to Expand
@@ -394,7 +395,8 @@ class RmEpsilonFstImpl : public CacheImpl<A> {
   typedef typename A::Label Label;
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
 
   RmEpsilonFstImpl(const Fst<A>& fst, const RmEpsilonFstOptions &opts)
       : CacheImpl<A>(opts),
@@ -527,7 +529,8 @@ class RmEpsilonFst : public ImplToFst< RmEpsilonFstImpl<A> > {
 
   typedef A Arc;
   typedef typename A::StateId StateId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
   typedef RmEpsilonFstImpl<A> Impl;
 
   RmEpsilonFst(const Fst<A> &fst)

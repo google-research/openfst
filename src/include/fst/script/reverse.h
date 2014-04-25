@@ -24,17 +24,19 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, MutableFstClass *> ReverseArgs;
+typedef args::Package<const FstClass &, MutableFstClass *, bool> ReverseArgs;
 
 template<class Arc>
 void Reverse(ReverseArgs *args) {
   const Fst<Arc> &fst1 = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *fst2 = args->arg2->GetMutableFst<Arc>();
+  bool require_superinitial = args->arg3;
 
-  Reverse(fst1, fst2);
+  Reverse(fst1, fst2, require_superinitial);
 }
 
-void Reverse(const FstClass &fst1, MutableFstClass *fst2);
+void Reverse(const FstClass &fst1, MutableFstClass *fst2,
+             bool require_superinitial = true);
 
 }  // namespace script
 }  // namespace fst

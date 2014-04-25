@@ -217,7 +217,7 @@ class Partition {
     return class_size_;
   }
 
-  const size_t class_size(T class_id)  const {
+  size_t class_size(T class_id) const {
     return class_size_[class_id];
   }
 

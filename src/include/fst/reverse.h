@@ -39,8 +39,17 @@ namespace fst {
 // TropicalWeight or LogWeight).  In general, e.g. when the weights
 // only form a left or right semiring, the output arc type must match
 // the input arc type except having the reversed Weight type.
+//
+// When 'require_superinitial == false', a superinitial state is
+// *not* created in the reversed Fst iff the input Fst has exactly
+// 1 final state (which becomes the initial state of the reversed Fst)
+// that has a final weight of Weight::One() *or* does not belong to
+// any cycle.
+// When 'require_superinitial == true', a superinitial state is
+// always created.
 template<class Arc, class RevArc>
-void Reverse(const Fst<Arc> &ifst, MutableFst<RevArc> *ofst) {
+void Reverse(const Fst<Arc> &ifst, MutableFst<RevArc> *ofst,
+             bool require_superinitial = true) {
   typedef typename Arc::StateId StateId;
   typedef typename Arc::Weight Weight;
   typedef typename RevArc::Weight RevWeight;
@@ -51,39 +60,87 @@ void Reverse(const Fst<Arc> &ifst, MutableFst<RevArc> *ofst) {
   if (ifst.Properties(kExpanded, false))
     ofst->ReserveStates(CountStates(ifst) + 1);
   StateId istart = ifst.Start();
-  StateId ostart = ofst->AddState();
-  ofst->SetStart(ostart);
+  StateId ostart = kNoStateId;
+  StateId offset = 0;
+  uint64 dfs_iprops = 0, dfs_oprops = 0;
 
-  for (StateIterator< Fst<Arc> > siter(ifst);
+  if (!require_superinitial) {
+    for (StateIterator<Fst<Arc> > siter(ifst);
+         !siter.Done();
+         siter.Next()) {
+      StateId is = siter.Value();
+      if (ifst.Final(is) == Weight::Zero()) continue;
+      if (ostart != kNoStateId) {
+        ostart = kNoStateId;
+        break;
+      } else {
+        ostart = is;
+      }
+    }
+
+    if (ostart != kNoStateId && ifst.Final(ostart) != Weight::One()) {
+      vector<StateId> scc;
+      SccVisitor<Arc> scc_visitor(&scc, 0, 0, &dfs_iprops);
+      DfsVisit(ifst, &scc_visitor);
+      if (count(scc.begin(), scc.end(), scc[ostart]) > 1) {
+        ostart = kNoStateId;
+      } else {
+        for (ArcIterator<Fst<Arc> > aiter(ifst, ostart);
+             !aiter.Done(); aiter.Next()) {
+          if (aiter.Value().nextstate == ostart) {
+            ostart = kNoStateId;
+            break;
+          }
+        }
+      }
+      if (ostart != kNoStateId)
+        dfs_oprops = kInitialAcyclic;
+    }
+  }
+
+  if (ostart == kNoStateId) {  // Super-initial requested or needed.
+    ostart = ofst->AddState();
+    offset = 1;
+  }
+
+  for (StateIterator<Fst<Arc> > siter(ifst);
        !siter.Done();
        siter.Next()) {
     StateId is = siter.Value();
-    StateId os = is + 1;
+    StateId os = is + offset;
     while (ofst->NumStates() <= os)
       ofst->AddState();
     if (is == istart)
       ofst->SetFinal(os, RevWeight::One());
 
     Weight final = ifst.Final(is);
-    if (final != Weight::Zero()) {
+    if ((final != Weight::Zero()) && (offset == 1)) {
       RevArc oarc(0, 0, final.Reverse(), os);
       ofst->AddArc(0, oarc);
     }
 
-    for (ArcIterator< Fst<Arc> > aiter(ifst, is);
+    for (ArcIterator<Fst<Arc> > aiter(ifst, is);
          !aiter.Done();
          aiter.Next()) {
       const Arc &iarc = aiter.Value();
-      RevArc oarc(iarc.ilabel, iarc.olabel, iarc.weight.Reverse(), os);
-      StateId nos = iarc.nextstate + 1;
+      StateId nos = iarc.nextstate + offset;
+      typename RevArc::Weight weight = iarc.weight.Reverse();
+      if (!offset && (nos == ostart))
+        weight = Times(ifst.Final(ostart).Reverse(), weight);
+      RevArc oarc(iarc.ilabel, iarc.olabel, weight, os);
       while (ofst->NumStates() <= nos)
         ofst->AddState();
       ofst->AddArc(nos, oarc);
     }
   }
-  uint64 iprops = ifst.Properties(kCopyProperties, false);
-  uint64 oprops = ofst->Properties(kFstProperties, false);
-  ofst->SetProperties(ReverseProperties(iprops) | oprops, kFstProperties);
+  ofst->SetStart(ostart);
+  if (offset == 0 && ostart == istart)
+    ofst->SetFinal(ostart, ifst.Final(ostart).Reverse());
+
+  uint64 iprops = ifst.Properties(kCopyProperties, false) | dfs_iprops;
+  uint64 oprops = ofst->Properties(kFstProperties, false) | dfs_oprops;
+  ofst->SetProperties(ReverseProperties(iprops, offset == 1) | oprops,
+                      kFstProperties);
 }
 
 }  // namespace fst

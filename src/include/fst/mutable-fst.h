@@ -96,7 +96,7 @@ class MutableFst : public ExpandedFst<A> {
       ropts.header = &hdr;
     }
     if (!(hdr.Properties() & kMutable)) {
-      LOG(ERROR) << "MutableFst::Read: Not an MutableFst: " << ropts.source;
+      LOG(ERROR) << "MutableFst::Read: Not a MutableFst: " << ropts.source;
       return 0;
     }
     FstRegister<A> *registr = FstRegister<A>::GetRegister();
@@ -174,7 +174,7 @@ struct MutableArcIteratorData {
 // Generic mutable arc iterator, templated on the FST definition
 // - a wrapper around pointer to specific one.
 // Here is a typical use: \code
-//   for (MutableArcIterator<StdFst> aiter(&fst, s));
+//   for (MutableArcIterator<StdFst> aiter(&fst, s);
 //        !aiter.Done();
 //         aiter.Next()) {
 //     StdArc arc = aiter.Value();

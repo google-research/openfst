@@ -48,14 +48,14 @@ void Disambiguate(DisambiguateArgs *args) {
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   const DisambiguateOptions &opts = args->arg3;
 
-  fst::DisambiguateOptions<Arc> detargs;
-  detargs.delta = opts.delta;
-  detargs.weight_threshold =
+  fst::DisambiguateOptions<Arc> disambargs;
+  disambargs.delta = opts.delta;
+  disambargs.weight_threshold =
       *(opts.weight_threshold.GetWeight<typename Arc::Weight>());
-  detargs.state_threshold = opts.state_threshold;
-  detargs.subsequential_label = opts.subsequential_label;
+  disambargs.state_threshold = opts.state_threshold;
+  disambargs.subsequential_label = opts.subsequential_label;
 
-  Disambiguate(ifst, ofst, detargs);
+  Disambiguate(ifst, ofst, disambargs);
 }
 
 void Disambiguate(const FstClass &ifst, MutableFstClass *ofst,

@@ -21,6 +21,8 @@
 #ifndef FST_EXTENSIONS_PDT_EXPAND_H__
 #define FST_EXTENSIONS_PDT_EXPAND_H__
 
+#include <forward_list>
+using std::forward_list;
 #include <vector>
 using std::vector;
 
@@ -232,7 +234,8 @@ class ExpandFst : public ImplToFst< ExpandFstImpl<A> > {
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
   typedef StateId StackId;
-  typedef CacheState<A> State;
+  typedef DefaultCacheStore<A> Store;
+  typedef typename Store::State State;
   typedef ExpandFstImpl<A> Impl;
 
   ExpandFst(const Fst<A> &fst,
@@ -496,7 +499,7 @@ class PrunedExpand {
   ssize_t current_paren_id_;  // Paren id at top of current stack
   ssize_t cached_stack_id_;
   StateId cached_source_;
-  slist<pair<StateId, Weight> > cached_dest_list_;
+  std::forward_list<pair<StateId, Weight> > cached_dest_list_;
   // 'cached_dest_list_' contains the set of pair of destination
   // states and weight to final states for source state
   // 'cached_source_' and paren id 'cached_paren_id': the set of
@@ -669,10 +672,9 @@ bool PrunedExpand<A>::PruneArc(StateId s, const A &arc) {
     }
   }
 
-  for (typename slist<pair<StateId, Weight> >::const_iterator iter =
+  for (typename std::forward_list<pair<StateId, Weight> >::const_iterator iter =
            cached_dest_list_.begin();
-       iter != cached_dest_list_.end();
-       ++iter) {
+       iter != cached_dest_list_.end(); ++iter) {
     fd = Plus(fd,
               Times(DistanceToDest(state_table_.Tuple(arc.nextstate).state_id,
                                    iter->first),
@@ -755,15 +757,15 @@ bool PrunedExpand<A>::ProcOpenParen(StateId s, const A &arc, StackId si,
   bool proc_arc = false;
   Weight fd = Weight::Zero();
   ssize_t paren_id = stack_.ParenId(arc.ilabel);
-  slist<StateId> sources;
+  std::forward_list<StateId> sources;
   for (SetIterator set_iter =
            balance_data_->Find(paren_id, state_table_.Tuple(ns).state_id);
        !set_iter.Done(); set_iter.Next()) {
     sources.push_front(set_iter.Element());
   }
-  for (typename slist<StateId>::const_iterator sources_iter = sources.begin();
-       sources_iter != sources.end();
-       ++ sources_iter) {
+  for (typename std::forward_list<StateId>::const_iterator sources_iter =
+           sources.begin();
+       sources_iter != sources.end(); ++sources_iter) {
     StateId source = *sources_iter;
     VLOG(2) << "Close paren source: " << source;
     ParenState<Arc> paren_state(paren_id, source);
