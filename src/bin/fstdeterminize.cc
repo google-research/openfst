@@ -28,6 +28,8 @@ DEFINE_string(weight, "", "Weight threshold");
 DEFINE_int64(subsequential_label, 0,
              "Input label of arc corresponding to residual final output when"
              " producing a subsequential transducer");
+DEFINE_bool(disambiguate_output, false,
+            "Keep only the min of ambiguous output");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
   s::DeterminizeOptions opts(
       FLAGS_delta, FLAGS_weight.empty() ?
       WeightClass::Zero() : WeightClass(ifst->WeightType(), FLAGS_weight),
-      FLAGS_nstate, FLAGS_subsequential_label);
+      FLAGS_nstate, FLAGS_subsequential_label, FLAGS_disambiguate_output);
 
   s::Determinize(*ifst, &ofst, opts);
 

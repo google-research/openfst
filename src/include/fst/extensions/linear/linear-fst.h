@@ -162,7 +162,12 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
     FstHeader header;
     header.SetStart(kNoStateId);
     WriteHeader(strm, opts, kFileVersion, &header);
-    return data_->Write(strm);
+    data_->Write(strm);
+    if (!strm) {
+      LOG(ERROR) << "LinearTaggerFst::Write: write failed: " << opts.source;
+      return false;
+    }
+    return true;
   }
 
  private:
@@ -701,7 +706,11 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
     WriteHeader(strm, opts, kFileVersion, &header);
     data_->Write(strm);
     WriteType(strm, num_classes_);
-    return strm;
+    if (!strm) {
+      LOG(ERROR) << "LinearClassifierFst::Write: write failed: " << opts.source;
+      return false;
+    }
+    return true;
   }
 
  private:

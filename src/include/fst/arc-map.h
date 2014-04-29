@@ -763,14 +763,14 @@ typedef WeightConvertMapper<Log64Arc, StdArc> Log64ToStdMapper;
 typedef WeightConvertMapper<Log64Arc, LogArc> Log64ToLogMapper;
 
 // Mapper from A to GallicArc<A>.
-template <class A, StringType S = STRING_LEFT>
+template <class A, GallicType G = GALLIC_LEFT>
 struct ToGallicMapper {
   typedef A FromArc;
-  typedef GallicArc<A, S> ToArc;
+  typedef GallicArc<A, G> ToArc;
 
-  typedef StringWeight<typename A::Label, S> SW;
+  typedef StringWeight<typename A::Label, GALLIC_STRING_TYPE(G)> SW;
   typedef typename A::Weight AW;
-  typedef typename GallicArc<A, S>::Weight GW;
+  typedef typename GallicArc<A, G>::Weight GW;
 
   ToArc operator()(const A &arc) const {
     // 'Super-final' arc.
@@ -802,15 +802,15 @@ struct ToGallicMapper {
 
 
 // Mapper from GallicArc<A> to A.
-template <class A, StringType S = STRING_LEFT>
+template <class A, GallicType G = GALLIC_LEFT>
 struct FromGallicMapper {
-  typedef GallicArc<A, S> FromArc;
+  typedef GallicArc<A, G> FromArc;
   typedef A ToArc;
 
   typedef typename A::Label Label;
-  typedef StringWeight<Label, S> SW;
+  typedef StringWeight<Label, GALLIC_STRING_TYPE(G)> SW;
   typedef typename A::Weight AW;
-  typedef typename GallicArc<A, S>::Weight GW;
+  typedef typename GallicArc<A, G>::Weight GW;
 
   FromGallicMapper(Label superfinal_label = 0)
       : superfinal_label_(superfinal_label), error_(false) {}
@@ -822,7 +822,7 @@ struct FromGallicMapper {
 
     SW w1 = arc.weight.Value1();
     AW w2 = arc.weight.Value2();
-    StringWeightIterator<Label, S> iter1(w1);
+    StringWeightIterator<Label, GALLIC_STRING_TYPE(G)> iter1(w1);
 
     Label l = w1.Size() == 1 ? iter1.Value() : 0;
 
@@ -859,16 +859,16 @@ struct FromGallicMapper {
 
 
 // Mapper from GallicArc<A> to A.
-template <class A, StringType S = STRING_LEFT>
+template <class A, GallicType G = GALLIC_LEFT>
 struct GallicToNewSymbolsMapper {
-  typedef GallicArc<A, S> FromArc;
+  typedef GallicArc<A, G> FromArc;
   typedef A ToArc;
 
   typedef typename A::StateId StateId;
   typedef typename A::Label Label;
-  typedef StringWeight<Label, S> SW;
+  typedef StringWeight<Label, GALLIC_STRING_TYPE(G)> SW;
   typedef typename A::Weight AW;
-  typedef typename GallicArc<A, S>::Weight GW;
+  typedef typename GallicArc<A, G>::Weight GW;
 
   GallicToNewSymbolsMapper(MutableFst<ToArc> *fst)
       : fst_(fst), lmax_(0), osymbols_(fst->OutputSymbols()),
@@ -905,7 +905,7 @@ struct GallicToNewSymbolsMapper {
       } else {
         l = ++lmax_;
         map_.insert(pair<const SW, Label>(w1, l));
-        StringWeightIterator<Label, S> iter1(w1);
+        StringWeightIterator<Label, GALLIC_STRING_TYPE(G)> iter1(w1);
         StateId n;
         string s;
         for(size_t i = 0, p = state_;

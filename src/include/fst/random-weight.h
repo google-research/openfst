@@ -243,14 +243,15 @@ const int LexicographicWeightGenerator<G1, G2>::kNumRandomWeights;
 
 // Product generator of a string weight generator and an
 // arbitrary weight generator.
-template <class L, class G, StringType S = STRING_LEFT>
+template <class L, class G, GallicType T = GALLIC_LEFT>
 class GallicWeightGenerator
-    : public ProductWeightGenerator<StringWeightGenerator<L, S>, G> {
-
+    : public ProductWeightGenerator<
+               StringWeightGenerator<L, GALLIC_STRING_TYPE(T)>, G> {
  public:
-  typedef ProductWeightGenerator<StringWeightGenerator<L, S>, G> PG;
+  typedef ProductWeightGenerator<
+               StringWeightGenerator<L, GALLIC_STRING_TYPE(T)>, G> PG;
   typedef typename G::Weight W;
-  typedef GallicWeight<L, W, S> Weight;
+  typedef GallicWeight<L, W, T> Weight;
 
   GallicWeightGenerator(int seed = time(0), bool allow_zero = true)
       : PG(seed, allow_zero) {}

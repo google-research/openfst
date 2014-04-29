@@ -130,38 +130,37 @@ void Push(const Fst<Arc> &ifst,
     *ofst = ifst;
     Push(ofst, rtype, delta, ptype & kPushRemoveTotalWeight);
   } else if (ptype & kPushLabels) {
-    const StringType stype = rtype == REWEIGHT_TO_INITIAL
-                             ? STRING_LEFT
-                             : STRING_RIGHT;
-    vector<typename GallicArc<Arc, stype>::Weight> gdistance;
-    VectorFst<GallicArc<Arc, stype> > gfst;
-    ArcMap(ifst, &gfst, ToGallicMapper<Arc, stype>());
+    const GallicType gtype = rtype == REWEIGHT_TO_INITIAL
+        ? GALLIC_LEFT : GALLIC_RIGHT;
+    vector<typename GallicArc<Arc, gtype>::Weight> gdistance;
+    VectorFst<GallicArc<Arc, gtype> > gfst;
+    ArcMap(ifst, &gfst, ToGallicMapper<Arc, gtype>());
     if (ptype & kPushWeights ) {
       ShortestDistance(gfst, &gdistance, rtype == REWEIGHT_TO_INITIAL, delta);
     } else {
       ArcMapFst<Arc, Arc, RmWeightMapper<Arc> >
         uwfst(ifst, RmWeightMapper<Arc>());
-      ArcMapFst<Arc, GallicArc<Arc, stype>, ToGallicMapper<Arc, stype> >
-        guwfst(uwfst, ToGallicMapper<Arc, stype>());
+      ArcMapFst<Arc, GallicArc<Arc, gtype>, ToGallicMapper<Arc, gtype> >
+        guwfst(uwfst, ToGallicMapper<Arc, gtype>());
       ShortestDistance(guwfst, &gdistance, rtype == REWEIGHT_TO_INITIAL, delta);
     }
-    typename GallicArc<Arc, stype>::Weight total_weight =
-        GallicArc<Arc, stype>::Weight::One();
+    typename GallicArc<Arc, gtype>::Weight total_weight =
+        GallicArc<Arc, gtype>::Weight::One();
     if (ptype & (kPushRemoveTotalWeight | kPushRemoveCommonAffix)) {
       total_weight = internal::ComputeTotalWeight(
           gfst, gdistance, rtype == REWEIGHT_TO_INITIAL);
-      total_weight = typename GallicArc<Arc, stype>::Weight(
+      total_weight = typename GallicArc<Arc, gtype>::Weight(
           ptype & kPushRemoveCommonAffix ? total_weight.Value1()
-          : StringWeight<typename Arc::Label, stype>::One(),
+          : StringWeight<typename Arc::Label, GALLIC_STRING_TYPE(gtype)>::One(),
           ptype & kPushRemoveTotalWeight ? total_weight.Value2()
           : Arc::Weight::One());
     }
     Reweight(&gfst, gdistance, rtype);
     if (ptype & (kPushRemoveTotalWeight | kPushRemoveCommonAffix))
       internal::RemoveWeight(&gfst, total_weight, rtype == REWEIGHT_TO_FINAL);
-    FactorWeightFst< GallicArc<Arc, stype>, GallicFactor<typename Arc::Label,
-      typename Arc::Weight, stype> > fwfst(gfst);
-    ArcMap(fwfst, ofst, FromGallicMapper<Arc, stype>());
+    FactorWeightFst< GallicArc<Arc, gtype>, GallicFactor<typename Arc::Label,
+      typename Arc::Weight, gtype> > fwfst(gfst);
+    ArcMap(fwfst, ofst, FromGallicMapper<Arc, gtype>());
     ofst->SetOutputSymbols(ifst.OutputSymbols());
   } else {
     LOG(WARNING) << "Push: pushing type is set to 0: "

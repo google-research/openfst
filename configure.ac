@@ -1,4 +1,4 @@
-AC_INIT([OpenFst], [1.4.0], [help@www.openfst.org])
+AC_INIT([OpenFst], [1.4.1], [help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
 
 CXXFLAGS="$CXXFLAGS -std=c++0x"

@@ -84,8 +84,6 @@ class ProductWeight : public PairWeight<W1, W2> {
   ReverseWeight Reverse() const {
     return PairWeight<W1, W2>::Reverse();
   }
-
-
 };
 
 template <class W1, class W2>

@@ -51,18 +51,18 @@ enum EpsNormalizeType {EPS_NORM_INPUT, EPS_NORM_OUTPUT};
 template <class Arc>
 void EpsNormalize(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
                       EpsNormalizeType type = EPS_NORM_INPUT) {
-  VectorFst< GallicArc<Arc, STRING_RIGHT_RESTRICT> > gfst;
+  VectorFst< GallicArc<Arc, GALLIC_RIGHT_RESTRICT> > gfst;
   if (type == EPS_NORM_INPUT)
-    ArcMap(ifst, &gfst, ToGallicMapper<Arc, STRING_RIGHT_RESTRICT>());
+    ArcMap(ifst, &gfst, ToGallicMapper<Arc, GALLIC_RIGHT_RESTRICT>());
   else // type == EPS_NORM_OUTPUT
     ArcMap(InvertFst<Arc>(ifst), &gfst,
-           ToGallicMapper<Arc, STRING_RIGHT_RESTRICT>());
+           ToGallicMapper<Arc, GALLIC_RIGHT_RESTRICT>());
   RmEpsilon(&gfst);
-  FactorWeightFst< GallicArc<Arc, STRING_RIGHT_RESTRICT>,
+  FactorWeightFst< GallicArc<Arc, GALLIC_RIGHT_RESTRICT>,
     GallicFactor<typename Arc::Label,
-      typename Arc::Weight, STRING_RIGHT_RESTRICT> >
+      typename Arc::Weight, GALLIC_RIGHT_RESTRICT> >
     fwfst(gfst);
-  ArcMap(fwfst, ofst, FromGallicMapper<Arc, STRING_RIGHT_RESTRICT>());
+  ArcMap(fwfst, ofst, FromGallicMapper<Arc, GALLIC_RIGHT_RESTRICT>());
   ofst->SetOutputSymbols(ifst.OutputSymbols());
   if(type == EPS_NORM_OUTPUT)
     Invert(ofst);

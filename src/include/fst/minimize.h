@@ -540,30 +540,30 @@ void Minimize(MutableFst<A>* fst,
   }
 
   if (!(props & kAcceptor)) {  // weighted transducer
-    VectorFst< GallicArc<A, STRING_LEFT> > gfst;
-    ArcMap(*fst, &gfst, ToGallicMapper<A, STRING_LEFT>());
+    VectorFst< GallicArc<A, GALLIC_LEFT> > gfst;
+    ArcMap(*fst, &gfst, ToGallicMapper<A, GALLIC_LEFT>());
     fst->DeleteStates();
     gfst.SetProperties(kAcceptor, kAcceptor);
     Push(&gfst, REWEIGHT_TO_INITIAL, delta);
-    ArcMap(&gfst, QuantizeMapper< GallicArc<A, STRING_LEFT> >(delta));
-    EncodeMapper< GallicArc<A, STRING_LEFT> >
+    ArcMap(&gfst, QuantizeMapper< GallicArc<A, GALLIC_LEFT> >(delta));
+    EncodeMapper< GallicArc<A, GALLIC_LEFT> >
       encoder(kEncodeLabels | kEncodeWeights, ENCODE);
     Encode(&gfst, &encoder);
     AcceptorMinimize(&gfst);
     Decode(&gfst, encoder);
 
     if (sfst == 0) {
-      FactorWeightFst< GallicArc<A, STRING_LEFT>,
+      FactorWeightFst< GallicArc<A, GALLIC_LEFT>,
         GallicFactor<typename A::Label,
-        typename A::Weight, STRING_LEFT> > fwfst(gfst);
+        typename A::Weight, GALLIC_LEFT> > fwfst(gfst);
       SymbolTable *osyms = fst->OutputSymbols() ?
           fst->OutputSymbols()->Copy() : 0;
-      ArcMap(fwfst, fst, FromGallicMapper<A, STRING_LEFT>());
+      ArcMap(fwfst, fst, FromGallicMapper<A, GALLIC_LEFT>());
       fst->SetOutputSymbols(osyms);
       delete osyms;
     } else {
       sfst->SetOutputSymbols(fst->OutputSymbols());
-      GallicToNewSymbolsMapper<A, STRING_LEFT> mapper(sfst);
+      GallicToNewSymbolsMapper<A, GALLIC_LEFT> mapper(sfst);
       ArcMap(gfst, fst, &mapper);
       fst->SetOutputSymbols(sfst->InputSymbols());
     }

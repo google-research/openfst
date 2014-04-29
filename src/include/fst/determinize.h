@@ -96,10 +96,10 @@ class LabelCommonDivisor {
 // The gallic common divisor uses the label common divisor on the
 // string component and the template argument D common divisor on the
 // weight component, which defaults to the default common divisor.
-template <class L, class W, StringType S, class D = DefaultCommonDivisor<W> >
+template <class L, class W, GallicType G, class D = DefaultCommonDivisor<W> >
 class GallicCommonDivisor {
  public:
-  typedef GallicWeight<L, W, S> Weight;
+  typedef GallicWeight<L, W, G> Weight;
 
   Weight operator()(const Weight &w1, const Weight &w2) const {
     return Weight(label_common_divisor_(w1.Value1(), w2.Value1()),
@@ -107,7 +107,7 @@ class GallicCommonDivisor {
   }
 
  private:
-  LabelCommonDivisor<L, S> label_common_divisor_;
+LabelCommonDivisor<L, GALLIC_STRING_TYPE(G)> label_common_divisor_;
   D weight_common_divisor_;
 };
 
@@ -386,20 +386,22 @@ struct DeterminizeFstOptions : CacheOptions {
   float delta;                // Quantization delta for subset weights
   Label subsequential_label;  // Label used for residual final output
                               // when producing subsequential transducers.
+  bool disambiguate_output;   // Keep only the min of ambiguous output
   F *filter;                  // Determinization filter
   T *state_table;             // Determinization state table
 
   explicit DeterminizeFstOptions(const CacheOptions &opts,
                                  float del = kDelta, Label lab = 0,
-                                 F *filt = 0,
-                                 T *table = 0)
+                                 bool disamb = false,
+                                 F *filt = 0, T *table = 0)
       : CacheOptions(opts), delta(del), subsequential_label(lab),
-        filter(filt), state_table(table) {}
+        disambiguate_output(disamb), filter(filt), state_table(table) {}
 
   explicit DeterminizeFstOptions(float del = kDelta, Label lab = 0,
+                                 bool disamb = false,
                                  F *filt = 0, T *table = 0)
-      : delta(del), subsequential_label(lab), filter(filt),
-        state_table(table) {}
+      : delta(del), subsequential_label(lab), disambiguate_output(disamb),
+        filter(filt), state_table(table) {}
 };
 
 // Implementation of delayed DeterminizeFst. This base class is
@@ -601,7 +603,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<A> {
          ++siter) {
       const Element &element = *siter;
       final = Plus(final, Times(element.weight,
-                                GetFst().Final(element.state_id)));;
+                                GetFst().Final(element.state_id)));
       final = filter_->FilterFinal(final, element);
       if (!final.Member())
         SetProperties(kError, kError);
@@ -688,7 +690,6 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<A> {
         // Found duplicate state: sums state weight and deletes dup.
         prev_element.weight = Plus(prev_element.weight,
                                    dest_element.weight);
-
         if (!prev_element.weight.Member())
           SetProperties(kError, kError);
         ++diter;
@@ -739,7 +740,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<A> {
 // the Gallic semiring as an acceptor whose weights contain the output
 // strings and using acceptor determinization above to determinize
 // that acceptor.
-template <class A, StringType S, class D, class F, class T>
+template <class A, GallicType G, class D, class F, class T>
 class DeterminizeFstImpl : public DeterminizeFstImplBase<A> {
  public:
   using FstImpl<A>::SetProperties;
@@ -751,18 +752,18 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<A> {
   typedef typename A::Weight Weight;
   typedef typename A::StateId StateId;
 
-  typedef ToGallicMapper<A, S> ToMapper;
-  typedef FromGallicMapper<A, S> FromMapper;
+  typedef ToGallicMapper<A, G> ToMapper;
+  typedef FromGallicMapper<A, G> FromMapper;
 
   typedef typename ToMapper::ToArc ToArc;
   typedef ArcMapFst<A, ToArc, ToMapper> ToFst;
   typedef ArcMapFst<ToArc, A, FromMapper> FromFst;
 
-  typedef GallicCommonDivisor<Label, Weight, S, D> ToD;
+  typedef GallicCommonDivisor<Label, Weight, G, D> ToD;
   typedef typename F::template rebind<ToArc>::other ToF;
   typedef typename ToF::FilterState ToFilterState;
   typedef typename T::template rebind<ToArc, ToFilterState>::other ToT;
-  typedef GallicFactor<Label, Weight, S> FactorIterator;
+  typedef GallicFactor<Label, Weight, G> FactorIterator;
 
   DeterminizeFstImpl(const Fst<A> &fst,
                      const DeterminizeFstOptions<A, D, F, T> &opts)
@@ -778,7 +779,7 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<A> {
     Init(GetFst(), opts.filter);
   }
 
-  DeterminizeFstImpl(const DeterminizeFstImpl<A, S, D, F, T> &impl)
+  DeterminizeFstImpl(const DeterminizeFstImpl<A, G, D, F, T> &impl)
       : DeterminizeFstImplBase<A>(impl),
         delta_(impl.delta_),
         subsequential_label_(impl.subsequential_label_) {
@@ -787,8 +788,8 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<A> {
 
   ~DeterminizeFstImpl() { delete from_fst_; }
 
-  virtual DeterminizeFstImpl<A, S, D, F, T> *Copy() {
-    return new DeterminizeFstImpl<A, S, D, F, T>(*this);
+  virtual DeterminizeFstImpl<A, G, D, F, T> *Copy() {
+    return new DeterminizeFstImpl<A, G, D, F, T>(*this);
   }
 
   uint64 Properties() const { return Properties(kFstProperties); }
@@ -822,7 +823,7 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<A> {
   Label subsequential_label_;
   FromFst *from_fst_;
 
-  void operator=(const DeterminizeFstImpl<A, S, D, F, T> &);  // disallow
+  void operator=(const DeterminizeFstImpl<A, G, D, F, T> &);  // disallow
 };
 
 
@@ -853,7 +854,7 @@ class DeterminizeFst : public ImplToFst< DeterminizeFstImplBase<A> >  {
  public:
   friend class ArcIterator< DeterminizeFst<A> >;
   friend class StateIterator< DeterminizeFst<A> >;
-  template <class B, StringType S, class D, class F, class T>
+  template <class B, GallicType G, class D, class F, class T>
   friend class DeterminizeFstImpl;
 
   typedef A Arc;
@@ -871,27 +872,13 @@ class DeterminizeFst : public ImplToFst< DeterminizeFstImplBase<A> >  {
     typedef typename F::FilterState FilterState;
     typedef DefaultDeterminizeStateTable<A, FilterState> T;
     DeterminizeFstOptions<A, D, F, T> opts;
-    if (fst.Properties(kAcceptor, true)) {
-      // Calls implementation for acceptors.
-      SetImpl(new DeterminizeFsaImpl<A, D, F, T>(fst, 0, 0, opts));
-    } else {
-      // Calls implementation for transducers.
-      SetImpl(new
-              DeterminizeFstImpl<A, STRING_LEFT_RESTRICT, D, F, T>(fst, opts));
-    }
+    Init(fst, opts);
   }
 
   template <class D, class F, class T>
   DeterminizeFst(const Fst<A> &fst,
                  const DeterminizeFstOptions<A, D, F, T> &opts) {
-    if (fst.Properties(kAcceptor, true)) {
-      // Calls implementation for acceptors.
-      SetImpl(new DeterminizeFsaImpl<A, D, F, T>(fst, 0, 0, opts));
-    } else {
-      // Calls implementation for transducers.
-      SetImpl(new
-              DeterminizeFstImpl<A, STRING_LEFT_RESTRICT, D, F, T>(fst, opts));
-    }
+    Init(fst, opts);
   }
 
   // This acceptor-only version additionally computes the distance to
@@ -930,6 +917,30 @@ class DeterminizeFst : public ImplToFst< DeterminizeFstImplBase<A> >  {
   }
 
  private:
+  template <class D, class F, class T>
+  void Init(const Fst<Arc> &fst,
+            const DeterminizeFstOptions<A, D, F, T> &opts) {
+    if (fst.Properties(kAcceptor, true)) {
+      // Calls implementation for acceptors.
+      SetImpl(new DeterminizeFsaImpl<A, D, F, T>(fst, 0, 0, opts));
+    } else if (opts.disambiguate_output) {
+      if (!(Weight::Properties() & kPath)) {
+        FSTERROR() << "DeterminizeFst: Weight needs to have the "
+                   << "path property to disambiguate output: "
+                   << Weight::Type();
+        GetImpl()->SetProperties(kError, kError);
+      }
+      // Calls disambiguating implementation for non-functional transducers.
+      SetImpl(new
+              DeterminizeFstImpl<A, GALLIC_LEFT_MIN, D, F, T>(fst, opts));
+    } else {
+      // Calls implementation for functional transducers.
+      SetImpl(new
+              DeterminizeFstImpl<A, GALLIC_LEFT_RESTRICT, D, F, T>(fst, opts));
+    }
+  }
+
+
   // Makes visible to friends.
   Impl *GetImpl() const { return ImplToFst<Impl>::GetImpl(); }
 
@@ -939,8 +950,8 @@ class DeterminizeFst : public ImplToFst< DeterminizeFstImplBase<A> >  {
 
 // Initialization of transducer determinization implementation, which
 // is defined after DeterminizeFst since it calls it.
-template <class A, StringType S, class D, class F, class T>
-void DeterminizeFstImpl<A, S, D, F, T>::Init(const Fst<A> &fst,  F *filter) {
+template <class A, GallicType G, class D, class F, class T>
+void DeterminizeFstImpl<A, G, D, F, T>::Init(const Fst<A> &fst,  F *filter) {
   // Mapper to an acceptor.
   ToFst to_fst(fst, ToMapper());
   ToF *to_filter = filter ? new ToF(to_fst, filter) : 0;
@@ -950,7 +961,7 @@ void DeterminizeFstImpl<A, S, D, F, T>::Init(const Fst<A> &fst,  F *filter) {
   // different constructor.
   CacheOptions copts(GetCacheGc(), GetCacheLimit());
   DeterminizeFstOptions<ToArc, ToD, ToF, ToT>
-      dopts(copts, delta_, 0, to_filter);
+      dopts(copts, delta_, 0, false, to_filter);
   // Uses acceptor-only constructor to avoid template recursion
   DeterminizeFst<ToArc> det_fsa(to_fst, 0, 0, dopts);
 
@@ -1013,12 +1024,14 @@ struct DeterminizeOptions {
   Weight weight_threshold;    // Pruning weight threshold.
   StateId state_threshold;    // Pruning state threshold.
   Label subsequential_label;  // Label used for residual final output
-  // when producing subsequential transducers.
+                              // when producing subsequential transducers.
+  bool disambiguate_output;   // Ensure functionality by summing ambig. outputs
 
   explicit DeterminizeOptions(float d = kDelta, Weight w = Weight::Zero(),
-                              StateId n = kNoStateId, Label l = 0)
+                              StateId n = kNoStateId, Label l = 0,
+                              bool o = false)
       : delta(d), weight_threshold(w), state_threshold(n),
-        subsequential_label(l) {}
+        subsequential_label(l), disambiguate_output(o) {}
 };
 
 
@@ -1050,6 +1063,7 @@ void Determinize(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
   DeterminizeFstOptions<Arc> nopts;
   nopts.delta = opts.delta;
   nopts.subsequential_label = opts.subsequential_label;
+  nopts.disambiguate_output = opts.disambiguate_output;
 
   nopts.gc_limit = 0;  // Cache only the last state for fastest copy.
 

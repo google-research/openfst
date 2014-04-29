@@ -4,11 +4,10 @@ OpenFst is a library for constructing, combining, optimizing, and
 searching weighted finite-state transducers (FSTs).
 
 REQUIREMENTS:
-  This version is known to work under Linux using g++ (>= 4.6) and
-  MacOS X using XCode 5. Expected to work wherever adequate POSIX
-  (dlopen, ssize_t, basename), c99 (snprintf, strtoll, <stdint.h>),
-  and C++11 (<unordered_set>, <unordered_map>, <forward_list>) support
-  are available.
+  This version is known to work under Linux and MacOS using g++ (>= 4.6). 
+  Expected to work wherever adequate POSIX (dlopen, ssize_t, 
+  basename), c99 (snprintf, strtoll, <stdint.h>), and C++11 (<unordered_set>, 
+  <unordered_map>, <forward_list>) support are available.
   	
 INSTALLATION:
   Follow the generic GNU build system instructions in ./INSTALL.  We
