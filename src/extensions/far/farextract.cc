@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <fst/extensions/far/farscript.h>
-#include <fst/extensions/far/util.h>
+#include <fst/extensions/far/getters.h>
 
 DEFINE_string(filename_prefix, "", "Prefix to append to filenames");
 DEFINE_string(filename_suffix, "", "Suffix to append to filenames");
@@ -28,14 +28,13 @@ int main(int argc, char **argv) {
 
   std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  fst::ExpandArgs(argc, argv, &argc, &argv);
+  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<string> in_fnames;
-  for (int i = 1; i < argc; ++i)
-    in_fnames.push_back(argv[i]);
+  for (int i = 1; i < argc; ++i) in_fnames.push_back(argv[i]);
   if (in_fnames.empty()) in_fnames.push_back("");
 
-  const string &arc_type = s::LoadArcTypeFromFar(in_fnames[0]);
+  const auto arc_type = s::LoadArcTypeFromFar(in_fnames[0]);
   if (arc_type.empty()) return 1;
 
   s::FarExtract(in_fnames, arc_type, FLAGS_generate_filenames, FLAGS_keys,

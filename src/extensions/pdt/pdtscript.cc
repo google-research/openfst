@@ -8,7 +8,6 @@
 // mechanism allows these to work with various arc types.
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <fst/extensions/pdt/compose.h>
@@ -50,9 +49,9 @@ void PdtExpand(const FstClass &ifst,
 
 void PdtReplace(const std::vector<LabelFstClassPair> &pairs,
                 MutableFstClass *ofst, std::vector<LabelPair> *parens,
-                int64 root, PdtParserType parser_type,
-                int64 start_paren_labels, string left_paren_prefix,
-                string right_paren_prefix) {
+                int64 root, PdtParserType parser_type, int64 start_paren_labels,
+                const string &left_paren_prefix,
+                const string &right_paren_prefix) {
   for (auto i = 0; i < pairs.size() - 1; ++i) {
     if (!ArcTypesMatch(*pairs[i].second, *pairs[i + 1].second, "PdtReplace"))
       return;

@@ -49,6 +49,8 @@ bool GetDeterminizeType(const string &str, DeterminizeType *det_type) {
 bool GetMapType(const string &str, MapType *map_type) {
   if (str == "arc_sum") {
     *map_type = ARC_SUM_MAPPER;
+  } else if (str == "arc_unique") {
+    *map_type = ARC_UNIQUE_MAPPER;
   } else if (str == "identity") {
     *map_type = IDENTITY_MAPPER;
   } else if (str == "input_epsilon") {

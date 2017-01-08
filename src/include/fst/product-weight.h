@@ -6,8 +6,8 @@
 #ifndef FST_LIB_PRODUCT_WEIGHT_H_
 #define FST_LIB_PRODUCT_WEIGHT_H_
 
-#include <stack>
 #include <string>
+#include <utility>
 
 #include <fst/pair-weight.h>
 #include <fst/weight.h>
@@ -15,18 +15,20 @@
 
 namespace fst {
 
-// Product semiring: W1 * W2
+// Product semiring: W1 * W2.
 template <class W1, class W2>
 class ProductWeight : public PairWeight<W1, W2> {
  public:
-  typedef ProductWeight<typename W1::ReverseWeight, typename W2::ReverseWeight>
-      ReverseWeight;
+  using ReverseWeight =
+      ProductWeight<typename W1::ReverseWeight, typename W2::ReverseWeight>;
 
   ProductWeight() {}
 
-  explicit ProductWeight(const PairWeight<W1, W2> &w) : PairWeight<W1, W2>(w) {}
+  explicit ProductWeight(const PairWeight<W1, W2> &weight)
+      : PairWeight<W1, W2>(weight) {}
 
-  ProductWeight(W1 w1, W2 w2) : PairWeight<W1, W2>(w1, w2) {}
+  ProductWeight(W1 w1, W2 w2)
+      : PairWeight<W1, W2>(std::move(w1), std::move(w2)) {}
 
   static const ProductWeight &Zero() {
     static const ProductWeight zero(PairWeight<W1, W2>::Zero());
@@ -63,25 +65,25 @@ class ProductWeight : public PairWeight<W1, W2> {
 };
 
 template <class W1, class W2>
-inline ProductWeight<W1, W2> Plus(const ProductWeight<W1, W2> &w,
-                                  const ProductWeight<W1, W2> &v) {
-  return ProductWeight<W1, W2>(Plus(w.Value1(), v.Value1()),
-                               Plus(w.Value2(), v.Value2()));
+inline ProductWeight<W1, W2> Plus(const ProductWeight<W1, W2> &w1,
+                                  const ProductWeight<W1, W2> &w2) {
+  return ProductWeight<W1, W2>(Plus(w1.Value1(), w2.Value1()),
+                               Plus(w1.Value2(), w2.Value2()));
 }
 
 template <class W1, class W2>
-inline ProductWeight<W1, W2> Times(const ProductWeight<W1, W2> &w,
-                                   const ProductWeight<W1, W2> &v) {
-  return ProductWeight<W1, W2>(Times(w.Value1(), v.Value1()),
-                               Times(w.Value2(), v.Value2()));
+inline ProductWeight<W1, W2> Times(const ProductWeight<W1, W2> &w1,
+                                   const ProductWeight<W1, W2> &w2) {
+  return ProductWeight<W1, W2>(Times(w1.Value1(), w2.Value1()),
+                               Times(w1.Value2(), w2.Value2()));
 }
 
 template <class W1, class W2>
-inline ProductWeight<W1, W2> Divide(const ProductWeight<W1, W2> &w,
-                                    const ProductWeight<W1, W2> &v,
+inline ProductWeight<W1, W2> Divide(const ProductWeight<W1, W2> &w1,
+                                    const ProductWeight<W1, W2> &w2,
                                     DivideType typ = DIVIDE_ANY) {
-  return ProductWeight<W1, W2>(Divide(w.Value1(), v.Value1(), typ),
-                               Divide(w.Value2(), v.Value2(), typ));
+  return ProductWeight<W1, W2>(Divide(w1.Value1(), w2.Value1(), typ),
+                               Divide(w1.Value2(), w2.Value2(), typ));
 }
 
 // This function object generates weights by calling the underlying generators

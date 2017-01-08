@@ -3,6 +3,9 @@
 //
 // Expands a (bounded-stack) MPDT as an FST.
 
+#include <cstring>
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,12 +14,16 @@
 #include <fst/util.h>
 
 DEFINE_string(mpdt_parentheses, "",
-              "MPDT parenthesis label pairs with assignments.");
-DEFINE_bool(connect, true, "Trim output");
-DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result.");
+              "MPDT parenthesis label pairs with assignments");
+DEFINE_bool(connect, true, "Trim output?");
+DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result?");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FstClass;
+  using fst::script::VectorFstClass;
+  using fst::ReadLabelTriples;
+  using fst::MPdtExpandOptions;
 
   string usage = "Expand a (bounded-stack) MPDT as an FST.\n\n  Usage: ";
   usage += argv[0];
@@ -29,10 +36,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  s::FstClass *ifst = s::FstClass::Read(in_name);
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
   if (FLAGS_mpdt_parentheses.empty()) {
@@ -42,12 +50,14 @@ int main(int argc, char **argv) {
 
   std::vector<s::LabelPair> parens;
   std::vector<int64> assignments;
-  fst::ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments,
-                            false);
+  if (!ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments, false))
+    return 1;
 
-  s::VectorFstClass ofst(ifst->ArcType());
-  s::MPdtExpand(*ifst, parens, assignments, &ofst,
-      fst::MPdtExpandOptions(FLAGS_connect, FLAGS_keep_parentheses));
+  VectorFstClass ofst(ifst->ArcType());
+
+  const MPdtExpandOptions opts(FLAGS_connect, FLAGS_keep_parentheses);
+
+  s::MPdtExpand(*ifst, parens, assignments, &ofst, opts);
 
   ofst.Write(out_name);
 

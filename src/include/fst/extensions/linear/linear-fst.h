@@ -29,6 +29,8 @@ namespace fst {
 template <class F>
 class LinearFstMatcherTpl;
 
+namespace internal {
+
 // Implementation class for on-the-fly generated LinearTaggerFst with
 // special optimization in matching.
 template <class A>
@@ -439,10 +441,12 @@ inline LinearTaggerFstImpl<A> *LinearTaggerFstImpl<A>::Read(
   return impl.release();
 }
 
+}  // namespace internal
+
 // This class attaches interface to implementation and handles
 // reference counting, delegating most methods to ImplToFst.
 template <class A>
-class LinearTaggerFst : public ImplToFst<LinearTaggerFstImpl<A>> {
+class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
  public:
   friend class ArcIterator<LinearTaggerFst<A>>;
   friend class StateIterator<LinearTaggerFst<A>>;
@@ -454,7 +458,7 @@ class LinearTaggerFst : public ImplToFst<LinearTaggerFstImpl<A>> {
   typedef typename A::StateId StateId;
   typedef DefaultCacheStore<A> Store;
   typedef typename Store::State State;
-  typedef LinearTaggerFstImpl<A> Impl;
+  using Impl = internal::LinearTaggerFstImpl<A>;
 
   LinearTaggerFst() : ImplToFst<Impl>(std::make_shared<Impl>()) {}
 
@@ -504,7 +508,7 @@ class LinearTaggerFst : public ImplToFst<LinearTaggerFstImpl<A>> {
 
   static LinearTaggerFst<A> *Read(std::istream &in,  // NOLINT
                                   const FstReadOptions &opts) {
-    Impl *impl = Impl::Read(in, opts);
+    auto *impl = Impl::Read(in, opts);
     return impl ? new LinearTaggerFst<A>(std::shared_ptr<Impl>(impl)) : nullptr;
   }
 
@@ -537,32 +541,34 @@ class LinearTaggerFst : public ImplToFst<LinearTaggerFstImpl<A>> {
 };
 
 // Specialization for LinearTaggerFst.
-template <class A>
-class StateIterator<LinearTaggerFst<A>>
-    : public CacheStateIterator<LinearTaggerFst<A>> {
+template <class Arc>
+class StateIterator<LinearTaggerFst<Arc>>
+    : public CacheStateIterator<LinearTaggerFst<Arc>> {
  public:
-  explicit StateIterator(const LinearTaggerFst<A> &fst)
-      : CacheStateIterator<LinearTaggerFst<A>>(fst, fst.GetMutableImpl()) {}
+  explicit StateIterator(const LinearTaggerFst<Arc> &fst)
+      : CacheStateIterator<LinearTaggerFst<Arc>>(fst, fst.GetMutableImpl()) {}
 };
 
 // Specialization for LinearTaggerFst.
-template <class A>
-class ArcIterator<LinearTaggerFst<A>>
-    : public CacheArcIterator<LinearTaggerFst<A>> {
+template <class Arc>
+class ArcIterator<LinearTaggerFst<Arc>>
+    : public CacheArcIterator<LinearTaggerFst<Arc>> {
  public:
-  typedef typename A::StateId StateId;
+  using StateId = typename Arc::StateId;
 
-  ArcIterator(const LinearTaggerFst<A> &fst, StateId s)
-      : CacheArcIterator<LinearTaggerFst<A>>(fst.GetMutableImpl(), s) {
+  ArcIterator(const LinearTaggerFst<Arc> &fst, StateId s)
+      : CacheArcIterator<LinearTaggerFst<Arc>>(fst.GetMutableImpl(), s) {
     if (!fst.GetImpl()->HasArcs(s)) fst.GetMutableImpl()->Expand(s);
   }
 };
 
-template <class A>
-inline void LinearTaggerFst<A>::InitStateIterator(
-    StateIteratorData<A> *data) const {
-  data->base = new StateIterator<LinearTaggerFst<A>>(*this);
+template <class Arc>
+inline void LinearTaggerFst<Arc>::InitStateIterator(
+    StateIteratorData<Arc> *data) const {
+  data->base = new StateIterator<LinearTaggerFst<Arc>>(*this);
 }
+
+namespace internal {
 
 // Implementation class for on-the-fly generated LinearClassifierFst with
 // special optimization in matching.
@@ -890,10 +896,13 @@ inline LinearClassifierFstImpl<A> *LinearClassifierFstImpl<A>::Read(
   return impl.release();
 }
 
+}  // namespace internal
+
 // This class attaches interface to implementation and handles
 // reference counting, delegating most methods to ImplToFst.
 template <class A>
-class LinearClassifierFst : public ImplToFst<LinearClassifierFstImpl<A>> {
+class LinearClassifierFst
+    : public ImplToFst<internal::LinearClassifierFstImpl<A>> {
  public:
   friend class ArcIterator<LinearClassifierFst<A>>;
   friend class StateIterator<LinearClassifierFst<A>>;
@@ -905,7 +914,7 @@ class LinearClassifierFst : public ImplToFst<LinearClassifierFstImpl<A>> {
   typedef typename A::StateId StateId;
   typedef DefaultCacheStore<A> Store;
   typedef typename Store::State State;
-  typedef LinearClassifierFstImpl<A> Impl;
+  using Impl = internal::LinearClassifierFstImpl<A>;
 
   LinearClassifierFst() : ImplToFst<Impl>(std::make_shared<Impl>()) {}
 
@@ -957,7 +966,7 @@ class LinearClassifierFst : public ImplToFst<LinearClassifierFstImpl<A>> {
 
   static LinearClassifierFst<A> *Read(std::istream &in,
                                       const FstReadOptions &opts) {
-    Impl *impl = Impl::Read(in, opts);
+    auto *impl = Impl::Read(in, opts);
     return impl ? new LinearClassifierFst<A>(std::shared_ptr<Impl>(impl))
                 : nullptr;
   }
@@ -991,31 +1000,32 @@ class LinearClassifierFst : public ImplToFst<LinearClassifierFstImpl<A>> {
 };
 
 // Specialization for LinearClassifierFst.
-template <class A>
-class StateIterator<LinearClassifierFst<A>>
-    : public CacheStateIterator<LinearClassifierFst<A>> {
+template <class Arc>
+class StateIterator<LinearClassifierFst<Arc>>
+    : public CacheStateIterator<LinearClassifierFst<Arc>> {
  public:
-  explicit StateIterator(const LinearClassifierFst<A> &fst)
-      : CacheStateIterator<LinearClassifierFst<A>>(fst, fst.GetMutableImpl()) {}
+  explicit StateIterator(const LinearClassifierFst<Arc> &fst)
+      : CacheStateIterator<LinearClassifierFst<Arc>>(fst,
+                                                     fst.GetMutableImpl()) {}
 };
 
 // Specialization for LinearClassifierFst.
-template <class A>
-class ArcIterator<LinearClassifierFst<A>>
-    : public CacheArcIterator<LinearClassifierFst<A>> {
+template <class Arc>
+class ArcIterator<LinearClassifierFst<Arc>>
+    : public CacheArcIterator<LinearClassifierFst<Arc>> {
  public:
-  typedef typename A::StateId StateId;
+  using StateId = typename Arc::StateId;
 
-  ArcIterator(const LinearClassifierFst<A> &fst, StateId s)
-      : CacheArcIterator<LinearClassifierFst<A>>(fst.GetMutableImpl(), s) {
+  ArcIterator(const LinearClassifierFst<Arc> &fst, StateId s)
+      : CacheArcIterator<LinearClassifierFst<Arc>>(fst.GetMutableImpl(), s) {
     if (!fst.GetImpl()->HasArcs(s)) fst.GetMutableImpl()->Expand(s);
   }
 };
 
-template <class A>
-inline void LinearClassifierFst<A>::InitStateIterator(
-    StateIteratorData<A> *data) const {
-  data->base = new StateIterator<LinearClassifierFst<A>>(*this);
+template <class Arc>
+inline void LinearClassifierFst<Arc>::InitStateIterator(
+    StateIteratorData<Arc> *data) const {
+  data->base = new StateIterator<LinearClassifierFst<Arc>>(*this);
 }
 
 // Specialized Matcher for LinearFsts. This matcher only supports
@@ -1117,22 +1127,26 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
 
  private:
   void SetState_(StateId s) override { SetState(s); }
+
   bool Find_(Label label) override { return Find(label); }
+
   bool Done_() const override { return Done(); }
+
   const Arc &Value_() const override { return Value(); }
+
   void Next_() override { Next(); }
 
   std::unique_ptr<const FST> fst_;
-  MatchType match_type_;  // Type of match to perform
-  StateId s_;             // Current state
-  bool current_loop_;     // Current arc is the implicit loop
-  Arc loop_;              // For non-consuming symbols
-  std::vector<Arc>
-      arcs_;          // All out-going arcs matching the label in last `Find()`
-                      // call
-  size_t cur_arc_;    // Index to the arc that `Value()` should return
-  bool error_;        // Error encountered
+  MatchType match_type_;  // Type of match to perform.
+  StateId s_;             // Current state.
+  bool current_loop_;     // Current arc is the implicit loop.
+  Arc loop_;              // For non-consuming symbols.
+  // All out-going arcs matching the label in last Find() call.
+  std::vector<Arc> arcs_;
+  size_t cur_arc_;  // Index to the arc that `Value()` should return.
+  bool error_;      // Error encountered.
 };
+
 }  // namespace fst
 
 #endif  // FST_EXTENSIONS_LINEAR_LINEAR_FST_H_

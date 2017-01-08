@@ -15,12 +15,50 @@
 
 
 namespace fst {
+namespace internal {
 
-template <class A, class ArcFilter>
-class PruneOptions {
+template <class StateId, class Weight>
+class PruneCompare {
  public:
-  typedef typename A::Weight Weight;
-  typedef typename A::StateId StateId;
+  PruneCompare(const std::vector<Weight> &idistance,
+               const std::vector<Weight> &fdistance)
+      : idistance_(idistance), fdistance_(fdistance) {}
+
+  bool operator()(const StateId x, const StateId y) const {
+    const auto wx = Times(IDistance(x), FDistance(x));
+    const auto wy = Times(IDistance(y), FDistance(y));
+    return less_(wx, wy);
+  }
+
+ private:
+  Weight IDistance(const StateId s) const {
+    return s < idistance_.size() ? idistance_[s] : Weight::Zero();
+  }
+
+  Weight FDistance(const StateId s) const {
+    return s < fdistance_.size() ? fdistance_[s] : Weight::Zero();
+  }
+
+  const std::vector<Weight> &idistance_;
+  const std::vector<Weight> &fdistance_;
+  NaturalLess<Weight> less_;
+};
+
+}  // namespace internal
+
+template <class Arc, class ArcFilter>
+struct PruneOptions {
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+
+  PruneOptions(const Weight &weight_threshold, StateId state_threshold,
+               ArcFilter filter, std::vector<Weight> *distance = nullptr,
+               float delta = kDelta)
+      : weight_threshold(std::move(weight_threshold)),
+        state_threshold(state_threshold),
+        filter(std::move(filter)),
+        distance(distance),
+        delta(delta) {}
 
   // Pruning weight threshold.
   Weight weight_threshold;
@@ -33,54 +71,28 @@ class PruneOptions {
   // Determines the degree of convergence required when computing shortest
   // distances.
   float delta;
-
-  explicit PruneOptions(const Weight &w, StateId s, ArcFilter f,
-                        std::vector<Weight> *d = nullptr, float e = kDelta)
-      : weight_threshold(w),
-        state_threshold(s),
-        filter(std::move(f)),
-        distance(d),
-        delta(e) {}
 };
 
-template <class S, class W>
-class PruneCompare {
- public:
-  typedef S StateId;
-  typedef W Weight;
-
-  PruneCompare(const std::vector<Weight> &idistance,
-               const std::vector<Weight> &fdistance)
-      : idistance_(idistance), fdistance_(fdistance) {}
-
-  bool operator()(const StateId x, const StateId y) const {
-    Weight wx = Times(x < idistance_.size() ? idistance_[x] : Weight::Zero(),
-                      x < fdistance_.size() ? fdistance_[x] : Weight::Zero());
-    Weight wy = Times(y < idistance_.size() ? idistance_[y] : Weight::Zero(),
-                      y < fdistance_.size() ? fdistance_[y] : Weight::Zero());
-    return less_(wx, wy);
-  }
-
- private:
-  const std::vector<Weight> &idistance_;
-  const std::vector<Weight> &fdistance_;
-  NaturalLess<Weight> less_;
-};
-
-// Pruning algorithm: this version modifies its input and it takes an
-// options class as an argment. Delete states and arcs in 'fst' that
-// do not belong to a successful path whose weight is no more than
-// the weight of the shortest path Times() 'opts.weight_threshold'.
-// When 'opts.state_threshold != kNoStateId', the resulting transducer
-// will restricted further to have at most 'opts.state_threshold'
-// states. Weights need to be commutative and have the path
-// property. The weight 'w' of any cycle needs to be bounded, i.e.,
-// 'Plus(w, W::One()) = One()'.
+// Pruning algorithm: this version modifies its input and it takes an options
+// class as an argument. After pruning the FST contains states and arcs that
+// belong to a successful path in the FST whose weight is no more than the
+// weight of the shortest path Times() the provided weight threshold. When the
+// state threshold is not kNoStateId, the output FST is further restricted to
+// have no more than the number of states in opts.state_threshold. Weights must
+// be commutative and have the path property. The weight of any cycle needs to
+// be bounded; i.e.,
+//
+//   Plus(weight, Weight::One()) == Weight::One()
 template <class Arc, class ArcFilter>
 void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts) {
-  typedef typename Arc::Weight Weight;
-  typedef typename Arc::StateId StateId;
-
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+  using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
+  // TODO(kbg): Make this a compile-time static_assert once:
+  // 1) All weight properties are made constexpr for all weight types.
+  // 2) We have a pleasant way to "deregister" this operation for non-path
+  //    semirings so an informative error message is produced. The best
+  //    solution will probably involve some kind of SFINAE magic.
   if ((Weight::Properties() & (kPath | kCommutative)) !=
       (kPath | kCommutative)) {
     FSTERROR() << "Prune: Weight needs to have the path property and"
@@ -88,39 +100,35 @@ void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts) {
     fst->SetProperties(kError, kError);
     return;
   }
-  StateId ns = fst->NumStates();
-  if (ns == 0) return;
+  auto ns = fst->NumStates();
+  if (ns < 1) return;
   std::vector<Weight> idistance(ns, Weight::Zero());
   std::vector<Weight> tmp;
   if (!opts.distance) {
     tmp.reserve(ns);
     ShortestDistance(*fst, &tmp, true, opts.delta);
   }
-  const std::vector<Weight> *fdistance = opts.distance ? opts.distance : &tmp;
-
+  const auto *fdistance = opts.distance ? opts.distance : &tmp;
   if ((opts.state_threshold == 0) || (fdistance->size() <= fst->Start()) ||
       ((*fdistance)[fst->Start()] == Weight::Zero())) {
     fst->DeleteStates();
     return;
   }
-  PruneCompare<StateId, Weight> compare(idistance, *fdistance);
-  using StateHeap = Heap<StateId, PruneCompare<StateId, Weight>>;
+  internal::PruneCompare<StateId, Weight> compare(idistance, *fdistance);
   StateHeap heap(compare);
   std::vector<bool> visited(ns, false);
   std::vector<size_t> enqueued(ns, StateHeap::kNoKey);
   std::vector<StateId> dead;
   dead.push_back(fst->AddState());
   NaturalLess<Weight> less;
-  Weight limit = Times((*fdistance)[fst->Start()], opts.weight_threshold);
-
+  const auto limit = Times((*fdistance)[fst->Start()], opts.weight_threshold);
   StateId num_visited = 0;
-  StateId s = fst->Start();
+  auto s = fst->Start();
   if (!less(limit, (*fdistance)[s])) {
     idistance[s] = Weight::One();
     enqueued[s] = heap.Insert(s);
     ++num_visited;
   }
-
   while (!heap.Empty()) {
     s = heap.Top();
     heap.Pop();
@@ -129,17 +137,16 @@ void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts) {
     if (less(limit, Times(idistance[s], fst->Final(s)))) {
       fst->SetFinal(s, Weight::Zero());
     }
-    for (MutableArcIterator<MutableFst<Arc>> ait(fst, s); !ait.Done();
-         ait.Next()) {
-      Arc arc = ait.Value();
+    for (MutableArcIterator<MutableFst<Arc>> aiter(fst, s); !aiter.Done();
+         aiter.Next()) {
+      auto arc = aiter.Value();  // Copy intended.
       if (!opts.filter(arc)) continue;
-      Weight weight =
-          Times(Times(idistance[s], arc.weight),
-                arc.nextstate < fdistance->size() ? (*fdistance)[arc.nextstate]
-                                                  : Weight::Zero());
+      const auto weight = Times(Times(idistance[s], arc.weight),
+                                arc.nextstate < fdistance->size() ?
+                                (*fdistance)[arc.nextstate] : Weight::Zero());
       if (less(limit, weight)) {
         arc.nextstate = dead[0];
-        ait.SetValue(arc);
+        aiter.SetValue(arc);
         continue;
       }
       if (less(Times(idistance[s], arc.weight), idistance[arc.nextstate])) {
@@ -158,45 +165,51 @@ void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts) {
       }
     }
   }
-  for (size_t i = 0; i < visited.size(); ++i) {
+  for (StateId i = 0; i < visited.size(); ++i) {
     if (!visited[i]) dead.push_back(i);
   }
   fst->DeleteStates(dead);
 }
 
-// Pruning algorithm: this version modifies its input and simply takes
-// the pruning threshold as an argument. Delete states and arcs in
-// 'fst' that do not belong to a successful path whose weight is no
-// more than the weight of the shortest path Times()
-// 'weight_threshold'.  When 'state_threshold != kNoStateId', the
-// resulting transducer will be restricted further to have at most
-// 'opts.state_threshold' states. Weights need to be commutative and
-// have the path property. The weight 'w' of any cycle needs to be
-// bounded, i.e., 'Plus(w, W::One()) = One()'.
+// Pruning algorithm: this version modifies its input and takes the pruning
+// threshold as an argument. It deletes states and arcs in the FST that do not
+// belong to a successful path whose weight is more than the weight of the
+// shortest path Times() the provided weight threshold. When the state threshold
+// is not kNoStateId, the output FST is further restricted to have no more than
+// the number of states in opts.state_threshold. Weights must be commutative and
+// have the path property. The weight of any cycle needs to be bounded; i.e.,
+//
+//   Plus(weight, Weight::One()) == Weight::One()
 template <class Arc>
 void Prune(MutableFst<Arc> *fst, typename Arc::Weight weight_threshold,
            typename Arc::StateId state_threshold = kNoStateId,
            double delta = kDelta) {
-  PruneOptions<Arc, AnyArcFilter<Arc>> opts(
+  const PruneOptions<Arc, AnyArcFilter<Arc>> opts(
       weight_threshold, state_threshold, AnyArcFilter<Arc>(), nullptr, delta);
   Prune(fst, opts);
 }
 
-// Pruning algorithm: this version writes the pruned input Fst to an
-// output MutableFst and it takes an options class as an argument.
-// 'ofst' contains states and arcs that belong to a successful path in
-// 'ifst' whose weight is no more than the weight of the shortest path
-// Times() 'opts.weight_threshold'. When 'opts.state_threshold !=
-// kNoStateId', 'ofst' will be restricted further to have at most
-// 'opts.state_threshold' states. Weights need to be commutative and
-// have the path property. The weight 'w' of any cycle needs to be
-// bounded, i.e., 'Plus(w, W::One()) = One()'.
+// Pruning algorithm: this version writes the pruned input FST to an output
+// MutableFst and it takes an options class as an argument. The output FST
+// contains states and arcs that belong to a successful path in the input FST
+// whose weight is more than the weight of the shortest path Times() the
+// provided weight threshold. When the state threshold is not kNoStateId, the
+// output FST is further restricted to have no more than the number of states in
+// opts.state_threshold. Weights must be commutative and have the path property.
+// The weight of any cycle needs to be bounded; i.e.,
+//
+//   Plus(weight, Weight::One()) == Weight::One()
 template <class Arc, class ArcFilter>
 void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
            const PruneOptions<Arc, ArcFilter> &opts) {
-  typedef typename Arc::Weight Weight;
-  typedef typename Arc::StateId StateId;
-
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+  using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
+  // TODO(kbg): Make this a compile-time static_assert once:
+  // 1) All weight properties are made constexpr for all weight types.
+  // 2) We have a pleasant way to "deregister" this operation for non-path
+  //    semirings so an informative error message is produced. The best
+  //    solution will probably involve some kind of SFINAE magic.
   if ((Weight::Properties() & (kPath | kCommutative)) !=
       (kPath | kCommutative)) {
     FSTERROR() << "Prune: Weight needs to have the path property and"
@@ -216,22 +229,20 @@ void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
   std::vector<Weight> idistance;
   std::vector<Weight> tmp;
   if (!opts.distance) ShortestDistance(ifst, &tmp, true, opts.delta);
-  const std::vector<Weight> *fdistance = opts.distance ? opts.distance : &tmp;
-
+  const auto *fdistance = opts.distance ? opts.distance : &tmp;
   if ((fdistance->size() <= ifst.Start()) ||
       ((*fdistance)[ifst.Start()] == Weight::Zero())) {
     return;
   }
-  PruneCompare<StateId, Weight> compare(idistance, *fdistance);
-  using StateHeap = Heap<StateId, PruneCompare<StateId, Weight>>;
+  internal::PruneCompare<StateId, Weight> compare(idistance, *fdistance);
   StateHeap heap(compare);
   std::vector<StateId> copy;
   std::vector<size_t> enqueued;
   std::vector<bool> visited;
-
-  StateId s = ifst.Start();
-  Weight limit = Times(s < fdistance->size() ? (*fdistance)[s] : Weight::Zero(),
-                       opts.weight_threshold);
+  auto s = ifst.Start();
+  const auto limit = Times(s < fdistance->size() ?
+                           (*fdistance)[s] : Weight::Zero(),
+                           opts.weight_threshold);
   while (copy.size() <= s) copy.push_back(kNoStateId);
   copy[s] = ofst->AddState();
   ofst->SetStart(copy[s]);
@@ -242,7 +253,6 @@ void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
     visited.push_back(false);
   }
   enqueued[s] = heap.Insert(s);
-
   while (!heap.Empty()) {
     s = heap.Top();
     heap.Pop();
@@ -251,13 +261,12 @@ void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
     if (!less(limit, Times(idistance[s], ifst.Final(s)))) {
       ofst->SetFinal(copy[s], ifst.Final(s));
     }
-    for (ArcIterator<Fst<Arc>> ait(ifst, s); !ait.Done(); ait.Next()) {
-      const Arc &arc = ait.Value();
+    for (ArcIterator<Fst<Arc>> aiter(ifst, s); !aiter.Done(); aiter.Next()) {
+      const auto &arc = aiter.Value();
       if (!opts.filter(arc)) continue;
-      Weight weight =
-          Times(Times(idistance[s], arc.weight),
-                arc.nextstate < fdistance->size() ? (*fdistance)[arc.nextstate]
-                                                  : Weight::Zero());
+      const auto weight = Times(Times(idistance[s], arc.weight),
+                                arc.nextstate < fdistance->size() ?
+                                (*fdistance)[arc.nextstate] : Weight::Zero());
       if (less(limit, weight)) continue;
       if ((opts.state_threshold != kNoStateId) &&
           (ofst->NumStates() >= opts.state_threshold)) {
@@ -289,21 +298,22 @@ void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
   }
 }
 
-// Pruning algorithm: this version writes the pruned input Fst to an
-// output MutableFst and simply takes the pruning threshold as an
-// argument.  'ofst' contains states and arcs that belong to a
-// successful path in 'ifst' whose weight is no more than
-// the weight of the shortest path Times() 'weight_threshold'. When
-// 'state_threshold != kNoStateId', 'ofst' will be restricted further
-// to have at most 'opts.state_threshold' states. Weights need to be
-// commutative and have the path property. The weight 'w' of any cycle
-// needs to be bounded, i.e., 'Plus(w, W::One()) = W::One()'.
+// Pruning algorithm: this version writes the pruned input FST to an output
+// MutableFst and simply takes the pruning threshold as an argument. The output
+// FST contains states and arcs that belong to a successful path in the input
+// FST whose weight is no more than the weight of the shortest path Times()
+// the provided weight threshold. When the state threshold is not kNoStateId,
+// the output FST is further restricted to have no more than the number of
+// states in opts.state_threshold. Weights must be commutative and have the
+// path property. The weight of any cycle needs to be bounded; i.e.,
+//
+// Plus(weight, Weight::One()) = Weight::One();
 template <class Arc>
 void Prune(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
            typename Arc::Weight weight_threshold,
            typename Arc::StateId state_threshold = kNoStateId,
            float delta = kDelta) {
-  PruneOptions<Arc, AnyArcFilter<Arc>> opts(
+  const PruneOptions<Arc, AnyArcFilter<Arc>> opts(
       weight_threshold, state_threshold, AnyArcFilter<Arc>(), nullptr, delta);
   Prune(ifst, ofst, opts);
 }

@@ -11,8 +11,8 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<MutableFstClass *, MutableFstClass *, float, bool>
-    MinimizeArgs;
+using MinimizeArgs =
+    args::Package<MutableFstClass *, MutableFstClass *, float, bool>;
 
 template <class Arc>
 void Minimize(MinimizeArgs *args) {

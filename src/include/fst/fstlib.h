@@ -1,23 +1,22 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// This is a library for constructing, combining, optimizing, and
-// searching "weighted finite-state transducers" (FSTs). Weighted
-// finite-state transducers are automata where each transition has an
-// input label, an output label, and a weight. The more familiar
-// finite-state acceptor is represented as a transducer with each
-// transition's input and output the same.  Finite-state acceptors
-// are used to represent sets of strings (specifically, "regular" or
-// "rational sets"); finite-state transducers are used to represent
-// binary relations between pairs of strings (specifically, "rational
-// transductions"). The weights can be used to represent the cost of
-// taking a particular transition.
+// This is a library for constructing, combining, optimizing, and searching
+// "weighted finite-state transducers" (FSTs). Weighted finite-state transducers
+// are automata where each transition has an input label, an output label, and a
+// weight. The more familiar finite-state acceptor is represented as a
+// transducer with each transition's input and output the same. Finite-state
+// acceptors are used to represent sets of strings (specifically, "regular" or
+// "rational sets"); finite-state transducers are used to represent binary
+// relations between pairs of strings (specifically, "rational transductions").
+// The weights can be used to represent the cost of taking a particular
+// transition.
 //
-// In this library, the transducers are templated on the Arc
-// (transition) definition, which allows changing the label, weight,
-// and state ID sets. Labels and state IDs are restricted to signed
-// integral types but the weight can be an arbitrary type whose
-// members satisfy certain algebraic ("semiring") properties.
+// In this library, transducers are templated on the Arc (transition)
+// definition, which allows changing the label, weight, and state ID sets.
+// Labels and state IDs are restricted to signed integral types but the weight
+// can be an arbitrary type whose members satisfy certain algebraic ("semiring")
+// properties.
 //
 // This convenience file includes all other FST header files.
 
@@ -25,18 +24,18 @@
 #define FST_LIB_FSTLIB_H_
 
 
-// Abstract FST classes
+// Abstract FST classes.
 #include <fst/expanded-fst.h>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
 
-// Concrete FST classes
+// Concrete FST classes.
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
 #include <fst/edit-fst.h>
 #include <fst/vector-fst.h>
 
-// FST algorithms and delayed FST classes
+// FST algorithms and delayed FST classes.
 #include <fst/arc-map.h>
 #include <fst/arcsort.h>
 #include <fst/closure.h>
@@ -79,7 +78,7 @@
 #include <fst/verify.h>
 #include <fst/visit.h>
 
-// Weights
+// Weights.
 #include <fst/expectation-weight.h>
 #include <fst/float-weight.h>
 #include <fst/lexicographic-weight.h>
@@ -93,7 +92,7 @@
 #include <fst/tuple-weight.h>
 #include <fst/weight.h>
 
-// Auxiliary classes for composition
+// Auxiliary classes for composition.
 #include <fst/compose-filter.h>
 #include <fst/lookahead-filter.h>
 #include <fst/lookahead-matcher.h>
@@ -101,13 +100,13 @@
 #include <fst/matcher.h>
 #include <fst/state-table.h>
 
-// Data structures
+// Data structures.
 #include <fst/heap.h>
 #include <fst/interval-set.h>
 #include <fst/queue.h>
 #include <fst/union-find.h>
 
-// Miscellaneous
+// Miscellaneous.
 #include <fst/accumulator.h>
 #include <fst/add-on.h>
 #include <fst/arc.h>

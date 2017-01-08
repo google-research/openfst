@@ -4,6 +4,9 @@
 #ifndef FST_SCRIPT_RANDEQUIVALENT_H_
 #define FST_SCRIPT_RANDEQUIVALENT_H_
 
+#include <climits>
+#include <ctime>
+
 #include <fst/randequivalent.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
@@ -13,72 +16,68 @@ namespace fst {
 namespace script {
 
 // 1
-typedef args::Package<const FstClass &, const FstClass &, time_t, int32,
-                      float, int32, bool *> RandEquivalentInnerArgs1;
+using RandEquivalentInnerArgs1 =
+    args::Package<const FstClass &, const FstClass &, int32, float, time_t,
+                  const RandGenOptions<RandArcSelection> &, bool *>;
 
-typedef args::WithReturnValue<bool, RandEquivalentInnerArgs1>
-    RandEquivalentArgs1;
+using RandEquivalentArgs1 =
+    args::WithReturnValue<bool, RandEquivalentInnerArgs1>;
 
 template <class Arc>
 void RandEquivalent(RandEquivalentArgs1 *args) {
   const Fst<Arc> &fst1 = *(args->args.arg1.GetFst<Arc>());
   const Fst<Arc> &fst2 = *(args->args.arg2.GetFst<Arc>());
-
-  args->retval =
-      RandEquivalent(fst1, fst2, args->args.arg3, args->args.arg4,
-                     args->args.arg5, args->args.arg6, args->args.arg7);
+  const auto seed = args->args.arg5;
+  const auto &opts = args->args.arg6;
+  if (opts.selector == UNIFORM_ARC_SELECTOR) {
+    const UniformArcSelector<Arc> selector(seed);
+    const RandGenOptions<UniformArcSelector<Arc>> ropts(selector,
+                                                        opts.max_length);
+    args->retval = RandEquivalent(fst1, fst2, args->args.arg3, args->args.arg4,
+                                  ropts, args->args.arg7);
+  } else if (opts.selector == FAST_LOG_PROB_ARC_SELECTOR) {
+    const FastLogProbArcSelector<Arc> selector(seed);
+    const RandGenOptions<FastLogProbArcSelector<Arc>> ropts(selector,
+                                                            opts.max_length);
+    args->retval = RandEquivalent(fst1, fst2, args->args.arg3, args->args.arg4,
+                                  ropts, args->args.arg7);
+  } else {
+    const LogProbArcSelector<Arc> selector(seed);
+    const RandGenOptions<LogProbArcSelector<Arc>> ropts(selector,
+                                                        opts.max_length);
+    args->retval = RandEquivalent(fst1, fst2, args->args.arg3, args->args.arg4,
+                                  ropts, args->args.arg7);
+  }
 }
 
 // 2
-typedef args::Package<const FstClass &, const FstClass &, time_t, int32,
-                      float, const RandGenOptions<RandArcSelection> &,
-                      bool *> RandEquivalentInnerArgs2;
+using RandEquivalentInnerArgs2 =
+    args::Package<const FstClass &, const FstClass &, int32, float, time_t,
+                  int32, bool *>;
 
-typedef args::WithReturnValue<bool, RandEquivalentInnerArgs2>
-    RandEquivalentArgs2;
+using RandEquivalentArgs2 =
+    args::WithReturnValue<bool, RandEquivalentInnerArgs2>;
 
 template <class Arc>
 void RandEquivalent(RandEquivalentArgs2 *args) {
   const Fst<Arc> &fst1 = *(args->args.arg1.GetFst<Arc>());
   const Fst<Arc> &fst2 = *(args->args.arg2.GetFst<Arc>());
-  const RandGenOptions<RandArcSelection> &opts = args->args.arg6;
-  time_t seed = args->args.arg3;
-
-  if (opts.arc_selector == UNIFORM_ARC_SELECTOR) {
-    UniformArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<UniformArcSelector<Arc>> ropts(arc_selector, opts.max_length,
-                                                  opts.npath);
-
-    args->retval = RandEquivalent(fst1, fst2, args->args.arg4, args->args.arg5,
-                                  ropts, args->args.arg7);
-  } else if (opts.arc_selector == FAST_LOG_PROB_ARC_SELECTOR) {
-    FastLogProbArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<FastLogProbArcSelector<Arc>> ropts(
-        arc_selector, opts.max_length, opts.npath);
-
-    args->retval = RandEquivalent(fst1, fst2, args->args.arg4, args->args.arg5,
-                                  ropts, args->args.arg7);
-  } else {
-    LogProbArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<LogProbArcSelector<Arc>> ropts(arc_selector, opts.max_length,
-                                                  opts.npath);
-    args->retval = RandEquivalent(fst1, fst2, args->args.arg4, args->args.arg5,
-                                  ropts, args->args.arg7);
-  }
+  args->retval = fst::RandEquivalent(fst1, fst2, args->args.arg3,
+                                         args->args.arg4, args->args.arg5,
+                                         args->args.arg6, args->args.arg7);
 }
 
 // 1
-bool RandEquivalent(const FstClass &fst1, const FstClass &fst2,
-                    time_t seed = time(nullptr), int32 num_paths = 1,
-                    float delta = fst::kDelta, int32 path_length = INT_MAX,
+bool RandEquivalent(const FstClass &fst1, const FstClass &fst2, int32 npath = 1,
+                    float delta = kDelta, time_t seed = time(nullptr),
+                    const RandGenOptions<RandArcSelection> &opts =
+                        RandGenOptions<RandArcSelection>(UNIFORM_ARC_SELECTOR),
                     bool *error = nullptr);
 
 // 2
-bool RandEquivalent(
-    const FstClass &fst1, const FstClass &fst2, time_t seed, int32 num_paths,
-    float delta,
-    const fst::RandGenOptions<fst::script::RandArcSelection> &opts,
-    bool *error = nullptr);
+bool RandEquivalent(const FstClass &fst1, const FstClass &fst2, int32 npath = 1,
+                    float delta = kDelta, time_t seed = time(nullptr),
+                    int32 max_length = INT32_MAX, bool *error = nullptr);
 
 }  // namespace script
 }  // namespace fst

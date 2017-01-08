@@ -14,6 +14,12 @@ if HAVE_FAR
 fardir = far
 endif
 
+if HAVE_GRM
+fardir = far
+pdtdir = pdt
+mpdtdir = mpdt
+endif
+
 if HAVE_LINEAR
 lineardir = linear
 endif
@@ -40,5 +46,10 @@ if HAVE_PDT
 pdtdir = pdt
 endif
 
-SUBDIRS = $(compactdir) $(compressdir) $(constdir) $(fardir) $(lineardir) \
-				  $(lookaheaddir) $(pdtdir) $(mpdtdir) $(ngramdir) $(pywrapfstdir)
+if HAVE_SPECIAL
+specialdir = special
+endif
+
+SUBDIRS = $(compactdir) $(compressdir) $(constdir) $(fardir) $(lineardir)  \
+          $(lookaheaddir) $(pdtdir) $(mpdtdir) $(ngramdir) $(pywrapfstdir) \
+          $(specialdir)

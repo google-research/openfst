@@ -19,13 +19,15 @@ enum ProjectType { PROJECT_INPUT = 1, PROJECT_OUTPUT = 2 };
 template <class A>
 class ProjectMapper {
  public:
+  using FromArc = A;
+  using ToArc = A;
+
   explicit ProjectMapper(ProjectType project_type)
       : project_type_(project_type) {}
 
-  A operator()(const A &arc) {
-    typename A::Label label =
-        project_type_ == PROJECT_INPUT ? arc.ilabel : arc.olabel;
-    return A(label, label, arc.weight, arc.nextstate);
+  ToArc operator()(const FromArc &arc) {
+    const auto label = project_type_ == PROJECT_INPUT ? arc.ilabel : arc.olabel;
+    return ToArc(label, label, arc.weight, arc.nextstate);
   }
 
   MapFinalAction FinalAction() const { return MAP_NO_SUPERFINAL; }
@@ -48,14 +50,15 @@ class ProjectMapper {
   ProjectType project_type_;
 };
 
-// Projects an FST onto its domain or range by either copying each arcs'
-// input label to the output label or vice versa. This version modifies
-// its input.
+// Projects an FST onto its domain or range by either copying each arcs' input
+// label to the output label or vice versa. This version modifies its input.
 //
 // Complexity:
-// - Time: O(V + E)
-// - Space: O(1)
-// where V = # of states and E = # of arcs.
+//
+//   Time: O(V + E)
+//   Space: O(1)
+//
+// where V is the number of states and E is the number of arcs.
 template <class Arc>
 inline void Project(MutableFst<Arc> *fst, ProjectType project_type) {
   ArcMap(fst, ProjectMapper<Arc>(project_type));
@@ -65,25 +68,27 @@ inline void Project(MutableFst<Arc> *fst, ProjectType project_type) {
   }
 }
 
-// Projects an FST onto its domain or range by either copying each arc's
-// input label to the output label or vice versa. This version is a delayed
-// Fst.
+// Projects an FST onto its domain or range by either copying each arc's input
+// label to the output label or vice versa. This version is a delayed FST.
 //
 // Complexity:
-// - Time: O(v + e)
-// - Space: O(1)
-// where v = # of states visited, e = # of arcs visited. Constant
-// time and to visit an input state or arc is assumed and exclusive
-// of caching.
+//
+//   Time: O(v + e)
+//   Space: O(1)
+//
+// where v is the number of states visited and e is the number of arcs visited.
+// Constant time and to visit an input state or arc is assumed and exclusive of
+// caching.
 template <class A>
 class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
  public:
-  typedef A Arc;
-  typedef ProjectMapper<A> C;
-  typedef ArcMapFstImpl<A, A, ProjectMapper<A>> Impl;
+  using FromArc = A;
+  using ToArc = A;
+
+  using Impl = internal::ArcMapFstImpl<A, A, ProjectMapper<A>>;
 
   ProjectFst(const Fst<A> &fst, ProjectType project_type)
-      : ArcMapFst<A, A, C>(fst, C(project_type)) {
+      : ArcMapFst<A, A, ProjectMapper<A>>(fst, ProjectMapper<A>(project_type)) {
     if (project_type == PROJECT_INPUT) {
       GetMutableImpl()->SetOutputSymbols(fst.InputSymbols());
     }
@@ -94,9 +99,9 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
 
   // See Fst<>::Copy() for doc.
   ProjectFst(const ProjectFst<A> &fst, bool safe = false)
-      : ArcMapFst<A, A, C>(fst, safe) {}
+      : ArcMapFst<A, A, ProjectMapper<A>>(fst, safe) {}
 
-  // Get a copy of this ProjectFst. See Fst<>::Copy() for further doc.
+  // Gets a copy of this ProjectFst. See Fst<>::Copy() for further doc.
   ProjectFst<A> *Copy(bool safe = false) const override {
     return new ProjectFst(*this, safe);
   }
@@ -108,23 +113,25 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
 // Specialization for ProjectFst.
 template <class A>
 class StateIterator<ProjectFst<A>>
-    : public StateIterator<ArcMapFst<A, A, ProjectMapper<A>> > {
+    : public StateIterator<ArcMapFst<A, A, ProjectMapper<A>>> {
  public:
   explicit StateIterator(const ProjectFst<A> &fst)
-      : StateIterator<ArcMapFst<A, A, ProjectMapper<A>> >(fst) {}
+      : StateIterator<ArcMapFst<A, A, ProjectMapper<A>>>(fst) {}
 };
 
 // Specialization for ProjectFst.
 template <class A>
 class ArcIterator<ProjectFst<A>>
-    : public ArcIterator<ArcMapFst<A, A, ProjectMapper<A>> > {
+    : public ArcIterator<ArcMapFst<A, A, ProjectMapper<A>>> {
  public:
-  ArcIterator(const ProjectFst<A> &fst, typename A::StateId s)
-      : ArcIterator<ArcMapFst<A, A, ProjectMapper<A>> >(fst, s) {}
+  using StateId = typename A::StateId;
+
+  ArcIterator(const ProjectFst<A> &fst, StateId s)
+      : ArcIterator<ArcMapFst<A, A, ProjectMapper<A>>>(fst, s) {}
 };
 
 // Useful alias when using StdArc.
-typedef ProjectFst<StdArc> StdProjectFst;
+using StdProjectFst = ProjectFst<StdArc>;
 
 }  // namespace fst
 

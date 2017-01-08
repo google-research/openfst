@@ -14,13 +14,14 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<MutableFstClass *, const std::vector<WeightClass> &,
-                      ReweightType> ReweightArgs;
+using ReweightArgs =
+    args::Package<MutableFstClass *, const std::vector<WeightClass> &,
+                  ReweightType>;
 
 template <class Arc>
 void Reweight(ReweightArgs *args) {
   MutableFst<Arc> *fst = args->arg1->GetMutableFst<Arc>();
-  typedef typename Arc::Weight Weight;
+  using Weight = typename Arc::Weight;
   std::vector<Weight> potentials(args->arg2.size());
   for (auto i = 0; i < args->arg2.size(); ++i)
     potentials[i] = *(args->arg2[i].GetWeight<Weight>());

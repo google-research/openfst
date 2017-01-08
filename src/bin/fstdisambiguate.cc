@@ -3,6 +3,8 @@
 //
 // Disambiguates an FST.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -18,7 +20,6 @@ DEFINE_int64(subsequential_label, 0,
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
-  using fst::script::MutableFstClass;
   using fst::script::VectorFstClass;
   using fst::script::WeightClass;
 
@@ -33,20 +34,20 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
   VectorFstClass ofst(ifst->ArcType());
 
-  const WeightClass &weight_threshold =
+  const auto weight_threshold =
       FLAGS_weight.empty() ? WeightClass::Zero(ifst->WeightType())
                            : WeightClass(ifst->WeightType(), FLAGS_weight);
 
-  s::DisambiguateOptions opts(FLAGS_delta, weight_threshold, FLAGS_nstate,
-                              FLAGS_subsequential_label);
+  const s::DisambiguateOptions opts(FLAGS_delta, weight_threshold, FLAGS_nstate,
+                                    FLAGS_subsequential_label);
 
   s::Disambiguate(*ifst, &ofst, opts);
 

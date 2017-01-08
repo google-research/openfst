@@ -27,9 +27,8 @@ FarReaderClass *FarReaderClass::Open(const std::vector<string> &filenames) {
     return nullptr;
   }
   auto it = filenames.cbegin();
-  const string arc_type = LoadArcTypeFromFar(*it);
-  if (arc_type.empty())
-    return nullptr;
+  const auto arc_type = LoadArcTypeFromFar(*it);
+  if (arc_type.empty()) return nullptr;
   // FIXME(kbg): Is any of this really necessary? I am doing this purely
   // to conform to what I did with fst::script::Replace.
   ++it;
@@ -50,7 +49,6 @@ FarReaderClass *FarReaderClass::Open(const std::vector<string> &filenames) {
   return args.retval;
 }
 
-
 REGISTER_FST_OPERATION(OpenFarReaderClass, StdArc, OpenFarReaderClassArgs1);
 REGISTER_FST_OPERATION(OpenFarReaderClass, LogArc, OpenFarReaderClassArgs1);
 REGISTER_FST_OPERATION(OpenFarReaderClass, Log64Arc, OpenFarReaderClassArgs1);
@@ -58,7 +56,6 @@ REGISTER_FST_OPERATION(OpenFarReaderClass, Log64Arc, OpenFarReaderClassArgs1);
 REGISTER_FST_OPERATION(OpenFarReaderClass, StdArc, OpenFarReaderClassArgs2);
 REGISTER_FST_OPERATION(OpenFarReaderClass, LogArc, OpenFarReaderClassArgs2);
 REGISTER_FST_OPERATION(OpenFarReaderClass, Log64Arc, OpenFarReaderClassArgs2);
-
 
 // FarWriterClass.
 
@@ -72,12 +69,10 @@ FarWriterClass *FarWriterClass::Create(const string &filename,
   return args.retval;
 }
 
-
 REGISTER_FST_OPERATION(CreateFarWriterClass, StdArc, CreateFarWriterClassArgs);
 REGISTER_FST_OPERATION(CreateFarWriterClass, LogArc, CreateFarWriterClassArgs);
 REGISTER_FST_OPERATION(CreateFarWriterClass, Log64Arc,
                        CreateFarWriterClassArgs);
-
 
 }  // namespace script
 }  // namespace fst

@@ -9,23 +9,20 @@
 #include <list>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <fst/types.h>
 #include <fstream>
 
 namespace fst {
 
-//
-// MEMORY ALLOCATION UTILITIES
-//
+// Default block allocation size.
+constexpr int kAllocSize = 64;
 
-// Default block allocation size
-const int kAllocSize = 64;
+// Minimum number of allocations per block.
+constexpr int kAllocFit = 4;
 
-// Minimum number of allocations per block
-const int kAllocFit = 4;
-
-// Base class for MemoryArena that allows e.g. MemoryArenaCollection to
+// Base class for MemoryArena that allows (e.g.) MemoryArenaCollection to
 // easily manipulate collections of variously sized arenas.
 class MemoryArenaBase {
  public:
@@ -33,10 +30,9 @@ class MemoryArenaBase {
   virtual size_t Size() const = 0;
 };
 
-// Allocates 'size' unintialized memory chunks of size sizeof(T) from
-// underlying blocks of (at least) size 'block_size * sizeof(T)'.  All
-// blocks are freed when this class is deleted. Result of allocate()
-// will be aligned to sizeof(T).
+// Allocates 'size' unintialized memory chunks of size sizeof(T) from underlying
+// blocks of (at least) size 'block_size * sizeof(T)'. All blocks are freed when
+// this class is deleted. Result of allocate() will be aligned to sizeof(T).
 template <typename T>
 class MemoryArena : public MemoryArenaBase {
  public:
@@ -46,23 +42,21 @@ class MemoryArena : public MemoryArenaBase {
   }
 
   void *Allocate(size_t size) {
-    size_t byte_size = size * sizeof(T);
+    const auto byte_size = size * sizeof(T);
     if (byte_size * kAllocFit > block_size_) {
-      // large block; add new large block
-      char *ptr = new char[byte_size];
+      // Large block; adds new large block.
+      auto *ptr = new char[byte_size];
       blocks_.emplace_back(ptr);
       return ptr;
     }
-
     if (block_pos_ + byte_size > block_size_) {
-      // Doesn't fit; add new standard block
-      char *ptr = new char[block_size_];
+      // Doesn't fit; adds new standard block.
+      auto *ptr = new char[block_size_];
       block_pos_ = 0;
       blocks_.emplace_front(ptr);
     }
-
-    // Fits; use current block
-    char *ptr = blocks_.front().get() + block_pos_;
+    // Fits; uses current block.
+    auto *ptr = blocks_.front().get() + block_pos_;
     block_pos_ += byte_size;
     return ptr;
   }
@@ -70,29 +64,28 @@ class MemoryArena : public MemoryArenaBase {
   size_t Size() const override { return sizeof(T); }
 
  private:
-  size_t block_size_;    // default block size in bytes
-  size_t block_pos_;     // current position in block in bytes
-  std::list<std::unique_ptr<char[]>> blocks_;  // list of allocated blocks
+  size_t block_size_;  // Default block size in bytes.
+  size_t block_pos_;   // Current position in block in bytes.
+  std::list<std::unique_ptr<char[]>> blocks_;  // List of allocated blocks.
 };
 
-// Base class for MemoryPool that allows e.g. MemoryPoolCollection to
-// easily manipulate collections of variously sized pools.
+// Base class for MemoryPool that allows (e.g.) MemoryPoolCollection to easily
+// manipulate collections of variously sized pools.
 class MemoryPoolBase {
  public:
   virtual ~MemoryPoolBase() {}
   virtual size_t Size() const = 0;
 };
 
-// Allocates and frees initially uninitialized memory chunks of size
-// sizeof(T).  Keeps an internal list of freed chunks that are reused
-// (as is) on the next allocation if available. Chunks are constructed
-// in blocks of size 'pool_size'.  All memory is freed when the class is
-// deleted. The result of Allocate() will be suitably memory-aligned.
+// Allocates and frees initially uninitialized memory chunks of size sizeof(T).
+// Keeps an internal list of freed chunks that are reused (as is) on the next
+// allocation if available. Chunks are constructed in blocks of size
+// 'pool_size'. All memory is freed when the class is deleted. The result of
+// Allocate() will be suitably memory-aligned.
 //
-// Combined with placement operator new and destroy fucntions for the
-// T class, this can be used to improve allocation efficiency.  See
-// nlp/fst/lib/visit.h (global new) and
-// nlp/fst/lib/dfs-visit.h (class new) for examples of this usage.
+// Combined with placement operator new and destroy fucntions for the T class,
+// this can be used to improve allocation efficiency. See nlp/fst/lib/visit.h
+// (global new) and nlp/fst/lib/dfs-visit.h (class new) for examples.
 template <typename T>
 class MemoryPool : public MemoryPoolBase {
  public:
@@ -101,17 +94,17 @@ class MemoryPool : public MemoryPoolBase {
     Link *next;
   };
 
-  // 'pool_size' specifies the size of the initial pool and how it is extended
+  // 'pool_size' specifies the size of the initial pool and how it is extended.
   explicit MemoryPool(size_t pool_size = kAllocSize)
       : mem_arena_(pool_size), free_list_(nullptr) {}
 
   void *Allocate() {
     if (free_list_ == nullptr) {
-      Link *link = static_cast<Link *>(mem_arena_.Allocate(1));
+      auto *link = static_cast<Link *>(mem_arena_.Allocate(1));
       link->next = nullptr;
       return link;
     } else {
-      Link *link = free_list_;
+      auto *link = free_list_;
       free_list_ = link->next;
       return link;
     }
@@ -119,7 +112,7 @@ class MemoryPool : public MemoryPoolBase {
 
   void Free(void *ptr) {
     if (ptr) {
-      Link *link = static_cast<Link *>(ptr);
+      auto *link = static_cast<Link *>(ptr);
       link->next = free_list_;
       free_list_ = link;
     }
@@ -135,14 +128,10 @@ class MemoryPool : public MemoryPoolBase {
   MemoryPool &operator=(const MemoryPool &) = delete;
 };
 
-//
-// MEMORY ALLOCATION COLLECTION UTILITIES
-//
-
-// Stores a collection of memory arenas
+// Stores a collection of memory arenas.
 class MemoryArenaCollection {
  public:
-  // 'block_size' specifies the block size of the arenas
+  // 'block_size' specifies the block size of the arenas.
   explicit MemoryArenaCollection(size_t block_size = kAllocSize)
       : block_size_(block_size), ref_count_(1) {}
 
@@ -160,7 +149,9 @@ class MemoryArenaCollection {
   size_t BlockSize() const { return block_size_; }
 
   size_t RefCount() const { return ref_count_; }
+
   size_t IncrRefCount() { return ++ref_count_; }
+
   size_t DecrRefCount() { return --ref_count_; }
 
  private:
@@ -172,7 +163,7 @@ class MemoryArenaCollection {
 // Stores a collection of memory pools
 class MemoryPoolCollection {
  public:
-  // 'pool_size' specifies the size of initial pool and how it is extended
+  // 'pool_size' specifies the size of initial pool and how it is extended.
   explicit MemoryPoolCollection(size_t pool_size = kAllocSize)
       : pool_size_(pool_size), ref_count_(1) {}
 
@@ -190,7 +181,9 @@ class MemoryPoolCollection {
   size_t PoolSize() const { return pool_size_; }
 
   size_t RefCount() const { return ref_count_; }
+
   size_t IncrRefCount() { return ++ref_count_; }
+
   size_t DecrRefCount() { return --ref_count_; }
 
  private:
@@ -199,35 +192,30 @@ class MemoryPoolCollection {
   std::vector<std::unique_ptr<MemoryPoolBase>> pools_;
 };
 
+// STL allocator using memory arenas. Memory is allocated from underlying
+// blocks of size 'block_size * sizeof(T)'. Memory is freed only when all
+// objects using this allocator are destroyed and there is otherwise no reuse
+// (unlike PoolAllocator).
 //
-// STL MEMORY ALLOCATORS
-//
-
-// STL allocator using memory arenas. Memory is allocated from
-// underlying blocks of size 'block_size * sizeof(T)'. Memory is freed
-// only when all objects using this allocator are destroyed and there
-// is otherwise no reuse (unlike PoolAllocator).
-//
-// This allocator has object-local state so it should not be used with
-// splicing or swapping operations between objects created with
-// different allocators nor should it be used if copies must be
-// thread-safe. The result of allocate() will be suitably
-// memory-aligned.
+// This allocator has object-local state so it should not be used with splicing
+// or swapping operations between objects created with different allocators nor
+// should it be used if copies must be thread-safe. The result of allocate()
+// will be suitably memory-aligned.
 template <typename T>
 class BlockAllocator {
  public:
-  typedef std::allocator<T> A;
-  typedef typename A::size_type size_type;
-  typedef typename A::difference_type difference_type;
-  typedef typename A::pointer pointer;
-  typedef typename A::const_pointer const_pointer;
-  typedef typename A::reference reference;
-  typedef typename A::const_reference const_reference;
-  typedef typename A::value_type value_type;
+  using Allocator = std::allocator<T>;
+  using size_type = typename Allocator::size_type;
+  using difference_type = typename Allocator::difference_type;
+  using pointer = typename Allocator::pointer;
+  using const_pointer = typename Allocator::const_pointer;
+  using reference = typename Allocator::reference;
+  using const_reference = typename Allocator::const_reference;
+  using value_type = typename Allocator::value_type;
 
   template <typename U>
   struct rebind {
-    typedef BlockAllocator<U> other;
+    using other = BlockAllocator<U>;
   };
 
   explicit BlockAllocator(size_t block_size = kAllocSize)
@@ -248,31 +236,31 @@ class BlockAllocator {
     if (Arenas()->DecrRefCount() == 0) delete Arenas();
   }
 
-  pointer address(reference ref) const { return A().address(ref); }
+  pointer address(reference ref) const { return Allocator().address(ref); }
 
-  const_pointer address(const_reference ref) const { return A().address(ref); }
+  const_pointer address(const_reference ref) const {
+    return Allocator().address(ref);
+  }
 
-  size_type max_size() const { return A().max_size(); }
+  size_type max_size() const { return Allocator().max_size(); }
 
   template <class U, class... Args>
   void construct(U *p, Args &&... args) {
-    A().construct(p, std::forward<Args>(args)...);
+    Allocator().construct(p, std::forward<Args>(args)...);
   }
 
-  void destroy(pointer p) { A().destroy(p); }
+  void destroy(pointer p) { Allocator().destroy(p); }
 
   pointer allocate(size_type n, const void *hint = nullptr) {
     if (n * kAllocFit <= kAllocSize) {
       return static_cast<pointer>(Arena()->Allocate(n));
     } else {
-      return A().allocate(n, hint);
+      return Allocator().allocate(n, hint);
     }
   }
 
   void deallocate(pointer p, size_type n) {
-    if (n * kAllocFit > kAllocSize) {
-      A().deallocate(p, n);
-    }
+    if (n * kAllocFit > kAllocSize) Allocator().deallocate(p, n);
   }
 
   MemoryArenaCollection *Arenas() const { return arenas_; }
@@ -301,26 +289,25 @@ bool operator!=(const BlockAllocator<T> &alloc1,
 // blocks of size 'block_size * sizeof(T)'. Keeps an internal list of freed
 // chunks thare are reused on the next allocation.
 //
-// This allocator has object-local state so it should not be used with
-// splicing or swapping operations between objects created with
-// different allocators nor should it be used if copies must be
-// thread-safe. The result of allocate() will be suitably
-// memory-aligned.
+// This allocator has object-local state so it should not be used with splicing
+// or swapping operations between objects created with different allocators nor
+// should it be used if copies must be thread-safe. The result of allocate()
+// will be suitably memory-aligned.
 template <typename T>
 class PoolAllocator {
  public:
-  typedef std::allocator<T> A;
-  typedef typename A::size_type size_type;
-  typedef typename A::difference_type difference_type;
-  typedef typename A::pointer pointer;
-  typedef typename A::const_pointer const_pointer;
-  typedef typename A::reference reference;
-  typedef typename A::const_reference const_reference;
-  typedef typename A::value_type value_type;
+  using Allocator = std::allocator<T>;
+  using size_type = typename Allocator::size_type;
+  using difference_type = typename Allocator::difference_type;
+  using pointer = typename Allocator::pointer;
+  using const_pointer = typename Allocator::const_pointer;
+  using reference = typename Allocator::reference;
+  using const_reference = typename Allocator::const_reference;
+  using value_type = typename Allocator::value_type;
 
   template <typename U>
   struct rebind {
-    typedef PoolAllocator<U> other;
+    using other = PoolAllocator<U>;
   };
 
   explicit PoolAllocator(size_t pool_size = kAllocSize)
@@ -341,18 +328,20 @@ class PoolAllocator {
     if (Pools()->DecrRefCount() == 0) delete Pools();
   }
 
-  pointer address(reference ref) const { return A().address(ref); }
+  pointer address(reference ref) const { return Allocator().address(ref); }
 
-  const_pointer address(const_reference ref) const { return A().address(ref); }
+  const_pointer address(const_reference ref) const {
+    return Allocator().address(ref);
+  }
 
-  size_type max_size() const { return A().max_size(); }
+  size_type max_size() const { return Allocator().max_size(); }
 
   template <class U, class... Args>
   void construct(U *p, Args &&... args) {
-    A().construct(p, std::forward<Args>(args)...);
+    Allocator().construct(p, std::forward<Args>(args)...);
   }
 
-  void destroy(pointer p) { A().destroy(p); }
+  void destroy(pointer p) { Allocator().destroy(p); }
 
   pointer allocate(size_type n, const void *hint = nullptr) {
     if (n == 1) {
@@ -370,7 +359,7 @@ class PoolAllocator {
     } else if (n <= 64) {
       return static_cast<pointer>(Pool<64>()->Allocate());
     } else {
-      return A().allocate(n, hint);
+      return Allocator().allocate(n, hint);
     }
   }
 
@@ -390,7 +379,7 @@ class PoolAllocator {
     } else if (n <= 64) {
       Pool<64>()->Free(p);
     } else {
-      A().deallocate(p, n);
+      Allocator().deallocate(p, n);
     }
   }
 

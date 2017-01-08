@@ -25,8 +25,8 @@ struct DisambiguateOptions {
         subsequential_label(l) {}
 };
 
-typedef args::Package<const FstClass &, MutableFstClass *,
-                      const DisambiguateOptions &> DisambiguateArgs1;
+using DisambiguateArgs1 = args::Package<const FstClass &, MutableFstClass *,
+                                        const DisambiguateOptions &>;
 
 template <class Arc>
 void Disambiguate(DisambiguateArgs1 *args) {
@@ -42,8 +42,8 @@ void Disambiguate(DisambiguateArgs1 *args) {
 }
 
 // 2: Signature with default WeightClass argument.
-typedef args::Package<const FstClass &, MutableFstClass *, int64,
-                      int64> DisambiguateArgs2;
+using DisambiguateArgs2 =
+    args::Package<const FstClass &, MutableFstClass *, int64, int64>;
 
 template <class Arc>
 void Disambiguate(DisambiguateArgs2 *args) {

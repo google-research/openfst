@@ -29,7 +29,7 @@ class Elias {
 template <class Var>
 void Elias<Var>::GammaEncode(const Var &input, std::vector<bool> *code) {
   Var input_copy = input;
-  stack<bool> reverse_code;
+  std::stack<bool> reverse_code;
   while (input_copy > 0) {
     reverse_code.push(input_copy % 2);
     input_copy = input_copy / 2;
@@ -44,7 +44,7 @@ void Elias<Var>::GammaEncode(const Var &input, std::vector<bool> *code) {
 template <class Var>
 void Elias<Var>::DeltaEncode(const Var &input, std::vector<bool> *code) {
   Var input_copy = input + 1;
-  stack<bool> reverse_remainder;
+  std::stack<bool> reverse_remainder;
   Var auxvar = 0;
   while (input_copy != 0) {
     reverse_remainder.push(input_copy % 2);

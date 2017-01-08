@@ -32,8 +32,8 @@ struct DeterminizeOptions {
         increment_subsequential_label(i) {}
 };
 
-typedef args::Package<const FstClass &, MutableFstClass *,
-                      const DeterminizeOptions &> DeterminizeArgs1;
+using DeterminizeArgs1 = args::Package<const FstClass &, MutableFstClass *,
+                                       const DeterminizeOptions &>;
 
 template <class Arc>
 void Determinize(DeterminizeArgs1 *args) {
@@ -49,8 +49,9 @@ void Determinize(DeterminizeArgs1 *args) {
 }
 
 // 2: Signature with default WeightClass argument.
-typedef args::Package<const FstClass &, MutableFstClass *, float, int64, int64,
-                      DeterminizeType, bool> DeterminizeArgs2;
+using DeterminizeArgs2 =
+    args::Package<const FstClass &, MutableFstClass *, float, int64, int64,
+                  DeterminizeType, bool>;
 
 template <class Arc>
 void Determinize(DeterminizeArgs2 *args) {

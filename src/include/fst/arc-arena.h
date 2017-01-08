@@ -16,8 +16,12 @@ namespace fst {
 //   for each state:
 //     for each arc:
 //       arena.PushArc();
-//     Arc* arcs = arena.GetArcs();  // Commit these arcs, get pointer to it.
-//     OR arena.DropArcs();  // Throw away current arcs, reuse the space
+//     // Commits these arcs and returns pointer to them.
+//     Arc *arcs = arena.GetArcs();
+//
+//     OR
+//
+//     arena.DropArcs();  // Throws away current arcs, reuse the space.
 //
 // The arcs returned are guaranteed to be contiguous and the pointer returned
 // will never be invalidated until the arena is cleared for reuse.
@@ -91,8 +95,8 @@ class ArcArena {
   }
 
  private:
-  // Allocate a new block with capacity of at least n or block_size,
-  // copy incomplete arc sequence from old block to new block.
+  // Allocates a new block with capacity of at least n or block_size,
+  // copying incomplete arc sequence from old block to new block.
   void NewBlock(size_t n) {
     size_t length = next_ - arcs_;
     size_t new_block_size = std::max(n, block_size_);
@@ -108,9 +112,9 @@ class ArcArena {
     return std::shared_ptr<Arc>(new Arc[size], std::default_delete<Arc[]>());
   }
 
-  Arc* arcs_;
-  Arc* next_;
-  const Arc* end_;
+  Arc *arcs_;
+  Arc *next_;
+  const Arc *end_;
   size_t block_size_;
   size_t first_block_size_;
   size_t total_size_;
@@ -123,10 +127,10 @@ class ArcArena {
 //
 // TODO(tombagby): Make cache type configurable.
 // TODO(tombagby): Provide ThreadLocal/Concurrent configuration.
-template <class Arc_>
+template <class A>
 class ArcArenaStateStore {
  public:
-  using Arc = Arc_;
+  using Arc = A;
   using Weight = typename Arc::Weight;
   using StateId = typename Arc::StateId;
 
@@ -136,16 +140,22 @@ class ArcArenaStateStore {
   class State {
    public:
     Weight Final() const { return final_; }
+
     size_t NumInputEpsilons() const { return niepsilons_; }
+
     size_t NumOutputEpsilons() const { return noepsilons_; }
+
     size_t NumArcs() const { return narcs_; }
-    const Arc& GetArc(size_t n) const { return arcs_[n]; }
-    const Arc* Arcs() const { return arcs_; }
+
+    const Arc &GetArc(size_t n) const { return arcs_[n]; }
+
+    const Arc *Arcs() const { return arcs_; }
+
     int* MutableRefCount() const { return nullptr; }
 
    private:
     State(Weight final, int32 niepsilons, int32 noepsilons, int32 narcs,
-          const Arc* arcs)
+          const Arc *arcs)
         : final_(std::move(final)),
           niepsilons_(niepsilons),
           noepsilons_(noepsilons),
@@ -161,31 +171,29 @@ class ArcArenaStateStore {
   };
 
   template <class Expander>
-  State* FindOrExpand(Expander& expander, StateId state_id) {  // NOLINT
+  State *FindOrExpand(Expander &expander, StateId state_id) {  // NOLINT
     auto it = cache_.insert(std::pair<StateId, State*>(state_id, nullptr));
     if (!it.second) return it.first->second;
-
-    // Need a new state.
+    // Needs a new state.
     StateBuilder builder(&arena_);
     expander.Expand(state_id, &builder);
-    const Arc* arcs = arena_.GetArcs();
+    const auto arcs = arena_.GetArcs();
     int32 narcs = builder.narcs_;
     int32 niepsilons = 0;
     int32 noepsilons = 0;
-    for (int i = 0; i < narcs; ++i) {
+    for (auto i = 0; i < narcs; ++i) {
       if (arcs[i].ilabel == 0) ++niepsilons;
       if (arcs[i].olabel == 0) ++noepsilons;
     }
     states_.emplace_back(
         State(builder.final_, niepsilons, noepsilons, narcs, arcs));
-
-    // Stick it in the cache.
-    State* state = &states_.back();
+    // Places it in the cache.
+    auto state = &states_.back();
     it.first->second = state;
     return state;
   }
 
-  State* Find(StateId state_id) const {
+  State *Find(StateId state_id) const {
     auto it = cache_.find(state_id);
     return (it == cache_.end()) ? nullptr : it->second;
   }
@@ -197,23 +205,27 @@ class ArcArenaStateStore {
        : arena_(arena) {}
 
     void SetFinal(Weight final) { final_ = final; }
+
     void ReserveArcs(size_t n) { arena_->ReserveArcs(n); }
+
     void AddArc(const Arc& arc) {
       ++narcs_;
       arena_->PushArc(arc);
     }
 
    private:
-    ArcArena<Arc>* arena_;
+    ArcArena<Arc> *arena_;
     Weight final_ = Weight::Zero();
     int narcs_ = 0;
+
     friend class ArcArenaStateStore<Arc>;
   };
 
-  std::unordered_map<StateId, State*> cache_;
+  std::unordered_map<StateId, State *> cache_;
   std::deque<State> states_;
   ArcArena<Arc> arena_;
 };
 
 }  // namespace fst
+
 #endif  // FST_LIB_ARC_ARENA_H_

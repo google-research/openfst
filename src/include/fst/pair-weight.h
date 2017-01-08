@@ -20,29 +20,28 @@ namespace fst {
 template <class W1, class W2>
 class PairWeight {
  public:
-  typedef W1 Weight1;
-  typedef W2 Weight2;
-  typedef PairWeight<typename W1::ReverseWeight, typename W2::ReverseWeight>
-      ReverseWeight;
+  using ReverseWeight =
+      PairWeight<typename W1::ReverseWeight, typename W2::ReverseWeight>;
 
   PairWeight() {}
 
-  PairWeight(const PairWeight &w) : value1_(w.value1_), value2_(w.value2_) {}
+  PairWeight(const PairWeight &weight)
+      : value1_(weight.value1_), value2_(weight.value2_) {}
 
   PairWeight(W1 w1, W2 w2) : value1_(std::move(w1)), value2_(std::move(w2)) {}
 
   static const PairWeight<W1, W2> &Zero() {
-    static const PairWeight<W1, W2> zero(W1::Zero(), W2::Zero());
+    static const PairWeight zero(W1::Zero(), W2::Zero());
     return zero;
   }
 
   static const PairWeight<W1, W2> &One() {
-    static const PairWeight<W1, W2> one(W1::One(), W2::One());
+    static const PairWeight one(W1::One(), W2::One());
     return one;
   }
 
   static const PairWeight<W1, W2> &NoWeight() {
-    static const PairWeight<W1, W2> no_weight(W1::NoWeight(), W2::NoWeight());
+    static const PairWeight no_weight(W1::NoWeight(), W2::NoWeight());
     return no_weight;
   }
 
@@ -56,19 +55,19 @@ class PairWeight {
     return value2_.Write(strm);
   }
 
-  PairWeight<W1, W2> &operator=(const PairWeight<W1, W2> &w) {
-    value1_ = w.Value1();
-    value2_ = w.Value2();
+  PairWeight<W1, W2> &operator=(const PairWeight<W1, W2> &weight) {
+    value1_ = weight.Value1();
+    value2_ = weight.Value2();
     return *this;
   }
 
   bool Member() const { return value1_.Member() && value2_.Member(); }
 
   size_t Hash() const {
-    size_t h1 = value1_.Hash();
-    size_t h2 = value2_.Hash();
-    const int lshift = 5;
-    const int rshift = CHAR_BIT * sizeof(size_t) - 5;
+    const auto h1 = value1_.Hash();
+    const auto h2 = value2_.Hash();
+    static constexpr int lshift = 5;
+    static constexpr int rshift = CHAR_BIT * sizeof(size_t) - 5;
     return h1 << lshift ^ h1 >> rshift ^ h2;
   }
 
@@ -84,8 +83,9 @@ class PairWeight {
 
   const W2 &Value2() const { return value2_; }
 
-  void SetValue1(const W1 &w) { value1_ = w; }
-  void SetValue2(const W2 &w) { value2_ = w; }
+  void SetValue1(const W1 &weight) { value1_ = weight; }
+
+  void SetValue2(const W2 &weight) { value2_ = weight; }
 
  private:
   W1 value1_;
@@ -93,9 +93,9 @@ class PairWeight {
 };
 
 template <class W1, class W2>
-inline bool operator==(const PairWeight<W1, W2> &w,
-                       const PairWeight<W1, W2> &v) {
-  return w.Value1() == v.Value1() && w.Value2() == v.Value2();
+inline bool operator==(const PairWeight<W1, W2> &w1,
+                       const PairWeight<W1, W2> &w2) {
+  return w1.Value1() == w2.Value1() && w1.Value2() == w2.Value2();
 }
 
 template <class W1, class W2>
@@ -113,28 +113,27 @@ inline bool ApproxEqual(const PairWeight<W1, W2> &w1,
 
 template <class W1, class W2>
 inline std::ostream &operator<<(std::ostream &strm,
-                                const PairWeight<W1, W2> &w) {
+                                const PairWeight<W1, W2> &weight) {
   CompositeWeightWriter writer(strm);
   writer.WriteBegin();
-  writer.WriteElement(w.Value1());
-  writer.WriteElement(w.Value2());
+  writer.WriteElement(weight.Value1());
+  writer.WriteElement(weight.Value2());
   writer.WriteEnd();
   return strm;
 }
 
 template <class W1, class W2>
-inline std::istream &operator>>(std::istream &strm, PairWeight<W1, W2> &w) {
+inline std::istream &operator>>(std::istream &strm,
+                                PairWeight<W1, W2> &weight) {
   CompositeWeightReader reader(strm);
   reader.ReadBegin();
   W1 w1;
   reader.ReadElement(&w1);
-  w.SetValue1(w1);
-
+  weight.SetValue1(w1);
   W2 w2;
   reader.ReadElement(&w2, true);
-  w.SetValue2(w2);
+  weight.SetValue2(w2);
   reader.ReadEnd();
-
   return strm;
 }
 

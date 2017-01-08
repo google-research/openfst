@@ -15,10 +15,13 @@ namespace fst {
 // Mapper to implement inversion of an arc.
 template <class A>
 struct InvertMapper {
+  using FromArc = A;
+  using ToArc = A;
+
   InvertMapper() {}
 
-  A operator()(const A &arc) {
-    return A(arc.olabel, arc.ilabel, arc.weight, arc.nextstate);
+  ToArc operator()(const FromArc &arc) {
+    return ToArc(arc.olabel, arc.ilabel, arc.weight, arc.nextstate);
   }
 
   MapFinalAction FinalAction() const { return MAP_NO_SUPERFINAL; }
@@ -34,9 +37,11 @@ struct InvertMapper {
 // FST's input and output labels. This version modifies its input.
 //
 // Complexity:
-// - Time: O(V + E)
-// - Space: O(1)
-// where V = # of states and E = # of arcs.
+//
+//   Time: O(V + E)
+//   Space: O(1)
+//
+// where V is the number of states and E is the number of arcs.
 template <class Arc>
 inline void Invert(MutableFst<Arc> *fst) {
   std::unique_ptr<SymbolTable> input(
@@ -49,32 +54,36 @@ inline void Invert(MutableFst<Arc> *fst) {
 }
 
 // Inverts the transduction corresponding to an FST by exchanging the
-// FST's input and output labels.  This version is a delayed Fst.
+// FST's input and output labels. This version is a delayed FST.
 //
 // Complexity:
-// - Time: O(v + e)
-// - Space: O(1)
-// where v = # of states visited, e = # of arcs visited. Constant
-// time and to visit an input state or arc is assumed and exclusive
-// of caching.
+//
+//   Time: O(v + e)
+//   Space: O(1)
+//
+// where v is the number of states visited and e is the number of arcs visited.
+// Constant time and to visit an input state or arc is assumed and exclusive of
+// caching.
 template <class A>
 class InvertFst : public ArcMapFst<A, A, InvertMapper<A>> {
  public:
-  typedef A Arc;
-  typedef InvertMapper<A> C;
-  typedef ArcMapFstImpl<A, A, InvertMapper<A>> Impl;
+  using Arc = A;
 
-  explicit InvertFst(const Fst<A> &fst) : ArcMapFst<A, A, C>(fst, C()) {
+  using Mapper = InvertMapper<Arc>;
+  using Impl = internal::ArcMapFstImpl<A, A, InvertMapper<A>>;
+
+  explicit InvertFst(const Fst<Arc> &fst)
+      : ArcMapFst<Arc, Arc, Mapper>(fst, Mapper()) {
     GetMutableImpl()->SetOutputSymbols(fst.InputSymbols());
     GetMutableImpl()->SetInputSymbols(fst.OutputSymbols());
   }
 
   // See Fst<>::Copy() for doc.
-  InvertFst(const InvertFst<A> &fst, bool safe = false)
-      : ArcMapFst<A, A, C>(fst, safe) {}
+  InvertFst(const InvertFst<Arc> &fst, bool safe = false)
+      : ArcMapFst<Arc, Arc, Mapper>(fst, safe) {}
 
   // Get a copy of this InvertFst. See Fst<>::Copy() for further doc.
-  InvertFst<A> *Copy(bool safe = false) const override {
+  InvertFst<Arc> *Copy(bool safe = false) const override {
     return new InvertFst(*this, safe);
   }
 
@@ -83,25 +92,27 @@ class InvertFst : public ArcMapFst<A, A, InvertMapper<A>> {
 };
 
 // Specialization for InvertFst.
-template <class A>
-class StateIterator<InvertFst<A>>
-    : public StateIterator<ArcMapFst<A, A, InvertMapper<A>> > {
+template <class Arc>
+class StateIterator<InvertFst<Arc>>
+    : public StateIterator<ArcMapFst<Arc, Arc, InvertMapper<Arc>>> {
  public:
-  explicit StateIterator(const InvertFst<A> &fst)
-      : StateIterator<ArcMapFst<A, A, InvertMapper<A>> >(fst) {}
+  explicit StateIterator(const InvertFst<Arc> &fst)
+      : StateIterator<ArcMapFst<Arc, Arc, InvertMapper<Arc>>>(fst) {}
 };
 
 // Specialization for InvertFst.
-template <class A>
-class ArcIterator<InvertFst<A>>
-    : public ArcIterator<ArcMapFst<A, A, InvertMapper<A>> > {
+template <class Arc>
+class ArcIterator<InvertFst<Arc>>
+    : public ArcIterator<ArcMapFst<Arc, Arc, InvertMapper<Arc>>> {
  public:
-  ArcIterator(const InvertFst<A> &fst, typename A::StateId s)
-      : ArcIterator<ArcMapFst<A, A, InvertMapper<A>> >(fst, s) {}
+  using StateId = typename Arc::StateId;
+
+  ArcIterator(const InvertFst<Arc> &fst, StateId s)
+      : ArcIterator<ArcMapFst<Arc, Arc, InvertMapper<Arc>>>(fst, s) {}
 };
 
 // Useful alias when using StdArc.
-typedef InvertFst<StdArc> StdInvertFst;
+using StdInvertFst = InvertFst<StdArc>;
 
 }  // namespace fst
 

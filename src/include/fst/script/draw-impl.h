@@ -17,17 +17,16 @@
 
 namespace fst {
 
-// Print a binary Fst in the dot textual format, helper class for fstdraw.cc
+// Print a binary FST in GraphViz textual format (helper class for fstdraw.cc).
 // WARNING: Stand-alone use not recommend.
-template <class A>
+template <class Arc>
 class FstDrawer {
  public:
-  typedef A Arc;
-  typedef typename A::StateId StateId;
-  typedef typename A::Label Label;
-  typedef typename A::Weight Weight;
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
 
-  FstDrawer(const Fst<A> &fst, const SymbolTable *isyms,
+  FstDrawer(const Fst<Arc> &fst, const SymbolTable *isyms,
             const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
             const string &title, float width, float height, bool portrait,
             bool vertical, float ranksep, float nodesep, int fontsize,
@@ -56,12 +55,12 @@ class FstDrawer {
     dest_ = dest;
     StateId start = fst_.Start();
     if (start == kNoStateId) return;
-
     PrintString("digraph FST {\n");
-    if (vertical_)
+    if (vertical_) {
       PrintString("rankdir = BT;\n");
-    else
+    } else {
       PrintString("rankdir = LR;\n");
+    }
     PrintString("size = \"");
     Print(width_);
     PrintString(",");
@@ -69,20 +68,21 @@ class FstDrawer {
     PrintString("\";\n");
     if (!dest_.empty()) PrintString("label = \"" + title_ + "\";\n");
     PrintString("center = 1;\n");
-    if (portrait_)
+    if (portrait_) {
       PrintString("orientation = Portrait;\n");
-    else
+    } else {
       PrintString("orientation = Landscape;\n");
+    }
     PrintString("ranksep = \"");
     Print(ranksep_);
     PrintString("\";\n");
     PrintString("nodesep = \"");
     Print(nodesep_);
     PrintString("\";\n");
-    // initial state first
+    // Initial state first.
     DrawState(start);
-    for (StateIterator<Fst<A>> siter(fst_); !siter.Done(); siter.Next()) {
-      StateId s = siter.Value();
+    for (StateIterator<Fst<Arc>> siter(fst_); !siter.Done(); siter.Next()) {
+      const auto s = siter.Value();
       if (s != start) DrawState(s);
     }
     PrintString("}\n");
@@ -92,12 +92,12 @@ class FstDrawer {
   // Maximum line length in text file.
   static const int kLineLen = 8096;
 
-  void PrintString(const string &s) const { *ostrm_ << s; }
+  void PrintString(const string &str) const { *ostrm_ << str; }
 
   // Escapes backslash and double quote if these occur in the string. Dot will
   // not deal gracefully with these if they are not escaped.
-  inline void EscapeChars(const string &s, string *ns) const {
-    const char *c = s.c_str();
+  inline void EscapeChars(const string &str, string *ns) const {
+    const char *c = str.c_str();
     while (*c) {
       if (*c == '\\' || *c == '"') ns->push_back('\\');
       ns->push_back(*c);
@@ -107,7 +107,7 @@ class FstDrawer {
 
   void PrintId(StateId id, const SymbolTable *syms, const char *name) const {
     if (syms) {
-      string symbol = syms->Find(id);
+      auto symbol = syms->Find(id);
       if (symbol == "") {
         FSTERROR() << "FstDrawer: Integer " << id
                    << " is not mapped to any textual symbol"
@@ -127,9 +127,13 @@ class FstDrawer {
 
   void PrintStateId(StateId s) const { PrintId(s, ssyms_, "state ID"); }
 
-  void PrintILabel(Label l) const { PrintId(l, isyms_, "arc input label"); }
+  void PrintILabel(Label label) const {
+    PrintId(label, isyms_, "arc input label");
+  }
 
-  void PrintOLabel(Label l) const { PrintId(l, osyms_, "arc output label"); }
+  void PrintOLabel(Label label) const {
+    PrintId(label, osyms_, "arc output label");
+  }
 
   template <class T>
   void Print(T t) const { *ostrm_ << t; }
@@ -138,25 +142,26 @@ class FstDrawer {
     Print(s);
     PrintString(" [label = \"");
     PrintStateId(s);
-    Weight final = fst_.Final(s);
-    if (final != Weight::Zero()) {
-      if (show_weight_one_ || (final != Weight::One())) {
+    const auto weight = fst_.Final(s);
+    if (weight != Weight::Zero()) {
+      if (show_weight_one_ || (weight != Weight::One())) {
         PrintString("/");
-        Print(final);
+        Print(weight);
       }
       PrintString("\", shape = doublecircle,");
     } else {
       PrintString("\", shape = circle,");
     }
-    if (s == fst_.Start())
+    if (s == fst_.Start()) {
       PrintString(" style = bold,");
-    else
+    } else {
       PrintString(" style = solid,");
+    }
     PrintString(" fontsize = ");
     Print(fontsize_);
     PrintString("]\n");
-    for (ArcIterator<Fst<A>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-      Arc arc = aiter.Value();
+    for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
+      const auto &arc = aiter.Value();
       PrintString("\t");
       Print(s);
       PrintString(" -> ");
@@ -177,13 +182,13 @@ class FstDrawer {
     }
   }
 
-  const Fst<A> &fst_;
-  const SymbolTable *isyms_;  // ilabel symbol table
-  const SymbolTable *osyms_;  // olabel symbol table
-  const SymbolTable *ssyms_;  // slabel symbol table
-  bool accep_;                // print as acceptor when possible
-  std::ostream *ostrm_;       // drawn FST destination
-  string dest_;               // drawn FST destination name
+  const Fst<Arc> &fst_;
+  const SymbolTable *isyms_;  // ilabel symbol table.
+  const SymbolTable *osyms_;  // olabel symbol table.
+  const SymbolTable *ssyms_;  // slabel symbol table.
+  bool accep_;                // Print as acceptor when possible.
+  std::ostream *ostrm_;       // Drawn FST destination.
+  string dest_;               // Drawn FST destination name.
 
   string title_;
   float width_;

@@ -862,7 +862,7 @@ void FeatureGroupBuilder<A>::BuildBackLinks() {
   // either side, which in general causes non-uniqueness.
 
   const Topology &topology = trie_.TrieTopology();
-  queue<int> q;  // all enqueued or visited nodes have known links
+  std::queue<int> q;  // all enqueued or visited nodes have known links
 
   // Note: nodes have back link initialized to -1 in their
   // constructor.

@@ -93,8 +93,8 @@ inline ArcClass EncodeMapperClassImpl<Arc>::operator()(const ArcClass &a) {
 
 class EncodeMapperClass;
 
-typedef args::Package<uint32, EncodeType, EncodeMapperClass *>
-    InitEncodeMapperClassArgs;
+using InitEncodeMapperClassArgs =
+    args::Package<uint32, EncodeType, EncodeMapperClass *>;
 
 class EncodeMapperClass {
  public:

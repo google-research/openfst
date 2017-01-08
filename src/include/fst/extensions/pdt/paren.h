@@ -3,8 +3,6 @@
 //
 // Common classes for PDT parentheses.
 
-// \file
-
 #ifndef FST_EXTENSIONS_PDT_PAREN_H_
 #define FST_EXTENSIONS_PDT_PAREN_H_
 
@@ -20,119 +18,104 @@
 
 
 namespace fst {
+namespace internal {
 
-//
-// ParenState: Pair of an open (close) parenthesis and
-// its destination (source) state.
-//
+// ParenState: Pair of an open (close) parenthesis and its destination (source)
+// state.
 
-template <class A>
-class ParenState {
- public:
-  typedef typename A::Label Label;
-  typedef typename A::StateId StateId;
+template <class Arc>
+struct ParenState {
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
+
+  Label paren_id;    // ID of open (close) paren.
+  StateId state_id;  // Destination (source) state of open (close) paren.
+
+  explicit ParenState(Label paren_id = kNoLabel, StateId state_id = kNoStateId)
+      : paren_id(paren_id), state_id(state_id) {}
+
+  bool operator==(const ParenState<Arc> &other) const {
+    if (&other == this) return true;
+    return other.paren_id == paren_id && other.state_id == state_id;
+  }
+
+  bool operator!=(const ParenState<Arc> &other) const {
+    return !(other == *this);
+  }
 
   struct Hash {
-    size_t operator()(const ParenState<A> &p) const {
-      return p.paren_id + p.state_id * kPrime;
+    size_t operator()(const ParenState<Arc> &pstate) const {
+      static constexpr auto prime = 7853;
+      return pstate.paren_id + pstate.state_id * prime;
     }
   };
-
-  Label paren_id;    // ID of open (close) paren
-  StateId state_id;  // destination (source) state of open (close) paren
-
-  ParenState() : paren_id(kNoLabel), state_id(kNoStateId) {}
-
-  ParenState(Label p, StateId s) : paren_id(p), state_id(s) {}
-
-  bool operator==(const ParenState<A> &p) const {
-    if (&p == this) return true;
-    return p.paren_id == this->paren_id && p.state_id == this->state_id;
-  }
-
-  bool operator!=(const ParenState<A> &p) const { return !(p == *this); }
-
-  bool operator<(const ParenState<A> &p) const {
-    return paren_id < this->paren.id ||
-           (p.paren_id == this->paren.id && p.state_id < this->state_id);
-  }
-
- private:
-  static const size_t kPrime;
 };
 
-template <class A>
-const size_t ParenState<A>::kPrime = 7853;
-
-// Creates an FST-style iterator from STL map and iterator.
-template <class M>
+// Creates an FST-style const iterator from an STL-style map.
+template <class Map>
 class MapIterator {
  public:
-  typedef typename M::const_iterator StlIterator;
-  typedef typename M::value_type PairType;
-  typedef typename PairType::second_type ValueType;
+  using StlIterator = typename Map::const_iterator;
+  using ValueType = typename Map::mapped_type;
 
-  MapIterator(const M &m, StlIterator iter)
-      : map_(m), begin_(iter), iter_(iter) {}
+  MapIterator(const Map &map, StlIterator it)
+      : begin_(it), end_(map.end()), it_(it) {}
 
-  bool Done() const {
-    return iter_ == map_.end() || iter_->first != begin_->first;
-  }
+  bool Done() const { return it_ == end_ || it_->first != begin_->first; }
 
-  ValueType Value() const { return iter_->second; }
-  void Next() { ++iter_; }
-  void Reset() { iter_ = begin_; }
+  ValueType Value() const { return it_->second; }
+
+  void Next() { ++it_; }
+
+  void Reset() { it_ = begin_; }
 
  private:
-  const M &map_;
-  StlIterator begin_;
-  StlIterator iter_;
+  const StlIterator begin_;
+  const StlIterator end_;
+  StlIterator it_;
 };
 
-//
-// PdtParenReachable: Provides various parenthesis reachability information
-// on a PDT.
-//
+// PdtParenReachable: Provides various parenthesis reachability information.
 
-template <class A>
+template <class Arc>
 class PdtParenReachable {
  public:
-  typedef typename A::StateId StateId;
-  typedef typename A::Label Label;
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
 
- public:
+  using State = ParenState<Arc>;
+  using StateHash = typename State::Hash;
+
   // Maps from state ID to reachable paren IDs from (to) that state.
-  typedef std::unordered_multimap<StateId, Label> ParenMultiMap;
+  using ParenMultimap = std::unordered_multimap<StateId, Label>;
 
-  // Maps from paren ID and state ID to reachable state set ID
-  typedef std::unordered_map<ParenState<A>, ssize_t,
-                             typename ParenState<A>::Hash> StateSetMap;
+  // Maps from paren ID and state ID to reachable state set ID.
+  using StateSetMap = std::unordered_map<State, ssize_t, StateHash>;
 
   // Maps from paren ID and state ID to arcs exiting that state with that
   // Label.
-  typedef std::unordered_multimap<
-      ParenState<A>, A, typename ParenState<A>::Hash> ParenArcMultiMap;
+  using ParenArcMultimap = std::unordered_map<State, Arc, StateHash>;
 
-  typedef MapIterator<ParenMultiMap> ParenIterator;
+  using ParenIterator = MapIterator<ParenMultimap>;
 
-  typedef MapIterator<ParenArcMultiMap> ParenArcIterator;
+  using ParenArcIterator = MapIterator<ParenArcMultimap>;
 
-  typedef typename Collection<ssize_t, StateId>::SetIterator SetIterator;
+  using SetIterator = typename Collection<ssize_t, StateId>::SetIterator;
 
-  // Computes close (open) parenthesis reachability information for
-  // a PDT with bounded stack.
-  PdtParenReachable(const Fst<A> &fst,
+  // Computes close (open) parenthesis reachability information for a PDT with
+  // bounded stack.
+  PdtParenReachable(const Fst<Arc> &fst,
                     const std::vector<std::pair<Label, Label>> &parens,
                     bool close)
       : fst_(fst), parens_(parens), close_(close), error_(false) {
-    for (Label i = 0; i < parens.size(); ++i) {
-      const std::pair<Label, Label> &p = parens[i];
-      paren_id_map_[p.first] = i;
-      paren_id_map_[p.second] = i;
+    paren_map_.reserve(2 * parens.size());
+    for (size_t i = 0; i < parens.size(); ++i) {
+      const auto &pair = parens[i];
+      paren_map_[pair.first] = i;
+      paren_map_[pair.second] = i;
     }
-
     if (close_) {
-      StateId start = fst.Start();
+      const auto start = fst.Start();
       if (start == kNoStateId) return;
       if (!DFSearch(start)) {
         FSTERROR() << "PdtReachable: Underlying cyclicity not supported";
@@ -144,191 +127,192 @@ class PdtParenReachable {
     }
   }
 
-  bool const Error() { return error_; }
+  bool Error() const { return error_; }
 
-  // Given a state ID, returns an iterator over paren IDs
-  // for close (open) parens reachable from that state along balanced
-  // paths.
+  // Given a state ID, returns an iterator over paren IDs for close (open)
+  // parens reachable from that state along balanced paths.
   ParenIterator FindParens(StateId s) const {
     return ParenIterator(paren_multimap_, paren_multimap_.find(s));
   }
 
-  // Given a paren ID and a state ID s, returns an iterator over
-  // states that can be reached along balanced paths from (to) s that
-  // have have close (open) parentheses matching the paren ID exiting
-  // (entering) those states.
+  // Given a paren ID and a state ID s, returns an iterator over states that can
+  // be reached along balanced paths from (to) s that have have close (open)
+  // parentheses matching the paren ID exiting (entering) those states.
   SetIterator FindStates(Label paren_id, StateId s) const {
-    ParenState<A> paren_state(paren_id, s);
-    typename StateSetMap::const_iterator id_it = set_map_.find(paren_state);
-    if (id_it == set_map_.end()) {
+    const State paren_state(paren_id, s);
+    const auto it = set_map_.find(paren_state);
+    if (it == set_map_.end()) {
       return state_sets_.FindSet(-1);
     } else {
-      return state_sets_.FindSet(id_it->second);
+      return state_sets_.FindSet(it->second);
     }
   }
 
-  // Given a paren Id and a state ID s, return an iterator over
-  // arcs that exit (enter) s and are labeled with a close (open)
-  // parenthesis matching the paren ID.
+  // Given a paren ID and a state ID s, return an iterator over arcs that exit
+  // (enter) s and are labeled with a close (open) parenthesis matching the
+  // paren ID.
   ParenArcIterator FindParenArcs(Label paren_id, StateId s) const {
-    ParenState<A> paren_state(paren_id, s);
+    const State paren_state(paren_id, s);
     return ParenArcIterator(paren_arc_multimap_,
                             paren_arc_multimap_.find(paren_state));
   }
 
  private:
-  // DFS that gathers paren and state set information.
-  // Bool returns false when cycle detected.
+  // Returns false when cycle detected during DFS gathering paren and state set
+  // information.
   bool DFSearch(StateId s);
 
   // Unions state sets together gathered by the DFS.
   void ComputeStateSet(StateId s);
 
-  // Gather state set(s) from state 'nexts'.
-  void UpdateStateSet(StateId nexts, std::set<Label> *paren_set,
+  // Gathers state set(s) from state.
+  void UpdateStateSet(StateId nextstate, std::set<Label> *paren_set,
                       std::vector<std::set<StateId>> *state_sets) const;
 
-  const Fst<A> &fst_;
-  const std::vector<std::pair<Label, Label>> &parens_;  // Paren ID -> Labels
-  bool close_;                                       // Close/open paren info?
-  std::unordered_map<Label, Label> paren_id_map_;      // Paren labels -> ID
-  ParenMultiMap paren_multimap_;                     // Paren reachability
-  ParenArcMultiMap paren_arc_multimap_;              // Paren Arcs
-  std::vector<char> state_color_;                    // DFS state
-  mutable Collection<ssize_t, StateId> state_sets_;  // Reachable states -> ID
-  StateSetMap set_map_;                              // ID -> Reachable states
+  const Fst<Arc> &fst_;
+  // Paren IDs to labels.
+  const std::vector<std::pair<Label, Label>> &parens_;
+  // Close/open paren info?
+  const bool close_;
+  // Labels to paren IDs.
+  std::unordered_map<Label, Label> paren_map_;
+  // Paren reachability.
+  ParenMultimap paren_multimap_;
+  // Paren arcs.
+  ParenArcMultimap paren_arc_multimap_;
+  // DFS states.
+  std::vector<uint8> state_color_;
+  // Reachable states to IDs.
+  mutable Collection<ssize_t, StateId> state_sets_;
+  // IDs to reachable states.
+  StateSetMap set_map_;
   bool error_;
+
   PdtParenReachable(const PdtParenReachable &) = delete;
   PdtParenReachable &operator=(const PdtParenReachable &) = delete;
 };
 
-// DFS that gathers paren and state set information.
-template <class A>
-bool PdtParenReachable<A>::DFSearch(StateId s) {
-  if (s >= state_color_.size()) state_color_.resize(s + 1, kDfsWhite);
-
-  if (state_color_[s] == kDfsBlack) return true;
-
-  if (state_color_[s] == kDfsGrey) return false;
-
-  state_color_[s] = kDfsGrey;
-
-  for (ArcIterator<Fst<A>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-    const A &arc = aiter.Value();
-
-    typename std::unordered_map<Label, Label>::const_iterator pit =
-        paren_id_map_.find(arc.ilabel);
-    if (pit != paren_id_map_.end()) {  // paren?
-      Label paren_id = pit->second;
-      if (arc.ilabel == parens_[paren_id].first) {  // open paren
+// Gathers paren and state set information.
+template <class Arc>
+bool PdtParenReachable<Arc>::DFSearch(StateId s) {
+  static constexpr uint8 kWhiteState = 0x01;  // Undiscovered.
+  static constexpr uint8 kGreyState = 0x02;   // Discovered & unfinished.
+  static constexpr uint8 kBlackState = 0x04;  // Finished.
+  if (s >= state_color_.size()) state_color_.resize(s + 1, kWhiteState);
+  if (state_color_[s] == kBlackState) return true;
+  if (state_color_[s] == kGreyState) return false;
+  state_color_[s] = kGreyState;
+  for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
+    const auto &arc = aiter.Value();
+    const auto it = paren_map_.find(arc.ilabel);
+    if (it != paren_map_.end()) {  // Paren?
+      const auto paren_id = it->second;
+      if (arc.ilabel == parens_[paren_id].first) {  // Open paren?
         if (!DFSearch(arc.nextstate)) return false;
-        for (SetIterator set_iter = FindStates(paren_id, arc.nextstate);
+        for (auto set_iter = FindStates(paren_id, arc.nextstate);
              !set_iter.Done(); set_iter.Next()) {
-          for (ParenArcIterator paren_arc_iter =
+          for (auto paren_arc_iter =
                    FindParenArcs(paren_id, set_iter.Element());
                !paren_arc_iter.Done(); paren_arc_iter.Next()) {
-            const A &cparc = paren_arc_iter.Value();
+            const auto &cparc = paren_arc_iter.Value();
             if (!DFSearch(cparc.nextstate)) return false;
           }
         }
       }
-    } else {  // non-paren
-      if (!DFSearch(arc.nextstate)) return false;
+    } else if (!DFSearch(arc.nextstate)) {  // Non-paren.
+      return false;
     }
   }
   ComputeStateSet(s);
-  state_color_[s] = kDfsBlack;
+  state_color_[s] = kBlackState;
   return true;
 }
 
-// Unions state sets together gathered by the DFS.
-template <class A>
-void PdtParenReachable<A>::ComputeStateSet(StateId s) {
+// Unions state sets.
+template <class Arc>
+void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
   std::set<Label> paren_set;
   std::vector<std::set<StateId>> state_sets(parens_.size());
-  for (ArcIterator<Fst<A>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-    const A &arc = aiter.Value();
-
-    typename std::unordered_map<Label, Label>::const_iterator pit =
-        paren_id_map_.find(arc.ilabel);
-    if (pit != paren_id_map_.end()) {  // paren?
-      Label paren_id = pit->second;
-      if (arc.ilabel == parens_[paren_id].first) {  // open paren
-        for (SetIterator set_iter = FindStates(paren_id, arc.nextstate);
+  for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
+    const auto &arc = aiter.Value();
+    const auto it = paren_map_.find(arc.ilabel);
+    if (it != paren_map_.end()) {  // Paren?
+      const auto paren_id = it->second;
+      if (arc.ilabel == parens_[paren_id].first) {  // Open paren?
+        for (auto set_iter = FindStates(paren_id, arc.nextstate);
              !set_iter.Done(); set_iter.Next()) {
-          for (ParenArcIterator paren_arc_iter =
+          for (auto paren_arc_iter =
                    FindParenArcs(paren_id, set_iter.Element());
                !paren_arc_iter.Done(); paren_arc_iter.Next()) {
-            const A &cparc = paren_arc_iter.Value();
+            const auto &cparc = paren_arc_iter.Value();
             UpdateStateSet(cparc.nextstate, &paren_set, &state_sets);
           }
         }
-      } else {  // close paren
+      } else {  // Close paren.
         paren_set.insert(paren_id);
         state_sets[paren_id].insert(s);
-        ParenState<A> paren_state(paren_id, s);
+        const State paren_state(paren_id, s);
         paren_arc_multimap_.insert(std::make_pair(paren_state, arc));
       }
-    } else {  // non-paren
+    } else {  // Non-paren.
       UpdateStateSet(arc.nextstate, &paren_set, &state_sets);
     }
   }
-
   std::vector<StateId> state_set;
   for (auto paren_iter = paren_set.begin(); paren_iter != paren_set.end();
        ++paren_iter) {
     state_set.clear();
-    Label paren_id = *paren_iter;
+    const auto paren_id = *paren_iter;
     paren_multimap_.insert(std::make_pair(s, paren_id));
     for (auto state_iter = state_sets[paren_id].begin();
          state_iter != state_sets[paren_id].end(); ++state_iter) {
       state_set.push_back(*state_iter);
     }
-    ParenState<A> paren_state(paren_id, s);
+    const State paren_state(paren_id, s);
     set_map_[paren_state] = state_sets_.FindId(state_set);
   }
 }
 
-// Gather state set(s) from state 'nexts'.
-template <class A>
-void PdtParenReachable<A>::UpdateStateSet(
-    StateId nexts, std::set<Label> *paren_set,
+// Gathers state sets.
+template <class Arc>
+void PdtParenReachable<Arc>::UpdateStateSet(
+    StateId nextstate, std::set<Label> *paren_set,
     std::vector<std::set<StateId>> *state_sets) const {
-  for (ParenIterator paren_iter = FindParens(nexts); !paren_iter.Done();
+  for (auto paren_iter = FindParens(nextstate); !paren_iter.Done();
        paren_iter.Next()) {
-    Label paren_id = paren_iter.Value();
+    const auto paren_id = paren_iter.Value();
     paren_set->insert(paren_id);
-    for (SetIterator set_iter = FindStates(paren_id, nexts); !set_iter.Done();
+    for (auto set_iter = FindStates(paren_id, nextstate); !set_iter.Done();
          set_iter.Next()) {
       (*state_sets)[paren_id].insert(set_iter.Element());
     }
   }
 }
 
-// Store balancing parenthesis data for a PDT. Allows on-the-fly
-// construction (e.g. in PdtShortestPath) unlike PdtParenReachable above.
-template <class A>
+// Stores balancing parenthesis data for a PDT. Unlike PdtParenReachable above
+// this allows on-the-fly construction (e.g., in PdtShortestPath).
+template <class Arc>
 class PdtBalanceData {
  public:
-  typedef typename A::StateId StateId;
-  typedef typename A::Label Label;
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
 
-  // Hash set for open parens
-  typedef std::unordered_set<ParenState<A>, typename ParenState<A>::Hash>
-      OpenParenSet;
+  using State = ParenState<Arc>;
+  using StateHash = typename State::Hash;
+
+  // Set for open parens.
+  using OpenParenSet = std::unordered_set<State, StateHash>;
 
   // Maps from open paren destination state to parenthesis ID.
-  typedef std::unordered_multimap<StateId, Label> OpenParenMap;
+  using OpenParenMap = std::unordered_multimap<StateId, Label>;
 
   // Maps from open paren state to source states of matching close parens
-  typedef std::unordered_multimap<ParenState<A>, StateId,
-                                  typename ParenState<A>::Hash> CloseParenMap;
+  using CloseParenMap = std::unordered_multimap<State, StateId, StateHash>;
 
-  // Maps from open paren state to close source set ID
-  typedef std::unordered_map<ParenState<A>, ssize_t,
-                             typename ParenState<A>::Hash> CloseSourceMap;
+  // Maps from open paren state to close source set ID.
+  using CloseSourceMap = std::unordered_map<State, ssize_t, StateHash>;
 
-  typedef typename Collection<ssize_t, StateId>::SetIterator SetIterator;
+  using SetIterator = typename Collection<ssize_t, StateId>::SetIterator;
 
   PdtBalanceData() {}
 
@@ -337,107 +321,103 @@ class PdtBalanceData {
     close_paren_map_.clear();
   }
 
-  // Adds an open parenthesis with destination state 'open_dest'.
+  // Adds an open parenthesis with destination state open_dest.
   void OpenInsert(Label paren_id, StateId open_dest) {
-    ParenState<A> key(paren_id, open_dest);
+    const State key(paren_id, open_dest);
     if (!open_paren_set_.count(key)) {
       open_paren_set_.insert(key);
-      open_paren_map_.insert(std::make_pair(open_dest, paren_id));
+      open_paren_map_.emplace(open_dest, paren_id);
     }
   }
 
-  // Adds a matching closing parenthesis with source state
-  // 'close_source' that balances an open_parenthesis with destination
-  // state 'open_dest' if OpenInsert() previously called
-  // (o.w. CloseInsert() does nothing).
+  // Adds a matching closing parenthesis with source state close_source
+  // balancing an open_parenthesis with destination state open_dest if
+  // OpenInsert() previously called.
   void CloseInsert(Label paren_id, StateId open_dest, StateId close_source) {
-    ParenState<A> key(paren_id, open_dest);
-    if (open_paren_set_.count(key))
-      close_paren_map_.insert(std::make_pair(key, close_source));
+    const State key(paren_id, open_dest);
+    if (open_paren_set_.count(key)) {
+      close_paren_map_.emplace(key, close_source);
+    }
   }
 
-  // Find close paren source states matching an open parenthesis.
-  // Methods that follow, iterate through those matching states.
-  // Should be called only after FinishInsert(open_dest).
+  // Finds close paren source states matching an open parenthesis. The following
+  // methods are then used to iterate through those matching states. Should be
+  // called only after FinishInsert(open_dest).
   SetIterator Find(Label paren_id, StateId open_dest) {
-    ParenState<A> close_key(paren_id, open_dest);
-    typename CloseSourceMap::const_iterator id_it =
-        close_source_map_.find(close_key);
-    if (id_it == close_source_map_.end()) {
+    const State key(paren_id, open_dest);
+    const auto it = close_source_map_.find(key);
+    if (it == close_source_map_.end()) {
       return close_source_sets_.FindSet(-1);
     } else {
-      return close_source_sets_.FindSet(id_it->second);
+      return close_source_sets_.FindSet(it->second);
     }
   }
 
-  // Call when all open and close parenthesis insertions wrt open
-  // parentheses entering 'open_dest' are finished. Must be called
-  // before Find(open_dest). Stores close paren source state sets
-  // efficiently.
+  // Called when all open and close parenthesis insertions (w.r.t. open
+  // parentheses entering state open_dest) are finished. Must be called before
+  // Find(open_dest).
   void FinishInsert(StateId open_dest) {
     std::vector<StateId> close_sources;
     for (auto oit = open_paren_map_.find(open_dest);
          oit != open_paren_map_.end() && oit->first == open_dest;) {
-      Label paren_id = oit->second;
+      const auto paren_id = oit->second;
       close_sources.clear();
-      ParenState<A> okey(paren_id, open_dest);
-      open_paren_set_.erase(open_paren_set_.find(okey));
-      for (auto cit = close_paren_map_.find(okey);
-           cit != close_paren_map_.end() && cit->first == okey;) {
+      const State key(paren_id, open_dest);
+      open_paren_set_.erase(open_paren_set_.find(key));
+      for (auto cit = close_paren_map_.find(key);
+           cit != close_paren_map_.end() && cit->first == key;) {
         close_sources.push_back(cit->second);
         close_paren_map_.erase(cit++);
       }
       std::sort(close_sources.begin(), close_sources.end());
       auto unique_end = std::unique(close_sources.begin(), close_sources.end());
       close_sources.resize(unique_end - close_sources.begin());
-
-      if (!close_sources.empty())
-        close_source_map_[okey] = close_source_sets_.FindId(close_sources);
+      if (!close_sources.empty()) {
+        close_source_map_[key] = close_source_sets_.FindId(close_sources);
+      }
       open_paren_map_.erase(oit++);
     }
   }
 
-  // Return a new balance data object representing the reversed balance
+  // Returns a new balance data object representing the reversed balance
   // information.
-  PdtBalanceData<A> *Reverse(StateId num_states, StateId num_split,
-                             StateId state_id_shift) const;
+  PdtBalanceData<Arc> *Reverse(StateId num_states, StateId num_split,
+                               StateId state_id_shift) const;
 
  private:
-  OpenParenSet open_paren_set_;  // open par. at dest?
-
-  OpenParenMap open_paren_map_;                      // open parens per state
-  ParenState<A> open_dest_;                          // cur open dest. state
-  typename OpenParenMap::const_iterator open_iter_;  // cur open parens/state
-
-  CloseParenMap close_paren_map_;  // close states/open
-                                   //  paren and state
-
-  CloseSourceMap close_source_map_;  // paren, state to set ID
+  // Open paren at destintation state?
+  OpenParenSet open_paren_set_;
+  // Open parens per state.
+  OpenParenMap open_paren_map_;
+  // Current open destination state.
+  State open_dest_;
+  // Current open paren/state.
+  typename OpenParenMap::const_iterator open_iter_;
+  // Close states to (open paren, state).
+  CloseParenMap close_paren_map_;
+  // (Paren, state) to set ID.
+  CloseSourceMap close_source_map_;
   mutable Collection<ssize_t, StateId> close_source_sets_;
 };
 
 // Return a new balance data object representing the reversed balance
 // information.
-template <class A>
-PdtBalanceData<A> *PdtBalanceData<A>::Reverse(StateId num_states,
-                                              StateId num_split,
-                                              StateId state_id_shift) const {
-  PdtBalanceData<A> *bd = new PdtBalanceData<A>;
+template <class Arc>
+PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
+    StateId num_states, StateId num_split, StateId state_id_shift) const {
+  auto *bd = new PdtBalanceData<Arc>;
   std::unordered_set<StateId> close_sources;
-  StateId split_size = num_states / num_split;
-
+  const auto split_size = num_states / num_split;
   for (StateId i = 0; i < num_states; i += split_size) {
     close_sources.clear();
-
-    for (typename CloseSourceMap::const_iterator sit =
-             close_source_map_.begin();
-         sit != close_source_map_.end(); ++sit) {
-      ParenState<A> okey = sit->first;
-      StateId open_dest = okey.state_id;
-      Label paren_id = okey.paren_id;
-      for (SetIterator set_iter = close_source_sets_.FindSet(sit->second);
+    for (auto it = close_source_map_.begin(); it != close_source_map_.end();
+         ++it) {
+      const auto &okey = it->first;
+      const auto open_dest = okey.state_id;
+      const auto paren_id = okey.paren_id;
+      for (auto set_iter = close_source_sets_.FindSet(it->second);
            !set_iter.Done(); set_iter.Next()) {
-        StateId close_source = set_iter.Element();
+        const auto close_source = set_iter.Element();
         if ((close_source < i) || (close_source >= i + split_size)) continue;
         close_sources.insert(close_source + state_id_shift);
         bd->OpenInsert(paren_id, close_source + state_id_shift);
@@ -445,16 +425,14 @@ PdtBalanceData<A> *PdtBalanceData<A>::Reverse(StateId num_states,
                         open_dest + state_id_shift);
       }
     }
-
-    for (typename std::unordered_set<StateId>::const_iterator it =
-             close_sources.begin();
-         it != close_sources.end(); ++it) {
+    for (auto it = close_sources.begin(); it != close_sources.end(); ++it) {
       bd->FinishInsert(*it);
     }
   }
   return bd;
 }
 
+}  // namespace internal
 }  // namespace fst
 
 #endif  // FST_EXTENSIONS_PDT_PAREN_H_

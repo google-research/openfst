@@ -11,8 +11,8 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, MutableFstClass *, EpsNormalizeType>
-    EpsNormalizeArgs;
+using EpsNormalizeArgs =
+    args::Package<const FstClass &, MutableFstClass *, EpsNormalizeType>;
 
 template <class Arc>
 void EpsNormalize(EpsNormalizeArgs *args) {

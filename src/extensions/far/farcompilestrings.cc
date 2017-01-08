@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <fst/extensions/far/farscript.h>
-#include <fst/extensions/far/util.h>
+#include <fst/extensions/far/getters.h>
 #include <fstream>
 
 DEFINE_string(key_prefix, "", "Prefix to append to keys");
@@ -31,22 +31,22 @@ DEFINE_string(symbols, "", "Label symbol table");
 DEFINE_string(unknown_symbol, "", "");
 DEFINE_bool(file_list_input, false,
             "Each input file contains a list of files to be processed");
-DEFINE_bool(keep_symbols, false, "Store symbol table in Far file");
+DEFINE_bool(keep_symbols, false, "Store symbol table in the FAR file");
 DEFINE_bool(initial_symbols, true,
-            "When keep_symbols==true, stores symbol table only for the first"
-            " Fst in archive.");
+            "When keep_symbols is true, stores symbol table only for the first"
+            " FST in archive.");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
 
   string usage = "Compiles a set of strings as FSTs and stores them in";
-  usage += " a finite-state archive.\n\n Usage:";
+  usage += " a finite-state archive.\n\n  Usage:";
   usage += argv[0];
   usage += " [in1.txt [[in2.txt ...] out.far]]\n";
 
   std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  fst::ExpandArgs(argc, argv, &argc, &argv);
+  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<string> in_fnames;
   if (FLAGS_file_list_input) {
@@ -59,19 +59,30 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc - 1; ++i)
       in_fnames.push_back(argv[i]);
   }
-  if (in_fnames.empty())
+  if (in_fnames.empty()) {
     in_fnames.push_back(argc == 2 && strcmp(argv[1], "-") != 0 ? argv[1] : "");
+  }
 
   string out_fname =
       argc > 2 && strcmp(argv[argc - 1], "-") != 0 ? argv[argc - 1] : "";
 
-  fst::FarEntryType fet = fst::StringToFarEntryType(FLAGS_entry_type);
-  fst::FarTokenType ftt = fst::StringToFarTokenType(FLAGS_token_type);
-  fst::FarType far_type = fst::FarTypeFromString(FLAGS_far_type);
+  fst::FarEntryType entry_type;
+  if (!s::GetFarEntryType(FLAGS_entry_type, &entry_type)) {
+    LOG(ERROR) << "Unknown or unsupported FAR entry type: " << FLAGS_entry_type;
+    return 1;
+  }
+
+  fst::FarTokenType token_type;
+  if (!s::GetFarTokenType(FLAGS_token_type, &token_type)) {
+    LOG(ERROR) << "Unkonwn or unsupported FAR token type: " << FLAGS_token_type;
+    return 1;
+  }
+
+  const auto far_type = s::GetFarType(FLAGS_far_type);
 
   s::FarCompileStrings(in_fnames, out_fname, FLAGS_arc_type, FLAGS_fst_type,
-                       far_type, FLAGS_generate_keys, fet, ftt, FLAGS_symbols,
-                       FLAGS_unknown_symbol, FLAGS_keep_symbols,
+                       far_type, FLAGS_generate_keys, entry_type, token_type,
+                       FLAGS_symbols, FLAGS_unknown_symbol, FLAGS_keep_symbols,
                        FLAGS_initial_symbols, FLAGS_allow_negative_labels,
                        FLAGS_key_prefix, FLAGS_key_suffix);
 

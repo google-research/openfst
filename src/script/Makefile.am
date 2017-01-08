@@ -13,5 +13,5 @@ stateiterator-class.cc synchronize.cc text-io.cc topsort.cc union.cc \
 weight-class.cc verify.cc
 
 libfstscript_la_LIBADD = ../lib/libfst.la -lm $(DL_LIBS)
-libfstscript_la_LDFLAGS = -version-info 5:0:0
+libfstscript_la_LDFLAGS = -version-info 6:0:0
 endif

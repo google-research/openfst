@@ -16,7 +16,7 @@ namespace fst {
 namespace script {
 
 // 1: Decode using encoder on disk.
-typedef args::Package<MutableFstClass *, const string &> DecodeArgs1;
+using DecodeArgs1 = args::Package<MutableFstClass *, const string &>;
 
 template <class Arc>
 void Decode(DecodeArgs1 *args) {
@@ -33,7 +33,7 @@ void Decode(DecodeArgs1 *args) {
 void Decode(MutableFstClass *fst, const string &coder_fname);
 
 // 2: Decode using an EncodeMapperClass.
-typedef args::Package<MutableFstClass *, const EncodeMapperClass &> DecodeArgs2;
+using DecodeArgs2 = args::Package<MutableFstClass *, const EncodeMapperClass &>;
 
 template <class Arc>
 void Decode(DecodeArgs2 *args) {

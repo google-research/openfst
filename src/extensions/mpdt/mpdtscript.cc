@@ -21,9 +21,8 @@ namespace script {
 
 void MPdtCompose(const FstClass &ifst1, const FstClass &ifst2,
                  const std::vector<LabelPair> &parens,
-                 const std::vector<int64> &assignments,
-                 MutableFstClass *ofst, const MPdtComposeOptions &copts,
-                 bool left_pdt) {
+                 const std::vector<int64> &assignments, MutableFstClass *ofst,
+                 const MPdtComposeOptions &copts, bool left_pdt) {
   if (!ArcTypesMatch(ifst1, ifst2, "MPdtCompose") ||
       !ArcTypesMatch(ifst1, *ofst, "MPdtCompose")) return;
   MPdtComposeArgs args(ifst1, ifst2, parens, assignments, ofst, copts,
@@ -31,31 +30,26 @@ void MPdtCompose(const FstClass &ifst1, const FstClass &ifst2,
   Apply<Operation<MPdtComposeArgs>>("MPdtCompose", ifst1.ArcType(), &args);
 }
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<LabelPair> &parens,
-                const std::vector<int64> &assignments,
-                MutableFstClass *ofst, const MPdtExpandOptions &opts) {
+void MPdtExpand(const FstClass &ifst, const std::vector<LabelPair> &parens,
+                const std::vector<int64> &assignments, MutableFstClass *ofst,
+                const MPdtExpandOptions &opts) {
   MPdtExpandArgs args(ifst, parens, assignments, ofst, opts);
   Apply<Operation<MPdtExpandArgs>>("MPdtExpand", ifst.ArcType(), &args);
 }
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<LabelPair> &parens,
-                const std::vector<int64> &assignments,
-                MutableFstClass *ofst, bool connect) {
+void MPdtExpand(const FstClass &ifst, const std::vector<LabelPair> &parens,
+                const std::vector<int64> &assignments, MutableFstClass *ofst,
+                bool connect) {
   MPdtExpand(ifst, parens, assignments, ofst, MPdtExpandOptions(connect));
 }
 
-void MPdtReverse(const FstClass &ifst,
-                 const std::vector<LabelPair> &parens,
-                 std::vector<int64> *assignments,
-                 MutableFstClass *ofst) {
+void MPdtReverse(const FstClass &ifst, const std::vector<LabelPair> &parens,
+                 std::vector<int64> *assignments, MutableFstClass *ofst) {
   MPdtReverseArgs args(ifst, parens, assignments, ofst);
   Apply<Operation<MPdtReverseArgs>>("MPdtReverse", ifst.ArcType(), &args);
 }
 
-void PrintMPdtInfo(const FstClass &ifst,
-                   const std::vector<LabelPair> &parens,
+void PrintMPdtInfo(const FstClass &ifst, const std::vector<LabelPair> &parens,
                    const std::vector<int64> &assignments) {
   PrintMPdtInfoArgs args(ifst, parens, assignments);
   Apply<Operation<PrintMPdtInfoArgs>>("PrintMPdtInfo", ifst.ArcType(), &args);

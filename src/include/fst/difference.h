@@ -6,8 +6,8 @@
 #ifndef FST_LIB_DIFFERENCE_H_
 #define FST_LIB_DIFFERENCE_H_
 
-#include <algorithm>
-#include <vector>
+#include <memory>
+
 
 #include <fst/cache.h>
 #include <fst/complement.h>
@@ -16,24 +16,27 @@
 
 namespace fst {
 
-template <class A, class M = Matcher<Fst<A>>,
-          class F = SequenceComposeFilter<M>,
-          class T = GenericComposeStateTable<A, typename F::FilterState>>
-struct DifferenceFstOptions : public ComposeFstOptions<A, M, F, T> {
-  explicit DifferenceFstOptions(const CacheOptions &opts, M *mat1 = 0,
-                                M *mat2 = 0, F *filt = 0, T *sttable = 0)
-      : ComposeFstOptions<A, M, F, T>(mat1, mat2, filt, sttable) {}
-
-  DifferenceFstOptions() {}
+template <class Arc, class M = Matcher<Fst<Arc>>,
+          class Filter = SequenceComposeFilter<M>,
+          class StateTable =
+              GenericComposeStateTable<Arc, typename Filter::FilterState>>
+struct DifferenceFstOptions
+    : public ComposeFstOptions<Arc, M, Filter, StateTable> {
+  explicit DifferenceFstOptions(const CacheOptions &opts = CacheOptions(),
+                                M *matcher1 = nullptr, M *matcher2 = nullptr,
+                                Filter *filter = nullptr,
+                                StateTable *state_table = nullptr)
+      : ComposeFstOptions<Arc, M, Filter, StateTable>(opts, matcher1, matcher2,
+                                                      filter, state_table) {}
 };
 
-// Computes the difference between two FSAs. This version is a delayed
-// Fst. Only strings that are in the first automaton but not in second
-// are retained in the result.
+// Computes the difference between two FSAs. This version is a delayed FST.
+// Only strings that are in the first automaton but not in second are retained
+// in the result.
 //
-// The first argument must be an acceptor; the second argument must be
-// an unweighted, epsilon-free, deterministic acceptor. One of the
-// arguments must be label-sorted.
+// The first argument must be an acceptor; the second argument must be an
+// unweighted, epsilon-free, deterministic acceptor. One of the arguments must
+// be label-sorted.
 //
 // Complexity: same as ComposeFst.
 //
@@ -41,26 +44,27 @@ struct DifferenceFstOptions : public ComposeFstOptions<A, M, F, T> {
 template <class A>
 class DifferenceFst : public ComposeFst<A> {
  public:
-  using ComposeFst<A>::CreateBase1;
+  using Arc = A;
+  using Weight = typename Arc::Weight;
+  using StateId = typename Arc::StateId;
 
-  typedef A Arc;
-  typedef typename A::Weight Weight;
-  typedef typename A::StateId StateId;
+  using ComposeFst<Arc>::CreateBase1;
 
   // A - B = A ^ B'.
-  DifferenceFst(const Fst<A> &fst1, const Fst<A> &fst2,
+  DifferenceFst(const Fst<Arc> &fst1, const Fst<Arc> &fst2,
                 const CacheOptions &opts = CacheOptions())
-      : ComposeFst<A>(CreateDifferenceImplWithCacheOpts(fst1, fst2, opts)) {
+      : ComposeFst<Arc>(CreateDifferenceImplWithCacheOpts(fst1, fst2, opts)) {
     if (!fst1.Properties(kAcceptor, true)) {
       FSTERROR() << "DifferenceFst: 1st argument not an acceptor";
       GetImpl()->SetProperties(kError, kError);
     }
   }
 
-  template <class M, class F, class T>
-  DifferenceFst(const Fst<A> &fst1, const Fst<A> &fst2,
-                const DifferenceFstOptions<A, M, F, T> &opts)
-      : ComposeFst<A>(
+  template <class Matcher, class Filter, class StateTable>
+  DifferenceFst(
+      const Fst<Arc> &fst1, const Fst<Arc> &fst2,
+      const DifferenceFstOptions<Arc, Matcher, Filter, StateTable> &opts)
+      : ComposeFst<Arc>(
             CreateDifferenceImplWithDifferenceOpts(fst1, fst2, opts)) {
     if (!fst1.Properties(kAcceptor, true)) {
       FSTERROR() << "DifferenceFst: 1st argument not an acceptor";
@@ -69,75 +73,76 @@ class DifferenceFst : public ComposeFst<A> {
   }
 
   // See Fst<>::Copy() for doc.
-  DifferenceFst(const DifferenceFst<A> &fst, bool safe = false)
-      : ComposeFst<A>(fst, safe) {}
+  DifferenceFst(const DifferenceFst<Arc> &fst, bool safe = false)
+      : ComposeFst<Arc>(fst, safe) {}
 
   // Get a copy of this DifferenceFst. See Fst<>::Copy() for further doc.
-  DifferenceFst<A> *Copy(bool safe = false) const override {
-    return new DifferenceFst<A>(*this, safe);
+  DifferenceFst<Arc> *Copy(bool safe = false) const override {
+    return new DifferenceFst<Arc>(*this, safe);
   }
 
  private:
-  using Impl = ComposeFstImplBase<A>;
+  using Impl = internal::ComposeFstImplBase<Arc>;
   using ImplToFst<Impl>::GetImpl;
 
   static std::shared_ptr<Impl> CreateDifferenceImplWithCacheOpts(
-      const Fst<A> &fst1, const Fst<A> &fst2, const CacheOptions &opts) {
-    typedef RhoMatcher<Matcher<Fst<A>>> R;
-    ComplementFst<A> cfst(fst2);
-    ComposeFstOptions<A, R> copts(
-        CacheOptions(), new R(fst1, MATCH_NONE),
-        new R(cfst, MATCH_INPUT, ComplementFst<A>::kRhoLabel));
+      const Fst<Arc> &fst1, const Fst<Arc> &fst2, const CacheOptions &opts) {
+    using RM = RhoMatcher<Matcher<Fst<A>>>;
+    ComplementFst<Arc> cfst(fst2);
+    ComposeFstOptions<A, RM> copts(
+        CacheOptions(), new RM(fst1, MATCH_NONE),
+        new RM(cfst, MATCH_INPUT, ComplementFst<Arc>::kRhoLabel));
     return CreateBase1(fst1, cfst, copts);
   }
 
-  template <class M, class F, class T>
+  template <class Matcher, class Filter, class StateTable>
   static std::shared_ptr<Impl> CreateDifferenceImplWithDifferenceOpts(
-      const Fst<A> &fst1, const Fst<A> &fst2,
-      const DifferenceFstOptions<A, M, F, T> &opts) {
-    typedef RhoMatcher<M> R;
-
-    ComplementFst<A> cfst(fst2);
-    ComposeFstOptions<A, R> copts(opts);
-    copts.matcher1 = new R(fst1, MATCH_NONE, kNoLabel, MATCHER_REWRITE_ALWAYS,
-                           opts.matcher1);
-    copts.matcher2 = new R(cfst, MATCH_INPUT, ComplementFst<A>::kRhoLabel,
-                           MATCHER_REWRITE_ALWAYS, opts.matcher2);
-
+      const Fst<Arc> &fst1, const Fst<Arc> &fst2,
+      const DifferenceFstOptions<Arc, Matcher, Filter, StateTable> &opts) {
+    using RM = RhoMatcher<Matcher>;
+    ComplementFst<Arc> cfst(fst2);
+    ComposeFstOptions<Arc, RM> copts(opts);
+    copts.matcher1 = new RM(fst1, MATCH_NONE, kNoLabel, MATCHER_REWRITE_ALWAYS,
+                            opts.matcher1);
+    copts.matcher2 = new RM(cfst, MATCH_INPUT, ComplementFst<Arc>::kRhoLabel,
+                            MATCHER_REWRITE_ALWAYS, opts.matcher2);
     return CreateBase1(fst1, cfst, copts);
   }
 };
 
 // Specialization for DifferenceFst.
-template <class A>
-class StateIterator<DifferenceFst<A>> : public StateIterator<ComposeFst<A>> {
+template <class Arc>
+class StateIterator<DifferenceFst<Arc>>
+    : public StateIterator<ComposeFst<Arc>> {
  public:
-  explicit StateIterator(const DifferenceFst<A> &fst)
-      : StateIterator<ComposeFst<A>>(fst) {}
+  explicit StateIterator(const DifferenceFst<Arc> &fst)
+      : StateIterator<ComposeFst<Arc>>(fst) {}
 };
 
 // Specialization for DifferenceFst.
-template <class A>
-class ArcIterator<DifferenceFst<A>> : public ArcIterator<ComposeFst<A>> {
+template <class Arc>
+class ArcIterator<DifferenceFst<Arc>> : public ArcIterator<ComposeFst<Arc>> {
  public:
-  typedef typename A::StateId StateId;
+  using StateId = typename Arc::StateId;
 
-  ArcIterator(const DifferenceFst<A> &fst, StateId s)
-      : ArcIterator<ComposeFst<A>>(fst, s) {}
+  ArcIterator(const DifferenceFst<Arc> &fst, StateId s)
+      : ArcIterator<ComposeFst<Arc>>(fst, s) {}
 };
+
+using DifferenceOptions = ComposeOptions;
 
 // Useful alias when using StdArc.
-typedef DifferenceFst<StdArc> StdDifferenceFst;
+using StdDifferenceFst = DifferenceFst<StdArc>;
 
-typedef ComposeOptions DifferenceOptions;
+using DifferenceOptions = ComposeOptions;
 
-// Computes the difference between two FSAs. This version is writes
-// the difference to an output MutableFst. Only strings that are in
-// the first automaton but not in second are retained in the result.
+// Computes the difference between two FSAs. This version writes the difference
+// to an output MutableFst. Only strings that are in the first automaton but not
+// in the second are retained in the result.
 //
-// The first argument must be an acceptor; the second argument must be
-// an unweighted, epsilon-free, deterministic acceptor.  One of the
-// arguments must be label-sorted.
+// The first argument must be an acceptor; the second argument must be an
+// unweighted, epsilon-free, deterministic acceptor. One of the arguments must
+// be label-sorted.
 //
 // Complexity: same as Compose.
 //
@@ -146,8 +151,7 @@ template <class Arc>
 void Difference(const Fst<Arc> &ifst1, const Fst<Arc> &ifst2,
                 MutableFst<Arc> *ofst,
                 const DifferenceOptions &opts = DifferenceOptions()) {
-  typedef Matcher<Fst<Arc>> M;
-
+  using M = Matcher<Fst<Arc>>;
   if (opts.filter_type == AUTO_FILTER) {
     CacheOptions nopts;
     nopts.gc_limit = 0;  // Cache only the last state for fastest copy.
@@ -165,7 +169,6 @@ void Difference(const Fst<Arc> &ifst1, const Fst<Arc> &ifst2,
     dopts.gc_limit = 0;  // Cache only the last state for fastest copy.
     *ofst = DifferenceFst<Arc>(ifst1, ifst2, dopts);
   }
-
   if (opts.connect) Connect(ofst);
 }
 

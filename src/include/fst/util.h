@@ -23,9 +23,7 @@
 #include <fstream>
 
 
-//
-// UTILITY FOR ERROR HANDLING
-//
+// Utility for error handling.
 
 DECLARE_bool(fst_error_fatal);
 
@@ -34,11 +32,9 @@ DECLARE_bool(fst_error_fatal);
 
 namespace fst {
 
-//
-// UTILITIES FOR TYPE I/O
-//
+// Utility for type I/O.
 
-// Read some types from an input stream.
+// Reads types from an input stream.
 
 // Generic case.
 template <class T,
@@ -67,7 +63,7 @@ inline std::istream &ReadType(std::istream &strm, string *s) {  // NOLINT
   return strm;
 }
 
-// Declares some types that write to an output stream.
+// Declares types that can be read from an input stream.
 
 #define DECL_READ_TYPE2(C)          \
   template <typename S, typename T> \
@@ -127,7 +123,7 @@ void StlReserve(std::vector<S, T> *c, int64 n) {
   }
 
 READ_STL_SEQ_TYPE(vector);
-READ_STL_SEQ_TYPE(list);
+READ_STL_SEQ_TYPE(std::list);
 
 // STL associative container.
 #define READ_STL_ASSOC_TYPE(C)                                       \
@@ -149,7 +145,7 @@ READ_STL_ASSOC_TYPE(std::unordered_set);
 READ_STL_ASSOC_TYPE(std::map);
 READ_STL_ASSOC_TYPE(std::unordered_map);
 
-// Write some types to an output stream.
+// Writes types to an output stream.
 
 // Generic case.
 template <class T,
@@ -173,7 +169,7 @@ inline std::ostream &WriteType(std::ostream &strm, const string &s) {  // NOLINT
   return strm.write(s.data(), ns);
 }
 
-// Declares some types that write to an output stream.
+// Declares types that can be written to an output stream.
 
 #define DECL_WRITE_TYPE2(C)         \
   template <typename S, typename T> \
@@ -213,7 +209,7 @@ inline std::ostream &WriteType(std::ostream &strm,
   }
 
 WRITE_STL_SEQ_TYPE(vector);
-WRITE_STL_SEQ_TYPE(list);
+WRITE_STL_SEQ_TYPE(std::list);
 
 // STL associative container.
 #define WRITE_STL_ASSOC_TYPE(C)                                             \
@@ -262,12 +258,10 @@ void WeightToStr(Weight w, string *s) {
 
 // Utilities for reading/writing integer pairs (typically labels)
 
-// Modifies line, vec consists of pointers to of buffer beginning
-// with line.
+// Modifies line using a vector of pointers to a buffer beginning with line.
 void SplitToVector(char *line, const char *delim, std::vector<char *> *vec,
                    bool omit_empty_strings);
 
-// Returns true on success
 template <typename I>
 bool ReadIntPairs(const string &filename, std::vector<std::pair<I, I>> *pairs,
                   bool allow_negative = false) {
@@ -276,11 +270,9 @@ bool ReadIntPairs(const string &filename, std::vector<std::pair<I, I>> *pairs,
     LOG(ERROR) << "ReadIntPairs: Can't open file: " << filename;
     return false;
   }
-
   const int kLineLen = 8096;
   char line[kLineLen];
   size_t nline = 0;
-
   pairs->clear();
   while (strm.getline(line, kLineLen)) {
     ++nline;
@@ -293,7 +285,6 @@ bool ReadIntPairs(const string &filename, std::vector<std::pair<I, I>> *pairs,
                  << "file = " << filename << ", line = " << nline;
       return false;
     }
-
     bool err;
     I i1 = StrToInt64(col[0], filename, nline, allow_negative, &err);
     if (err) return false;
@@ -304,7 +295,6 @@ bool ReadIntPairs(const string &filename, std::vector<std::pair<I, I>> *pairs,
   return true;
 }
 
-// Returns true on success
 template <typename I>
 bool WriteIntPairs(const string &filename,
                    const std::vector<std::pair<I, I>> &pairs) {
@@ -316,7 +306,6 @@ bool WriteIntPairs(const string &filename,
       return false;
     }
   }
-
   for (ssize_t n = 0; n < pairs.size(); ++n) {
     *strm << pairs[n].first << "\t" << pairs[n].second << "\n";
   }
@@ -329,7 +318,7 @@ bool WriteIntPairs(const string &filename,
   return true;
 }
 
-// Utilities for reading/writing label pairs
+// Utilities for reading/writing label pairs.
 
 template <typename Label>
 bool ReadLabelPairs(const string &filename,
@@ -348,23 +337,20 @@ bool WriteLabelPairs(const string &filename,
 
 void ConvertToLegalCSymbol(string *s);
 
-//
-// UTILITIES FOR STREAM I/O
-//
+// Utilities for stream I/O.
 
 bool AlignInput(std::istream &strm);
 bool AlignOutput(std::ostream &strm);
 
-// An associative container for which testing membership is
-// faster than an STL set if members are restricted to an interval
-// that excludes most non-members. A 'Key' must have ==, !=, and < defined.
-// Element 'NoKey' should be a key that marks an uninitialized key and
-// is otherwise unused. 'Find()' returns an STL const_iterator to the match
-// found, otherwise it equals 'End()'.
+// An associative container for which testing membership is faster than an STL
+// set if members are restricted to an interval that excludes most non-members.
+// A Key must have ==, !=, and < operators defined. Element NoKey should be a
+// key that marks an uninitialized key and is otherwise unused. Find() returns
+// an STL const_iterator to the match found, otherwise it equals End().
 template <class Key, Key NoKey>
 class CompactSet {
  public:
-  typedef typename std::set<Key>::const_iterator const_iterator;
+  using const_iterator = typename std::set<Key>::const_iterator;
 
   CompactSet() : min_key_(NoKey), max_key_(NoKey) {}
 
@@ -428,7 +414,7 @@ class CompactSet {
   Key min_key_;
   Key max_key_;
 
-  void operator=(const CompactSet<Key, NoKey> &);  // disallow
+  void operator=(const CompactSet &) = delete;
 };
 
 }  // namespace fst

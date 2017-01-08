@@ -11,7 +11,7 @@
 namespace fst {
 namespace script {
 
-typedef args::WithReturnValue<bool, MutableFstClass *> TopSortArgs;
+using TopSortArgs = args::WithReturnValue<bool, MutableFstClass *>;
 
 template <class Arc>
 void TopSort(TopSortArgs *args) {

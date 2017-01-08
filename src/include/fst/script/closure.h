@@ -11,7 +11,7 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<MutableFstClass *, const ClosureType> ClosureArgs;
+using ClosureArgs = args::Package<MutableFstClass *, const ClosureType>;
 
 template <class Arc>
 void Closure(ClosureArgs *args) {

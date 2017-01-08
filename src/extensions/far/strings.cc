@@ -1,6 +1,9 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <cmath>
+#include <string>
+
 #include <fst/extensions/far/compile-strings.h>
 #include <fstream>
 
@@ -9,8 +12,8 @@ DEFINE_string(far_field_separator, "\t",
 
 namespace fst {
 
-// Compute the minimal length required to
-// encode each line number as a decimal number
+// Computes the minimal length required to encode each line number as a decimal
+// number.
 int KeySize(const char *filename) {
   std::ifstream istrm(filename);
   istrm.seekg(0);

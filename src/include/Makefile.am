@@ -9,10 +9,10 @@ far_include_headers = fst/extensions/far/compile-strings.h \
 fst/extensions/far/create.h fst/extensions/far/equal.h \
 fst/extensions/far/extract.h fst/extensions/far/far.h \
 fst/extensions/far/far-class.h fst/extensions/far/farlib.h \
-fst/extensions/far/farscript.h fst/extensions/far/info.h \
-fst/extensions/far/isomorphic.h fst/extensions/far/print-strings.h \
-fst/extensions/far/script-impl.h fst/extensions/far/stlist.h \
-fst/extensions/far/sttable.h fst/extensions/far/util.h
+fst/extensions/far/farscript.h fst/extensions/far/getters.h \
+fst/extensions/far/info.h fst/extensions/far/isomorphic.h \
+fst/extensions/far/print-strings.h fst/extensions/far/script-impl.h \
+fst/extensions/far/stlist.h fst/extensions/far/sttable.h
 endif
 
 if HAVE_LINEAR
@@ -36,6 +36,34 @@ fst/extensions/ngram/ngram-fst.h fst/extensions/ngram/nthbit.h
 endif
 
 if HAVE_PDT
+pdt_include_headers = fst/extensions/pdt/collection.h \
+fst/extensions/pdt/compose.h fst/extensions/pdt/expand.h \
+fst/extensions/pdt/getters.h fst/extensions/pdt/info.h \
+fst/extensions/pdt/paren.h fst/extensions/pdt/pdt.h \
+fst/extensions/pdt/pdtlib.h fst/extensions/pdt/pdtscript.h \
+fst/extensions/pdt/replace.h fst/extensions/pdt/reverse.h \
+fst/extensions/pdt/shortest-path.h
+endif
+
+if HAVE_SPECIAL
+special_include_headers = fst/extensions/special/phi-fst.h \
+fst/extensions/special/rho-fst.h fst/extensions/special/sigma-fst.h
+endif
+
+if HAVE_GRM
+far_include_headers = fst/extensions/far/compile-strings.h \
+fst/extensions/far/create.h fst/extensions/far/equal.h \
+fst/extensions/far/extract.h fst/extensions/far/far.h \
+fst/extensions/far/far-class.h fst/extensions/far/farlib.h \
+fst/extensions/far/farscript.h fst/extensions/far/getters.h \
+fst/extensions/far/info.h fst/extensions/far/isomorphic.h \
+fst/extensions/far/print-strings.h fst/extensions/far/script-impl.h \
+fst/extensions/far/stlist.h fst/extensions/far/sttable.h
+mpdt_include_headers = fst/extensions/mpdt/compose.h \
+fst/extensions/mpdt/expand.h fst/extensions/mpdt/info.h \
+fst/extensions/mpdt/mpdt.h fst/extensions/mpdt/mpdtlib.h \
+fst/extensions/mpdt/mpdtscript.h fst/extensions/mpdt/read_write_utils.h \
+fst/extensions/mpdt/reverse.h
 pdt_include_headers = fst/extensions/pdt/collection.h \
 fst/extensions/pdt/compose.h fst/extensions/pdt/expand.h \
 fst/extensions/pdt/getters.h fst/extensions/pdt/info.h \
@@ -98,4 +126,5 @@ $(linear_include_headers) \
 $(mpdt_include_headers) \
 $(ngram_include_headers) \
 $(pdt_include_headers) \
-$(script_include_headers)
+$(script_include_headers) \
+$(special_include_headers)

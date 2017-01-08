@@ -3,6 +3,8 @@
 //
 // Creates the Kleene closure of an FST.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -10,11 +12,10 @@
 #include <fst/script/getters.h>
 
 DEFINE_bool(closure_plus, false,
-            "Do not add the empty path (T+ instead of T*)");
+            "Do not add the empty path (T+ instead of T*)?");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
-  using fst::script::FstClass;
   using fst::script::MutableFstClass;
 
   string usage = "Creates the Kleene closure of an FST.\n\n  Usage: ";
@@ -28,17 +29,15 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_fname = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  string out_fname = argc > 2 ? argv[2] : "";
+  const string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_fname, true));
+  std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_name, true));
   if (!fst) return 1;
 
-  auto closure_type = s::GetClosureType(FLAGS_closure_plus);
+  s::Closure(fst.get(), s::GetClosureType(FLAGS_closure_plus));
 
-  s::Closure(fst.get(), closure_type);
-
-  fst->Write(out_fname);
+  fst->Write(out_name);
 
   return 0;
 }

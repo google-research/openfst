@@ -70,8 +70,8 @@ class ArcIteratorClassImpl : public ArcIteratorImplBase {
 
 class ArcIteratorClass;
 
-typedef args::Package<const FstClass &, int64, ArcIteratorClass *>
-    InitArcIteratorClassArgs;
+using InitArcIteratorClassArgs =
+    args::Package<const FstClass &, int64, ArcIteratorClass *>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class ArcIteratorClass {
@@ -144,10 +144,10 @@ class MutableArcIteratorClassImpl
     aiter_.SetFlags(flags, mask);
   }
 
-  void SetValue(const Arc &a) { aiter_.SetValue(a); }
+  void SetValue(const Arc &arc) { aiter_.SetValue(arc); }
 
-  void SetValue(const ArcClass &a) override {
-    aiter_.SetValue(a.GetArc<Arc>());
+  void SetValue(const ArcClass &ac) override {
+    aiter_.SetValue(ac.GetArc<Arc>());
   }
 
   // This is returned by value because it has not yet been constructed, and
@@ -162,8 +162,8 @@ class MutableArcIteratorClassImpl
 
 class MutableArcIteratorClass;
 
-typedef args::Package<MutableFstClass *, int64,
-    MutableArcIteratorClass *> InitMutableArcIteratorClassArgs;
+using InitMutableArcIteratorClassArgs =
+    args::Package<MutableFstClass *, int64, MutableArcIteratorClass *>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class MutableArcIteratorClass {

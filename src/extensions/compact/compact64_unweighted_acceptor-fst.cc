@@ -4,10 +4,7 @@
 #include <fst/fst.h>
 #include <fst/compact-fst.h>
 
-using fst::FstRegisterer;
-using fst::CompactUnweightedAcceptorFst;
-using fst::LogArc;
-using fst::StdArc;
+namespace fst {
 
 static FstRegisterer<
     CompactUnweightedAcceptorFst<StdArc, uint64>>
@@ -15,3 +12,5 @@ static FstRegisterer<
 static FstRegisterer<
     CompactUnweightedAcceptorFst<LogArc, uint64>>
     CompactUnweightedAcceptorFst_LogArc_uint64_registerer;
+
+}  // namespace fst

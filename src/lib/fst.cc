@@ -7,27 +7,17 @@
 
 #include <sstream>
 
-// Include these so they are registered
+// Include these for registration.
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
 #include <fst/edit-fst.h>
 #include <fst/matcher-fst.h>
 #include <fst/vector-fst.h>
 
-// FST flag definitions
+// FST flag definitions.
 
 DEFINE_bool(fst_verify_properties, false,
-            "Verify fst properties queried by TestProperties");
-
-DEFINE_string(fst_weight_separator, ",",
-              "Character separator between printed composite weights; "
-              "must be a single character");
-
-DEFINE_string(fst_weight_parentheses, "",
-              "Characters enclosing the first weight of a printed composite "
-              "weight (e.g. pair weight, tuple weight and derived classes) to "
-              "ensure proper I/O of nested composite weights; "
-              "must have size 0 (none) or 2 (open and close parenthesis)");
+            "Verify FST properties queried by TestProperties");
 
 DEFINE_bool(fst_default_cache_gc, true, "Enable garbage collection of cache");
 
@@ -44,7 +34,7 @@ DEFINE_string(fst_read_mode, "read",
 
 namespace fst {
 
-// Register VectorFst, ConstFst and EditFst for common arcs types
+// Registers VectorFst, ConstFst and EditFst for common arcs types.
 REGISTER_FST(VectorFst, StdArc);
 REGISTER_FST(VectorFst, LogArc);
 REGISTER_FST(VectorFst, Log64Arc);
@@ -67,16 +57,16 @@ REGISTER_FST(CompactUnweightedFst, LogArc);
 REGISTER_FST(CompactUnweightedAcceptorFst, StdArc);
 REGISTER_FST(CompactUnweightedAcceptorFst, LogArc);
 
-// Fst type definitions for lookahead Fsts.
-extern const char arc_lookahead_fst_type[] = "arc_lookahead";
-extern const char ilabel_lookahead_fst_type[] = "ilabel_lookahead";
-extern const char olabel_lookahead_fst_type[] = "olabel_lookahead";
+// FST type definitions for lookahead FSTs.
+const char arc_lookahead_fst_type[] = "arc_lookahead";
+const char ilabel_lookahead_fst_type[] = "ilabel_lookahead";
+const char olabel_lookahead_fst_type[] = "olabel_lookahead";
 
-// Identifies stream data as an FST (and its endianity)
-static const int32 kFstMagicNumber = 2125659606;
+// Identifies stream data as an FST (and its endianity).
+constexpr int32 kFstMagicNumber = 2125659606;
 
-// Check for Fst magic number in stream, to indicate
-// caller function that the stream content is an Fst header;
+// Checks for FST magic number in stream, to indicate caller function that the
+// stream content is an FST header.
 bool IsFstHeader(std::istream &strm, const string &source) {
   int64 pos = strm.tellg();
   bool match = true;
@@ -89,8 +79,8 @@ bool IsFstHeader(std::istream &strm, const string &source) {
   return match;
 }
 
-// Check Fst magic number and read in Fst header.
-// If rewind = true, reposition stream to before call (if possible).
+// Checks FST magic number and reads in the header; if rewind = true,
+// the stream is repositioned before call if possible.
 bool FstHeader::Read(std::istream &strm, const string &source, bool rewind) {
   int64 pos = 0;
   if (rewind) pos = strm.tellg();
@@ -101,7 +91,6 @@ bool FstHeader::Read(std::istream &strm, const string &source, bool rewind) {
       if (rewind) strm.seekg(pos);
       return false;
   }
-
   ReadType(strm, &fsttype_);
   ReadType(strm, &arctype_);
   ReadType(strm, &version_);
@@ -118,7 +107,7 @@ bool FstHeader::Read(std::istream &strm, const string &source, bool rewind) {
   return true;
 }
 
-// Write Fst magic number and Fst header.
+// Writes FST magic number and FST header.
 bool FstHeader::Write(std::ostream &strm, const string &source) const {
   WriteType(strm, kFstMagicNumber);
   WriteType(strm, fsttype_);
@@ -142,35 +131,33 @@ string FstHeader::DebugString() const {
   return ostrm.str();
 }
 
-FstReadOptions::FstReadOptions(const string &src, const FstHeader *hdr,
-                               const SymbolTable *isym, const SymbolTable *osym)
-    : source(src),
-      header(hdr),
-      isymbols(isym),
-      osymbols(osym),
+FstReadOptions::FstReadOptions(const string &source, const FstHeader *header,
+                               const SymbolTable *isymbols,
+                               const SymbolTable *osymbols)
+    : source(source),
+      header(header),
+      isymbols(isymbols),
+      osymbols(osymbols),
       read_isymbols(true),
       read_osymbols(true) {
   mode = ReadMode(FLAGS_fst_read_mode);
 }
 
-FstReadOptions::FstReadOptions(const string &src, const SymbolTable *isym,
-                               const SymbolTable *osym)
-    : source(src),
+FstReadOptions::FstReadOptions(const string &source,
+                               const SymbolTable *isymbols,
+                               const SymbolTable *osymbols)
+    : source(source),
       header(nullptr),
-      isymbols(isym),
-      osymbols(osym),
+      isymbols(isymbols),
+      osymbols(osymbols),
       read_isymbols(true),
       read_osymbols(true) {
   mode = ReadMode(FLAGS_fst_read_mode);
 }
 
 FstReadOptions::FileReadMode FstReadOptions::ReadMode(const string &mode) {
-  if (mode == "read") {
-    return READ;
-  }
-  if (mode == "map") {
-    return MAP;
-  }
+  if (mode == "read") return READ;
+  if (mode == "map") return MAP;
   LOG(ERROR) << "Unknown file read mode " << mode;
   return READ;
 }

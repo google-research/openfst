@@ -48,8 +48,6 @@ class FstClassBase {
   virtual bool Write(const string &fname) const = 0;
   virtual bool Write(std::ostream &, const FstWriteOptions &) const = 0;
   virtual ~FstClassBase() {}
-
- protected:
 };
 
 // Adds all the MutableFst methods.
@@ -89,13 +87,13 @@ class FstClassImpl : public FstClassImplBase {
   explicit FstClassImpl(const Fst<Arc> &impl) : impl_(impl.Copy()) {}
 
   // Warning: calling this method casts the FST to a mutable FST.
-  bool AddArc(int64 s, const ArcClass &a) override {
+  bool AddArc(int64 s, const ArcClass &ac) override {
     if (!ValidStateId(s)) return false;
     // Note that we do not check that the destination state is valid, so users
     // can add arcs before they add the corresponding states. Verify can be
     // used to determine whether any arc has a nonexisting destination.
-    Arc arc(a.ilabel, a.olabel, *a.weight.GetWeight<typename Arc::Weight>(),
-            a.nextstate);
+    Arc arc(ac.ilabel, ac.olabel, *ac.weight.GetWeight<typename Arc::Weight>(),
+            ac.nextstate);
     static_cast<MutableFst<Arc> *>(impl_.get())->AddArc(s, arc);
     return true;
   }
@@ -206,21 +204,21 @@ class FstClassImpl : public FstClassImplBase {
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  void SetInputSymbols(SymbolTable *is) override {
-    static_cast<MutableFst<Arc> *>(impl_.get())->SetInputSymbols(is);
+  void SetInputSymbols(SymbolTable *isyms) override {
+    static_cast<MutableFst<Arc> *>(impl_.get())->SetInputSymbols(isyms);
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  bool SetFinal(int64 s, const WeightClass &w) override {
+  bool SetFinal(int64 s, const WeightClass &weight) override {
     if (!ValidStateId(s)) return false;
-    static_cast<MutableFst<Arc> *>(impl_.get())->SetFinal(s,
-        *w.GetWeight<typename Arc::Weight>());
+    static_cast<MutableFst<Arc> *>(impl_.get())
+        ->SetFinal(s, *weight.GetWeight<typename Arc::Weight>());
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  void SetOutputSymbols(SymbolTable *os) override {
-    static_cast<MutableFst<Arc> *>(impl_.get())->SetOutputSymbols(os);
+  void SetOutputSymbols(SymbolTable *osyms) override {
+    static_cast<MutableFst<Arc> *>(impl_.get())->SetOutputSymbols(osyms);
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
@@ -245,7 +243,7 @@ class FstClassImpl : public FstClassImplBase {
     }
     // If the FST is already expanded, CountStates calls NumStates.
     if (s < 0 || s >= CountStates(*impl_)) {
-      FSTERROR() << "State ID " << s << " not valid.";
+      FSTERROR() << "State ID " << s << " not valid";
       return false;
     }
     return true;
@@ -320,6 +318,8 @@ class FstClass : public FstClassBase {
 
   static FstClass *Read(std::istream &istr, const string &source);
 
+  static FstClass *ReadFromString(const string &fst_string);
+
   int64 Start() const override { return impl_->Start(); }
 
   bool ValidStateId(int64 s) const override { return impl_->ValidStateId(s); }
@@ -329,7 +329,7 @@ class FstClass : public FstClassBase {
   // Helper that logs an ERROR if the weight type of an FST and a WeightClass
   // don't match.
 
-  bool WeightTypesMatch(const WeightClass &w, const string &op_name) const;
+  bool WeightTypesMatch(const WeightClass &weight, const string &op_name) const;
 
   bool Write(const string &fname) const override { return impl_->Write(fname); }
 
@@ -337,20 +337,22 @@ class FstClass : public FstClassBase {
     return impl_->Write(ostr, opts);
   }
 
+  const string WriteToString() const;
+
   ~FstClass() override {}
 
   // These methods are required by IO registration.
 
   template <class Arc>
   static FstClassImplBase *Convert(const FstClass &other) {
-    FSTERROR() << "Doesn't make sense to convert any class to type FstClass.";
+    FSTERROR() << "Doesn't make sense to convert any class to type FstClass";
     return nullptr;
   }
 
   template <class Arc>
   static FstClassImplBase *Create() {
     FSTERROR() << "Doesn't make sense to create an FstClass with a "
-               << "particular arc type.";
+               << "particular arc type";
     return nullptr;
   }
 
@@ -404,9 +406,9 @@ class FstClass : public FstClassBase {
 
 class MutableFstClass : public FstClass {
  public:
-  bool AddArc(int64 s, const ArcClass &a) {
-    if (!WeightTypesMatch(a.weight, "AddArc")) return false;
-    return GetImpl()->AddArc(s, a);
+  bool AddArc(int64 s, const ArcClass &ac) {
+    if (!WeightTypesMatch(ac.weight, "AddArc")) return false;
+    return GetImpl()->AddArc(s, ac);
   }
 
   int64 AddState() { return GetImpl()->AddState(); }
@@ -437,14 +439,18 @@ class MutableFstClass : public FstClass {
 
   static MutableFstClass *Read(const string &fname, bool convert = false);
 
-  void SetInputSymbols(SymbolTable *is) { GetImpl()->SetInputSymbols(is); }
-
-  bool SetFinal(int64 s, const WeightClass &w) {
-    if (!WeightTypesMatch(w, "SetFinal")) return false;
-    return GetImpl()->SetFinal(s, w);
+  void SetInputSymbols(SymbolTable *isyms) {
+    GetImpl()->SetInputSymbols(isyms);
   }
 
-  void SetOutputSymbols(SymbolTable *os) { GetImpl()->SetOutputSymbols(os); }
+  bool SetFinal(int64 s, const WeightClass &weight) {
+    if (!WeightTypesMatch(weight, "SetFinal")) return false;
+    return GetImpl()->SetFinal(s, weight);
+  }
+
+  void SetOutputSymbols(SymbolTable *osyms) {
+    GetImpl()->SetOutputSymbols(osyms);
+  }
 
   void SetProperties(uint64 props, uint64 mask) {
     GetImpl()->SetProperties(props, mask);
@@ -472,14 +478,14 @@ class MutableFstClass : public FstClass {
   template <class Arc>
   static FstClassImplBase *Convert(const FstClass &other) {
     FSTERROR() << "Doesn't make sense to convert any class to type "
-               << "MutableFstClass.";
+               << "MutableFstClass";
     return nullptr;
   }
 
   template <class Arc>
   static FstClassImplBase *Create() {
     FSTERROR() << "Doesn't make sense to create a MutableFstClass with a "
-               << "particular arc type.";
+               << "particular arc type";
     return nullptr;
   }
 

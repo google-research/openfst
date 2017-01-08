@@ -18,30 +18,33 @@
 
 namespace fst {
 
-template <class A>
+template <class Arc>
 class Fst;
+
 struct FstReadOptions;
 
 // This class represents a single entry in a FstRegister
-template <class A>
+template <class Arc>
 struct FstRegisterEntry {
-  typedef Fst<A> *(*Reader)(std::istream &strm, const FstReadOptions &opts);
-  typedef Fst<A> *(*Converter)(const Fst<A> &fst);
+  using Reader = Fst<Arc> *(*)(std::istream &istrm, const FstReadOptions &opts);
+  using Converter = Fst<Arc> *(*)(const Fst<Arc> &fst);
 
   Reader reader;
   Converter converter;
-  FstRegisterEntry() : reader(nullptr), converter(nullptr) {}
-  FstRegisterEntry(Reader r, Converter c) : reader(r), converter(c) {}
+
+  explicit FstRegisterEntry(Reader reader = nullptr,
+                            Converter converter = nullptr)
+      : reader(reader), converter(converter) {}
 };
 
 // This class maintains the correspondence between a string describing
 // an FST type, and its reader and converter.
-template <class A>
+template <class Arc>
 class FstRegister
-    : public GenericRegister<string, FstRegisterEntry<A>, FstRegister<A>> {
+    : public GenericRegister<string, FstRegisterEntry<Arc>, FstRegister<Arc>> {
  public:
-  typedef typename FstRegisterEntry<A>::Reader Reader;
-  typedef typename FstRegisterEntry<A>::Converter Converter;
+  using Reader = typename FstRegisterEntry<Arc>::Reader;
+  using Converter = typename FstRegisterEntry<Arc>::Converter;
 
   const Reader GetReader(const string &type) const {
     return this->GetEntry(type).reader;
@@ -54,51 +57,48 @@ class FstRegister
  protected:
   string ConvertKeyToSoFilename(const string &key) const override {
     string legal_type(key);
-
     ConvertToLegalCSymbol(&legal_type);
-
     return legal_type + "-fst.so";
   }
 };
 
-// This class registers an Fst type for generic reading and creating.
-// The Fst type must have a default constructor and a copy constructor
-// from 'Fst<Arc>' for this to work.
-template <class F>
-class FstRegisterer : public GenericRegisterer<FstRegister<typename F::Arc>> {
+// This class registers an FST type for generic reading and creating.
+// The type must have a default constructor and a copy constructor from
+// Fst<Arc>.
+template <class FST>
+class FstRegisterer : public GenericRegisterer<FstRegister<typename FST::Arc>> {
  public:
-  typedef typename F::Arc Arc;
-  typedef typename FstRegister<Arc>::Entry Entry;
-  typedef typename FstRegister<Arc>::Reader Reader;
+  using Arc = typename FST::Arc;
+  using Entry = typename FstRegister<Arc>::Entry;
+  using Reader = typename FstRegister<Arc>::Reader;
 
   FstRegisterer()
-      : GenericRegisterer<FstRegister<typename F::Arc>>(F().Type(),
-                                                         BuildEntry()) {}
+      : GenericRegisterer<FstRegister<typename FST::Arc>>(FST().Type(),
+                                                          BuildEntry()) {}
 
  private:
   static Entry BuildEntry() {
-    F *(*reader)(std::istream &strm, const FstReadOptions &opts) = &F::Read;
-
-    return Entry(reinterpret_cast<Reader>(reader), &FstRegisterer<F>::Convert);
+    FST *(*reader)(std::istream & strm, const FstReadOptions &opts) =
+        &FST::Read;
+    return Entry(reinterpret_cast<Reader>(reader),
+                 &FstRegisterer<FST>::Convert);
   }
 
-  static Fst<Arc> *Convert(const Fst<Arc> &fst) { return new F(fst); }
+  static Fst<Arc> *Convert(const Fst<Arc> &fst) { return new FST(fst); }
 };
 
 // Convenience macro to generate static FstRegisterer instance.
-#define REGISTER_FST(F, A) \
-  static fst::FstRegisterer<F<A>> F##_##A##_registerer
+#define REGISTER_FST(FST, Arc) \
+  static fst::FstRegisterer<FST<Arc>> FST##_##Arc##_registerer
 
-// Converts an fst to type 'type'.
-template <class A>
-Fst<A> *Convert(const Fst<A> &fst, const string &ftype) {
-  FstRegister<A> *registr = FstRegister<A>::GetRegister();
-  const typename FstRegister<A>::Converter converter =
-      registr->GetConverter(ftype);
+// Converts an FST to the specified type.
+template <class Arc>
+Fst<Arc> *Convert(const Fst<Arc> &fst, const string &fst_type) {
+  auto *reg = FstRegister<Arc>::GetRegister();
+  const auto converter = reg->GetConverter(fst_type);
   if (!converter) {
-    string atype = A::Type();
-    FSTERROR() << "Fst::Convert: Unknown FST type " << ftype
-               << " (arc type " << atype << ")";
+    FSTERROR() << "Fst::Convert: Unknown FST type " << fst_type << " (arc type "
+               << Arc::Type() << ")";
     return nullptr;
   }
   return converter(fst);

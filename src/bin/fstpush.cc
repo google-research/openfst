@@ -4,6 +4,8 @@
 // Pushes weights and/or output labels in an FST toward the initial or final
 // states.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -41,9 +43,9 @@ int main(int argc, char **argv) {
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
-  uint32 flags = s::GetPushFlags(FLAGS_push_weights, FLAGS_push_labels,
-                                 FLAGS_remove_total_weight,
-                                 FLAGS_remove_common_affix);
+  const auto flags =
+      s::GetPushFlags(FLAGS_push_weights, FLAGS_push_labels,
+                      FLAGS_remove_total_weight, FLAGS_remove_common_affix);
 
   VectorFstClass ofst(ifst->ArcType());
 

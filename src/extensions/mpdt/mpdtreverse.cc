@@ -3,6 +3,9 @@
 //
 // Reverses an MPDT.
 
+#include <cstring>
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,6 +21,10 @@ DEFINE_string(mpdt_new_parentheses, "",
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::ReadLabelTriples;
+  using fst::WriteLabelTriples;
+  using fst::script::FstClass;
+  using fst::script::VectorFstClass;
 
   string usage = "Reverse an MPDT.\n\n  Usage: ";
   usage += argv[0];
@@ -30,10 +37,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  s::FstClass *ifst = s::FstClass::Read(in_name);
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
   if (FLAGS_mpdt_parentheses.empty()) {
@@ -48,15 +56,17 @@ int main(int argc, char **argv) {
 
   std::vector<s::LabelPair> parens;
   std::vector<int64> assignments;
-  fst::ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments,
-                            false);
+  if (!ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments, false))
+    return 1;
 
-  s::VectorFstClass ofst(ifst->ArcType());
+  VectorFstClass ofst(ifst->ArcType());
+
   s::MPdtReverse(*ifst, parens, &assignments, &ofst);
 
   ofst.Write(out_name);
 
-  fst::WriteLabelTriples(FLAGS_mpdt_new_parentheses, parens, assignments);
+  if (!WriteLabelTriples(FLAGS_mpdt_new_parentheses, parens, assignments))
+    return 1;
 
   return 0;
 }

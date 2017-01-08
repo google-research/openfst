@@ -4,6 +4,8 @@
 #ifndef FST_SCRIPT_RANDGEN_H_
 #define FST_SCRIPT_RANDGEN_H_
 
+#include <ctime>
+
 #include <fst/randgen.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
@@ -12,8 +14,8 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, MutableFstClass *, time_t,
-                      const RandGenOptions<RandArcSelection> &> RandGenArgs;
+using RandGenArgs = args::Package<const FstClass &, MutableFstClass *, time_t,
+                                  const RandGenOptions<RandArcSelection> &>;
 
 template <class Arc>
 void RandGen(RandGenArgs *args) {
@@ -21,34 +23,31 @@ void RandGen(RandGenArgs *args) {
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   time_t seed = args->arg3;
   const RandGenOptions<RandArcSelection> &opts = args->arg4;
-
-  if (opts.arc_selector == UNIFORM_ARC_SELECTOR) {
-    UniformArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<UniformArcSelector<Arc>> ropts(arc_selector, opts.max_length,
-                                                  opts.npath, opts.weighted,
-                                                  opts.remove_total_weight);
+  if (opts.selector == UNIFORM_ARC_SELECTOR) {
+    const UniformArcSelector<Arc> selector(seed);
+    const RandGenOptions<UniformArcSelector<Arc>> ropts(
+        selector, opts.max_length, opts.npath, opts.weighted,
+        opts.remove_total_weight);
     RandGen(ifst, ofst, ropts);
-  } else if (opts.arc_selector == FAST_LOG_PROB_ARC_SELECTOR) {
-    FastLogProbArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<FastLogProbArcSelector<Arc>> ropts(
-        arc_selector, opts.max_length, opts.npath, opts.weighted,
+  } else if (opts.selector == FAST_LOG_PROB_ARC_SELECTOR) {
+    const FastLogProbArcSelector<Arc> selector(seed);
+    const RandGenOptions<FastLogProbArcSelector<Arc>> ropts(
+        selector, opts.max_length, opts.npath, opts.weighted,
         opts.remove_total_weight);
     RandGen(ifst, ofst, ropts);
   } else {
-    LogProbArcSelector<Arc> arc_selector(seed);
-    RandGenOptions<LogProbArcSelector<Arc>> ropts(arc_selector, opts.max_length,
-                                                  opts.npath, opts.weighted,
-                                                  opts.remove_total_weight);
+    const LogProbArcSelector<Arc> selector(seed);
+    const RandGenOptions<LogProbArcSelector<Arc>> ropts(
+        selector, opts.max_length, opts.npath, opts.weighted,
+        opts.remove_total_weight);
     RandGen(ifst, ofst, ropts);
   }
 }
 
-// Client-facing prototype
 void RandGen(const FstClass &ifst, MutableFstClass *ofst,
              time_t seed = time(nullptr),
              const RandGenOptions<RandArcSelection> &opts =
-                 fst::RandGenOptions<fst::script::RandArcSelection>(
-                     fst::script::UNIFORM_ARC_SELECTOR));
+                 RandGenOptions<RandArcSelection>(UNIFORM_ARC_SELECTOR));
 
 }  // namespace script
 }  // namespace fst

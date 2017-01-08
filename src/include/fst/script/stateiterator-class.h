@@ -47,8 +47,8 @@ class StateIteratorClassImpl : public StateIteratorImplBase {
 
 class StateIteratorClass;
 
-typedef args::Package<const FstClass &, StateIteratorClass *>
-    InitStateIteratorClassArgs;
+using InitStateIteratorClassArgs =
+    args::Package<const FstClass &, StateIteratorClass *>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class StateIteratorClass {

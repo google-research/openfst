@@ -7,10 +7,9 @@ ilabel_lookahead-fst.la olabel_lookahead-fst.la
 lib_LTLIBRARIES = libfstlookahead.la
 
 libfstlookahead_la_SOURCES = arc_lookahead-fst.cc ilabel_lookahead-fst.cc \
-olabel_lookahead-fst.cc
-libfstlookahead_la_LDFLAGS = -version-info 5:0:0
-libfstlookahead_la_LIBADD = \
-    ../../lib/libfst.la -lm $(DL_LIBS)
+                             olabel_lookahead-fst.cc
+libfstlookahead_la_LDFLAGS = -version-info 6:0:0
+libfstlookahead_la_LIBADD = ../../lib/libfst.la -lm $(DL_LIBS)
 
 arc_lookahead_fst_la_SOURCES = arc_lookahead-fst.cc
 arc_lookahead_fst_la_LDFLAGS = -module

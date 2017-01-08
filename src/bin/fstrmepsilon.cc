@@ -3,6 +3,8 @@
 //
 // Removes epsilons from an FST.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -21,7 +23,6 @@ DEFINE_string(queue_type, "auto",
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
-  using fst::script::MutableFstClass;
   using fst::script::VectorFstClass;
   using fst::script::WeightClass;
 
@@ -36,13 +37,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_fname = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  string out_fname = argc > 2 ? argv[2] : "";
+  const string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  std::unique_ptr<FstClass> ifst(FstClass::Read(in_fname));
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
-  WeightClass weight_threshold =
+  const auto weight_threshold =
       FLAGS_weight.empty() ? WeightClass::Zero(ifst->WeightType())
                            : WeightClass(ifst->WeightType(), FLAGS_weight);
 
@@ -53,13 +54,14 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  s::RmEpsilonOptions opts(queue_type, FLAGS_delta, FLAGS_connect,
-                           weight_threshold, FLAGS_nstate);
+  const s::RmEpsilonOptions opts(queue_type, FLAGS_delta, FLAGS_connect,
+                                 weight_threshold, FLAGS_nstate);
 
   VectorFstClass ofst(ifst->ArcType());
+
   s::RmEpsilon(*ifst, &ofst, FLAGS_reverse, opts);
 
-  ofst.Write(out_fname);
+  ofst.Write(out_name);
 
   return 0;
 }

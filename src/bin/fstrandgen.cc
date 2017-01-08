@@ -5,6 +5,8 @@
 
 #include <unistd.h>
 
+#include <climits>
+#include <cstring>
 #include <ctime>
 
 #include <memory>
@@ -13,7 +15,7 @@
 #include <fst/script/getters.h>
 #include <fst/script/randgen.h>
 
-DEFINE_int32(max_length, INT_MAX, "Maximum path length");
+DEFINE_int32(max_length, INT32_MAX, "Maximum path length");
 DEFINE_int32(npath, 1, "Number of paths to generate");
 DEFINE_int32(seed, time(nullptr) + getpid(), "Random seed");
 DEFINE_string(select, "uniform",
@@ -43,8 +45,8 @@ int main(int argc, char **argv) {
 
   VLOG(1) << argv[0] << ": Seed = " << FLAGS_seed;
 
-  string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;

@@ -4,6 +4,8 @@
 // Prints out various information about an FST such as number of states
 // and arcs and property values (see properties.h).
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -36,7 +38,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
 
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;

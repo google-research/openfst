@@ -72,37 +72,30 @@ class FstClassIORegister
   string ConvertKeyToSoFilename(const string &key) const override {
     string legal_type(key);
     ConvertToLegalCSymbol(&legal_type);
-
     return legal_type + "-arc.so";
   }
 };
 
-//
 // Struct containing everything needed to register a particular type
-// of FST class (e.g. a plain FstClass, or a MutableFstClass, etc)
-//
+// of FST class (e.g., a plain FstClass, or a MutableFstClass, etc.).
 template <class FstClassType>
 struct IORegistration {
-  typedef FstClassType *(*Reader)(std::istream &stream,
-                                  const FstReadOptions &opts);
+  using Reader = FstClassType *(*)(std::istream &stream,
+                                   const FstReadOptions &opts);
 
-  typedef FstClassImplBase *(*Creator)();
+  using Creator = FstClassImplBase *(*)();
 
-  typedef FstClassImplBase *(*Converter)(const FstClass &other);
+  using Converter = FstClassImplBase *(*)(const FstClass &other);
 
-  typedef FstClassRegEntry<Reader, Creator, Converter> Entry;
+  using Entry = FstClassRegEntry<Reader, Creator, Converter>;
 
-  // FST class Register
-  typedef FstClassIORegister<Reader, Creator, Converter> Register;
+  // FST class Register.
+  using Register = FstClassIORegister<Reader, Creator, Converter>;
 
-  // FST class Register-er
-  typedef GenericRegisterer<FstClassIORegister<Reader, Creator, Converter>>
-      Registerer;
+  // FST class Register-er.
+  using Registerer =
+      GenericRegisterer<FstClassIORegister<Reader, Creator, Converter>>;
 };
-
-//
-// REGISTRATION MACROS
-//
 
 #define REGISTER_FST_CLASS(Class, Arc)                                   \
   static IORegistration<Class>::Registerer Class##_##Arc##_registerer(   \

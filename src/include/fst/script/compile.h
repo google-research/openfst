@@ -55,7 +55,7 @@ struct CompileFstInnerArgs {
 };
 
 // 1
-typedef args::WithReturnValue<FstClass *, CompileFstInnerArgs> CompileFstArgs;
+using CompileFstArgs = args::WithReturnValue<FstClass *, CompileFstInnerArgs>;
 
 // 2
 template <class Arc>
@@ -63,12 +63,10 @@ void CompileFstInternal(CompileFstArgs *args) {
   using fst::Convert;
   using fst::Fst;
   using fst::FstCompiler;
-
   FstCompiler<Arc> fstcompiler(
       args->args.istrm, args->args.source, args->args.isyms, args->args.osyms,
       args->args.ssyms, args->args.accep, args->args.ikeep, args->args.okeep,
       args->args.nkeep, args->args.allow_negative_labels);
-
   const Fst<Arc> *fst = &fstcompiler.Fst();
   if (args->args.fst_type != "vector") {
     fst = Convert<Arc>(*fst, args->args.fst_type);
@@ -77,7 +75,6 @@ void CompileFstInternal(CompileFstArgs *args) {
                  << args->args.fst_type;
     }
   }
-
   args->retval = fst ? new FstClass(*fst) : nullptr;
 }
 

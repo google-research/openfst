@@ -15,38 +15,39 @@
 
 // Generic class representing a globally-stored correspondence between
 // objects of KeyType and EntryType.
+//
 // KeyType must:
-//  a) be such as can be stored as a key in a std::map<>
-//  b) be concatenable with a const char* with the + operator
-//     (or you must subclass and redefine LoadEntryFromSharedObject)
+//
+// * be such as can be stored as a key in a std::map<>.
+// * be concatenable with a const char* with the + operator
+//   (or you must subclass and redefine LoadEntryFromSharedObject)
+//
 // EntryType must be default constructible.
 //
 // The third template parameter should be the type of a subclass of this class
-// (think CRTP). This is to allow GetRegister() to instantiate and return
-// an object of the appropriate type.
+// (think CRTP). This is to allow GetRegister() to instantiate and return an
+// object of the appropriate type.
 
 namespace fst {
 
 template <class KeyType, class EntryType, class RegisterType>
 class GenericRegister {
  public:
-  typedef KeyType Key;
-  typedef EntryType Entry;
+  using Key = KeyType;
+  using Entry = EntryType;
 
   static RegisterType *GetRegister() {
-    FstOnceInit(&register_init_, &RegisterType::Init);
-
-    return register_;
+    static auto reg = new RegisterType;
+    return reg;
   }
 
   void SetEntry(const KeyType &key, const EntryType &entry) {
-    MutexLock l(register_lock_);
-
+    MutexLock l(&register_lock_);
     register_table_.insert(std::make_pair(key, entry));
   }
 
   EntryType GetEntry(const KeyType &key) const {
-    const EntryType *entry = LookupEntry(key);
+    const auto *entry = LookupEntry(key);
     if (entry) {
       return *entry;
     } else {
@@ -63,8 +64,7 @@ class GenericRegister {
 #ifdef FST_NO_DYNAMIC_LINKING
     return EntryType();
 #else
-    string so_filename = ConvertKeyToSoFilename(key);
-
+    const auto so_filename = ConvertKeyToSoFilename(key);
     void *handle = dlopen(so_filename.c_str(), RTLD_LAZY);
     if (handle == nullptr) {
       LOG(ERROR) << "GenericRegister::GetEntry: " << dlerror();
@@ -73,11 +73,10 @@ class GenericRegister {
 #ifdef RUN_MODULE_INITIALIZERS
     RUN_MODULE_INITIALIZERS();
 #endif
-
-    // We assume that the DSO constructs a static object in its global
-    // scope that does the registration. Thus we need only load it, not
-    // call any methods.
-    const EntryType *entry = this->LookupEntry(key);
+    // We assume that the DSO constructs a static object in its global scope
+    // that does the registration. Thus we need only load it, not call any
+    // methods.
+    const auto *entry = this->LookupEntry(key);
     if (entry == nullptr) {
       LOG(ERROR) << "GenericRegister::GetEntry: "
                  << "lookup failed in shared object: " << so_filename;
@@ -91,10 +90,8 @@ class GenericRegister {
   virtual string ConvertKeyToSoFilename(const KeyType &key) const = 0;
 
   virtual const EntryType *LookupEntry(const KeyType &key) const {
-    MutexLock l(register_lock_);
-
-    typename RegisterMapType::const_iterator it = register_table_.find(key);
-
+    MutexLock l(&register_lock_);
+    const auto it = register_table_.find(key);
     if (it != register_table_.end()) {
       return &it->second;
     } else {
@@ -103,50 +100,23 @@ class GenericRegister {
   }
 
  private:
-  typedef std::map<KeyType, EntryType> RegisterMapType;
-
-  static void Init() {
-    register_lock_ = new Mutex;
-    register_ = new RegisterType;
-  }
-
-  static FstOnceType register_init_;
-  static Mutex *register_lock_;
-  static RegisterType *register_;
-
-  RegisterMapType register_table_;
+  mutable Mutex register_lock_;
+  std::map<KeyType, EntryType> register_table_;
 };
 
-template <class KeyType, class EntryType, class RegisterType>
-FstOnceType GenericRegister<KeyType, EntryType,
-                               RegisterType>::register_init_ = FST_ONCE_INIT;
-
-template <class KeyType, class EntryType, class RegisterType>
-Mutex *GenericRegister<KeyType, EntryType, RegisterType>::register_lock_ =
-    nullptr;
-
-template <class KeyType, class EntryType, class RegisterType>
-RegisterType *GenericRegister<KeyType, EntryType, RegisterType>::register_ =
-    nullptr;
-
-//
-// GENERIC REGISTRATION
-//
-
 // Generic register-er class capable of creating new register entries in the
-// given RegisterType template parameter. This type must define types Key
-// and Entry, and have appropriate static GetRegister() and instance
-// SetEntry() functions. An easy way to accomplish this is to have RegisterType
-// be the type of a subclass of GenericRegister.
+// given RegisterType template parameter. This type must define types Key and
+// Entry, and have appropriate static GetRegister() and instance SetEntry()
+// functions. An easy way to accomplish this is to have RegisterType be the
+// type of a subclass of GenericRegister.
 template <class RegisterType>
 class GenericRegisterer {
  public:
-  typedef typename RegisterType::Key Key;
-  typedef typename RegisterType::Entry Entry;
+  using Key = typename RegisterType::Key;
+  using Entry = typename RegisterType::Entry;
 
   GenericRegisterer(Key key, Entry entry) {
-    RegisterType *reg = RegisterType::GetRegister();
-    reg->SetEntry(key, entry);
+    RegisterType::GetRegister()->SetEntry(key, entry);
   }
 };
 

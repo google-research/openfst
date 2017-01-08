@@ -4,12 +4,11 @@
 #include <fst/fst.h>
 #include <fst/compact-fst.h>
 
-using fst::FstRegisterer;
-using fst::CompactUnweightedFst;
-using fst::LogArc;
-using fst::StdArc;
+namespace fst {
 
 static FstRegisterer<CompactUnweightedFst<StdArc, uint8>>
     CompactUnweightedFst_StdArc_uint8_registerer;
 static FstRegisterer<CompactUnweightedFst<LogArc, uint8>>
     CompactUnweightedFst_LogArc_uint8_registerer;
+
+}  // namespace fst

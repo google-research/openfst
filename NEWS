@@ -1,3 +1,13 @@
+OpenFst: Release 1.6
+    * Extensive modernization for C++11 style (1.6.0)
+    * Many classes and constants moved into an internal namespace (1.6.0)
+    * Adds HashMatcher (1.6.0)
+    * Adds Member method to SymbolTable (1.6.0)
+    * Adds the "special" extension and the fstspecial binary; this is similar to
+      fstconvert but accepts arguments for specifying special labels (phi, rho,
+      and sigma) of FSTs (1.6.0)
+    * Exposes allow_negative_label option for Python symbol tables (1.6.0)
+
 OpenFst: Release 1.5
     * Added p-subsequential determinization (1.5.0)
     * Generalized epsilon normalization to non-functional case (1.5.0)

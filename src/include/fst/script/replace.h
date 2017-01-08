@@ -29,8 +29,8 @@ struct ReplaceOptions {
 
 using LabelFstClassPair = std::pair<int64, const FstClass *>;
 
-typedef args::Package<const std::vector<LabelFstClassPair> &,
-                      MutableFstClass *, const ReplaceOptions &> ReplaceArgs;
+using ReplaceArgs = args::Package<const std::vector<LabelFstClassPair> &,
+                                  MutableFstClass *, const ReplaceOptions &>;
 
 template <class Arc>
 void Replace(ReplaceArgs *args) {

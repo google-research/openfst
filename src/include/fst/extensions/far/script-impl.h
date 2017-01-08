@@ -14,6 +14,7 @@ namespace fst {
 namespace script {
 
 string LoadArcTypeFromFar(const string &far_fname);
+
 string LoadArcTypeFromFst(const string &fst_fname);
 
 }  // namespace script

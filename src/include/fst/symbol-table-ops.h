@@ -22,22 +22,18 @@ template <class Arc>
 SymbolTable *PruneSymbolTable(const Fst<Arc> &fst, const SymbolTable &syms,
                               bool input) {
   std::unordered_set<typename Arc::Label> seen;
-  seen.insert(0);  // Always keep epslion
-  StateIterator<Fst<Arc>> siter(fst);
-  for (; !siter.Done(); siter.Next()) {
-    ArcIterator<Fst<Arc>> aiter(fst, siter.Value());
-    for (; !aiter.Done(); aiter.Next()) {
-      typename Arc::Label sym =
-          (input) ? aiter.Value().ilabel : aiter.Value().olabel;
+  seen.insert(0);  // Always keep epsilon.
+  for (StateIterator<Fst<Arc>> siter(fst); !siter.Done(); siter.Next()) {
+    for (ArcIterator<Fst<Arc>> aiter(fst, siter.Value()); !aiter.Done();
+         aiter.Next()) {
+      const auto sym = (input) ? aiter.Value().ilabel : aiter.Value().olabel;
       seen.insert(sym);
     }
   }
-  SymbolTable *pruned = new SymbolTable(syms.Name() + "_pruned");
+  auto *pruned = new SymbolTable(syms.Name() + "_pruned");
   for (SymbolTableIterator stiter(syms); !stiter.Done(); stiter.Next()) {
-    const typename Arc::Label label = stiter.Value();
-    if (seen.count(label)) {
-      pruned->AddSymbol(stiter.Symbol(), label);
-    }
+    const auto label = stiter.Value();
+    if (seen.count(label)) pruned->AddSymbol(stiter.Symbol(), label);
   }
   return pruned;
 }
@@ -59,15 +55,15 @@ SymbolTable *CompactSymbolTable(const SymbolTable &syms);
 //   std::unique_ptr<SymbolTable> bnew(MergeSymbolTable(a.OutputSymbols(),
 //                                     b.InputSymbols(), &relabel);
 //   if (relabel) {
-//     Relabel(b, bnew.get(), NULL);
+//     Relabel(b, bnew.get(), nullptr);
 //   }
 //   b.SetInputSymbols(bnew);
 SymbolTable *MergeSymbolTable(const SymbolTable &left, const SymbolTable &right,
                               bool *right_relabel_output = nullptr);
 
 // Read the symbol table from any Fst::Read()able file, without loading the
-// corresponding Fst.  Returns NULL if the Fst does not contain a symbol table
-// or the symbol table cannot be read.
+// corresponding Fst.  Returns nullptr if the Fst does not contain a symbol
+// table or the symbol table cannot be read.
 SymbolTable *FstReadSymbols(const string &filename, bool input);
 
 // Adds a contiguous range of symbols to a symbol table using a simple prefix

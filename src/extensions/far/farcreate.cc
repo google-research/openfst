@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <fst/extensions/far/farscript.h>
-#include <fst/extensions/far/util.h>
+#include <fst/extensions/far/getters.h>
 #include <fstream>
 
 DEFINE_string(key_prefix, "", "Prefix to append to keys");
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 
   std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  fst::ExpandArgs(argc, argv, &argc, &argv);
+  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<string> in_fnames;
   if (FLAGS_file_list_input) {
@@ -48,10 +48,10 @@ int main(int argc, char **argv) {
   string out_fname =
       argc > 2 && strcmp(argv[argc - 1], "-") != 0 ? argv[argc - 1] : "";
 
-  string arc_type = s::LoadArcTypeFromFst(in_fnames[0]);
+  const auto arc_type = s::LoadArcTypeFromFst(in_fnames[0]);
   if (arc_type.empty()) return 1;
 
-  fst::FarType far_type = fst::FarTypeFromString(FLAGS_far_type);
+  const auto far_type = s::GetFarType(FLAGS_far_type);
 
   s::FarCreate(in_fnames, out_fname, arc_type, FLAGS_generate_keys, far_type,
                FLAGS_key_prefix, FLAGS_key_suffix);

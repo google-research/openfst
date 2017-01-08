@@ -6,6 +6,8 @@
 #ifndef FST_LIB_TUPLE_WEIGHT_H_
 #define FST_LIB_TUPLE_WEIGHT_H_
 
+#include <algorithm>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -14,28 +16,29 @@
 
 namespace fst {
 
-// n-tuple weight, element of the n-th catersian power of W
-template <class W, unsigned int n>
+// n-tuple weight, element of the n-th catersian power of W.
+template <class W, size_t n>
 class TupleWeight {
  public:
-  typedef TupleWeight<typename W::ReverseWeight, n> ReverseWeight;
+  using ReverseWeight = TupleWeight<typename W::ReverseWeight, n>;
 
   TupleWeight() {}
 
-  TupleWeight(const TupleWeight &w) {
-    for (size_t i = 0; i < n; ++i) values_[i] = w.values_[i];
+  TupleWeight(const TupleWeight &other) { values_ = other.values_; }
+
+  TupleWeight<W, n> &operator=(const TupleWeight<W, n> &other) {
+    values_ = other.values_;
+    return *this;
   }
 
   template <class Iterator>
   TupleWeight(Iterator begin, Iterator end) {
-    for (Iterator iter = begin; iter != end; ++iter) {
-      values_[iter - begin] = *iter;
+    for (auto it = begin; it != end; ++it) {
+      values_[it - begin] = *it;
     }
   }
 
-  explicit TupleWeight(const W &w) {
-    for (size_t i = 0; i < n; ++i) values_[i] = w;
-  }
+  explicit TupleWeight(const W &weight) { values_.fill(weight); }
 
   static const TupleWeight<W, n> &Zero() {
     static const TupleWeight<W, n> zero(W::Zero());
@@ -52,44 +55,38 @@ class TupleWeight {
     return no_weight;
   }
 
-  static unsigned int Length() { return n; }
+  constexpr static size_t Length() { return n; }
 
-  std::istream &Read(std::istream &strm) {
-    for (size_t i = 0; i < n; ++i) values_[i].Read(strm);
-    return strm;
+  std::istream &Read(std::istream &istrm) {
+    for (auto i = 0; i < n; ++i) values_[i].Read(istrm);
+    return istrm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {
-    for (size_t i = 0; i < n; ++i) values_[i].Write(strm);
-    return strm;
-  }
-
-  TupleWeight<W, n> &operator=(const TupleWeight<W, n> &w) {
-    for (size_t i = 0; i < n; ++i) values_[i] = w.values_[i];
-    return *this;
+  std::ostream &Write(std::ostream &ostrm) const {
+    for (auto i = 0; i < n; ++i) values_[i].Write(ostrm);
+    return ostrm;
   }
 
   bool Member() const {
-    bool member = true;
-    for (size_t i = 0; i < n; ++i) member = member && values_[i].Member();
-    return member;
+    auto member_test = [](const W &weight) { return weight.Member(); };
+    return std::all_of(values_.begin(), values_.end(), member_test);
   }
 
   size_t Hash() const {
     uint64 hash = 0;
-    for (size_t i = 0; i < n; ++i) hash = 5 * hash + values_[i].Hash();
+    for (auto i = 0; i < n; ++i) hash = 5 * hash + values_[i].Hash();
     return size_t(hash);
   }
 
   TupleWeight<W, n> Quantize(float delta = kDelta) const {
-    TupleWeight<W, n> w;
-    for (size_t i = 0; i < n; ++i) w.values_[i] = values_[i].Quantize(delta);
-    return w;
+    TupleWeight<W, n> weight;
+    for (auto i = 0; i < n; ++i) weight.values_[i] = values_[i].Quantize(delta);
+    return weight;
   }
 
   ReverseWeight Reverse() const {
     TupleWeight<W, n> w;
-    for (size_t i = 0; i < n; ++i) w.values_[i] = values_[i].Reverse();
+    for (auto i = 0; i < n; ++i) w.values_[i] = values_[i].Reverse();
     return w;
   }
 
@@ -98,61 +95,59 @@ class TupleWeight {
   void SetValue(size_t i, const W &w) { values_[i] = w; }
 
  private:
-  W values_[n];
+  std::array<W, n> values_;
 };
 
-template <class W, unsigned int n>
+template <class W, size_t n>
 inline bool operator==(const TupleWeight<W, n> &w1,
                        const TupleWeight<W, n> &w2) {
-  bool equal = true;
-  for (size_t i = 0; i < n; ++i) equal = equal && (w1.Value(i) == w2.Value(i));
-  return equal;
+  for (auto i = 0; i < n; ++i) {
+    if (w1.Value(i) != w2.Value(i)) return false;
+  }
+  return true;
 }
 
-template <class W, unsigned int n>
+template <class W, size_t n>
 inline bool operator!=(const TupleWeight<W, n> &w1,
                        const TupleWeight<W, n> &w2) {
-  bool not_equal = false;
-  for (size_t i = 0; (i < n) && !not_equal; ++i) {
-    not_equal = not_equal || (w1.Value(i) != w2.Value(i));
+  for (auto i = 0; i < n; ++i) {
+    if (w1.Value(i) != w2.Value(i)) return true;
   }
-  return not_equal;
+  return false;
 }
 
-template <class W, unsigned int n>
+template <class W, size_t n>
 inline bool ApproxEqual(const TupleWeight<W, n> &w1,
                         const TupleWeight<W, n> &w2, float delta = kDelta) {
-  bool approx_equal = true;
-  for (size_t i = 0; i < n; ++i) {
-    approx_equal = approx_equal && ApproxEqual(w1.Value(i), w2.Value(i), delta);
+  for (auto i = 0; i < n; ++i) {
+    if (!ApproxEqual(w1.Value(i), w2.Value(i), delta)) return false;
   }
-  return approx_equal;
+  return true;
 }
 
-template <class W, unsigned int n>
+template <class W, size_t n>
 inline std::ostream &operator<<(std::ostream &strm,
                                 const TupleWeight<W, n> &w) {
   CompositeWeightWriter writer(strm);
   writer.WriteBegin();
-  for (size_t i = 0; i < n; ++i) writer.WriteElement(w.Value(i));
+  for (auto i = 0; i < n; ++i) writer.WriteElement(w.Value(i));
   writer.WriteEnd();
   return strm;
 }
 
-template <class W, unsigned int n>
+template <class W, size_t n>
 inline std::istream &operator>>(std::istream &strm, TupleWeight<W, n> &w) {
   CompositeWeightReader reader(strm);
   reader.ReadBegin();
   W v;
-  // Reads first n-1 elements
-  for (size_t i = 0; i < n - 1; ++i) {
+  // Reads first n-1 elements.
+  for (auto i = 0; i < n - 1; ++i) {
     reader.ReadElement(&v);
     w.SetValue(i, v);
   }
-  // Reads  n-th element
+  // Reads n-th element.
   reader.ReadElement(&v, true);
   w.SetValue(n - 1, v);
-
   reader.ReadEnd();
   return strm;
 }

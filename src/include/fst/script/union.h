@@ -11,7 +11,7 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<MutableFstClass *, const FstClass &> UnionArgs;
+using UnionArgs = args::Package<MutableFstClass *, const FstClass &>;
 
 template <class Arc>
 void Union(UnionArgs *args) {

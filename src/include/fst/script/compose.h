@@ -11,8 +11,8 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, const FstClass &, MutableFstClass *,
-                      ComposeFilter> ComposeArgs1;
+using ComposeArgs1 = args::Package<const FstClass &, const FstClass &,
+                                   MutableFstClass *, ComposeFilter>;
 
 template <class Arc>
 void Compose(ComposeArgs1 *args) {
@@ -22,10 +22,10 @@ void Compose(ComposeArgs1 *args) {
   Compose(ifst1, ifst2, ofst, ComposeOptions(args->arg4));
 }
 
-typedef fst::ComposeOptions ComposeOptions;
+using ComposeOptions = fst::ComposeOptions;
 
-typedef args::Package<const FstClass &, const FstClass &, MutableFstClass *,
-                      const ComposeOptions &> ComposeArgs2;
+using ComposeArgs2 = args::Package<const FstClass &, const FstClass &,
+                                   MutableFstClass *, const ComposeOptions &>;
 
 template <class Arc>
 void Compose(ComposeArgs2 *args) {

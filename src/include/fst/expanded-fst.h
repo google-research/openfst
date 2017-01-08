@@ -21,16 +21,17 @@ namespace fst {
 template <class A>
 class ExpandedFst : public Fst<A> {
  public:
-  typedef A Arc;
-  typedef typename A::StateId StateId;
+  using Arc = A;
+  using StateId = typename Arc::StateId;
 
   virtual StateId NumStates() const = 0;  // State count
 
   // Get a copy of this ExpandedFst. See Fst<>::Copy() for further doc.
-  ExpandedFst<A> *Copy(bool safe = false) const override = 0;
+  ExpandedFst<Arc> *Copy(bool safe = false) const override = 0;
 
   // Read an ExpandedFst from an input stream; return NULL on error.
-  static ExpandedFst<A> *Read(std::istream &strm, const FstReadOptions &opts) {
+  static ExpandedFst<Arc> *Read(std::istream &strm,
+                                const FstReadOptions &opts) {
     FstReadOptions ropts(opts);
     FstHeader hdr;
     if (ropts.header) {
@@ -43,22 +44,21 @@ class ExpandedFst : public Fst<A> {
       LOG(ERROR) << "ExpandedFst::Read: Not an ExpandedFst: " << ropts.source;
       return nullptr;
     }
-    FstRegister<A> *registr = FstRegister<A>::GetRegister();
-    const typename FstRegister<A>::Reader reader =
-        registr->GetReader(hdr.FstType());
+    const auto reader =
+        FstRegister<Arc>::GetRegister()->GetReader(hdr.FstType());
     if (!reader) {
       LOG(ERROR) << "ExpandedFst::Read: Unknown FST type \"" << hdr.FstType()
                  << "\" (arc type = \"" << A::Type() << "\"): " << ropts.source;
       return nullptr;
     }
-    Fst<A> *fst = reader(strm, ropts);
+    auto *fst = reader(strm, ropts);
     if (!fst) return nullptr;
-    return static_cast<ExpandedFst<A> *>(fst);
+    return static_cast<ExpandedFst<Arc> *>(fst);
   }
 
   // Read an ExpandedFst from a file; return NULL on error.
   // Empty filename reads from standard input.
-  static ExpandedFst<A> *Read(const string &filename) {
+  static ExpandedFst<Arc> *Read(const string &filename) {
     if (!filename.empty()) {
       std::ifstream strm(filename.c_str(),
                               std::ios_base::in | std::ios_base::binary);
@@ -76,64 +76,67 @@ class ExpandedFst : public Fst<A> {
 namespace internal {
 
 //  ExpandedFst<A> case - abstract methods.
-template <class A>
-inline typename A::Weight Final(const ExpandedFst<A> &fst,
-                                typename A::StateId s) {
+template <class Arc>
+inline typename Arc::Weight Final(const ExpandedFst<Arc> &fst,
+                                  typename Arc::StateId s) {
   return fst.Final(s);
 }
 
-template <class A>
-inline ssize_t NumArcs(const ExpandedFst<A> &fst, typename A::StateId s) {
+template <class Arc>
+inline ssize_t NumArcs(const ExpandedFst<Arc> &fst, typename Arc::StateId s) {
   return fst.NumArcs(s);
 }
 
-template <class A>
-inline ssize_t NumInputEpsilons(const ExpandedFst<A> &fst,
-                                typename A::StateId s) {
+template <class Arc>
+inline ssize_t NumInputEpsilons(const ExpandedFst<Arc> &fst,
+                                typename Arc::StateId s) {
   return fst.NumInputEpsilons(s);
 }
 
-template <class A>
-inline ssize_t NumOutputEpsilons(const ExpandedFst<A> &fst,
-                                 typename A::StateId s) {
+template <class Arc>
+inline ssize_t NumOutputEpsilons(const ExpandedFst<Arc> &fst,
+                                 typename Arc::StateId s) {
   return fst.NumOutputEpsilons(s);
 }
 
 }  // namespace internal
 
 // A useful alias when using StdArc.
-typedef ExpandedFst<StdArc> StdExpandedFst;
+using StdExpandedFst = ExpandedFst<StdArc>;
 
 // This is a helper class template useful for attaching an ExpandedFst
 // interface to its implementation, handling reference counting. It
 // delegates to ImplToFst the handling of the Fst interface methods.
-template <class I, class F = ExpandedFst<typename I::Arc>>
-class ImplToExpandedFst : public ImplToFst<I, F> {
+template <class Impl, class FST = ExpandedFst<typename Impl::Arc>>
+class ImplToExpandedFst : public ImplToFst<Impl, FST> {
  public:
-  typedef typename I::Arc Arc;
-  typedef typename Arc::Weight Weight;
-  typedef typename Arc::StateId StateId;
+  using Arc = typename FST::Arc;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+
+  using ImplToFst<Impl, FST>::operator=;
 
   StateId NumStates() const override { return GetImpl()->NumStates(); }
 
  protected:
-  using ImplToFst<I, F>::GetImpl;
+  using ImplToFst<Impl, FST>::GetImpl;
 
-  explicit ImplToExpandedFst(std::shared_ptr<I> impl) : ImplToFst<I, F>(impl) {}
+  explicit ImplToExpandedFst(std::shared_ptr<Impl> impl)
+      : ImplToFst<Impl, FST>(impl) {}
 
-  ImplToExpandedFst(const ImplToExpandedFst<I, F> &fst)
-      : ImplToFst<I, F>(fst) {}
+  ImplToExpandedFst(const ImplToExpandedFst<Impl, FST> &fst)
+      : ImplToFst<Impl, FST>(fst) {}
 
-  ImplToExpandedFst(const ImplToExpandedFst<I, F> &fst, bool safe)
-      : ImplToFst<I, F>(fst, safe) {}
+  ImplToExpandedFst(const ImplToExpandedFst<Impl, FST> &fst, bool safe)
+      : ImplToFst<Impl, FST>(fst, safe) {}
 
-  static I *Read(std::istream &strm, const FstReadOptions &opts) {
-    return I::Read(strm, opts);
+  static Impl *Read(std::istream &strm, const FstReadOptions &opts) {
+    return Impl::Read(strm, opts);
   }
 
   // Read FST implementation from a file; return NULL on error.
   // Empty filename reads from standard input.
-  static I *Read(const string &filename) {
+  static Impl *Read(const string &filename) {
     if (!filename.empty()) {
       std::ifstream strm(filename.c_str(),
                               std::ios_base::in | std::ios_base::binary);
@@ -141,9 +144,9 @@ class ImplToExpandedFst : public ImplToFst<I, F> {
         LOG(ERROR) << "ExpandedFst::Read: Can't open file: " << filename;
         return nullptr;
       }
-      return I::Read(strm, FstReadOptions(filename));
+      return Impl::Read(strm, FstReadOptions(filename));
     } else {
-      return I::Read(std::cin, FstReadOptions("standard input"));
+      return Impl::Read(std::cin, FstReadOptions("standard input"));
     }
   }
 };
@@ -153,7 +156,7 @@ class ImplToExpandedFst : public ImplToFst<I, F> {
 template <class Arc>
 typename Arc::StateId CountStates(const Fst<Arc> &fst) {
   if (fst.Properties(kExpanded, false)) {
-    const ExpandedFst<Arc> *efst = static_cast<const ExpandedFst<Arc> *>(&fst);
+    const auto *efst = static_cast<const ExpandedFst<Arc> *>(&fst);
     return efst->NumStates();
   } else {
     typename Arc::StateId nstates = 0;

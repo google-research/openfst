@@ -20,11 +20,11 @@ namespace fst {
 template <class Arc, class Compare>
 class ArcSortMapper {
  public:
-  typedef Arc FromArc;
-  typedef Arc ToArc;
+  using FromArc = Arc;
+  using ToArc = Arc;
 
-  typedef typename Arc::StateId StateId;
-  typedef typename Arc::Weight Weight;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
 
   ArcSortMapper(const Fst<Arc> &fst, const Compare &comp)
       : fst_(fst), comp_(comp), i_(0) {}
@@ -35,6 +35,7 @@ class ArcSortMapper {
       : fst_(fst ? *fst : mapper.fst_), comp_(mapper.comp_), i_(0) {}
 
   StateId Start() { return fst_.Start(); }
+
   Weight Final(StateId s) const { return fst_.Final(s); }
 
   void SetState(StateId s) {
@@ -48,11 +49,15 @@ class ArcSortMapper {
   }
 
   bool Done() const { return i_ >= arcs_.size(); }
+
   const Arc &Value() const { return arcs_[i_]; }
+
   void Next() { ++i_; }
 
   MapSymbolsAction InputSymbolsAction() const { return MAP_COPY_SYMBOLS; }
+
   MapSymbolsAction OutputSymbolsAction() const { return MAP_COPY_SYMBOLS; }
+
   uint64 Properties(uint64 props) const { return comp_.Properties(props); }
 
  private:
@@ -64,102 +69,111 @@ class ArcSortMapper {
   ArcSortMapper &operator=(const ArcSortMapper &) = delete;
 };
 
-// Sorts the arcs in an FST according to function object 'comp' of
-// type Compare. This version modifies its input.  Comparison function
-// objects ILabelCompare and OLabelCompare are provived by the
-// library. In general, Compare must meet the requirements for an STL
-// sort comparision function object. It must also have a member
-// Properties(uint64) that specifies the known properties of the
-// sorted FST; it takes as argument the input FST's known properties
-// before the sort.
+// Sorts the arcs in an FST according to function object 'comp' of type Compare.
+// This version modifies its input. Comparison function objects ILabelCompare
+// and OLabelCompare are provided by the library. In general, Compare must meet
+// the requirements for a  comparison function object (e.g., similar to those
+// used by std::sort). It must also have a member Properties(uint64) that
+// specifies the known properties of the sorted FST; it takes as argument the
+// input FST's known properties before the sort.
 //
 // Complexity:
-// - Time: O(V D log D)
-// - Space: O(D)
-// where V = # of states and D = maximum out-degree.
+//
+// - Time: O(v d log d)
+// - Space: O(d)
+//
+// where v = # of states and d = maximum out-degree.
 template <class Arc, class Compare>
 void ArcSort(MutableFst<Arc> *fst, Compare comp) {
   ArcSortMapper<Arc, Compare> mapper(*fst, comp);
   StateMap(fst, mapper);
 }
 
-typedef CacheOptions ArcSortFstOptions;
+using ArcSortFstOptions = CacheOptions;
 
-// Sorts the arcs in an FST according to function object 'comp' of
-// type Compare. This version is a delayed Fst.  Comparsion function
-// objects ILabelCompare and OLabelCompare are provided by the
-// library. In general, Compare must meet the requirements for an STL
-// comparision function object (e.g. as used for STL sort). It must
-// also have a member Properties(uint64) that specifies the known
-// properties of the sorted FST; it takes as argument the input FST's
-// known properties.
+// Sorts the arcs in an FST according to function object 'comp' of type Compare.
+// This version is a delayed FST. Comparsion function objects ILabelCompare and
+// OLabelCompare are provided by the library. In general, Compare must meet the
+// requirements for a comparision function object (e.g., similar to those
+// used by std::sort). It must also have a member Properties(uint64) that
+// specifies the known properties of the sorted FST; it takes as argument the
+// input FST's known properties.
 //
 // Complexity:
+//
 // - Time: O(v d log d)
 // - Space: O(d)
-// where v = # of states visited, d = maximum out-degree of states
-// visited. Constant time and space to visit an input state is assumed
-// and exclusive of caching.
-template <class A, class C>
-class ArcSortFst : public StateMapFst<A, A, ArcSortMapper<A, C>> {
-  using StateMapFst<A, A, ArcSortMapper<A, C>>::GetImpl;
+//
+// where v = # of states visited, d = maximum out-degree of states visited.
+// Constant time and space to visit an input state is assumed and exclusive of
+// caching.
+template <class Arc, class Compare>
+class ArcSortFst : public StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>> {
+  using StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>>::GetImpl;
 
  public:
-  typedef A Arc;
-  typedef typename Arc::StateId StateId;
-  typedef ArcSortMapper<A, C> M;
+  using StateId = typename Arc::StateId;
+  using Mapper = ArcSortMapper<Arc, Compare>;
 
-  ArcSortFst(const Fst<A> &fst, const C &comp)
-      : StateMapFst<A, A, M>(fst, ArcSortMapper<A, C>(fst, comp)) {}
+  ArcSortFst(const Fst<Arc> &fst, const Compare &comp)
+      : StateMapFst<Arc, Arc, Mapper>(fst,
+                                      ArcSortMapper<Arc, Compare>(fst, comp)) {}
 
-  ArcSortFst(const Fst<A> &fst, const C &comp, const ArcSortFstOptions &opts)
-      : StateMapFst<A, A, M>(fst, ArcSortMapper<A, C>(fst, comp), opts) {}
+  ArcSortFst(const Fst<Arc> &fst, const Compare &comp,
+             const ArcSortFstOptions &opts)
+      : StateMapFst<Arc, Arc, Mapper>(fst, Mapper(fst, comp), opts) {}
 
   // See Fst<>::Copy() for doc.
-  ArcSortFst(const ArcSortFst<A, C> &fst, bool safe = false)
-      : StateMapFst<A, A, M>(fst, safe) {}
+  ArcSortFst(const ArcSortFst<Arc, Compare> &fst, bool safe = false)
+      : StateMapFst<Arc, Arc, Mapper>(fst, safe) {}
 
-  // Get a copy of this ArcSortFst. See Fst<>::Copy() for further doc.
-  ArcSortFst<A, C> *Copy(bool safe = false) const override {
+  // Gets a copy of this ArcSortFst. See Fst<>::Copy() for further doc.
+  ArcSortFst<Arc, Compare> *Copy(bool safe = false) const override {
     return new ArcSortFst(*this, safe);
   }
 
   size_t NumArcs(StateId s) const override {
-    return GetImpl()->GetFst().NumArcs(s);
+    return GetImpl()->GetFst()->NumArcs(s);
   }
 
   size_t NumInputEpsilons(StateId s) const override {
-    return GetImpl()->GetFst().NumInputEpsilons(s);
+    return GetImpl()->GetFst()->NumInputEpsilons(s);
   }
 
   size_t NumOutputEpsilons(StateId s) const override {
-    return GetImpl()->GetFst().NumOutputEpsilons(s);
+    return GetImpl()->GetFst()->NumOutputEpsilons(s);
   }
 };
 
 // Specialization for ArcSortFst.
-template <class A, class C>
-class StateIterator<ArcSortFst<A, C>>
-    : public StateIterator<StateMapFst<A, A, ArcSortMapper<A, C>> > {
+template <class Arc, class Compare>
+class StateIterator<ArcSortFst<Arc, Compare>>
+    : public StateIterator<StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>>> {
  public:
-  explicit StateIterator(const ArcSortFst<A, C> &fst)
-      : StateIterator<StateMapFst<A, A, ArcSortMapper<A, C>> >(fst) {}
+  explicit StateIterator(const ArcSortFst<Arc, Compare> &fst)
+      : StateIterator<StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>>>(fst) {
+  }
 };
 
 // Specialization for ArcSortFst.
-template <class A, class C>
-class ArcIterator<ArcSortFst<A, C>>
-    : public ArcIterator<StateMapFst<A, A, ArcSortMapper<A, C>> > {
+template <class Arc, class Compare>
+class ArcIterator<ArcSortFst<Arc, Compare>>
+    : public ArcIterator<StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>>> {
  public:
-  ArcIterator(const ArcSortFst<A, C> &fst, typename A::StateId s)
-      : ArcIterator<StateMapFst<A, A, ArcSortMapper<A, C>> >(fst, s) {}
+  ArcIterator(const ArcSortFst<Arc, Compare> &fst, typename Arc::StateId s)
+      : ArcIterator<StateMapFst<Arc, Arc, ArcSortMapper<Arc, Compare>>>(fst,
+                                                                        s) {}
 };
 
 // Compare class for comparing input labels of arcs.
-template <class A>
+template <class Arc>
 class ILabelCompare {
  public:
-  bool operator()(A arc1, A arc2) const { return arc1.ilabel < arc2.ilabel; }
+  ILabelCompare() {}
+
+  bool operator()(const Arc &arc1, const Arc &arc2) const {
+    return arc1.ilabel < arc2.ilabel;
+  }
 
   uint64 Properties(uint64 props) const {
     return (props & kArcSortProperties) | kILabelSorted |
@@ -168,10 +182,12 @@ class ILabelCompare {
 };
 
 // Compare class for comparing output labels of arcs.
-template <class A>
+template <class Arc>
 class OLabelCompare {
  public:
-  bool operator()(const A &arc1, const A &arc2) const {
+  OLabelCompare() {}
+
+  bool operator()(const Arc &arc1, const Arc &arc2) const {
     return arc1.olabel < arc2.olabel;
   }
 
@@ -182,16 +198,13 @@ class OLabelCompare {
 };
 
 // Useful aliases when using StdArc.
-template <class C>
-class StdArcSortFst : public ArcSortFst<StdArc, C> {
- public:
-  typedef StdArc Arc;
-  typedef C Compare;
-};
 
-typedef ILabelCompare<StdArc> StdILabelCompare;
+template <class Compare>
+using StdArcSortFst = ArcSortFst<StdArc, Compare>;
 
-typedef OLabelCompare<StdArc> StdOLabelCompare;
+using StdILabelCompare = ILabelCompare<StdArc>;
+
+using StdOLabelCompare = OLabelCompare<StdArc>;
 
 }  // namespace fst
 

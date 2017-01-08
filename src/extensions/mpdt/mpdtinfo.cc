@@ -4,6 +4,9 @@
 // Prints out various information about an MPDT such as number of states, arcs,
 // and parentheses.
 
+#include <cstring>
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,10 +15,12 @@
 #include <fst/util.h>
 
 DEFINE_string(mpdt_parentheses, "",
-              "MPDT parenthesis label pairs with assignments.");
+              "MPDT parenthesis label pairs with assignments");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FstClass;
+  using fst::ReadLabelTriples;
 
   string usage = "Prints out information about an MPDT.\n\n  Usage: ";
   usage += argv[0];
@@ -28,9 +33,10 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
 
-  s::FstClass *ifst = s::FstClass::Read(in_name);
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
   if (FLAGS_mpdt_parentheses.empty()) {
@@ -40,8 +46,8 @@ int main(int argc, char **argv) {
 
   std::vector<s::LabelPair> parens;
   std::vector<int64> assignments;
-  fst::ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments,
-                            false);
+  if (!ReadLabelTriples(FLAGS_mpdt_parentheses, &parens, &assignments, false))
+    return 1;
 
   s::PrintMPdtInfo(*ifst, parens, assignments);
 

@@ -13,7 +13,7 @@ namespace script {
 
 enum ArcSortType { ILABEL_SORT, OLABEL_SORT };
 
-typedef args::Package<MutableFstClass *, ArcSortType> ArcSortArgs;
+using ArcSortArgs = args::Package<MutableFstClass *, ArcSortType>;
 
 template <class Arc>
 void ArcSort(ArcSortArgs *args) {
@@ -21,7 +21,7 @@ void ArcSort(ArcSortArgs *args) {
   if (args->arg2 == ILABEL_SORT) {
     ILabelCompare<Arc> icomp;
     ArcSort(fst, icomp);
-  } else {  // args->arg2 == OLABEL_SORT
+  } else {  // args->arg2 == OLABEL_SORT.
     OLabelCompare<Arc> ocomp;
     ArcSort(fst, ocomp);
   }

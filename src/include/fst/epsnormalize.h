@@ -23,10 +23,11 @@ enum EpsNormalizeType { EPS_NORM_INPUT, EPS_NORM_OUTPUT };
 // label follows all non-epsilon input labels. Output epsilon-normalized
 // is defined similarly.
 //
-// References:
-// - Mehryar Mohri. "Generic epsilon-removal and input epsilon-normalization
-//   algorithms for weighted transducers", International Journal of Computer
-//   Science, 13(1): 129-143, 2002.
+// For more information, see:
+//
+// Mohri, M. 2002. Generic epsilon-removal and input epsilon-normalization
+// algorithms for weighted transducers. International Journal of Computer
+// Science, 13(1): 129-143, 2002.
 template <class Arc>
 void EpsNormalize(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
                   EpsNormalizeType type = EPS_NORM_INPUT) {

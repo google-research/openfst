@@ -30,13 +30,10 @@
 namespace fst {
 namespace script {
 
-// MPDT COMPOSE
-
-typedef args::Package<const FstClass &, const FstClass &,
-                      const std::vector<LabelPair> &,
-                      const std::vector<int64> &,
-                      MutableFstClass *, const MPdtComposeOptions &, bool>
-                      MPdtComposeArgs;
+using MPdtComposeArgs =
+    args::Package<const FstClass &, const FstClass &,
+                  const std::vector<LabelPair> &, const std::vector<int64> &,
+                  MutableFstClass *, const MPdtComposeOptions &, bool>;
 
 template <class Arc>
 void MPdtCompose(MPdtComposeArgs *args) {
@@ -46,7 +43,8 @@ void MPdtCompose(MPdtComposeArgs *args) {
   std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
       typed_parens(args->arg3.size());
   std::copy(args->arg3.begin(), args->arg3.end(), typed_parens.begin());
-  std::vector<typename Arc::Label> typed_assignments(args->arg4.size());
+  using Level = typename Arc::Label;
+  std::vector<Level> typed_assignments(args->arg4.size());
   std::copy(args->arg4.begin(), args->arg4.end(), typed_assignments.begin());
   if (args->arg7) {
     Compose(ifst1, typed_parens, typed_assignments, ifst2, ofst, args->arg6);
@@ -57,15 +55,13 @@ void MPdtCompose(MPdtComposeArgs *args) {
 
 void MPdtCompose(const FstClass &ifst1, const FstClass &ifst2,
                  const std::vector<LabelPair> &parens,
-                 const std::vector<int64> &assignments,
-                 MutableFstClass *ofst, const MPdtComposeOptions &copts,
-                 bool left_pdt);
+                 const std::vector<int64> &assignments, MutableFstClass *ofst,
+                 const MPdtComposeOptions &copts, bool left_pdt);
 
-// MPDT EXPAND
-
-typedef args::Package<const FstClass &, const std::vector<LabelPair> &,
-                      const std::vector<int64> &, MutableFstClass *,
-                      const MPdtExpandOptions &> MPdtExpandArgs;
+using MPdtExpandArgs =
+    args::Package<const FstClass &, const std::vector<LabelPair> &,
+                  const std::vector<int64> &, MutableFstClass *,
+                  const MPdtExpandOptions &>;
 
 template <class Arc>
 void MPdtExpand(MPdtExpandArgs *args) {
@@ -77,22 +73,20 @@ void MPdtExpand(MPdtExpandArgs *args) {
   std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
       typed_parens(args->arg2.size());
   std::copy(args->arg2.begin(), args->arg2.end(), typed_parens.begin());
-  std::vector<typename Arc::Label> typed_assignments(args->arg3.size());
+  using Level = typename Arc::Label;
+  std::vector<Level> typed_assignments(args->arg3.size());
   std::copy(args->arg3.begin(), args->arg3.end(), typed_assignments.begin());
   Expand(fst, typed_parens, typed_assignments, ofst,
          MPdtExpandOptions(args->arg5.connect, args->arg5.keep_parentheses));
 }
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<LabelPair> &parens,
-                const std::vector<int64> &assignments,
-                MutableFstClass *ofst, const MPdtExpandOptions &opts);
+void MPdtExpand(const FstClass &ifst, const std::vector<LabelPair> &parens,
+                const std::vector<int64> &assignments, MutableFstClass *ofst,
+                const MPdtExpandOptions &opts);
 
-// MPDT REVERSE
-
-typedef args::Package<const FstClass &, const std::vector<LabelPair> &,
-                      std::vector<int64> *,
-                      MutableFstClass *> MPdtReverseArgs;
+using MPdtReverseArgs =
+    args::Package<const FstClass &, const std::vector<LabelPair> &,
+                  std::vector<int64> *, MutableFstClass *>;
 
 template <class Arc>
 void MPdtReverse(MPdtReverseArgs *args) {
@@ -104,7 +98,8 @@ void MPdtReverse(MPdtReverseArgs *args) {
   std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
       typed_parens(args->arg2.size());
   std::copy(args->arg2.begin(), args->arg2.end(), typed_parens.begin());
-  std::vector<typename Arc::Label> typed_assignments(args->arg3->size());
+  using Level = typename Arc::Label;
+  std::vector<Level> typed_assignments(args->arg3->size());
   std::copy(args->arg3->begin(), args->arg3->end(), typed_assignments.begin());
   Reverse(fst, typed_parens, &typed_assignments, ofst);
   // Reassign stack assignments to input assignment vector.
@@ -112,15 +107,12 @@ void MPdtReverse(MPdtReverseArgs *args) {
             args->arg3->begin());
 }
 
-void MPdtReverse(const FstClass &ifst,
-                 const std::vector<LabelPair> &parens,
-                 std::vector<int64> *assignments,
-                 MutableFstClass *ofst);
+void MPdtReverse(const FstClass &ifst, const std::vector<LabelPair> &parens,
+                 std::vector<int64> *assignments, MutableFstClass *ofst);
 
-// MPDT PRINT INFO
-
-typedef args::Package<const FstClass &, const std::vector<LabelPair> &,
-                      const std::vector<int64> &> PrintMPdtInfoArgs;
+using PrintMPdtInfoArgs =
+    args::Package<const FstClass &, const std::vector<LabelPair> &,
+                  const std::vector<int64> &>;
 
 template <class Arc>
 void PrintMPdtInfo(PrintMPdtInfoArgs *args) {
@@ -131,7 +123,8 @@ void PrintMPdtInfo(PrintMPdtInfoArgs *args) {
   std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
       typed_parens(args->arg2.size());
   std::copy(args->arg2.begin(), args->arg2.end(), typed_parens.begin());
-  std::vector<typename Arc::Label> typed_assignments(args->arg3.size());
+  using Level = typename Arc::Label;
+  std::vector<Level> typed_assignments(args->arg3.size());
   std::copy(args->arg3.begin(), args->arg3.end(), typed_assignments.begin());
   MPdtInfo<Arc> mpdtinfo(fst, typed_parens, typed_assignments);
   mpdtinfo.Print();

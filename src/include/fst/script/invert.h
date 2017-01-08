@@ -14,7 +14,6 @@ namespace script {
 template <class Arc>
 void Invert(MutableFstClass *fst) {
   MutableFst<Arc> *typed_fst = fst->GetMutableFst<Arc>();
-
   Invert(typed_fst);
 }
 

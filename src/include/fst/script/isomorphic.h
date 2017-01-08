@@ -11,20 +11,20 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, const FstClass &, float, bool *>
-    IsomorphicInnerArgs;
-typedef args::WithReturnValue<bool, IsomorphicInnerArgs> IsomorphicArgs;
+using IsomorphicInnerArgs =
+    args::Package<const FstClass &, const FstClass &, float>;
+
+using IsomorphicArgs = args::WithReturnValue<bool, IsomorphicInnerArgs>;
 
 template <class Arc>
 void Isomorphic(IsomorphicArgs *args) {
   const Fst<Arc> &fst1 = *(args->args.arg1.GetFst<Arc>());
   const Fst<Arc> &fst2 = *(args->args.arg2.GetFst<Arc>());
-
-  args->retval = Isomorphic(fst1, fst2, args->args.arg3, args->args.arg4);
+  args->retval = Isomorphic(fst1, fst2, args->args.arg3);
 }
 
 bool Isomorphic(const FstClass &fst1, const FstClass &fst2,
-                float delta = kDelta, bool *error = nullptr);
+                float delta = kDelta);
 
 }  // namespace script
 }  // namespace fst

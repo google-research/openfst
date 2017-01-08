@@ -13,9 +13,9 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, const string &> ConvertInnerArgs;
+using ConvertInnerArgs = args::Package<const FstClass &, const string &>;
 
-typedef args::WithReturnValue<FstClass *, ConvertInnerArgs> ConvertArgs;
+using ConvertArgs = args::WithReturnValue<FstClass *, ConvertInnerArgs>;
 
 template <class Arc>
 void Convert(ConvertArgs *args) {

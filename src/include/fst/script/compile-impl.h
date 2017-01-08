@@ -24,20 +24,18 @@ namespace fst {
 // Compile a binary Fst from textual input, helper class for fstcompile.cc
 // WARNING: Stand-alone use of this class not recommended, most code should
 // read/write using the binary format which is much more efficient.
-template <class A>
+template <class Arc>
 class FstCompiler {
  public:
-  typedef A Arc;
-  typedef typename A::StateId StateId;
-  typedef typename A::Label Label;
-  typedef typename A::Weight Weight;
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
 
-  // WARNING: use of 'allow_negative_labels = true' not recommended; may
-  // cause conflicts
-  // If add_symbols_ is true, then the symbols will be dynamically added
-  // to the symbol tables.  This is only useful if you set the (i/o)keep flag
-  // to attach the final symbol table, or use the accessors.  (The input
-  // symbol tables are const and therefore not changed.)
+  // WARNING: use of negative labels not recommended as it may cause conflicts.
+  // If add_symbols_ is true, then the symbols will be dynamically added to the
+  // symbol tables. This is only useful if you set the (i/o)keep flag to attach
+  // the final symbol table, or use the accessors. (The input symbol tables are
+  // const and therefore not changed.)
   FstCompiler(std::istream &istrm, const string &source,  // NOLINT
               const SymbolTable *isyms, const SymbolTable *osyms,
               const SymbolTable *ssyms, bool accep, bool ikeep,
@@ -70,11 +68,12 @@ class FstCompiler {
     keep_state_numbering_ = nkeep;
     allow_negative_labels_ = allow_negative_labels;
     add_symbols_ = add_symbols;
+    bool start_state_populated = false;
     char line[kLineLen];
+    const string separator = FLAGS_fst_field_separator + "\n";
     while (istrm.getline(line, kLineLen)) {
       ++nline_;
       std::vector<char *> col;
-      string separator = FLAGS_fst_field_separator + "\n";
       SplitToVector(line, separator.c_str(), &col, true);
       if (col.size() == 0 || col[0][0] == '\0')  // empty line
         continue;
@@ -87,7 +86,10 @@ class FstCompiler {
       }
       StateId s = StrToStateId(col[0]);
       while (s >= fst_.NumStates()) fst_.AddState();
-      if (nline_ == 1) fst_.SetStart(s);
+      if (!start_state_populated) {
+        fst_.SetStart(s);
+        start_state_populated = true;
+      }
 
       Arc arc;
       StateId d = s;
@@ -130,11 +132,11 @@ class FstCompiler {
     if (okeep) fst_.SetOutputSymbols(osyms);
   }
 
-  const VectorFst<A> &Fst() const { return fst_; }
+  const VectorFst<Arc> &Fst() const { return fst_; }
 
  private:
   // Maximum line length in text file.
-  static const int kLineLen = 8096;
+  static constexpr int kLineLen = 8096;
 
   StateId StrToId(const char *s, SymbolTable *syms, const char *name,
                   bool allow_negative = false) const {
@@ -163,9 +165,8 @@ class FstCompiler {
   StateId StrToStateId(const char *s) {
     StateId n = StrToId(s, ssyms_, "state ID");
     if (keep_state_numbering_) return n;
-    // remap state IDs to make dense set
-    typename std::unordered_map<StateId, StateId>::const_iterator it =
-        states_.find(n);
+    // Remaps state IDs to make dense set.
+    const auto it = states_.find(n);
     if (it == states_.end()) {
       states_[n] = nstates_;
       return nstates_++;
@@ -195,17 +196,17 @@ class FstCompiler {
     return w;
   }
 
-  mutable VectorFst<A> fst_;
+  mutable VectorFst<Arc> fst_;
   size_t nline_;
-  string source_;                      // text FST source name
-  SymbolTable *isyms_;                 // ilabel symbol table (not owned)
-  SymbolTable *osyms_;                 // olabel symbol table (not owned)
-  SymbolTable *ssyms_;                 // slabel symbol table (not owned)
-  std::unordered_map<StateId, StateId> states_;  // state ID map
-  StateId nstates_;                    // number of seen states
+  string source_;       // Text FST source name.
+  SymbolTable *isyms_;  // ilabel symbol table (not owned).
+  SymbolTable *osyms_;  // olabel symbol table (not owned).
+  SymbolTable *ssyms_;  // slabel symbol table (not owned).
+  std::unordered_map<StateId, StateId> states_;  // State ID map.
+  StateId nstates_;                              // Number of seen states.
   bool keep_state_numbering_;
-  bool allow_negative_labels_;  // not recommended; may cause conflicts
-  bool add_symbols_;            // add to symbol tables on-the fly
+  bool allow_negative_labels_;  // Not recommended; may cause conflicts.
+  bool add_symbols_;            // Add to symbol tables on-the fly.
 
   FstCompiler(const FstCompiler &) = delete;
   FstCompiler &operator=(const FstCompiler &) = delete;

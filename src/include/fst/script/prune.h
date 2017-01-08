@@ -34,25 +34,24 @@ struct PruneOptions {
 // PruneOptions. If the original opts.distance is not null, a new distance will
 // be created with new; the client is responsible for deleting this.
 
-template <class A>
-fst::PruneOptions<A, AnyArcFilter<A>> ConvertPruneOptions(
+template <class Arc>
+fst::PruneOptions<Arc, AnyArcFilter<Arc>> ConvertPruneOptions(
     const PruneOptions &opts) {
-  typedef typename A::Weight Weight;
-  typedef typename A::StateId StateId;
-  Weight weight_threshold = *(opts.weight_threshold.GetWeight<Weight>());
-  StateId state_threshold = opts.state_threshold;
+  using Weight = typename Arc::Weight;
+  const auto weight_threshold = *(opts.weight_threshold.GetWeight<Weight>());
   std::unique_ptr<std::vector<Weight>> distance;
   if (opts.distance) {
     distance.reset(new std::vector<Weight>(opts.distance->size()));
     for (auto i = 0; i < opts.distance->size(); ++i)
       (*distance)[i] = *((*opts.distance)[i].GetWeight<Weight>());
   }
-  return fst::PruneOptions<A, AnyArcFilter<A>>(weight_threshold,
-      state_threshold, AnyArcFilter<A>(), distance.get(), opts.delta);
+  return fst::PruneOptions<Arc, AnyArcFilter<Arc>>(
+      weight_threshold, opts.state_threshold, AnyArcFilter<Arc>(),
+      distance.get(), opts.delta);
 }
 
 // 1
-typedef args::Package<MutableFstClass *, const PruneOptions &> PruneArgs1;
+using PruneArgs1 = args::Package<MutableFstClass *, const PruneOptions &>;
 
 template <class Arc>
 void Prune(PruneArgs1 *args) {
@@ -63,8 +62,8 @@ void Prune(PruneArgs1 *args) {
 }
 
 // 2
-typedef args::Package<const FstClass &, MutableFstClass *, const PruneOptions &>
-    PruneArgs2;
+using PruneArgs2 =
+    args::Package<const FstClass &, MutableFstClass *, const PruneOptions &>;
 
 template <class Arc>
 void Prune(PruneArgs2 *args) {
@@ -76,8 +75,8 @@ void Prune(PruneArgs2 *args) {
 }
 
 // 3
-typedef args::Package<const FstClass &, MutableFstClass *, const WeightClass &,
-                      int64, float> PruneArgs3;
+using PruneArgs3 = args::Package<const FstClass &, MutableFstClass *,
+                                 const WeightClass &, int64, float>;
 
 template <class Arc>
 void Prune(PruneArgs3 *args) {
@@ -89,8 +88,9 @@ void Prune(PruneArgs3 *args) {
 }
 
 // 4
-typedef args::Package<MutableFstClass *, const WeightClass &, int64, float>
-    PruneArgs4;
+using PruneArgs4 =
+    args::Package<MutableFstClass *, const WeightClass &, int64, float>;
+
 template <class Arc>
 void Prune(PruneArgs4 *args) {
   MutableFst<Arc> *fst = args->arg1->GetMutableFst<Arc>();

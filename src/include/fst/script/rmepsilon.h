@@ -33,12 +33,9 @@ template <class Arc>
 void RmEpsilonHelper(MutableFst<Arc> *fst,
                      std::vector<typename Arc::Weight> *distance,
                      const RmEpsilonOptions &opts) {
-  typedef typename Arc::StateId StateId;
-  typedef typename Arc::Weight Weight;
-
-  typename Arc::Weight weight_threshold =
-      *(opts.weight_threshold.GetWeight<Weight>());
-
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+  const Weight weight_threshold = *(opts.weight_threshold.GetWeight<Weight>());
   switch (opts.queue_type) {
     case AUTO_QUEUE: {
       AutoQueue<StateId> queue(*fst, distance, EpsilonArcFilter<Arc>());
@@ -95,17 +92,15 @@ void RmEpsilonHelper(MutableFst<Arc> *fst,
 }
 
 // 1: Full signature with RmEpsilonOptions.
-typedef args::Package<const FstClass &, MutableFstClass *, bool,
-                      const RmEpsilonOptions &> RmEpsilonArgs1;
+using RmEpsilonArgs1 = args::Package<const FstClass &, MutableFstClass *, bool,
+                                     const RmEpsilonOptions &>;
 
 template <class Arc>
 void RmEpsilon(RmEpsilonArgs1 *args) {
   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   std::vector<typename Arc::Weight> distance;
-  bool reverse = args->arg3;
-
-  if (reverse) {
+  if (args->arg3) {
     VectorFst<Arc> rfst;
     Reverse(ifst, &rfst, false);
     RmEpsilonHelper(&rfst, &distance, args->arg4);
@@ -119,19 +114,20 @@ void RmEpsilon(RmEpsilonArgs1 *args) {
 }
 
 // 2: Full signature with flat arguments.
-typedef args::Package<MutableFstClass *, bool, const WeightClass,
-                      int64, float> RmEpsilonArgs2;
+using RmEpsilonArgs2 =
+    args::Package<MutableFstClass *, bool, const WeightClass, int64, float>;
 
 template <class Arc>
 void RmEpsilon(RmEpsilonArgs2 *args) {
   MutableFst<Arc> *fst = args->arg1->GetMutableFst<Arc>();
-  typename Arc::Weight w = *(args->arg3.GetWeight<typename Arc::Weight>());
-  RmEpsilon(fst, args->arg2, w, args->arg4, args->arg5);
+  typename Arc::Weight weight = *(args->arg3.GetWeight<typename Arc::Weight>());
+  RmEpsilon(fst, args->arg2, weight, args->arg4, args->arg5);
 }
 
 // 3: Full signature with RmEpsilonOptions and weight vector.
-typedef args::Package<MutableFstClass *, std::vector<WeightClass> *,
-                      const RmEpsilonOptions &> RmEpsilonArgs3;
+using RmEpsilonArgs3 =
+    args::Package<MutableFstClass *, std::vector<WeightClass> *,
+                  const RmEpsilonOptions &>;
 
 template <class Arc>
 void RmEpsilon(RmEpsilonArgs3 *args) {
@@ -145,8 +141,6 @@ void RmEpsilon(RmEpsilonArgs3 *args) {
     (*args->arg2)[i] = WeightClass(weights[i]);
   }
 }
-
-// PROTOTYPES
 
 // 1
 void RmEpsilon(const FstClass &ifst, MutableFstClass *ofst, bool reverse,

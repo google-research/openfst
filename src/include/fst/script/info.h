@@ -11,15 +11,14 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, bool, const string &, const string &,
-                      bool, bool> InfoArgs;
+using InfoArgs = args::Package<const FstClass &, bool, const string &,
+                               const string &, bool, bool>;
 
 template <class Arc>
 void PrintFstInfo(InfoArgs *args) {
   const Fst<Arc> &fst = *(args->arg1.GetFst<Arc>());
   FstInfo<Arc> fstinfo(fst, args->arg2, args->arg3, args->arg4, args->arg5);
   PrintFstInfo(fstinfo, args->arg6);
-
   if (args->arg6) fst.Write("");
 }
 

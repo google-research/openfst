@@ -18,43 +18,39 @@ namespace script {
 
 // Reads vector of weights; returns true on success.
 bool ReadPotentials(const string &weight_type, const string &filename,
-                    std::vector<WeightClass> *potential) {
+                    std::vector<WeightClass> *potentials) {
   std::ifstream strm(filename.c_str());
   if (!strm.good()) {
     LOG(ERROR) << "ReadPotentials: Can't open file: " << filename;
     return false;
   }
-
-  const int kLineLen = 8096;
+  static const int kLineLen = 8096;
   char line[kLineLen];
   size_t nline = 0;
-
-  potential->clear();
+  potentials->clear();
   while (!strm.getline(line, kLineLen).fail()) {
     ++nline;
     std::vector<char *> col;
     SplitToVector(line, "\n\t ", &col, true);
-    if (col.size() == 0 || col[0][0] == '\0')  // empty line
-      continue;
+    if (col.size() == 0 || col[0][0] == '\0') continue;
     if (col.size() != 2) {
       FSTERROR() << "ReadPotentials: Bad number of columns, "
                  << "file = " << filename << ", line = " << nline;
       return false;
     }
-
     ssize_t s = StrToInt64(col[0], filename, nline, false);
     WeightClass weight(weight_type, col[1]);
-
-    while (potential->size() <= s)
-      potential->push_back(WeightClass::Zero(weight_type));
-    (*potential)[s] = weight;
+    while (potentials->size() <= s) {
+      potentials->push_back(WeightClass::Zero(weight_type));
+    }
+    potentials->back() = weight;
   }
   return true;
 }
 
 // Writes vector of weights; returns true on success.
 bool WritePotentials(const string &filename,
-                     const std::vector<WeightClass> &potential) {
+                     const std::vector<WeightClass> &potentials) {
   std::ofstream fstrm;
   if (!filename.empty()) {
     fstrm.open(filename.c_str());
@@ -65,8 +61,8 @@ bool WritePotentials(const string &filename,
   }
   std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
   ostrm.precision(9);
-  for (size_t s = 0; s < potential.size(); ++s)
-    ostrm << s << "\t" << potential[s] << "\n";
+  for (auto s = 0; s < potentials.size(); ++s)
+    ostrm << s << "\t" << potentials[s] << "\n";
   if (ostrm.fail())
     LOG(ERROR) << "WritePotentials: Write failed: "
                << (filename.empty() ? "standard output" : filename);

@@ -26,21 +26,16 @@ namespace fst {
 static const int32 kSTListMagicNumber = 5656924;
 static const int32 kSTListFileVersion = 1;
 
-// String-type list writing class for object of type 'T' using functor 'W'
-// to write an object of type 'T' from a stream. 'W' must conform to the
-// following interface:
+// String-type list writing class for object of type T using a functor Writer.
+// Write must provide at least the following interface:
 //
 //   struct Writer {
 //     void operator()(std::ostream &, const T &) const;
 //   };
-//
-template <class T, class W>
+template <class T, class Writer>
 class STListWriter {
  public:
-  typedef T EntryType;
-  typedef W EntryWriter;
-
-  explicit STListWriter(const string& filename)
+  explicit STListWriter(const string &filename)
       : stream_(filename.empty() ? &std::cout : new std::ofstream(
                                                     filename.c_str(),
                                                     std::ios_base::out |
@@ -55,8 +50,8 @@ class STListWriter {
     }
   }
 
-  static STListWriter<T, W> *Create(const string &filename) {
-    return new STListWriter<T, W>(filename);
+  static STListWriter<T, Writer> *Create(const string &filename) {
+    return new STListWriter<T, Writer>(filename);
   }
 
   void Add(const string &key, const T &t) {
@@ -81,29 +76,24 @@ class STListWriter {
   }
 
  private:
-  EntryWriter entry_writer_;  // Write functor for 'EntryType'
-  std::ostream *stream_;      // Output stream
-  string last_key_;           // Last key
+  Writer entry_writer_;   // Write functor.
+  std::ostream *stream_;  // Output stream.
+  string last_key_;       // Last key.
   bool error_;
 
   STListWriter(const STListWriter &) = delete;
   STListWriter &operator=(const STListWriter &) = delete;
 };
 
-// String-type list reading class for object of type 'T' using functor 'R'
-// to read an object of type 'T' form a stream. 'R' must conform to the
-// following interface:
+// String-type list reading class for object of type T using a functor Reader.
+// Reader must provide at least the following interface:
 //
 //   struct Reader {
 //     T *operator()(std::istream &) const;
 //   };
-//
-template <class T, class R>
+template <class T, class Reader>
 class STListReader {
  public:
-  typedef T EntryType;
-  typedef R EntryReader;
-
   explicit STListReader(const std::vector<string> &filenames)
       : sources_(filenames), error_(false) {
     streams_.resize(filenames.size(), 0);
@@ -115,8 +105,8 @@ class STListReader {
           sources_[i] = "stdin";
           has_stdin = true;
         } else {
-          FSTERROR() << "STListReader::STListReader: stdin should only "
-                     << "appear once in the input file list.";
+          FSTERROR() << "STListReader::STListReader: Cannot read multiple "
+                     << "inputs from standard input";
           error_ = true;
           return;
         }
@@ -149,29 +139,29 @@ class STListReader {
       }
     }
     if (heap_.empty()) return;
-    size_t current = heap_.top().second;
+    const auto current = heap_.top().second;
     entry_.reset(entry_reader_(*streams_[current]));
     if (!entry_ || !*streams_[current]) {
-      FSTERROR() << "STListReader: Error reading entry for key: "
-                 << heap_.top().first << ", file: " << sources_[current];
+      FSTERROR() << "STListReader: Error reading entry for key "
+                 << heap_.top().first << ", file " << sources_[current];
       error_ = true;
     }
   }
 
   ~STListReader() {
-    for (size_t i = 0; i < streams_.size(); ++i) {
-      if (streams_[i] != &std::cin) delete streams_[i];
+    for (auto &stream : streams_) {
+      if (stream != &std::cin) delete stream;
     }
   }
 
-  static STListReader<T, R> *Open(const string &filename) {
+  static STListReader<T, Reader> *Open(const string &filename) {
     std::vector<string> filenames;
     filenames.push_back(filename);
-    return new STListReader<T, R>(filenames);
+    return new STListReader<T, Reader>(filenames);
   }
 
-  static STListReader<T, R> *Open(const std::vector<string> &filenames) {
-    return new STListReader<T, R>(filenames);
+  static STListReader<T, Reader> *Open(const std::vector<string> &filenames) {
+    return new STListReader<T, Reader>(filenames);
   }
 
   void Reset() {
@@ -190,7 +180,7 @@ class STListReader {
 
   void Next() {
     if (error_) return;
-    size_t current = heap_.top().second;
+    auto current = heap_.top().second;
     string key;
     heap_.pop();
     ReadType(*(streams_[current]), &key);
@@ -200,7 +190,6 @@ class STListReader {
       return;
     }
     if (!key.empty()) heap_.push(std::make_pair(key, current));
-
     if (!heap_.empty()) {
       current = heap_.top().second;
       entry_.reset(entry_reader_(*streams_[current]));
@@ -214,18 +203,18 @@ class STListReader {
 
   const string &GetKey() const { return heap_.top().first; }
 
-  const EntryType *GetEntry() const { return entry_.get(); }
+  const T *GetEntry() const { return entry_.get(); }
 
   bool Error() const { return error_; }
 
  private:
-  EntryReader entry_reader_;        // Read functor for 'EntryType'
-  std::vector<std::istream *> streams_;  // Input streams
-  std::vector<string> sources_;          // and corresponding file names
-  priority_queue<
+  Reader entry_reader_;                  // Read functor.
+  std::vector<std::istream *> streams_;  // Input streams.
+  std::vector<string> sources_;          // Corresponding filenames.
+  std::priority_queue<
       std::pair<string, size_t>, std::vector<std::pair<string, size_t>>,
       std::greater<std::pair<string, size_t>>> heap_;  // (Key, stream id) heap
-  mutable std::unique_ptr<EntryType> entry_;  // the currently read entry
+  mutable std::unique_ptr<T> entry_;  // The currently read entry.
   bool error_;
 
   STListReader(const STListReader &) = delete;
@@ -233,15 +222,17 @@ class STListReader {
 };
 
 // String-type list header reading function template on the entry header
-// type 'H' having a member function:
+// type Header having a member function:
+//
 //   Read(std::istream &strm, const string &filename);
-// Checks that 'filename' is an STList and call the H::Read() on the last
-// entry in the STList.
-// Does not support reading from stdin.
-template <class H>
-bool ReadSTListHeader(const string &filename, H *header) {
+//
+// Checks that the input filename is an STList and calls Header::Read() on the
+// last
+// entry in the STList. Reading from standard input is not supported.
+template <class Header>
+bool ReadSTListHeader(const string &filename, Header *header) {
   if (filename.empty()) {
-    LOG(ERROR) << "ReadSTListHeader: Reading header not supported on stdin";
+    LOG(ERROR) << "ReadSTListHeader: Can't read header from standard input";
     return false;
   }
   std::ifstream strm(filename.c_str(),

@@ -33,23 +33,23 @@ struct ShortestPathOptions : public fst::script::ShortestDistanceOptions {
 };
 
 // 1
-typedef args::Package<const FstClass &, MutableFstClass *,
-                      std::vector<WeightClass> *,
-                      const ShortestPathOptions &> ShortestPathArgs1;
+using ShortestPathArgs1 =
+    args::Package<const FstClass &, MutableFstClass *,
+                  std::vector<WeightClass> *, const ShortestPathOptions &>;
 
 template <class Arc>
 void ShortestPath(ShortestPathArgs1 *args) {
-  typedef typename Arc::Weight Weight;
-  typedef typename Arc::StateId StateId;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   const ShortestPathOptions &opts = args->arg4;
-  typedef AnyArcFilter<Arc> ArcFilter;
+  using ArcFilter = AnyArcFilter<Arc>;
   std::vector<Weight> weights;
   const Weight &weight_threshold = *opts.weight_threshold.GetWeight<Weight>();
   switch (opts.queue_type) {
     case AUTO_QUEUE: {
-      typedef AutoQueue<StateId> Queue;
+      using Queue = AutoQueue<StateId>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -60,7 +60,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       return;
     }
     case FIFO_QUEUE: {
-      typedef FifoQueue<StateId> Queue;
+      using Queue = FifoQueue<StateId>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -71,7 +71,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       return;
     }
     case LIFO_QUEUE: {
-      typedef LifoQueue<StateId> Queue;
+      using Queue = LifoQueue<StateId>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -82,7 +82,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       return;
     }
     case SHORTEST_FIRST_QUEUE: {
-      typedef NaturalShortestFirstQueue<StateId, Weight> Queue;
+      using Queue = NaturalShortestFirstQueue<StateId, Weight>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -93,7 +93,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       return;
     }
     case STATE_ORDER_QUEUE: {
-      typedef StateOrderQueue<StateId> Queue;
+      using Queue = StateOrderQueue<StateId>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -104,7 +104,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       return;
     }
     case TOP_ORDER_QUEUE: {
-      typedef TopOrderQueue<StateId> Queue;
+      using Queue = TopOrderQueue<StateId>;
       std::unique_ptr<Queue> queue(
           QueueConstructor<Queue, Arc, ArcFilter>::Construct(ifst, &weights));
       fst::ShortestPathOptions<Arc, Queue, ArcFilter> spopts(
@@ -118,8 +118,7 @@ void ShortestPath(ShortestPathArgs1 *args) {
       FSTERROR() << "Unknown queue type: " << opts.queue_type;
       ofst->SetProperties(kError, kError);
   }
-
-  // Copy the weights back
+  // Copies the weights back.
   args->arg3->resize(weights.size());
   for (auto i = 0; i < weights.size(); ++i) {
     (*args->arg3)[i] = WeightClass(weights[i]);
@@ -127,8 +126,9 @@ void ShortestPath(ShortestPathArgs1 *args) {
 }
 
 // 2
-typedef args::Package<const FstClass &, MutableFstClass *, int32, bool, bool,
-    const WeightClass &, int64> ShortestPathArgs2;
+using ShortestPathArgs2 =
+    args::Package<const FstClass &, MutableFstClass *, int32, bool, bool,
+                  const WeightClass &, int64>;
 
 template <class Arc>
 void ShortestPath(ShortestPathArgs2 *args) {

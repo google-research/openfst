@@ -11,14 +11,13 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, MutableFstClass *, bool> ReverseArgs;
+using ReverseArgs = args::Package<const FstClass &, MutableFstClass *, bool>;
 
 template <class Arc>
 void Reverse(ReverseArgs *args) {
   const Fst<Arc> &ifst = *(args->arg1.GetFst<Arc>());
   MutableFst<Arc> *ofst = args->arg2->GetMutableFst<Arc>();
   bool require_superinitial = args->arg3;
-
   Reverse(ifst, ofst, require_superinitial);
 }
 

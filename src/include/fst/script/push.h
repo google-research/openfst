@@ -12,7 +12,7 @@ namespace fst {
 namespace script {
 
 // 1
-typedef args::Package<MutableFstClass *, ReweightType, float, bool> PushArgs1;
+using PushArgs1 = args::Package<MutableFstClass *, ReweightType, float, bool>;
 
 template <class Arc>
 void Push(PushArgs1 *args) {
@@ -24,8 +24,8 @@ void Push(PushArgs1 *args) {
 }
 
 // 2
-typedef args::Package<const FstClass &, MutableFstClass *, uint32, ReweightType,
-                      float> PushArgs2;
+using PushArgs2 = args::Package<const FstClass &, MutableFstClass *, uint32,
+                                ReweightType, float>;
 
 template <class Arc>
 void Push(PushArgs2 *args) {

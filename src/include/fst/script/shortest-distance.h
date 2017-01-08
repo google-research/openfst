@@ -38,8 +38,9 @@ struct ShortestDistanceOptions {
 };
 
 // 1
-typedef args::Package<const FstClass &, std::vector<WeightClass> *,
-                      const ShortestDistanceOptions &> ShortestDistanceArgs1;
+using ShortestDistanceArgs1 =
+    args::Package<const FstClass &, std::vector<WeightClass> *,
+                  const ShortestDistanceOptions &>;
 
 template <class Queue, class Arc, class ArcFilter>
 struct QueueConstructor {
@@ -133,10 +134,9 @@ void ShortestDistanceHelper(ShortestDistanceArgs1 *args) {
 template <class Arc>
 void ShortestDistance(ShortestDistanceArgs1 *args) {
   const ShortestDistanceOptions &opts = args->arg3;
-  typedef typename Arc::StateId StateId;
-  typedef typename Arc::Weight Weight;
-
-  // Must consider (opts.queue_type x opts.filter_type) options
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+  // Must consider (opts.queue_type x opts.filter_type) options.
   switch (opts.queue_type) {
     default:
       FSTERROR() << "Unknown queue type: " << opts.queue_type;
@@ -163,8 +163,8 @@ void ShortestDistance(ShortestDistanceArgs1 *args) {
 }
 
 // 2
-typedef args::Package<const FstClass &, std::vector<WeightClass> *, bool,
-                      double> ShortestDistanceArgs2;
+using ShortestDistanceArgs2 =
+    args::Package<const FstClass &, std::vector<WeightClass> *, bool, double>;
 
 template <class Arc>
 void ShortestDistance(ShortestDistanceArgs2 *args) {
@@ -176,16 +176,6 @@ void ShortestDistance(ShortestDistanceArgs2 *args) {
   retval->resize(distance.size());
   for (size_t i = 0; i < distance.size(); ++i)
     (*retval)[i] = WeightClass(distance[i]);
-}
-
-// 3
-typedef args::WithReturnValue<WeightClass &, const FstClass &>
-    ShortestDistanceArgs3;
-
-template <class Arc>
-void ShortestDistance(ShortestDistanceArgs3 *args) {
-  const Fst<Arc> &fst = *(args->args.GetFst<Arc>());
-  args->retval = WeightClass(ShortestDistance(fst));
 }
 
 // 1

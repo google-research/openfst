@@ -3,8 +3,8 @@
 //
 // Outputs as strings the string FSTs in a finite-state archive.
 
-#ifndef FST_EXTENSIONS_FAR_PRINT_STRINGS_H__
-#define FST_EXTENSIONS_FAR_PRINT_STRINGS_H__
+#ifndef FST_EXTENSIONS_FAR_PRINT_STRINGS_H_
+#define FST_EXTENSIONS_FAR_PRINT_STRINGS_H_
 
 #include <iomanip>
 #include <string>
@@ -21,12 +21,11 @@ namespace fst {
 
 template <class Arc>
 void FarPrintStrings(const std::vector<string> &ifilenames,
-                     const FarEntryType entry_type,
-                     const FarTokenType far_token_type, const string &begin_key,
-                     const string &end_key, const bool print_key,
-                     const bool print_weight, const string &symbols_fname,
-                     const bool initial_symbols, const int32 generate_filenames,
-                     const string &filename_prefix,
+                     FarEntryType entry_type, FarTokenType far_token_type,
+                     const string &begin_key, const string &end_key,
+                     bool print_key, bool print_weight,
+                     const string &symbols_fname, bool initial_symbols,
+                     int32 generate_filenames, const string &filename_prefix,
                      const string &filename_suffix) {
   StringTokenType token_type;
   if (far_token_type == FTT_SYMBOL) {
@@ -39,37 +38,32 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
     FSTERROR() << "FarPrintStrings: Unknown token type";
     return;
   }
-
   std::unique_ptr<const SymbolTable> syms;
   if (!symbols_fname.empty()) {
-    // allow negative flag?
-    SymbolTableTextOptions opts;
-    opts.allow_negative = true;
+    // TODO(kbg): Allow negative flag?
+    const SymbolTableTextOptions opts(true);
     syms.reset(SymbolTable::ReadText(symbols_fname, opts));
     if (!syms) {
-      LOG(ERROR) << "FarPrintStrings: Error reading symbol table: "
+      LOG(ERROR) << "FarPrintStrings: Error reading symbol table "
                  << symbols_fname;
       return;
     }
   }
-
   std::unique_ptr<FarReader<Arc>> far_reader(FarReader<Arc>::Open(ifilenames));
   if (!far_reader) return;
-
   if (!begin_key.empty()) far_reader->Find(begin_key);
-
   string okey;
   int nrep = 0;
   for (int i = 1; !far_reader->Done(); far_reader->Next(), ++i) {
-    string key = far_reader->GetKey();
+    const auto &key = far_reader->GetKey();
     if (!end_key.empty() && end_key < key) break;
-    if (okey == key)
+    if (okey == key) {
       ++nrep;
-    else
+    } else {
       nrep = 0;
+    }
     okey = key;
-
-    const Fst<Arc> *fst = far_reader->GetFst();
+    const auto *fst = far_reader->GetFst();
     if (i == 1 && initial_symbols && !syms && fst->InputSymbols())
       syms.reset(fst->InputSymbols()->Copy());
     string str;
@@ -77,7 +71,6 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
     StringPrinter<Arc> string_printer(token_type,
                                       syms ? syms.get() : fst->InputSymbols());
     string_printer(*fst, &str);
-
     if (entry_type == FET_LINE) {
       if (print_key) std::cout << key << FLAGS_far_field_separator[0];
       std::cout << str;
@@ -85,7 +78,7 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
         std::cout << FLAGS_far_field_separator[0] << ShortestDistance(*fst);
       std::cout << std::endl;
     } else if (entry_type == FET_FILE) {
-      stringstream sstrm;
+      std::stringstream sstrm;
       if (generate_filenames) {
         sstrm.fill('0');
         sstrm << std::right << std::setw(generate_filenames) << i;
@@ -93,10 +86,8 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
         sstrm << key;
         if (nrep > 0) sstrm << "." << nrep;
       }
-
       string filename;
       filename = filename_prefix + sstrm.str() + filename_suffix;
-
       std::ofstream ostrm(filename);
       if (!ostrm) {
         LOG(ERROR) << "FarPrintStrings: Can't open file: " << filename;
@@ -110,4 +101,4 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
 
 }  // namespace fst
 
-#endif  // FST_EXTENSIONS_FAR_PRINT_STRINGS_H__
+#endif  // FST_EXTENSIONS_FAR_PRINT_STRINGS_H_

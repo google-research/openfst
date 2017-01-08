@@ -3,6 +3,8 @@
 //
 // Creates the union of two FSTs.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -24,12 +26,12 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in1_name = strcmp(argv[1], "-") != 0 ? argv[1] : "";
-  string in2_name = strcmp(argv[2], "-") != 0 ? argv[2] : "";
-  string out_name = argc > 3 ? argv[3] : "";
+  const string in1_name = strcmp(argv[1], "-") != 0 ? argv[1] : "";
+  const string in2_name = strcmp(argv[2], "-") != 0 ? argv[2] : "";
+  const string out_name = argc > 3 ? argv[3] : "";
 
   if (in1_name == "" && in2_name == "") {
-    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input.";
+    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input";
     return 1;
   }
 

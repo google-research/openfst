@@ -13,17 +13,9 @@
 #include <ios>
 #include <memory>
 
-static const size_t kMaxReadChunk = 256 * 1024 * 1024;  // 256 MB
-
 namespace fst {
 
-// Alignment required for mapping structures (in bytes.)  Regions of memory
-// that are not aligned upon a 128 bit boundary will be read from the file
-// instead.  This is consistent with the alignment boundary set in the
-// const and compact fst code.
-const int MappedFile::kArchAlignment = 16;
-
-MappedFile::MappedFile(const MemoryRegion& region) : region_(region) {}
+MappedFile::MappedFile(const MemoryRegion &region) : region_(region) {}
 
 MappedFile::~MappedFile() {
   if (region_.size != 0) {
@@ -34,61 +26,37 @@ MappedFile::~MappedFile() {
       }
     } else {
       if (region_.data) {
-        operator delete(static_cast<char*>(region_.data) - region_.offset);
+        operator delete(static_cast<char *>(region_.data) - region_.offset);
       }
     }
   }
 }
 
-MappedFile* MappedFile::Allocate(size_t size, int align) {
-  MemoryRegion region;
-  region.data = nullptr;
-  region.offset = 0;
-  if (size > 0) {
-    char* buffer = static_cast<char*>(operator new(size + align));
-    size_t address = reinterpret_cast<size_t>(buffer);
-    region.offset = kArchAlignment - (address % align);
-    region.data = buffer + region.offset;
-  }
-  region.mmap = nullptr;
-  region.size = size;
-  return new MappedFile(region);
-}
-
-MappedFile* MappedFile::Borrow(void* data) {
-  MemoryRegion region;
-  region.data = data;
-  region.mmap = data;
-  region.size = 0;
-  region.offset = 0;
-  return new MappedFile(region);
-}
-
-MappedFile* MappedFile::Map(std::istream* s, bool memorymap,
-                            const string& source, size_t size) {
-  std::streampos spos = s->tellg();
+MappedFile *MappedFile::Map(std::istream *istrm, bool memorymap,
+                            const string &source, size_t size) {
+  const auto spos = istrm->tellg();
   VLOG(1) << "memorymap: " << (memorymap ? "true" : "false") << " source: \""
           << source << "\""
           << " size: " << size << " offset: " << spos;
   if (memorymap && spos >= 0 && spos % kArchAlignment == 0) {
-    size_t pos = spos;
+    const size_t pos = spos;
     int fd = open(source.c_str(), O_RDONLY);
     if (fd != -1) {
-      int pagesize = sysconf(_SC_PAGESIZE);
-      off_t offset = pos % pagesize;
-      off_t upsize = size + offset;
-      void* map =
+      const int pagesize = sysconf(_SC_PAGESIZE);
+      const off_t offset = pos % pagesize;
+      const off_t upsize = size + offset;
+      void *map =
           mmap(nullptr, upsize, PROT_READ, MAP_SHARED, fd, pos - offset);
-      char* data = reinterpret_cast<char*>(map);
+      auto *data = reinterpret_cast<char *>(map);
       if (close(fd) == 0 && map != MAP_FAILED) {
         MemoryRegion region;
         region.mmap = map;
         region.size = upsize;
-        region.data = reinterpret_cast<void*>(data + offset);
+        region.data = reinterpret_cast<void *>(data + offset);
         region.offset = offset;
         std::unique_ptr<MappedFile> mmf(new MappedFile(region));
-        s->seekg(pos + size, std::ios::beg);
-        if (s) {
+        istrm->seekg(pos + size, std::ios::beg);
+        if (istrm) {
           VLOG(1) << "mmap'ed region of " << size << " at offset " << pos
                   << " from " << source << " to addr " << map;
           return mmf.release();
@@ -98,28 +66,55 @@ MappedFile* MappedFile::Map(std::istream* s, bool memorymap,
       }
     }
   }
-  // If all else fails resort to reading from file into allocated buffer.
+  // If all else fails, reads from the file into the allocated buffer.
   if (memorymap) {
     LOG(WARNING) << "File mapping at offset " << spos << " of file " << source
-                 << " could not be honored, reading instead.";
+                 << " could not be honored, reading instead";
   }
-
-  // Read the file into the buffer in chunks not larger than kMaxReadChunk.
+  // Reads the file into the buffer in chunks not larger than kMaxReadChunk.
   std::unique_ptr<MappedFile> mf(Allocate(size));
-  char* buffer = reinterpret_cast<char*>(mf->mutable_data());
+  auto *buffer = reinterpret_cast<char *>(mf->mutable_data());
   while (size > 0) {
-    const size_t next_size = std::min(size, kMaxReadChunk);
-    std::streampos current_pos = s->tellg();
-    if (!s->read(buffer, next_size)) {
+    const auto next_size = std::min(size, kMaxReadChunk);
+    const auto current_pos = istrm->tellg();
+    if (!istrm->read(buffer, next_size)) {
       LOG(ERROR) << "Failed to read " << next_size << " bytes at offset "
-                 << current_pos << "from \"" << source << "\".";
+                 << current_pos << "from \"" << source << "\"";
       return nullptr;
     }
     size -= next_size;
     buffer += next_size;
-    VLOG(2) << "Read " << next_size << " bytes. " << size << " remaining.";
+    VLOG(2) << "Read " << next_size << " bytes. " << size << " remaining";
   }
   return mf.release();
 }
+
+MappedFile *MappedFile::Allocate(size_t size, int align) {
+  MemoryRegion region;
+  region.data = nullptr;
+  region.offset = 0;
+  if (size > 0) {
+    char *buffer = static_cast<char *>(operator new(size + align));
+    size_t address = reinterpret_cast<size_t>(buffer);
+    region.offset = kArchAlignment - (address % align);
+    region.data = buffer + region.offset;
+  }
+  region.mmap = nullptr;
+  region.size = size;
+  return new MappedFile(region);
+}
+
+MappedFile *MappedFile::Borrow(void *data) {
+  MemoryRegion region;
+  region.data = data;
+  region.mmap = data;
+  region.size = 0;
+  region.offset = 0;
+  return new MappedFile(region);
+}
+
+constexpr int MappedFile::kArchAlignment;
+
+constexpr size_t MappedFile::kMaxReadChunk;
 
 }  // namespace fst

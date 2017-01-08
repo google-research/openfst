@@ -14,11 +14,17 @@
 
 namespace fst {
 
+// This function writes UTF-8 codepoints into a vector of Labels, truncating if
+// necessary. It is possible to use this sensibly with as little as 16 bits of
+// Label precision (i.e., when all characters are within the Basic Multilingual
+// Plane). With 21 bits, one can encode all UTF-8 codepoints, including those
+// from the various Astral Planes. Naturally, it is safe to use this with larger
+// Labels (e.g., 64 bits).
 template <class Label>
 bool UTF8StringToLabels(const string &str, std::vector<Label> *labels) {
-  const char *data = str.data();
-  size_t length = str.size();
-  for (int i = 0; i < length; /* no update */) {
+  const auto *data = str.data();
+  const auto length = str.size();
+  for (size_t i = 0; i < length;) {
     int c = data[i++] & 0xff;
     if ((c & 0x80) == 0) {
       labels->push_back(c);
@@ -29,7 +35,7 @@ bool UTF8StringToLabels(const string &str, std::vector<Label> *labels) {
       }
       int count =
           (c >= 0xc0) + (c >= 0xe0) + (c >= 0xf0) + (c >= 0xf8) + (c >= 0xfc);
-      int code = c & ((1 << (6 - count)) - 1);
+      int32 code = c & ((1 << (6 - count)) - 1);
       while (count != 0) {
         if (i == length) {
           LOG(ERROR) << "UTF8StringToLabels: Truncated UTF-8 byte sequence";
@@ -44,7 +50,7 @@ bool UTF8StringToLabels(const string &str, std::vector<Label> *labels) {
         count--;
       }
       if (code < 0) {
-        // This should not be able to happen.
+        // Should be unreachable.
         LOG(ERROR) << "UTF8StringToLabels: Invalid character found: " << c;
         return false;
       }
@@ -58,7 +64,7 @@ template <class Label>
 bool LabelsToUTF8String(const std::vector<Label> &labels, string *str) {
   std::ostringstream ostr;
   for (size_t i = 0; i < labels.size(); ++i) {
-    int32_t code = labels[i];
+    int32 code = labels[i];
     if (code < 0) {
       LOG(ERROR) << "LabelsToUTF8String: Invalid character found: " << code;
       return false;

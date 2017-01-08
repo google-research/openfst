@@ -33,15 +33,18 @@ void Map(const Fst<A> &ifst, MutableFst<B> *ofst, C mapper) {
   ArcMap(ifst, ofst, mapper);
 }
 
-typedef ArcMapFstOptions MapFstOptions;
+using MapFstOptions = ArcMapFstOptions;
 
 template <class A, class B, class C>
 class MapFst : public ArcMapFst<A, B, C> {
  public:
-  typedef B Arc;
-  typedef typename B::Weight Weight;
-  typedef typename B::StateId StateId;
-  typedef CacheState<B> State;
+  using FromArc = A;
+  using ToArc = B;
+
+  using StateId = typename ToArc::StateId;
+  using Weight = typename ToArc::Weight;
+
+  using State = CacheState<B>;
 
   MapFst(const Fst<A> &fst, const C &mapper, const MapFstOptions &opts)
       : ArcMapFst<A, B, C>(fst, mapper, opts) {}
@@ -81,18 +84,23 @@ class ArcIterator<MapFst<A, B, C>> : public ArcIterator<ArcMapFst<A, B, C>> {
       : ArcIterator<ArcMapFst<A, B, C>>(fst, s) {}
 };
 
+// For backwards compatibility only; use IdentityArcMapper otherwise.
 template <class A>
 struct IdentityMapper {
-  typedef A FromArc;
-  typedef A ToArc;
+  using FromArc = A;
+  using ToArc = A;
 
-  A operator()(const A &arc) const { return arc; }
+  ToArc operator()(const FromArc &arc) const { return arc; }
 
-  MapFinalAction FinalAction() const { return MAP_NO_SUPERFINAL; }
+  constexpr MapFinalAction FinalAction() const { return MAP_NO_SUPERFINAL; }
 
-  MapSymbolsAction InputSymbolsAction() const { return MAP_COPY_SYMBOLS; }
+  constexpr MapSymbolsAction InputSymbolsAction() const {
+    return MAP_COPY_SYMBOLS;
+  }
 
-  MapSymbolsAction OutputSymbolsAction() const { return MAP_COPY_SYMBOLS; }
+  constexpr MapSymbolsAction OutputSymbolsAction() const {
+    return MAP_COPY_SYMBOLS;
+  }
 
   uint64 Properties(uint64 props) const { return props; }
 };

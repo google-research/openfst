@@ -6,6 +6,8 @@
 #ifndef FST_LIB_POWER_WEIGHT_H_
 #define FST_LIB_POWER_WEIGHT_H_
 
+#include <string>
+
 #include <fst/tuple-weight.h>
 #include <fst/weight.h>
 
@@ -13,21 +15,23 @@
 namespace fst {
 
 // Cartesian power semiring: W ^ n
+//
 // Forms:
 //  - a left semimodule when W is a left semiring,
 //  - a right semimodule when W is a right semiring,
 //  - a bisemimodule when W is a semiring,
 //    the free semimodule of rank n over W
-// The Times operation is overloaded to provide the
-// left and right scalar products.
+// The Times operation is overloaded to provide the left and right scalar
+// products.
 template <class W, size_t n>
 class PowerWeight : public TupleWeight<W, n> {
  public:
-  typedef PowerWeight<typename W::ReverseWeight, n> ReverseWeight;
+  using ReverseWeight = PowerWeight<typename W::ReverseWeight, n>;
 
   PowerWeight() {}
 
-  explicit PowerWeight(const TupleWeight<W, n> &w) : TupleWeight<W, n>(w) {}
+  explicit PowerWeight(const TupleWeight<W, n> &weight)
+      : TupleWeight<W, n>(weight) {}
 
   template <class Iterator>
   PowerWeight(Iterator begin, Iterator end) : TupleWeight<W, n>(begin, end) {}
@@ -75,18 +79,20 @@ class PowerWeight : public TupleWeight<W, n> {
 template <class W, size_t n>
 inline PowerWeight<W, n> Plus(const PowerWeight<W, n> &w1,
                               const PowerWeight<W, n> &w2) {
-  PowerWeight<W, n> w;
-  for (size_t i = 0; i < n; ++i) w.SetValue(i, Plus(w1.Value(i), w2.Value(i)));
-  return w;
+  PowerWeight<W, n> result;
+  for (auto i = 0; i < n; ++i)
+    result.SetValue(i, Plus(w1.Value(i), w2.Value(i)));
+  return result;
 }
 
 // Semiring times operation.
 template <class W, size_t n>
 inline PowerWeight<W, n> Times(const PowerWeight<W, n> &w1,
                                const PowerWeight<W, n> &w2) {
-  PowerWeight<W, n> w;
-  for (size_t i = 0; i < n; ++i) w.SetValue(i, Times(w1.Value(i), w2.Value(i)));
-  return w;
+  PowerWeight<W, n> result;
+  for (auto i = 0; i < n; ++i)
+    result.SetValue(i, Times(w1.Value(i), w2.Value(i)));
+  return result;
 }
 
 // Semiring divide operation.
@@ -94,35 +100,40 @@ template <class W, size_t n>
 inline PowerWeight<W, n> Divide(const PowerWeight<W, n> &w1,
                                 const PowerWeight<W, n> &w2,
                                 DivideType type = DIVIDE_ANY) {
-  PowerWeight<W, n> w;
-  for (size_t i = 0; i < n; ++i) {
-    w.SetValue(i, Divide(w1.Value(i), w2.Value(i), type));
+  PowerWeight<W, n> result;
+  for (auto i = 0; i < n; ++i) {
+    result.SetValue(i, Divide(w1.Value(i), w2.Value(i), type));
   }
-  return w;
+  return result;
 }
 
 // Semimodule left scalar product.
 template <class W, size_t n>
-inline PowerWeight<W, n> Times(const W &s, const PowerWeight<W, n> &w) {
-  PowerWeight<W, n> sw;
-  for (size_t i = 0; i < n; ++i) sw.SetValue(i, Times(s, w.Value(i)));
-  return sw;
+inline PowerWeight<W, n> Times(const W &scalar,
+                               const PowerWeight<W, n> &weight) {
+  PowerWeight<W, n> result;
+  for (auto i = 0; i < n; ++i)
+    result.SetValue(i, Times(scalar, weight.Value(i)));
+  return result;
 }
 
 // Semimodule right scalar product.
 template <class W, size_t n>
-inline PowerWeight<W, n> Times(const PowerWeight<W, n> &w, const W &s) {
-  PowerWeight<W, n> ws;
-  for (size_t i = 0; i < n; ++i) ws.SetValue(i, Times(w.Value(i), s));
-  return ws;
+inline PowerWeight<W, n> Times(const PowerWeight<W, n> &weight,
+                               const W &scalar) {
+  PowerWeight<W, n> result;
+  for (auto i = 0; i < n; ++i)
+    result.SetValue(i, Times(weight.Value(i), scalar));
+  return result;
 }
 
 // Semimodule dot product.
 template <class W, size_t n>
 inline W DotProduct(const PowerWeight<W, n> &w1, const PowerWeight<W, n> &w2) {
-  W w = W::Zero();
-  for (size_t i = 0; i < n; ++i) w = Plus(w, Times(w1.Value(i), w2.Value(i)));
-  return w;
+  W result(W::Zero());
+  for (auto i = 0; i < n; ++i)
+    result = Plus(result, Times(w1.Value(i), w2.Value(i)));
+  return result;
 }
 
 // This function object generates weights over the Cartesian power of rank
@@ -136,9 +147,9 @@ class WeightGenerate<PowerWeight<W, n>> {
   explicit WeightGenerate(bool allow_zero = true) : generate_(allow_zero) {}
 
   Weight operator()() const {
-    Weight w;
-    for (auto i = 0; i < n; ++i) w.SetValue(i, generate_());
-    return w;
+    Weight result;
+    for (auto i = 0; i < n; ++i) result.SetValue(i, generate_());
+    return result;
   }
 
  private:

@@ -13,150 +13,237 @@
 
 namespace fst {
 
+// Symbol table and iterator.
+
 class SymbolTable;
+
 class SymbolTableIterator;
 
-template <class W>
+// Weight templates and weights.
+
+template <class T>
 class FloatWeightTpl;
-template <class W>
+
+template <class T>
 class TropicalWeightTpl;
-template <class W>
+
+template <class T>
 class LogWeightTpl;
-template <class W>
+
+template <class T>
 class MinMaxWeightTpl;
 
-typedef FloatWeightTpl<float> FloatWeight;
-typedef TropicalWeightTpl<float> TropicalWeight;
-typedef LogWeightTpl<float> LogWeight;
-typedef MinMaxWeightTpl<float> MinMaxWeight;
+using FloatWeight = FloatWeightTpl<float>;
 
-template <class W>
+using TropicalWeight = TropicalWeightTpl<float>;
+
+using LogWeight = LogWeightTpl<float>;
+
+using MinMaxWeight = MinMaxWeightTpl<float>;
+
+// Arc templates and arcs.
+
+template <class Weight>
 class ArcTpl;
-typedef ArcTpl<TropicalWeight> StdArc;
-typedef ArcTpl<LogWeight> LogArc;
 
-template <class E, class U>
+using StdArc = ArcTpl<TropicalWeight>;
+
+using LogArc = ArcTpl<LogWeight>;
+
+// Stores.
+
+template <class Element, class U>
 class DefaultCompactStore;
 
-template <class A, class C, class U = uint32,
-          class S = DefaultCompactStore<typename C::Element, U>>
+template <class Arc>
+class DefaultCacheStore;
+
+// FST templates.
+
+template <class Arc, class Compactor, class U = uint32,
+    class CompactStore = DefaultCompactStore<typename Compactor::Element, U>,
+    class CacheStore = DefaultCacheStore<Arc>>
 class CompactFst;
-template <class A, class U = uint32>
+
+template <class Arc, class U = uint32>
 class ConstFst;
-template <class A, class W, class M>
+
+template <class Arc, class Weight, class Matcher>
 class EditFst;
-template <class A>
+
+template <class Arc>
 class ExpandedFst;
-template <class A>
+
+template <class Arc>
 class Fst;
-template <class A>
+
+template <class Arc>
 class MutableFst;
-template <class A, class M = std::allocator<A>>
+
+template <class Arc, class Allocator = std::allocator<Arc>>
 class VectorState;
-template <class A, class S = VectorState<A>>
+
+template <class Arc, class State = VectorState<Arc>>
 class VectorFst;
 
-template <class A>
-class DefaultCacheStore;
-template <class A, class P = ssize_t>
+template <class Arc, class U = ssize_t>
 class DefaultReplaceStateTable;
 
-template <class A, class C>
+// On-the-fly operations.
+
+template <class Arc, class Compare>
 class ArcSortFst;
-template <class A>
+
+template <class Arc>
 class ClosureFst;
-template <class A, class C = DefaultCacheStore<A>>
+
+template <class Arc, class Store = DefaultCacheStore<Arc>>
 class ComposeFst;
-template <class A>
+
+template <class Arc>
 class ConcatFst;
-template <class A>
+
+template <class Arc>
 class DeterminizeFst;
-template <class A>
+
+template <class Arc>
 class DifferenceFst;
-template <class A>
+
+template <class Arc>
 class IntersectFst;
-template <class A>
+
+template <class Arc>
 class InvertFst;
-template <class A, class B, class C>
+
+template <class AArc, class BArc, class Mapper>
 class ArcMapFst;
-template <class A>
+
+template <class Arc>
 class ProjectFst;
-template <class A, class B, class S>
+
+template <class AArc, class BArc, class Selector>
 class RandGenFst;
-template <class A>
+
+template <class Arc>
 class RelabelFst;
-template <class A, class T = DefaultReplaceStateTable<A>,
-          class C = DefaultCacheStore<A>>
-class ReplaceFst;  // NOLINT
-template <class A>
+
+template <class Arc, class StateTable = DefaultReplaceStateTable<Arc>,
+          class Store = DefaultCacheStore<Arc>>
+class ReplaceFst;
+
+template <class Arc>
 class RmEpsilonFst;
-template <class A>
+
+template <class Arc>
 class UnionFst;
+
+// Heap.
 
 template <class T, class Compare>
 class Heap;
 
-template <class A>
+// Compactors.
+
+template <class Arc>
 class AcceptorCompactor;
-template <class A>
+
+template <class Arc>
 class StringCompactor;
-template <class A>
+
+template <class Arc>
 class UnweightedAcceptorCompactor;
-template <class A>
+
+template <class Arc>
 class UnweightedCompactor;
-template <class A>
+
+template <class Arc>
 class WeightedStringCompactor;
 
-template <class A, class U = uint32>
-using CompactStringFst = CompactFst<A, StringCompactor<A>, U>;
-template <class A, class U = uint32>
-using CompactWeightedStringFst = CompactFst<A, WeightedStringCompactor<A>, U>;
-template <class A, class U = uint32>
-using CompactAcceptorFst = CompactFst<A, AcceptorCompactor<A>, U>;
-template <class A, class U = uint32>
-using CompactUnweightedFst = CompactFst<A, UnweightedCompactor<A>, U>;
-template <class A, class U = uint32>
+// Compact FSTs.
+
+template <class Arc, class U = uint32>
+using CompactStringFst = CompactFst<Arc, StringCompactor<Arc>, U>;
+
+template <class Arc, class U = uint32>
+using CompactWeightedStringFst =
+    CompactFst<Arc, WeightedStringCompactor<Arc>, U>;
+
+template <class Arc, class U = uint32>
+using CompactAcceptorFst = CompactFst<Arc, AcceptorCompactor<Arc>, U>;
+
+template <class Arc, class U = uint32>
+using CompactUnweightedFst = CompactFst<Arc, UnweightedCompactor<Arc>, U>;
+
+template <class Arc, class U = uint32>
 using CompactUnweightedAcceptorFst =
-    CompactFst<A, UnweightedAcceptorCompactor<A>, U>;
+    CompactFst<Arc, UnweightedAcceptorCompactor<Arc>, U>;
 
-typedef ConstFst<StdArc> StdConstFst;
-typedef ExpandedFst<StdArc> StdExpandedFst;
-typedef Fst<StdArc> StdFst;
-typedef MutableFst<StdArc> StdMutableFst;
-typedef VectorFst<StdArc> StdVectorFst;
+// StdArc aliases for FSTs.
 
-template <class C>
-class StdArcSortFst;
-typedef ClosureFst<StdArc> StdClosureFst;
-typedef ComposeFst<StdArc> StdComposeFst;
-typedef ConcatFst<StdArc> StdConcatFst;
-typedef DeterminizeFst<StdArc> StdDeterminizeFst;
-typedef DifferenceFst<StdArc> StdDifferenceFst;
-typedef IntersectFst<StdArc> StdIntersectFst;
-typedef InvertFst<StdArc> StdInvertFst;
-typedef ProjectFst<StdArc> StdProjectFst;
-typedef RelabelFst<StdArc> StdRelabelFst;
-typedef ReplaceFst<StdArc> StdReplaceFst;
-typedef RmEpsilonFst<StdArc> StdRmEpsilonFst;
-typedef UnionFst<StdArc> StdUnionFst;
+using StdConstFst = ConstFst<StdArc>;
+using StdExpandedFst = ExpandedFst<StdArc>;
+using StdFst = Fst<StdArc>;
+using StdMutableFst = MutableFst<StdArc>;
+using StdVectorFst = VectorFst<StdArc>;
 
-template <typename T>
+// StdArc aliases for on-the-fly operations.
+
+template <class Compare>
+using StdArcSortFst = ArcSortFst<StdArc, Compare>;
+
+using StdClosureFst = ClosureFst<StdArc>;
+
+using StdComposeFst = ComposeFst<StdArc>;
+
+using StdConcatFst = ConcatFst<StdArc>;
+
+using StdDeterminizeFst = DeterminizeFst<StdArc>;
+
+using StdDifferenceFst = DifferenceFst<StdArc>;
+
+using StdIntersectFst = IntersectFst<StdArc>;
+
+using StdInvertFst = InvertFst<StdArc>;
+
+using StdProjectFst = ProjectFst<StdArc>;
+
+using StdRelabelFst = RelabelFst<StdArc>;
+
+using StdReplaceFst = ReplaceFst<StdArc>;
+
+using StdRmEpsilonFst = RmEpsilonFst<StdArc>;
+
+using StdUnionFst = UnionFst<StdArc>;
+
+// Filter states.
+
+template <class T>
 class IntegerFilterState;
-typedef IntegerFilterState<signed char> CharFilterState;
-typedef IntegerFilterState<short> ShortFilterState;
-typedef IntegerFilterState<int> IntFilterState;
 
-template <class F>
+using CharFilterState = IntegerFilterState<signed char>;
+
+using ShortFilterState = IntegerFilterState<short>;  // NOLINT
+
+using IntFilterState = IntegerFilterState<int>;
+
+// Matchers and filters.
+
+template <class FST>
 class Matcher;
-template <class M1, class M2 = M1>
+
+template <class Matcher1, class Matcher2 = Matcher1>
 class NullComposeFilter;
-template <class M1, class M2 = M1>
+
+template <class Matcher1, class Matcher2 = Matcher1>
 class TrivialComposeFilter;
-template <class M1, class M2 = M1>
+
+template <class Matcher1, class Matcher2 = Matcher1>
 class SequenceComposeFilter;
-template <class M1, class M2 = M1>
+
+template <class Matcher1, class Matcher2 = Matcher1>
 class AltSequenceComposeFilter;
-template <class M1, class M2 = M1>
+
+template <class Matcher1, class Matcher2 = Matcher1>
 class MatchComposeFilter;
 
 }  // namespace fst

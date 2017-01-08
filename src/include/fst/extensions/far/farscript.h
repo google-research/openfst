@@ -26,10 +26,9 @@
 namespace fst {
 namespace script {
 
-// Note: it is safe to pass these strings as references because
-// this struct is only used to pass them deeper in the call graph.
-// Be sure you understand why this is so before using this struct
-// for anything else!
+// Note: it is safe to pass these strings as references because this struct is
+// only used to pass them deeper in the call graph. Be sure you understand why
+// this is so before using this struct for anything else!
 struct FarCompileStringsArgs {
   const std::vector<string> &in_fnames;
   const string &out_fname;
@@ -72,7 +71,7 @@ struct FarCompileStringsArgs {
 
 template <class Arc>
 void FarCompileStrings(FarCompileStringsArgs *args) {
-  fst::FarCompileStrings<Arc>(
+  FarCompileStrings<Arc>(
       args->in_fnames, args->out_fname, args->fst_type, args->far_type,
       args->generate_keys, args->fet, args->tt, args->symbols_fname,
       args->unknown_symbol, args->keep_symbols, args->initial_symbols,
@@ -88,10 +87,9 @@ void FarCompileStrings(const std::vector<string> &in_fnames,
                        bool initial_symbols, bool allow_negative_labels,
                        const string &key_prefix, const string &key_suffix);
 
-// Note: it is safe to pass these strings as references because
-// this struct is only used to pass them deeper in the call graph.
-// Be sure you understand why this is so before using this struct
-// for anything else!
+// Note: it is safe to pass these strings as references because this struct is
+// only used to pass them deeper in the call graph. Be sure you understand why
+// this is so before using this struct for anything else!
 struct FarCreateArgs {
   const std::vector<string> &in_fnames;
   const string &out_fname;
@@ -113,8 +111,8 @@ struct FarCreateArgs {
 
 template <class Arc>
 void FarCreate(FarCreateArgs *args) {
-  fst::FarCreate<Arc>(args->in_fnames, args->out_fname, args->generate_keys,
-                          args->far_type, args->key_prefix, args->key_suffix);
+  FarCreate<Arc>(args->in_fnames, args->out_fname, args->generate_keys,
+                 args->far_type, args->key_prefix, args->key_suffix);
 }
 
 void FarCreate(const std::vector<string> &in_fnames, const string &out_fname,
@@ -122,9 +120,10 @@ void FarCreate(const std::vector<string> &in_fnames, const string &out_fname,
                const FarType &far_type, const string &key_prefix,
                const string &key_suffix);
 
-typedef args::Package<const string &, const string &, float, const string &,
-                      const string &> FarEqualInnerArgs;
-typedef args::WithReturnValue<bool, FarEqualInnerArgs> FarEqualArgs;
+using FarEqualInnerArgs = args::Package<const string &, const string &, float,
+                                        const string &, const string &>;
+
+using FarEqualArgs = args::WithReturnValue<bool, FarEqualInnerArgs>;
 
 template <class Arc>
 void FarEqual(FarEqualArgs *args) {
@@ -138,9 +137,10 @@ bool FarEqual(const string &filename1, const string &filename2,
               const string &begin_key = string(),
               const string &end_key = string());
 
-typedef args::Package<const std::vector<string> &, int32, const string &,
-                      const string &, const string &, const string &,
-                      const string &> FarExtractArgs;
+using FarExtractArgs =
+    args::Package<const std::vector<string> &, int32, const string &,
+                  const string &, const string &, const string &,
+                  const string &>;
 
 template <class Arc>
 void FarExtract(FarExtractArgs *args) {
@@ -153,8 +153,8 @@ void FarExtract(const std::vector<string> &ifilenames, const string &arc_type,
                 const string &key_separator, const string &range_delimiter,
                 const string &filename_prefix, const string &filename_suffix);
 
-typedef args::Package<const std::vector<string> &, const string &,
-                      const string &, const bool> FarInfoArgs;
+using FarInfoArgs = args::Package<const std::vector<string> &, const string &,
+                                  const string &, const bool>;
 
 template <class Arc>
 void FarInfo(FarInfoArgs *args) {
@@ -165,9 +165,10 @@ void FarInfo(const std::vector<string> &filenames, const string &arc_type,
              const string &begin_key, const string &end_key,
              const bool list_fsts);
 
-typedef args::Package<const string &, const string &, float, const string &,
-                      const string &> FarIsomorphicInnerArgs;
-typedef args::WithReturnValue<bool, FarIsomorphicInnerArgs> FarIsomorphicArgs;
+using FarIsomorphicInnerArgs =
+    args::Package<const string &, const string &, float, const string &,
+                  const string &>;
+using FarIsomorphicArgs = args::WithReturnValue<bool, FarIsomorphicInnerArgs>;
 
 template <class Arc>
 void FarIsomorphic(FarIsomorphicArgs *args) {

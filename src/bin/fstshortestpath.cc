@@ -3,8 +3,11 @@
 //
 // Find shortest path(s) in an FST.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <fst/script/getters.h>
 #include <fst/script/shortest-path.h>
@@ -21,7 +24,6 @@ DEFINE_string(queue_type, "auto",
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
-  using fst::script::MutableFstClass;
   using fst::script::WeightClass;
   using fst::script::VectorFstClass;
 
@@ -36,13 +38,14 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_fname = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-  string out_fname = argc > 2 ? argv[2] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  std::unique_ptr<FstClass> ifst(FstClass::Read(in_fname));
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
-  WeightClass weight_threshold =
+  const auto weight_threshold =
       FLAGS_weight.empty() ? WeightClass::Zero(ifst->WeightType())
                            : WeightClass(ifst->WeightType(), FLAGS_weight);
 
@@ -62,7 +65,7 @@ int main(int argc, char **argv) {
 
   s::ShortestPath(*ifst, &ofst, &distance, opts);
 
-  ofst.Write(out_fname);
+  ofst.Write(out_name);
 
   return 0;
 }

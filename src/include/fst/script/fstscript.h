@@ -25,10 +25,12 @@
 #include <fst/script/text-io.h>
 #include <fst/script/weight-class.h>
 
-// Templates like Operation< >, Apply< >, and flag-to-enum getters.
+// Flag-to-enum parsers.
+#include <fst/script/getters.h>
+// Templates like Operation<> and Apply<>.
 #include <fst/script/script-impl.h>
 
-// Operations
+// Operations.
 #include <fst/script/arcsort.h>
 #include <fst/script/closure.h>
 #include <fst/script/compile.h>
@@ -69,13 +71,11 @@
 #include <fst/script/union.h>
 #include <fst/script/verify.h>
 
-// REGISTER OPERATIONS
-
 // This class is necessary because registering each of the operations
 // separately overfills the stack, as there's so many of them.
-
 namespace fst {
 namespace script {
+
 template <class Arc>
 class AllFstOperationsRegisterer {
  public:
@@ -148,7 +148,6 @@ class AllFstOperationsRegisterer {
     REGISTER_FST_OPERATION(RmEpsilon, Arc, RmEpsilonArgs3);
     REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs1);
     REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs2);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs3);
     REGISTER_FST_OPERATION(ShortestPath, Arc, ShortestPathArgs1);
     REGISTER_FST_OPERATION(ShortestPath, Arc, ShortestPathArgs2);
     REGISTER_FST_OPERATION(Synchronize, Arc, SynchronizeArgs);

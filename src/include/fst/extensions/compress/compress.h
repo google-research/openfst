@@ -293,7 +293,7 @@ void Compressor<Arc>::BfsOrder(const ExpandedFst<Arc> &fst,
                                std::vector<StateId> *order) {
   Arc arc;
   StateId bfs_visit_number = 0;
-  queue<StateId> states_queue;
+  std::queue<StateId> states_queue;
   order->assign(fst.NumStates(), kNoStateId);
   states_queue.push(fst.Start());
   (*order)[fst.Start()] = bfs_visit_number++;
@@ -784,7 +784,7 @@ bool Compress(const Fst<Arc> &fst, const string &file_name,
               const bool gzip = false) {
   if (gzip) {
     if (file_name.empty()) {
-      stringstream strm;
+      std::stringstream strm;
       Compress(fst, strm);
       OGzFile gzfile(fileno(stdout));
       gzfile.write(strm);
@@ -793,7 +793,7 @@ bool Compress(const Fst<Arc> &fst, const string &file_name,
         return false;
       }
     } else {
-      stringstream strm;
+      std::stringstream strm;
       Compress(fst, strm);
       OGzFile gzfile(file_name.c_str());
       if (!gzfile) {

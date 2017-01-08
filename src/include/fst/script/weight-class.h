@@ -45,7 +45,7 @@ class WeightClassImpl : public WeightImplBase {
 
   const string &Type() const override { return W::Type(); }
 
-  void Print(std::ostream *o) const override { *o << weight_; }
+  void Print(std::ostream *ostrm) const override { *ostrm << weight_; }
 
   string ToString() const override {
     string str;
@@ -54,8 +54,7 @@ class WeightClassImpl : public WeightImplBase {
   }
 
   bool operator==(const WeightImplBase &other) const override {
-    const WeightClassImpl<W> *typed_other =
-        static_cast<const WeightClassImpl<W> *>(&other);
+    const auto *typed_other = static_cast<const WeightClassImpl<W> *>(&other);
     return weight_ == typed_other->weight_;
   }
 
@@ -102,8 +101,8 @@ class WeightClass {
       : impl_(new WeightClassImpl<W>(weight)) {}
 
   template <class W>
-  explicit WeightClass(const WeightClassImpl<W> &wci)
-      : impl_(new WeightClassImpl<W>(wci)) {}
+  explicit WeightClass(const WeightClassImpl<W> &impl)
+      : impl_(new WeightClassImpl<W>(impl)) {}
 
   WeightClass(const string &weight_type, const string &weight_str);
 
@@ -115,19 +114,17 @@ class WeightClass {
     return *this;
   }
 
-  // The statics are defined in the .cc.
+  static constexpr const char *__ZERO__ = "__ZERO__";  // NOLINT
 
-  static const char *__ZERO__;  // NOLINT
+  static WeightClass Zero(const string &weight_type);
 
-  static const WeightClass Zero(const string &weight_type);
+  static constexpr const char *__ONE__ = "__ONE__";  // NOLINT
 
-  static const char *__ONE__;  // NOLINT
+  static WeightClass One(const string &weight_type);
 
-  static const WeightClass One(const string &weight_type);
+  static constexpr const char *__NOWEIGHT__ = "__NOWEIGHT__";  // NOLINT
 
-  static const char *__NOWEIGHT__;  // NOLINT
-
-  static const WeightClass NoWeight(const string &weight_type);
+  static WeightClass NoWeight(const string &weight_type);
 
   template <class W>
   const W *GetWeight() const {
@@ -185,9 +182,9 @@ std::ostream &operator<<(std::ostream &o, const WeightClass &c);
 
 // Registration for generic weight types.
 
-typedef WeightImplBase *(*StrToWeightImplBaseT)(const string &str,
-                                                const string &src,
-                                                size_t nline);
+using StrToWeightImplBaseT = WeightImplBase *(*)(const string &str,
+                                                 const string &src,
+                                                 size_t nline);
 
 template <class W>
 WeightImplBase *StrToWeightImplBase(const string &str, const string &src,
@@ -205,11 +202,13 @@ class WeightClassRegister : public GenericRegister<string, StrToWeightImplBaseT,
                                                    WeightClassRegister> {
  protected:
   string ConvertKeyToSoFilename(const string &key) const override {
-    return key + ".so";
+    string legal_type(key);
+    ConvertToLegalCSymbol(&legal_type);
+    return legal_type + ".so";
   }
 };
 
-typedef GenericRegisterer<WeightClassRegister> WeightClassRegisterer;
+using WeightClassRegisterer = GenericRegisterer<WeightClassRegister>;
 
 // Internal version; needs to be called by wrapper in order for macro args to
 // expand.

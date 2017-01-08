@@ -18,12 +18,8 @@
 
 namespace fst {
 
-// Identifies stream data as an add-on fst.
-static const int32 kAddOnMagicNumber = 446681434;
-
-//
-// Some useful add-on objects.
-//
+// Identifies stream data as an add-on FST.
+static constexpr int32 kAddOnMagicNumber = 446681434;
 
 // Nothing to save.
 class NullAddOn {
@@ -48,9 +44,11 @@ class AddOnPair {
       : a1_(std::move(a1)), a2_(std::move(a2)) {}
 
   const A1 *First() const { return a1_.get(); }
+
   const A2 *Second() const { return a2_.get(); }
 
   std::shared_ptr<A1> SharedFirst() const { return a1_; }
+
   std::shared_ptr<A2> SharedSecond() const { return a2_; }
 
   static AddOnPair<A1, A2> *Read(std::istream &istrm,
@@ -84,16 +82,21 @@ class AddOnPair {
   std::shared_ptr<A2> a2_;
 };
 
-// Add to an Fst F a type T object. T must have a 'T* Read(std::istream &)',
-// a 'bool Write(std::ostream &)' method.
-// The result is a new Fst implemenation with type name 'type'.
-template <class F, class T>
-class AddOnImpl : public FstImpl<typename F::Arc> {
+namespace internal {
+
+// Adds an object of type T to an FST. T must support:
+//
+//     T* Read(std::istream &);
+//     bool Write(std::ostream &);
+//
+// The resulting type is a new FST implementation.
+template <class FST, class T>
+class AddOnImpl : public FstImpl<typename FST::Arc> {
  public:
-  typedef typename F::Arc Arc;
-  typedef typename Arc::Label Label;
-  typedef typename Arc::Weight Weight;
-  typedef typename Arc::StateId StateId;
+  using Arc = typename FST::Arc;
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
 
   using FstImpl<Arc>::SetType;
   using FstImpl<Arc>::SetInputSymbols;
@@ -103,7 +106,7 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
 
   // We make a thread-safe copy of the FST by default since an FST
   // implementation is expected to not share mutable data between objects.
-  AddOnImpl(const F &fst, const string &type,
+  AddOnImpl(const FST &fst, const string &type,
             std::shared_ptr<T> t = std::shared_ptr<T>())
       : fst_(fst, true), t_(std::move(t)) {
     SetType(type);
@@ -125,7 +128,8 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
 
   // We make a thread-safe copy of the FST by default since an FST
   // implementation is expected to not share mutable data between objects.
-  AddOnImpl(const AddOnImpl<F, T> &impl) : fst_(impl.fst_, true), t_(impl.t_) {
+  AddOnImpl(const AddOnImpl<FST, T> &impl)
+      : fst_(impl.fst_, true), t_(impl.t_) {
     SetType(impl.Type());
     SetProperties(fst_.Properties(kCopyProperties, false));
     SetInputSymbols(fst_.InputSymbols());
@@ -133,7 +137,9 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
   }
 
   StateId Start() const { return fst_.Start(); }
+
   Weight Final(StateId s) const { return fst_.Final(s); }
+
   size_t NumArcs(StateId s) const { return fst_.NumArcs(s); }
 
   size_t NumInputEpsilons(StateId s) const { return fst_.NumInputEpsilons(s); }
@@ -144,55 +150,52 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
 
   size_t NumStates() const { return fst_.NumStates(); }
 
-  static AddOnImpl<F, T> *Read(std::istream &strm, const FstReadOptions &opts) {
+  static AddOnImpl<FST, T> *Read(std::istream &strm,
+                                 const FstReadOptions &opts) {
     FstReadOptions nopts(opts);
     FstHeader hdr;
     if (!nopts.header) {
       hdr.Read(strm, nopts.source);
       nopts.header = &hdr;
     }
-    std::unique_ptr<AddOnImpl<F, T>> impl(
-        new AddOnImpl<F, T>(nopts.header->FstType()));
+    std::unique_ptr<AddOnImpl<FST, T>> impl(
+        new AddOnImpl<FST, T>(nopts.header->FstType()));
     if (!impl->ReadHeader(strm, nopts, kMinFileVersion, &hdr)) return nullptr;
     impl.reset();
-
     int32 magic_number = 0;
-    ReadType(strm, &magic_number);  // Ensures this is an add-on Fst.
+    ReadType(strm, &magic_number);  // Ensures this is an add-on FST.
     if (magic_number != kAddOnMagicNumber) {
       LOG(ERROR) << "AddOnImpl::Read: Bad add-on header: " << nopts.source;
       return nullptr;
     }
-
     FstReadOptions fopts(opts);
     fopts.header = nullptr;  // Contained header was written out.
-    std::unique_ptr<F> fst(F::Read(strm, fopts));
+    std::unique_ptr<FST> fst(FST::Read(strm, fopts));
     if (!fst) return nullptr;
-
     std::shared_ptr<T> t;
     bool have_addon = false;
     ReadType(strm, &have_addon);
-    if (have_addon) {  // Read add-on object if present.
+    if (have_addon) {  // Reads add-on object if present.
       t = std::shared_ptr<T>(T::Read(strm, fopts));
       if (!t) return nullptr;
     }
-    return new AddOnImpl<F, T>(*fst, nopts.header->FstType(), t);
+    return new AddOnImpl<FST, T>(*fst, nopts.header->FstType(), t);
   }
 
   bool Write(std::ostream &strm, const FstWriteOptions &opts) const {
     FstHeader hdr;
     FstWriteOptions nopts(opts);
-    nopts.write_isymbols = false;  // Let contained FST hold any symbols.
+    nopts.write_isymbols = false;  // Allows contained FST to hold any symbols.
     nopts.write_osymbols = false;
     WriteHeader(strm, nopts, kFileVersion, &hdr);
-    WriteType(strm, kAddOnMagicNumber);  // Ensures this is an add-on Fst.
+    WriteType(strm, kAddOnMagicNumber);  // Ensures this is an add-on FST.
     FstWriteOptions fopts(opts);
-    fopts.write_header = true;  // Force writing contained header.
+    fopts.write_header = true;  // Forces writing contained header.
     if (!fst_.Write(strm, fopts)) return false;
     bool have_addon = !!t_;
     WriteType(strm, have_addon);
-    if (have_addon) {  // Write add-on object if present.
-      t_->Write(strm, opts);
-    }
+    // Writes add-on object if present.
+    if (have_addon) t_->Write(strm, opts);
     return true;
   }
 
@@ -204,9 +207,9 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
     fst_.InitArcIterator(s, data);
   }
 
-  F &GetFst() { return fst_; }
+  FST &GetFst() { return fst_; }
 
-  const F &GetFst() const { return fst_; }
+  const FST &GetFst() const { return fst_; }
 
   const T *GetAddOn() const { return t_.get(); }
 
@@ -220,22 +223,24 @@ class AddOnImpl : public FstImpl<typename F::Arc> {
     SetProperties(kExpanded);
   }
 
-  // Current file format version
-  static const int kFileVersion = 1;
-  // Minimum file format version supported
-  static const int kMinFileVersion = 1;
+  // Current file format version.
+  static constexpr int kFileVersion = 1;
+  // Minimum file format version supported.
+  static constexpr int kMinFileVersion = 1;
 
-  F fst_;
+  FST fst_;
   std::shared_ptr<T> t_;
 
-  AddOnImpl &operator=(const AddOnImpl &fst) = delete;
+  AddOnImpl &operator=(const AddOnImpl &) = delete;
 };
 
-template <class F, class T>
-const int AddOnImpl<F, T>::kFileVersion;
-template <class F, class T>
-const int AddOnImpl<F, T>::kMinFileVersion;
+template <class FST, class T>
+constexpr int AddOnImpl<FST, T>::kFileVersion;
 
+template <class FST, class T>
+constexpr int AddOnImpl<FST, T>::kMinFileVersion;
+
+}  // namespace internal
 }  // namespace fst
 
 #endif  // FST_LIB_ADD_ON_H_

@@ -23,7 +23,6 @@ void FarCompileStrings(const std::vector<string> &in_fnames,
                              generate_keys, fet, tt, symbols_fname,
                              unknown_symbol, keep_symbols, initial_symbols,
                              allow_negative_labels, key_prefix, key_suffix);
-
   Apply<Operation<FarCompileStringsArgs>>("FarCompileStrings", arc_type, &args);
 }
 
@@ -33,7 +32,6 @@ void FarCreate(const std::vector<string> &in_fnames, const string &out_fname,
                const string &key_suffix) {
   FarCreateArgs args(in_fnames, out_fname, generate_keys, far_type, key_prefix,
                      key_suffix);
-
   Apply<Operation<FarCreateArgs>>("FarCreate", arc_type, &args);
 }
 
@@ -42,7 +40,6 @@ bool FarEqual(const string &filename1, const string &filename2,
               const string &end_key) {
   FarEqualInnerArgs args(filename1, filename2, delta, begin_key, end_key);
   FarEqualArgs args_with_retval(args);
-
   Apply<Operation<FarEqualArgs>>("FarEqual", arc_type, &args_with_retval);
   return args_with_retval.retval;
 }
@@ -53,7 +50,6 @@ void FarExtract(const std::vector<string> &ifilenames, const string &arc_type,
                 const string &filename_prefix, const string &filename_suffix) {
   FarExtractArgs args(ifilenames, generate_filenames, keys, key_separator,
                       range_delimiter, filename_prefix, filename_suffix);
-
   Apply<Operation<FarExtractArgs>>("FarExtract", arc_type, &args);
 }
 
@@ -61,7 +57,6 @@ void FarInfo(const std::vector<string> &filenames, const string &arc_type,
              const string &begin_key, const string &end_key,
              const bool list_fsts) {
   FarInfoArgs args(filenames, begin_key, end_key, list_fsts);
-
   Apply<Operation<FarInfoArgs>>("FarInfo", arc_type, &args);
 }
 
@@ -70,7 +65,6 @@ bool FarIsomorphic(const string &filename1, const string &filename2,
                    const string &end_key) {
   FarIsomorphicInnerArgs args(filename1, filename2, delta, begin_key, end_key);
   FarIsomorphicArgs args_with_retval(args);
-
   Apply<Operation<FarIsomorphicArgs>>("FarIsomorphic", arc_type,
                                       &args_with_retval);
   return args_with_retval.retval;
@@ -88,7 +82,6 @@ void FarPrintStrings(const std::vector<string> &ifilenames,
                            end_key, print_key, print_weight, symbols_fname,
                            initial_symbols, generate_filenames, filename_prefix,
                            filename_suffix);
-
   Apply<Operation<FarPrintStringsArgs>>("FarPrintStrings", arc_type, &args);
 }
 

@@ -3,6 +3,8 @@
 //
 // Creates binary FSTs from simple text format used by AT&T.
 
+#include <cstring>
+
 #include <fstream>
 #include <istream>
 #include <memory>
@@ -25,6 +27,7 @@ DEFINE_bool(allow_negative_labels, false,
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
+  using fst::SymbolTableTextOptions;
 
   string usage = "Creates binary FSTs from simple text format.\n\n  Usage: ";
   usage += argv[0];
@@ -49,8 +52,7 @@ int main(int argc, char **argv) {
   }
   std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
 
-  fst::SymbolTableTextOptions opts;
-  opts.allow_negative = FLAGS_allow_negative_labels;
+  const SymbolTableTextOptions opts(FLAGS_allow_negative_labels);
 
   std::unique_ptr<const SymbolTable> isyms;
   if (!FLAGS_isymbols.empty()) {
@@ -70,7 +72,7 @@ int main(int argc, char **argv) {
     if (!ssyms) return 1;
   }
 
-  string dest = argc > 2 ? argv[2] : "";
+  const string dest = argc > 2 ? argv[2] : "";
 
   s::CompileFst(istrm, source, dest, FLAGS_fst_type, FLAGS_arc_type,
                 isyms.get(), osyms.get(), ssyms.get(), FLAGS_acceptor,

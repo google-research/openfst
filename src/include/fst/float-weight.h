@@ -23,20 +23,13 @@ namespace fst {
 template <class T>
 class FloatLimits {
  public:
-  static const T PosInfinity() {
-    static const T pos_infinity = std::numeric_limits<T>::infinity();
-    return pos_infinity;
+  static constexpr T PosInfinity() {
+    return std::numeric_limits<T>::infinity();
   }
 
-  static const T NegInfinity() {
-    static const T neg_infinity = -PosInfinity();
-    return neg_infinity;
-  }
+  static constexpr T NegInfinity() { return -PosInfinity(); }
 
-  static const T NumberBad() {
-    static const T number_bad = std::numeric_limits<T>::quiet_NaN();
-    return number_bad;
-  }
+  static constexpr T NumberBad() { return std::numeric_limits<T>::quiet_NaN(); }
 };
 
 // Weight class to be templated on floating-points types.
@@ -49,10 +42,10 @@ class FloatWeightTpl {
 
   FloatWeightTpl(T f) : value_(f) {}
 
-  FloatWeightTpl(const FloatWeightTpl<T> &w) : value_(w.value_) {}
+  FloatWeightTpl(const FloatWeightTpl<T> &weight) : value_(weight.value_) {}
 
-  FloatWeightTpl<T> &operator=(const FloatWeightTpl<T> &w) {
-    value_ = w.value_;
+  FloatWeightTpl<T> &operator=(const FloatWeightTpl<T> &weight) {
+    value_ = weight.value_;
     return *this;
   }
 
@@ -91,7 +84,7 @@ class FloatWeightTpl {
 };
 
 // Single-precision float weight.
-typedef FloatWeightTpl<float> FloatWeight;
+using FloatWeight = FloatWeightTpl<float>;
 
 template <class T>
 inline bool operator==(const FloatWeightTpl<T> &w1,
@@ -175,23 +168,28 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
  public:
   using typename FloatWeightTpl<T>::ValueType;
   using FloatWeightTpl<T>::Value;
+  using ReverseWeight = TropicalWeightTpl<T>;
 
-  typedef TropicalWeightTpl<T> ReverseWeight;
+  constexpr TropicalWeightTpl() : FloatWeightTpl<T>() {}
 
-  TropicalWeightTpl() : FloatWeightTpl<T>() {}
+  constexpr TropicalWeightTpl(T f) : FloatWeightTpl<T>(f) {}
 
-  TropicalWeightTpl(T f) : FloatWeightTpl<T>(f) {}
+  constexpr TropicalWeightTpl(const TropicalWeightTpl<T> &weight)
+      : FloatWeightTpl<T>(weight) {}
 
-  TropicalWeightTpl(const TropicalWeightTpl<T> &w) : FloatWeightTpl<T>(w) {}
-
-  static const TropicalWeightTpl<T> Zero() {
-    return TropicalWeightTpl<T>(FloatLimits<T>::PosInfinity());
+  static const TropicalWeightTpl<T> &Zero() {
+    static const TropicalWeightTpl zero(FloatLimits<T>::PosInfinity());
+    return zero;
   }
 
-  static const TropicalWeightTpl<T> One() { return TropicalWeightTpl<T>(0.0F); }
+  static const TropicalWeightTpl<T> &One() {
+    static const TropicalWeightTpl one(0.0F);
+    return one;
+  }
 
-  static const TropicalWeightTpl<T> NoWeight() {
-    return TropicalWeightTpl<T>(FloatLimits<T>::NumberBad());
+  static const TropicalWeightTpl<T> &NoWeight() {
+    static const TropicalWeightTpl no_weight(FloatLimits<T>::NumberBad());
+    return no_weight;
   }
 
   static const string &Type() {
@@ -292,29 +290,40 @@ inline TropicalWeightTpl<double> Divide(const TropicalWeightTpl<double> &w1,
   return Divide<double>(w1, w2, typ);
 }
 
+template <class T>
+inline TropicalWeightTpl<T> Power(const TropicalWeightTpl<T> &weight,
+                                  T scalar) {
+  return TropicalWeightTpl<T>(weight.Value() * scalar);
+}
+
 // Log semiring: (log(e^-x + e^-y), +, inf, 0).
 template <class T>
 class LogWeightTpl : public FloatWeightTpl<T> {
  public:
   using typename FloatWeightTpl<T>::ValueType;
   using FloatWeightTpl<T>::Value;
+  using ReverseWeight = LogWeightTpl;
 
-  typedef LogWeightTpl ReverseWeight;
+  constexpr LogWeightTpl() : FloatWeightTpl<T>() {}
 
-  LogWeightTpl() : FloatWeightTpl<T>() {}
+  constexpr LogWeightTpl(T f) : FloatWeightTpl<T>(f) {}
 
-  LogWeightTpl(T f) : FloatWeightTpl<T>(f) {}
+  constexpr LogWeightTpl(const LogWeightTpl<T> &weight)
+      : FloatWeightTpl<T>(weight) {}
 
-  LogWeightTpl(const LogWeightTpl<T> &w) : FloatWeightTpl<T>(w) {}
-
-  static const LogWeightTpl<T> Zero() {
-    return LogWeightTpl<T>(FloatLimits<T>::PosInfinity());
+  static const LogWeightTpl &Zero() {
+    static const LogWeightTpl zero(FloatLimits<T>::PosInfinity());
+    return zero;
   }
 
-  static const LogWeightTpl<T> One() { return LogWeightTpl<T>(0.0F); }
+  static const LogWeightTpl &One() {
+    static const LogWeightTpl one(0.0F);
+    return one;
+  }
 
-  static const LogWeightTpl<T> NoWeight() {
-    return LogWeightTpl<T>(FloatLimits<T>::NumberBad());
+  static const LogWeightTpl &NoWeight() {
+    static const LogWeightTpl no_weight(FloatLimits<T>::NumberBad());
+    return no_weight;
   }
 
   static const string &Type() {
@@ -431,7 +440,12 @@ inline LogWeightTpl<double> Divide(const LogWeightTpl<double> &w1,
   return Divide<double>(w1, w2, typ);
 }
 
-// MinMax semiring: (min, max, inf, -inf)
+template <class T>
+inline LogWeightTpl<T> Power(const LogWeightTpl<T> &weight, T scalar) {
+  return LogWeightTpl<T>(weight.Value() * scalar);
+}
+
+// MinMax semiring: (min, max, inf, -inf).
 template <class T>
 class MinMaxWeightTpl : public FloatWeightTpl<T> {
  public:
@@ -444,18 +458,22 @@ class MinMaxWeightTpl : public FloatWeightTpl<T> {
 
   MinMaxWeightTpl(T f) : FloatWeightTpl<T>(f) {}
 
-  MinMaxWeightTpl(const MinMaxWeightTpl<T> &w) : FloatWeightTpl<T>(w) {}
+  MinMaxWeightTpl(const MinMaxWeightTpl<T> &weight)
+      : FloatWeightTpl<T>(weight) {}
 
-  static const MinMaxWeightTpl<T> Zero() {
-    return MinMaxWeightTpl<T>(FloatLimits<T>::PosInfinity());
+  static const MinMaxWeightTpl &Zero() {
+    static const MinMaxWeightTpl zero(FloatLimits<T>::PosInfinity());
+    return zero;
   }
 
-  static const MinMaxWeightTpl<T> One() {
-    return MinMaxWeightTpl<T>(FloatLimits<T>::NegInfinity());
+  static const MinMaxWeightTpl &One() {
+    static const MinMaxWeightTpl one(FloatLimits<T>::NegInfinity());
+    return one;
   }
 
-  static const MinMaxWeightTpl<T> NoWeight() {
-    return MinMaxWeightTpl<T>(FloatLimits<T>::NumberBad());
+  static const MinMaxWeightTpl &NoWeight() {
+    static const MinMaxWeightTpl no_weight(FloatLimits<T>::NumberBad());
+    return no_weight;
   }
 
   static const string &Type() {
@@ -531,7 +549,7 @@ inline MinMaxWeightTpl<T> Divide(const MinMaxWeightTpl<T> &w1,
                                  const MinMaxWeightTpl<T> &w2,
                                  DivideType typ = DIVIDE_ANY) {
   if (!w1.Member() || !w2.Member()) return MinMaxWeightTpl<T>::NoWeight();
-  // min(w1, x) = w2, w1 >= w2 => min(w1, x) = w2, x = w2
+  // min(w1, x) = w2, w1 >= w2 => min(w1, x) = w2, x = w2.
   return w1.Value() >= w2.Value() ? w1 : FloatLimits<T>::NumberBad();
 }
 

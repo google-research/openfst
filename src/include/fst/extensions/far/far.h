@@ -3,8 +3,8 @@
 //
 // Finite-State Transducer (FST) archive classes.
 
-#ifndef FST_EXTENSIONS_FAR_FAR_H__
-#define FST_EXTENSIONS_FAR_FAR_H__
+#ifndef FST_EXTENSIONS_FAR_FAR_H_
+#define FST_EXTENSIONS_FAR_FAR_H_
 
 #include <iostream>
 #include <sstream>
@@ -475,4 +475,4 @@ FarReader<A> *FarReader<A>::Open(const std::vector<string> &filenames) {
 
 }  // namespace fst
 
-#endif  // FST_EXTENSIONS_FAR_FAR_H__
+#endif  // FST_EXTENSIONS_FAR_FAR_H_

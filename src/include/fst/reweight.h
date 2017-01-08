@@ -15,48 +15,53 @@ namespace fst {
 
 enum ReweightType { REWEIGHT_TO_INITIAL, REWEIGHT_TO_FINAL };
 
-// Reweight FST according to the potentials defined by the POTENTIAL
-// vector in the direction defined by TYPE. Weight needs to be left
-// distributive when reweighting towards the initial state and right
-// distributive when reweighting towards the final states.
+// Reweights an FST according to a vector of potentials in a given direction.
+// The weight must be left distributive when reweighting towards the initial
+// state and right distributive when reweighting towards the final states.
 //
-// An arc of weight w, with an origin state of potential p and
-// destination state of potential q, is reweighted by p\wq when
-// reweighting towards the initial state and by pw/q when reweighting
-// towards the final states.
+// An arc of weight w, with an origin state of potential p and destination state
+// of potential q, is reweighted by p^-1 \otimes (w \otimes q) when reweighting
+// torwards the initial state, and by (p \otimes w) \otimes q^-1 when
+// reweighting towards the final states.
 template <class Arc>
 void Reweight(MutableFst<Arc> *fst,
               const std::vector<typename Arc::Weight> &potential,
               ReweightType type) {
-  typedef typename Arc::Weight Weight;
-
+  using Weight = typename Arc::Weight;
   if (fst->NumStates() == 0) return;
-
+  // TODO(kbg): Make this a compile-time static_assert once:
+  // 1) All weight properties are made constexpr for all weight types.
+  // 2) We have a pleasant way to "deregister" this operation for non-path
+  //    semirings so an informative error message is produced. The best
+  //    solution will probably involve some kind of SFINAE magic.
   if (type == REWEIGHT_TO_FINAL && !(Weight::Properties() & kRightSemiring)) {
     FSTERROR() << "Reweight: Reweighting to the final states requires "
                << "Weight to be right distributive: " << Weight::Type();
     fst->SetProperties(kError, kError);
     return;
   }
-
+  // TODO(kbg): Make this a compile-time static_assert once:
+  // 1) All weight properties are made constexpr for all weight types.
+  // 2) We have a pleasant way to "deregister" this operation for non-path
+  //    semirings so an informative error message is produced. The best
+  //    solution will probably involve some kind of SFINAE magic.
   if (type == REWEIGHT_TO_INITIAL && !(Weight::Properties() & kLeftSemiring)) {
     FSTERROR() << "Reweight: Reweighting to the initial state requires "
                << "Weight to be left distributive: " << Weight::Type();
     fst->SetProperties(kError, kError);
     return;
   }
-
-  StateIterator<MutableFst<Arc>> sit(*fst);
-  for (; !sit.Done(); sit.Next()) {
-    typename Arc::StateId state = sit.Value();
-    if (state == potential.size()) break;
-    typename Arc::Weight weight = potential[state];
+  StateIterator<MutableFst<Arc>> siter(*fst);
+  for (; !siter.Done(); siter.Next()) {
+    const auto s = siter.Value();
+    if (s == potential.size()) break;
+    const auto &weight = potential[s];
     if (weight != Weight::Zero()) {
-      for (MutableArcIterator<MutableFst<Arc>> ait(fst, state); !ait.Done();
-           ait.Next()) {
-        Arc arc = ait.Value();
+      for (MutableArcIterator<MutableFst<Arc>> aiter(fst, s); !aiter.Done();
+           aiter.Next()) {
+        auto arc = aiter.Value();
         if (arc.nextstate >= potential.size()) continue;
-        typename Arc::Weight nextweight = potential[arc.nextstate];
+        const auto &nextweight = potential[arc.nextstate];
         if (nextweight == Weight::Zero()) continue;
         if (type == REWEIGHT_TO_INITIAL) {
           arc.weight =
@@ -66,60 +71,56 @@ void Reweight(MutableFst<Arc> *fst,
           arc.weight =
               Divide(Times(weight, arc.weight), nextweight, DIVIDE_RIGHT);
         }
-        ait.SetValue(arc);
+        aiter.SetValue(arc);
       }
       if (type == REWEIGHT_TO_INITIAL) {
-        fst->SetFinal(state, Divide(fst->Final(state), weight, DIVIDE_LEFT));
+        fst->SetFinal(s, Divide(fst->Final(s), weight, DIVIDE_LEFT));
       }
     }
     if (type == REWEIGHT_TO_FINAL) {
-      fst->SetFinal(state, Times(weight, fst->Final(state)));
+      fst->SetFinal(s, Times(weight, fst->Final(s)));
     }
   }
-
   // This handles elements past the end of the potentials array.
-  for (; !sit.Done(); sit.Next()) {
-    typename Arc::StateId state = sit.Value();
+  for (; !siter.Done(); siter.Next()) {
+    const auto s = siter.Value();
     if (type == REWEIGHT_TO_FINAL) {
-      fst->SetFinal(state, Times(Weight::Zero(), fst->Final(state)));
+      fst->SetFinal(s, Times(Weight::Zero(), fst->Final(s)));
     }
   }
-
-  typename Arc::Weight startweight = fst->Start() < potential.size()
-                                         ? potential[fst->Start()]
-                                         : Weight::Zero();
+  const auto startweight = fst->Start() < potential.size()
+                               ? potential[fst->Start()]
+                               : Weight::Zero();
   if ((startweight != Weight::One()) && (startweight != Weight::Zero())) {
     if (fst->Properties(kInitialAcyclic, true) & kInitialAcyclic) {
-      typename Arc::StateId state = fst->Start();
-      for (MutableArcIterator<MutableFst<Arc>> ait(fst, state); !ait.Done();
-           ait.Next()) {
-        Arc arc = ait.Value();
+      const auto s = fst->Start();
+      for (MutableArcIterator<MutableFst<Arc>> aiter(fst, s); !aiter.Done();
+           aiter.Next()) {
+        auto arc = aiter.Value();
         if (type == REWEIGHT_TO_INITIAL) {
           arc.weight = Times(startweight, arc.weight);
         } else {
           arc.weight = Times(Divide(Weight::One(), startweight, DIVIDE_RIGHT),
                              arc.weight);
         }
-        ait.SetValue(arc);
+        aiter.SetValue(arc);
       }
       if (type == REWEIGHT_TO_INITIAL) {
-        fst->SetFinal(state, Times(startweight, fst->Final(state)));
+        fst->SetFinal(s, Times(startweight, fst->Final(s)));
       } else {
-        fst->SetFinal(state,
-                      Times(Divide(Weight::One(), startweight, DIVIDE_RIGHT),
-                            fst->Final(state)));
+        fst->SetFinal(s, Times(Divide(Weight::One(), startweight, DIVIDE_RIGHT),
+                               fst->Final(s)));
       }
     } else {
-      typename Arc::StateId state = fst->AddState();
-      Weight w = type == REWEIGHT_TO_INITIAL
-                     ? startweight
-                     : Divide(Weight::One(), startweight, DIVIDE_RIGHT);
-      Arc arc(0, 0, w, fst->Start());
-      fst->AddArc(state, arc);
-      fst->SetStart(state);
+      const auto s = fst->AddState();
+      const auto weight =
+          (type == REWEIGHT_TO_INITIAL)
+              ? startweight
+              : Divide(Weight::One(), startweight, DIVIDE_RIGHT);
+      fst->AddArc(s, Arc(0, 0, weight, fst->Start()));
+      fst->SetStart(s);
     }
   }
-
   fst->SetProperties(ReweightProperties(fst->Properties(kFstProperties, false)),
                      kFstProperties);
 }

@@ -3,6 +3,8 @@
 //
 // Relabels input or output space of an FST.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -23,10 +25,9 @@ DEFINE_bool(allow_negative_labels, false,
 
 int main(int argc, char** argv) {
   namespace s = fst::script;
+  using fst::script::MutableFstClass;
   using fst::SymbolTable;
   using fst::SymbolTableTextOptions;
-  using fst::script::FstClass;
-  using fst::script::MutableFstClass;
 
   string usage =
       "Relabels the input and/or the output labels of the FST.\n\n"
@@ -47,15 +48,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
   std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_name, true));
   if (!fst) return 1;
 
   // Relabel with symbol tables.
-  SymbolTableTextOptions opts;
-  opts.allow_negative = FLAGS_allow_negative_labels;
+  const SymbolTableTextOptions opts(FLAGS_allow_negative_labels);
+
   if (!FLAGS_relabel_isymbols.empty() || !FLAGS_relabel_osymbols.empty()) {
     bool attach_new_isymbols = (fst->InputSymbols() != nullptr);
     std::unique_ptr<const SymbolTable> old_isymbols(

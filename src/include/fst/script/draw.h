@@ -64,7 +64,6 @@ struct FstDrawerArgs {
 template <class Arc>
 void DrawFst(FstDrawerArgs *args) {
   const Fst<Arc> &fst = *(args->fst.GetFst<Arc>());
-
   FstDrawer<Arc> fstdrawer(
       fst, args->isyms, args->osyms, args->ssyms, args->accep, args->title,
       args->width, args->height, args->portrait, args->vertical, args->ranksep,

@@ -9,9 +9,9 @@ namespace fst {
 namespace script {
 
 FstClass *Map(const FstClass &ifst, MapType map_type, float delta,
-              const WeightClass &weight_param) {
-  if (!ifst.WeightTypesMatch(weight_param, "Map")) return nullptr;
-  MapInnerArgs iargs(ifst, map_type, delta, weight_param);
+              const WeightClass &weight) {
+  if (!ifst.WeightTypesMatch(weight, "Map")) return nullptr;
+  MapInnerArgs iargs(ifst, map_type, delta, weight);
   MapArgs args(iargs);
   Apply<Operation<MapArgs>>("Map", ifst.ArcType(), &args);
   return args.retval;

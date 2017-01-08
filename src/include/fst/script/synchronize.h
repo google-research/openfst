@@ -11,7 +11,7 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, MutableFstClass *> SynchronizeArgs;
+using SynchronizeArgs = args::Package<const FstClass &, MutableFstClass *>;
 
 template <class Arc>
 void Synchronize(SynchronizeArgs *args) {

@@ -17,67 +17,69 @@
 namespace fst {
 namespace script {
 
-// REGISTRATION
+// Registration.
 
 REGISTER_FST_CLASSES(StdArc);
 REGISTER_FST_CLASSES(LogArc);
 REGISTER_FST_CLASSES(Log64Arc);
 
-// FST CLASS METHODS
+// FstClass methods.
 
 template <class FstT>
-FstT *ReadFst(std::istream &in, const string &fname) {
-  if (!in) {
+FstT *ReadFst(std::istream &istrm, const string &fname) {
+  if (!istrm) {
     LOG(ERROR) << "ReadFst: Can't open file: " << fname;
     return nullptr;
   }
-
   FstHeader hdr;
-  if (!hdr.Read(in, fname)) {
-    return nullptr;
-  }
-
+  if (!hdr.Read(istrm, fname)) return nullptr;
   FstReadOptions read_options(fname, &hdr);
-
-  typename IORegistration<FstT>::Register *reg =
-      IORegistration<FstT>::Register::GetRegister();
-
-  const typename IORegistration<FstT>::Reader reader =
-      reg->GetReader(hdr.ArcType());
-
+  const auto arc_type = hdr.ArcType();
+  const auto reader =
+      IORegistration<FstT>::Register::GetRegister()->GetReader(arc_type);
   if (!reader) {
-    LOG(ERROR) << "ReadFst: Unknown arc type: " << hdr.ArcType();
+    LOG(ERROR) << "ReadFst: Unknown arc type: " << arc_type;
     return nullptr;
   }
-
-  return reader(in, read_options);
+  return reader(istrm, read_options);
 }
 
 FstClass *FstClass::Read(const string &fname) {
   if (!fname.empty()) {
-    std::ifstream in(fname.c_str(),
-                          std::ios_base::in | std::ios_base::binary);
-    return ReadFst<FstClass>(in, fname);
+    std::ifstream istrm(fname.c_str(),
+                             std::ios_base::in | std::ios_base::binary);
+    return ReadFst<FstClass>(istrm, fname);
   } else {
     return ReadFst<FstClass>(std::cin, "standard input");
   }
 }
 
-FstClass *FstClass::Read(std::istream &istr, const string &source) {
-  return ReadFst<FstClass>(istr, source);
+FstClass *FstClass::Read(std::istream &istrm, const string &source) {
+  return ReadFst<FstClass>(istrm, source);
 }
 
-bool FstClass::WeightTypesMatch(const WeightClass &w,
+FstClass *FstClass::ReadFromString(const string &fst_string) {
+  std::istringstream istrm(fst_string);
+  return ReadFst<FstClass>(istrm, "StringToFst");
+}
+
+const string FstClass::WriteToString() const {
+  std::ostringstream ostrm;
+  Write(ostrm, FstWriteOptions("StringToFst"));
+  return ostrm.str();
+}
+
+bool FstClass::WeightTypesMatch(const WeightClass &weight,
                                 const string &op_name) const {
-  if (WeightType() != w.Type()) {
+  if (WeightType() != weight.Type()) {
     FSTERROR() << "FST and weight with non-matching weight types passed to "
-               << op_name << ": " << WeightType() << " and " << w.Type();
+               << op_name << ": " << WeightType() << " and " << weight.Type();
     return false;
   }
   return true;
 }
 
-// MUTABLE FST CLASS METHODS
+// MutableFstClass methods.
 
 MutableFstClass *MutableFstClass::Read(const string &fname, bool convert) {
   if (convert == false) {
@@ -101,7 +103,7 @@ MutableFstClass *MutableFstClass::Read(const string &fname, bool convert) {
   }
 }
 
-// VECTOR FST CLASS METHODS
+// VectorFstClass methods.
 
 VectorFstClass *VectorFstClass::Read(const string &fname) {
   if (!fname.empty()) {
@@ -115,16 +117,15 @@ VectorFstClass *VectorFstClass::Read(const string &fname) {
 
 IORegistration<VectorFstClass>::Entry GetVFSTRegisterEntry(
     const string &arc_type) {
-  IORegistration<VectorFstClass>::Register *reg =
-      IORegistration<VectorFstClass>::Register::GetRegister();
-  const IORegistration<VectorFstClass>::Entry &entry = reg->GetEntry(arc_type);
-  return entry;
+  return IORegistration<VectorFstClass>::Register::GetRegister()->GetEntry(
+      arc_type);
 }
 
 VectorFstClass::VectorFstClass(const string &arc_type)
     : MutableFstClass(GetVFSTRegisterEntry(arc_type).creator()) {
-  if (Properties(kError, true) & kError)
+  if (Properties(kError, true) == kError) {
     FSTERROR() << "VectorFstClass: Unknown arc type: " << arc_type;
+  }
 }
 
 VectorFstClass::VectorFstClass(const FstClass &other)

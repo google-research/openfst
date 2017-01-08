@@ -15,10 +15,11 @@ SymbolTable *MergeSymbolTable(const SymbolTable &left, const SymbolTable &right,
   // a superset of the other.
   std::unique_ptr<SymbolTable> merged(
       new SymbolTable("merge_" + left.Name() + "_" + right.Name()));
-  // copy everything from the left symbol table
-  bool left_has_all = true, right_has_all = true, relabel = false;
-  SymbolTableIterator liter(left);
-  for (; !liter.Done(); liter.Next()) {
+  // Copies everything from the left symbol table.
+  bool left_has_all = true;
+  bool right_has_all = true;
+  bool relabel = false;
+  for (SymbolTableIterator liter(left); !liter.Done(); liter.Next()) {
     merged->AddSymbol(liter.Symbol(), liter.Value());
     if (right_has_all) {
       int64 key = right.Find(liter.Symbol());
@@ -30,21 +31,16 @@ SymbolTable *MergeSymbolTable(const SymbolTable &left, const SymbolTable &right,
     }
   }
   if (right_has_all) {
-    if (right_relabel_output) {
-      *right_relabel_output = relabel;
-    }
+    if (right_relabel_output) *right_relabel_output = relabel;
     return right.Copy();
   }
   // add all symbols we can from right symbol table
   std::vector<string> conflicts;
-  SymbolTableIterator riter(right);
-  for (; !riter.Done(); riter.Next()) {
+  for (SymbolTableIterator riter(right); !riter.Done(); riter.Next()) {
     int64 key = merged->Find(riter.Symbol());
     if (key != -1) {
       // Symbol already exists, maybe with different value
-      if (key != riter.Value()) {
-        relabel = true;
-      }
+      if (key != riter.Value()) relabel = true;
       continue;
     }
     // Symbol doesn't exist from left
@@ -57,31 +53,22 @@ SymbolTable *MergeSymbolTable(const SymbolTable &left, const SymbolTable &right,
     // there is a hole and we can add this symbol with its id
     merged->AddSymbol(riter.Symbol(), riter.Value());
   }
-  if (right_relabel_output) {
-    *right_relabel_output = relabel;
-  }
-  if (left_has_all) {
-    return left.Copy();
-  }
+  if (right_relabel_output) *right_relabel_output = relabel;
+  if (left_has_all) return left.Copy();
   // Add all symbols that conflicted, in order
-  for (int i = 0; i < conflicts.size(); ++i) {
-    merged->AddSymbol(conflicts[i]);
-  }
+  for (const auto &conflict : conflicts) merged->AddSymbol(conflict);
   return merged.release();
 }
 
 SymbolTable *CompactSymbolTable(const SymbolTable &syms) {
-  std::map<int, string> sorted;
+  std::map<int64, string> sorted;
   SymbolTableIterator stiter(syms);
   for (; !stiter.Done(); stiter.Next()) {
     sorted[stiter.Value()] = stiter.Symbol();
   }
-  SymbolTable *compact = new SymbolTable(syms.Name() + "_compact");
-  uint64 newkey = 0;
-  for (std::map<int, string>::const_iterator si = sorted.begin();
-       si != sorted.end(); ++si) {
-    compact->AddSymbol(si->second, newkey++);
-  }
+  auto *compact = new SymbolTable(syms.Name() + "_compact");
+  int64 newkey = 0;
+  for (const auto &kv : sorted) compact->AddSymbol(kv.second, newkey++);
   return compact;
 }
 
@@ -100,24 +87,20 @@ SymbolTable *FstReadSymbols(const string &filename, bool input_symbols) {
   if (hdr.GetFlags() & FstHeader::HAS_ISYMBOLS) {
     std::unique_ptr<SymbolTable> isymbols(SymbolTable::Read(in, filename));
     if (isymbols == nullptr) {
-      LOG(ERROR) << "FstReadSymbols: Could not read input symbols from "
+      LOG(ERROR) << "FstReadSymbols: Couldn't read input symbols from "
                  << filename;
       return nullptr;
     }
-    if (input_symbols) {
-      return isymbols.release();
-    }
+    if (input_symbols) return isymbols.release();
   }
   if (hdr.GetFlags() & FstHeader::HAS_OSYMBOLS) {
     std::unique_ptr<SymbolTable> osymbols(SymbolTable::Read(in, filename));
     if (osymbols == nullptr) {
-      LOG(ERROR) << "FstReadSymbols: Could not read output symbols from "
+      LOG(ERROR) << "FstReadSymbols: Couldn't read output symbols from "
                  << filename;
       return nullptr;
     }
-    if (!input_symbols) {
-      return osymbols.release();
-    }
+    if (!input_symbols) return osymbols.release();
   }
   LOG(ERROR) << "FstReadSymbols: The file " << filename
              << " doesn't contain the requested symbols";

@@ -6,10 +6,6 @@
 namespace fst {
 namespace script {
 
-const char *WeightClass::__ZERO__ = "__ZERO__";
-const char *WeightClass::__ONE__ = "__ONE__";
-const char *WeightClass::__NOWEIGHT__ = "__NOWEIGHT__";
-
 REGISTER_FST_WEIGHT(StdArc::Weight);
 REGISTER_FST_WEIGHT(LogArc::Weight);
 REGISTER_FST_WEIGHT(Log64Arc::Weight);
@@ -25,19 +21,16 @@ WeightClass::WeightClass(const string &weight_type, const string &weight_str) {
   impl_.reset(stw(weight_str, "WeightClass", 0));
 }
 
-const WeightClass WeightClass::Zero(const string &weight_type) {
-  const WeightClass zero(weight_type, __ZERO__);
-  return zero;
+WeightClass WeightClass::Zero(const string &weight_type) {
+  return WeightClass(weight_type, __ZERO__);
 }
 
-const WeightClass WeightClass::One(const string &weight_type) {
-  const WeightClass one(weight_type, __ONE__);
-  return one;
+WeightClass WeightClass::One(const string &weight_type) {
+  return WeightClass(weight_type, __ONE__);
 }
 
-const WeightClass WeightClass::NoWeight(const string &weight_type) {
-  const WeightClass noweight(weight_type, __NOWEIGHT__);
-  return noweight;
+WeightClass WeightClass::NoWeight(const string &weight_type) {
+  return WeightClass(weight_type, __NOWEIGHT__);
 }
 
 bool WeightClass::WeightTypesMatch(const WeightClass &other,
@@ -51,10 +44,12 @@ bool WeightClass::WeightTypesMatch(const WeightClass &other,
 }
 
 bool operator==(const WeightClass &lhs, const WeightClass &rhs) {
-  if (!(lhs.GetImpl() && rhs.GetImpl() &&
-        lhs.WeightTypesMatch(rhs, "operator==")))
+  const auto *lhs_impl = lhs.GetImpl();
+  const auto *rhs_impl = rhs.GetImpl();
+  if (!(lhs_impl && rhs_impl && lhs.WeightTypesMatch(rhs, "operator=="))) {
     return false;
-  return *lhs.GetImpl() == *rhs.GetImpl();
+  }
+  return *lhs_impl == *rhs_impl;
 }
 
 bool operator!=(const WeightClass &lhs, const WeightClass &rhs) {
@@ -62,39 +57,45 @@ bool operator!=(const WeightClass &lhs, const WeightClass &rhs) {
 }
 
 WeightClass Plus(const WeightClass &lhs, const WeightClass &rhs) {
-  if (!(lhs.GetImpl() && rhs.GetImpl() && lhs.WeightTypesMatch(rhs, "Plus")))
+  const auto *rhs_impl = rhs.GetImpl();
+  if (!(lhs.GetImpl() && rhs_impl && lhs.WeightTypesMatch(rhs, "Plus"))) {
     return WeightClass();
+  }
   WeightClass result(lhs);
-  result.GetImpl()->PlusEq(*rhs.GetImpl());
+  result.GetImpl()->PlusEq(*rhs_impl);
   return result;
 }
 
 WeightClass Times(const WeightClass &lhs, const WeightClass &rhs) {
-  if (!(lhs.GetImpl() && rhs.GetImpl() && lhs.WeightTypesMatch(rhs, "Times")))
+  const auto *rhs_impl = rhs.GetImpl();
+  if (!(lhs.GetImpl() && rhs_impl && lhs.WeightTypesMatch(rhs, "Plus"))) {
     return WeightClass();
+  }
   WeightClass result(lhs);
-  result.GetImpl()->TimesEq(*rhs.GetImpl());
+  result.GetImpl()->TimesEq(*rhs_impl);
   return result;
 }
 
 WeightClass Divide(const WeightClass &lhs, const WeightClass &rhs) {
-  if (!(lhs.GetImpl() && rhs.GetImpl() && lhs.WeightTypesMatch(rhs, "Divide")))
+  const auto *rhs_impl = rhs.GetImpl();
+  if (!(lhs.GetImpl() && rhs_impl && lhs.WeightTypesMatch(rhs, "Divide"))) {
     return WeightClass();
+  }
   WeightClass result(lhs);
-  result.GetImpl()->DivideEq(*rhs.GetImpl());
+  result.GetImpl()->DivideEq(*rhs_impl);
   return result;
 }
 
-WeightClass Power(const WeightClass &w, size_t n) {
-  if (!w.GetImpl()) return WeightClass();
-  WeightClass result(w);
+WeightClass Power(const WeightClass &weight, size_t n) {
+  if (!weight.GetImpl()) return WeightClass();
+  WeightClass result(weight);
   result.GetImpl()->PowerEq(n);
   return result;
 }
 
-std::ostream &operator<<(std::ostream &o, const WeightClass &c) {
-  c.impl_->Print(&o);
-  return o;
+std::ostream &operator<<(std::ostream &ostrm, const WeightClass &weight) {
+  weight.impl_->Print(&ostrm);
+  return ostrm;
 }
 
 }  // namespace script

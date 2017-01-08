@@ -16,9 +16,9 @@ namespace fst {
 namespace script {
 
 // 1
-typedef args::Package<MutableFstClass *, const SymbolTable *,
-                      const SymbolTable *, bool, const SymbolTable *,
-                      const SymbolTable *, bool> RelabelArgs1;
+using RelabelArgs1 =
+    args::Package<MutableFstClass *, const SymbolTable *, const SymbolTable *,
+                  bool, const SymbolTable *, const SymbolTable *, bool>;
 
 template <class Arc>
 void Relabel(RelabelArgs1 *args) {
@@ -30,8 +30,9 @@ void Relabel(RelabelArgs1 *args) {
 using LabelPair = std::pair<int64, int64>;
 
 // 2
-typedef args::Package<MutableFstClass *, const std::vector<LabelPair> &,
-                      const std::vector<LabelPair> &> RelabelArgs2;
+using RelabelArgs2 =
+    args::Package<MutableFstClass *, const std::vector<LabelPair> &,
+                  const std::vector<LabelPair> &>;
 
 template <class Arc>
 void Relabel(RelabelArgs2 *args) {
@@ -47,8 +48,8 @@ void Relabel(RelabelArgs2 *args) {
 }
 
 // 3
-typedef args::Package<MutableFstClass *, const SymbolTable *,
-                      const SymbolTable *> RelabelArgs3;
+using RelabelArgs3 =
+    args::Package<MutableFstClass *, const SymbolTable *, const SymbolTable *>;
 template <class Arc>
 void Relabel(args::Package<MutableFstClass *, const SymbolTable *,
                            const SymbolTable *> *args) {

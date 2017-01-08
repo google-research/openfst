@@ -3,6 +3,8 @@
 //
 // Subtracts an unweighted DFA from an FSA.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -10,14 +12,15 @@
 #include <fst/script/difference.h>
 
 DEFINE_string(compose_filter, "auto",
-              "Composition filter, one of: \"alt_sequence\", \"auto\","
-              " \"match\", \"sequence\"");
+              "Composition filter, one of: \"alt_sequence\", \"auto\", "
+              "\"match\", \"null\", \"sequence\", \"trivial\"");
 DEFINE_bool(connect, true, "Trim output");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::ComposeFilter;
+  using fst::DifferenceOptions;
   using fst::script::FstClass;
-  using fst::script::MutableFstClass;
   using fst::script::VectorFstClass;
 
   string usage = "Subtracts an unweighted DFA from an FSA.\n\n  Usage: ";
@@ -31,30 +34,31 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in1_name = strcmp(argv[1], "-") == 0 ? "" : argv[1];
-  string in2_name = strcmp(argv[2], "-") == 0 ? "" : argv[2];
-  string out_name = argc > 3 ? argv[3] : "";
+  const string in1_name = strcmp(argv[1], "-") == 0 ? "" : argv[1];
+  const string in2_name = strcmp(argv[2], "-") == 0 ? "" : argv[2];
+  const string out_name = argc > 3 ? argv[3] : "";
 
   if (in1_name.empty() && in2_name.empty()) {
-    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input.";
+    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input";
     return 1;
   }
 
   std::unique_ptr<FstClass> ifst1(FstClass::Read(in1_name));
   if (!ifst1) return 1;
+
   std::unique_ptr<FstClass> ifst2(FstClass::Read(in2_name));
   if (!ifst2) return 1;
 
   VectorFstClass ofst(ifst1->ArcType());
 
-  fst::ComposeFilter compose_filter;
+  ComposeFilter compose_filter;
   if (!s::GetComposeFilter(FLAGS_compose_filter, &compose_filter)) {
     LOG(ERROR) << argv[0] << ": Unknown or unsupported compose filter type: "
                << FLAGS_compose_filter;
     return 1;
   }
 
-  fst::DifferenceOptions opts(FLAGS_connect, compose_filter);
+  const DifferenceOptions opts(FLAGS_connect, compose_filter);
 
   s::Difference(*ifst1, *ifst2, &ofst, opts);
 

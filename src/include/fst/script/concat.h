@@ -11,7 +11,7 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<MutableFstClass *, const FstClass &> ConcatArgs1;
+using ConcatArgs1 = args::Package<MutableFstClass *, const FstClass &>;
 
 template <class Arc>
 void Concat(ConcatArgs1 *args) {
@@ -20,7 +20,7 @@ void Concat(ConcatArgs1 *args) {
   Concat(ofst, ifst);
 }
 
-typedef args::Package<const FstClass &, MutableFstClass *> ConcatArgs2;
+using ConcatArgs2 = args::Package<const FstClass &, MutableFstClass *>;
 
 template <class Arc>
 void Concat(ConcatArgs2 *args) {

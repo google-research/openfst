@@ -12,8 +12,8 @@
 #include <fst/extensions/far/create.h>
 #include <fst/extensions/far/extract.h>
 #include <fst/extensions/far/far.h>
+#include <fst/extensions/far/getters.h>
 #include <fst/extensions/far/info.h>
 #include <fst/extensions/far/print-strings.h>
-#include <fst/extensions/far/util.h>
 
 #endif  // FST_EXTENSIONS_FAR_FARLIB_H_

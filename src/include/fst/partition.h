@@ -14,6 +14,7 @@
 
 
 namespace fst {
+namespace internal {
 
 template <typename T>
 class PartitionIterator;
@@ -23,32 +24,31 @@ class PartitionIterator;
 //
 // The elements are numbered from 0 to num_elements - 1.
 // Initialize(num_elements) sets up the class for a given number of elements.
-// We maintain a partition of these elements into classes.
-// The classes are also numbered from zero; you can add a class with
-// AddClass(), or add them in bulk with AllocateClasses(num_classes).
-// Initially the elements are not assigned to any class; you set up the
-// initial mapping from elements to classes by calling Add(element_id,
-// class_id). You can also move an element to a different class by calling
-// Move(element_id, class_id).
+// We maintain a partition of these elements into classes. The classes are also
+// numbered from zero; you can add a class with AddClass(), or add them in bulk
+// with AllocateClasses(num_classes). Initially the elements are not assigned
+// to any class; you set up the initial mapping from elements to classes by
+// calling Add(element_id, class_id). You can also move an element to a
+// different class by calling Move(element_id, class_id).
 //
-// We also support a rather specialized interface that allows you to
-// efficiently split classes in the Hopcroft minimization algorithm. This
-// maintains a binary partition of each class.  Let's call these, rather
-// arbitrarily, the 'yes' subset and the 'no' subset of each class, and assume
-// that by default, each element of a class is in its 'no' subset. When you
-// call SplitOn(element_id), you move element_id to to the 'yes' subset of its
-// class. (If it was already in the 'yes' set, it just stays there). The aim is
-// to enable you, later on, to split the class in two in time no greater than
-// the time you already spent calling SplitOn() for that class. We keep a list
-// of the classes which have nonempty 'yes' sets, as visited_classes_. When you
-// call FinalizeSplit(Queue *l), for each class in visited_classes_ whose 'yes'
+// We also support a rather specialized interface that allows you to efficiently
+// split classes in the Hopcroft minimization algorithm. This maintains a
+// binary partition of each class.  Let's call these, rather arbitrarily, the
+// 'yes' subset and the 'no' subset of each class, and assume that by default,
+// each element of a class is in its 'no' subset. When one calls
+// SplitOn(element_id), element_id is moved to the 'yes' subset of its class.
+// (If it was already in the 'yes' set, it just stays there). The aim is to
+// enable (later) splitting the class in two in time no greater than the time
+// already spent calling SplitOn() for that class. We keep a list of the classes
+// which have nonempty 'yes' sets, as visited_classes_. When one calls
+// FinalizeSplit(Queue *l), for each class in visited_classes_ whose 'yes'
 // and 'no' sets are both nonempty, it will create a new class consisting of
 // the smaller of the two subsets (and this class will be added to the queue),
 // and the old class will now be the larger of the two subsets. This call also
 // resets all the yes/no partitions so that everything is in the 'no' subsets.
 //
-// You can't use the Move() function if you have called SplitOn() and haven't
-// subsequently called FinalizeSplit().
+// One cannot use the Move() function if SplitOn() has been called without
+// a subsequent call to FinalizeSplit()
 template <typename T>
 class Partition {
  public:
@@ -69,7 +69,7 @@ class Partition {
 
   // Adds a class; returns new number of classes.
   T AddClass() {
-    size_t num_classes = classes_.size();
+    auto num_classes = classes_.size();
     classes_.resize(num_classes + 1);
     return num_classes;
   }
@@ -80,31 +80,32 @@ class Partition {
   }
 
   // Adds element_id to class_id. element_id should already have been allocated
-  // by calling Initialize(num_elements) [or the constructor taking
-  // num_elements] with num_elements > element_id. element_id must not
+  // by calling Initialize(num_elements)---or the constructor taking
+  // num_elements---with num_elements > element_id. element_id must not
   // currently be a member of any class; once elements have been added to a
   // class, use the Move() method to move them from one class to another.
   void Add(T element_id, T class_id) {
-    Element &this_element = elements_[element_id];
-    Class &this_class = classes_[class_id];
+    auto &this_element = elements_[element_id];
+    auto &this_class = classes_[class_id];
     ++this_class.size;
     // Adds the element to the 'no' subset of the class.
-    T no_head = this_class.no_head;
+    auto no_head = this_class.no_head;
     if (no_head >= 0) elements_[no_head].prev_element = element_id;
     this_class.no_head = element_id;
     this_element.class_id = class_id;
-    this_element.yes = 0;  // Added to the 'no' subset of the class.
+    // Adds to the 'no' subset of the class.
+    this_element.yes = 0;
     this_element.next_element = no_head;
     this_element.prev_element = -1;
   }
 
-  // Movse element_id from 'no' subset of its current class to 'no' subset of
+  // Moves element_id from 'no' subset of its current class to 'no' subset of
   // class class_id. This may not work correctly if you have called SplitOn()
   // [for any element] and haven't subsequently called FinalizeSplit().
   void Move(T element_id, T class_id) {
-    Element *elements = &(elements_[0]);
-    Element &element = elements[element_id];
-    Class &old_class = classes_[element.class_id];
+    auto elements = &(elements_[0]);
+    auto &element = elements[element_id];
+    auto &old_class = classes_[element.class_id];
     --old_class.size;
     CHECK(old_class.size >= 0 && old_class.yes_size == 0);
     // Excises the element from the 'no' list of its old class, where it is
@@ -122,17 +123,16 @@ class Partition {
     Add(element_id, class_id);
   }
 
-  // If 'element_id' was in the 'no' subset of its class, it is moved to the
-  // 'yes' subset, and we make sure its class is included in the
-  // 'visited_classes_' list.
+  // Moves element_id to the 'yes' subset of its class if it was in the 'no'
+  // subset, and marks the class as having been visited.
   void SplitOn(T element_id) {
-    Element *elements = &(elements_[0]);
-    Element &element = elements[element_id];
+    auto elements = &(elements_[0]);
+    auto &element = elements[element_id];
     if (element.yes == yes_counter_) {
       return;  // Already in the 'yes' set; nothing to do.
     }
-    T class_id = element.class_id;
-    Class &this_class = classes_[class_id];
+    auto class_id = element.class_id;
+    auto &this_class = classes_[class_id];
     // Excises the element from the 'no' list of its class.
     if (element.prev_element >= 0) {
       elements[element.prev_element].next_element = element.next_element;
@@ -157,29 +157,26 @@ class Partition {
     CHECK(this_class.yes_size <= this_class.size);
   }
 
-  // This function is to be called after you have possibly called SplitOn for
-  // one or more elements [thus moving those elements to the 'yes' subset for
-  // their class]. For each class that has a nontrivial split (i.e. it's not
-  // the case that all members are in the 'yes' or 'no' subset), this function
-  // creates a new class containing the smaller of the two subsets of elements,
-  // leaving the larger group of elements in the old class. The identifier of
-  // the new class will be added to the queue provided as the pointer 'L'.
-  // This function then moves all elements to the 'no' subset of their class.
+  // This should be called after one has possibly called SplitOn for one or more
+  // elements, thus moving those elements to the 'yes' subset for their class.
+  // For each class that has a nontrivial split (i.e., it's not the case that
+  // all members are in the 'yes' or 'no' subset), this function creates a new
+  // class containing the smaller of the two subsets of elements, leaving the
+  // larger group of elements in the old class. The identifier of the new class
+  // will be added to the queue provided as the pointer L. This method then
+  // moves all elements to the 'no' subset of their class.
   template <class Queue>
-  void FinalizeSplit(Queue *L) {
-    for (size_t i = 0, size = visited_classes_.size(); i < size; ++i) {
-      T new_class = SplitRefine(visited_classes_[i]);
-      if (new_class != -1 && L) L->Enqueue(new_class);
+  void FinalizeSplit(Queue *queue) {
+    for (const auto &visited_class : visited_classes_) {
+      const auto new_class = SplitRefine(visited_class);
+      if (new_class != -1 && queue) queue->Enqueue(new_class);
     }
     visited_classes_.clear();
-    // Incrementing yes_counter_ is an efficient way to set all the 'yes'
-    // members of the elements to false.
+    // Incrementation sets all the 'yes' members of the elements to false.
     ++yes_counter_;
   }
 
-  const T ClassId(T element_id) const {
-    return elements_[element_id].class_id;
-  }
+  const T ClassId(T element_id) const { return elements_[element_id].class_id; }
 
   const size_t ClassSize(T class_id) const { return classes_[class_id].size; }
 
@@ -190,12 +187,10 @@ class Partition {
 
   // Information about a given element.
   struct Element {
-    // this struct doesn't have a constructor; when the user calls Add() for
-    // each element, we'll set all fields.
-    T class_id;  // Class ID of this element
-    T yes;       // This is to be interpreted as a bool, true if it's in the
-    // 'yes' set of this class. The interpretation as bool is, (yes
-    // == yes_counter_ ? true : false).
+    T class_id;      // Class ID of this element.
+    T yes;           // This is to be interpreted as a bool, true if it's in the
+                     // 'yes' set of this class. The interpretation as bool is
+                     // (yes == yes_counter_ ? true : false).
     T next_element;  // Next element in the 'no' list or 'yes' list of this
                      // class, whichever of the two we belong to (think of
                      // this as the 'next' in a doubly-linked list, although
@@ -212,38 +207,39 @@ class Partition {
                  // subsets).
     T yes_size;  // Total number of elements of 'yes' subset of this class.
     T no_head;   // Index of head element of doubly-linked list in 'no' subset.
-                 // [everything is in the 'no' subset until you call SplitOn()].
+                 // Everything is in the 'no' subset until you call SplitOn().
                  // -1 means no element.
     T yes_head;  // Index of head element of doubly-linked list in 'yes' subset.
                  // -1 means no element.
   };
 
-  // This function, called from FinalizeSplit(), checks whether a class has to
+  // This method, called from FinalizeSplit(), checks whether a class has to
   // be split (a class will be split only if its 'yes' and 'no' subsets are
-  // both nonempty, but we can assume that since this function was called, the
+  // both nonempty, but one can assume that since this function was called, the
   // 'yes' subset is nonempty). It splits by taking the smaller subset and
   // making it a new class, and leaving the larger subset of elements in the
   // 'no' subset of the old class. It returns the new class if created, or -1
   // if none was created.
   T SplitRefine(T class_id) {
-    T yes_size = classes_[class_id].yes_size, size = classes_[class_id].size,
-      no_size = size - yes_size;
+    auto yes_size = classes_[class_id].yes_size;
+    auto size = classes_[class_id].size;
+    auto no_size = size - yes_size;
     if (no_size == 0) {
       // All members are in the 'yes' subset, so we don't have to create a new
       // class, just move them all to the 'no' subset.
-      CHECK(classes_[class_id].no_head < 0);
+      CHECK(classes_[class_id].no_head < 0);  // NOLINT
       classes_[class_id].no_head = classes_[class_id].yes_head;
       classes_[class_id].yes_head = -1;
       classes_[class_id].yes_size = 0;
       return -1;
     } else {
-      T new_class_id = classes_.size();
+      auto new_class_id = classes_.size();
       classes_.resize(classes_.size() + 1);
-      Class &old_class = classes_[class_id],
-            &new_class = classes_[new_class_id];
+      auto &old_class = classes_[class_id];
+      auto &new_class = classes_[new_class_id];
       // The new_class will have the values from the constructor.
       if (no_size < yes_size) {
-        // Move the 'no' subset to new class ('no' subset).
+        // Moves the 'no' subset to new class ('no' subset).
         new_class.no_head = old_class.no_head;
         new_class.size = no_size;
         // And makes the 'yes' subset of the old class ('no' subset).
@@ -260,9 +256,9 @@ class Partition {
         old_class.yes_size = 0;
         old_class.yes_head = -1;
       }
-      Element *elements = &(elements_[0]);
+      auto elements = &(elements_[0]);
       // Updates the 'class_id' of all the elements we moved.
-      for (T e = new_class.no_head; e >= 0; e = elements[e].next_element) {
+      for (auto e = new_class.no_head; e >= 0; e = elements[e].next_element) {
         elements[e].class_id = new_class_id;
       }
       return new_class_id;
@@ -270,11 +266,11 @@ class Partition {
   }
 
   // elements_[i] contains all info about the i'th element.
-  vector<Element> elements_;
+  std::vector<Element> elements_;
   // classes_[i] contains all info about the i'th class.
-  vector<Class> classes_;
+  std::vector<Class> classes_;
   // Set of visited classes to be used in split refine.
-  vector<T> visited_classes_;
+  std::vector<T> visited_classes_;
   // yes_counter_ is used in interpreting the 'yes' members of class Element.
   // If element.yes == yes_counter_, we interpret that element as being in the
   // 'yes' subset of its class. This allows us to, in effect, set all those
@@ -286,27 +282,29 @@ class Partition {
 // this is used, everything is in the 'no' subset).
 template <typename T>
 class PartitionIterator {
-  typedef typename Partition<T>::Element Element;
-
  public:
+  using Element = typename Partition<T>::Element;
+
   PartitionIterator(const Partition<T> &partition, T class_id)
-      : p_(partition),
-        element_id_(p_.classes_[class_id].no_head),
+      : partition_(partition),
+        element_id_(partition_.classes_[class_id].no_head),
         class_id_(class_id) {}
 
-  bool Done() { return (element_id_ < 0); }
+  bool Done() { return element_id_ < 0; }
 
   const T Value() { return element_id_; }
 
-  void Next() { element_id_ = p_.elements_[element_id_].next_element; }
+  void Next() { element_id_ = partition_.elements_[element_id_].next_element; }
 
-  void Reset() { element_id_ = p_.classes_[class_id_].no_head; }
+  void Reset() { element_id_ = partition_.classes_[class_id_].no_head; }
 
  private:
-  const Partition<T> &p_;
+  const Partition<T> &partition_;
   T element_id_;
   T class_id_;
 };
+
+}  // namespace internal
 }  // namespace fst
 
 #endif  // FST_LIB_PARTITION_H_

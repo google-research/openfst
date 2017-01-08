@@ -4,12 +4,16 @@
 #include <fst/fst.h>
 #include <fst/matcher-fst.h>
 
-using fst::FstRegisterer;
-using fst::StdArcLookAheadFst;
-using fst::LogArcLookAheadFst;
-using fst::LogArc;
-using fst::StdArc;
+namespace fst {
 
-// Register ArcLookAhead Fsts with common arc types
 static FstRegisterer<StdArcLookAheadFst> ArcLookAheadFst_StdArc_registerer;
-static FstRegisterer<LogArcLookAheadFst> ArcLookAheadFst_LogArc_registerer;
+static FstRegisterer<MatcherFst<
+    ConstFst<LogArc>, ArcLookAheadMatcher<SortedMatcher<ConstFst<LogArc>>>,
+    arc_lookahead_fst_type>>
+    ArcLookAheadFst_LogArc_registerer;
+static FstRegisterer<MatcherFst<
+    ConstFst<Log64Arc>, ArcLookAheadMatcher<SortedMatcher<ConstFst<Log64Arc>>>,
+    arc_lookahead_fst_type>>
+    ArcLookAheadFst_Log64Arc_registerer;
+
+}  // namespace fst

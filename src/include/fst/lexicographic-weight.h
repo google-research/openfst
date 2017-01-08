@@ -26,6 +26,9 @@ namespace fst {
 template <class W1, class W2>
 class LexicographicWeight : public PairWeight<W1, W2> {
  public:
+  using ReverseWeight = LexicographicWeight<typename W1::ReverseWeight,
+                                            typename W2::ReverseWeight>;
+
   using PairWeight<W1, W2>::Value1;
   using PairWeight<W1, W2>::Value2;
   using PairWeight<W1, W2>::SetValue1;
@@ -36,23 +39,18 @@ class LexicographicWeight : public PairWeight<W1, W2> {
   using PairWeight<W1, W2>::Quantize;
   using PairWeight<W1, W2>::Reverse;
 
-  typedef LexicographicWeight<typename W1::ReverseWeight,
-                              typename W2::ReverseWeight>
-      ReverseWeight;
-
   LexicographicWeight() {}
 
   explicit LexicographicWeight(const PairWeight<W1, W2> &w)
       : PairWeight<W1, W2>(w) {}
 
   LexicographicWeight(W1 w1, W2 w2) : PairWeight<W1, W2>(w1, w2) {
-    uint64 props = kPath;
-    if ((W1::Properties() & props) != props) {
+    if ((W1::Properties() & kPath) != kPath) {
       FSTERROR() << "LexicographicWeight must "
                  << "have the path property: " << W1::Type();
       SetValue1(W1::NoWeight());
     }
-    if ((W2::Properties() & props) != props) {
+    if ((W2::Properties() & kPath) != kPath) {
       FSTERROR() << "LexicographicWeight must "
                  << "have the path property: " << W2::Type();
       SetValue2(W2::NoWeight());
@@ -152,17 +150,17 @@ class WeightGenerate<LexicographicWeight<W1, W2>> {
 
   Weight operator()() const {
     if (allow_zero_) {
-      int n = rand() % (num_random_weights_ + 1);  // NOLINT
+      const int n = rand() % (num_random_weights_ + 1);  // NOLINT
       if (n == num_random_weights_) return Weight(W1::Zero(), W2::Zero());
     }
     return Weight(generator1_(), generator2_());
   }
 
  private:
-  Generate1 generator1_;
-  Generate2 generator2_;
+  const Generate1 generator1_;
+  const Generate2 generator2_;
   // Permits Zero() and zero divisors.
-  bool allow_zero_;
+  const bool allow_zero_;
   // The number of alternative random weights.
   const size_t num_random_weights_;
 };

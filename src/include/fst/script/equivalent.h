@@ -11,15 +11,14 @@
 namespace fst {
 namespace script {
 
-typedef args::Package<const FstClass &, const FstClass &, float, bool *>
-    EquivalentInnerArgs;
-typedef args::WithReturnValue<bool, EquivalentInnerArgs> EquivalentArgs;
+using EquivalentInnerArgs =
+    args::Package<const FstClass &, const FstClass &, float, bool *>;
+using EquivalentArgs = args::WithReturnValue<bool, EquivalentInnerArgs>;
 
 template <class Arc>
 void Equivalent(EquivalentArgs *args) {
   const Fst<Arc> &fst1 = *(args->args.arg1.GetFst<Arc>());
   const Fst<Arc> &fst2 = *(args->args.arg2.GetFst<Arc>());
-
   args->retval = Equivalent(fst1, fst2, args->args.arg3, args->args.arg4);
 }
 

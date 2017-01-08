@@ -3,21 +3,28 @@
 //
 // Returns the shortest path in a (bounded-stack) PDT.
 
+#include <cstring>
+
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
 
-DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result.");
+DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result?");
 DEFINE_string(queue_type, "fifo",
               "Queue type: one of: "
               "\"fifo\", \"lifo\", \"state\"");
-DEFINE_bool(path_gc, true, "Garbage collect shortest path data");
-DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs.");
+DEFINE_bool(path_gc, true, "Garbage collect shortest path data?");
+DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FstClass;
+  using fst::script::VectorFstClass;
+  using fst::QueueType;
+  using fst::ReadLabelPairs;
 
   string usage = "Shortest path in a (bounded-stack) PDT.\n\n  Usage: ";
   usage += argv[0];
@@ -30,10 +37,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name =
+      (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
-  s::FstClass *ifst = s::FstClass::Read(in_name);
+  std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
   if (FLAGS_pdt_parentheses.empty()) {
@@ -42,12 +50,11 @@ int main(int argc, char **argv) {
   }
 
   std::vector<s::LabelPair> parens;
-  fst::ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false);
+  if (!ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false)) return 1;
 
-  s::VectorFstClass ofst(ifst->ArcType());
+  VectorFstClass ofst(ifst->ArcType());
 
-  fst::QueueType qt;
-
+  QueueType qt;
   if (FLAGS_queue_type == "fifo") {
     qt = fst::FIFO_QUEUE;
   } else if (FLAGS_queue_type == "lifo") {
@@ -59,8 +66,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  s::PdtShortestPathOptions opts(qt, FLAGS_keep_parentheses, FLAGS_path_gc);
+  const s::PdtShortestPathOptions opts(qt, FLAGS_keep_parentheses,
+                                       FLAGS_path_gc);
+
   s::PdtShortestPath(*ifst, parens, &ofst, opts);
+
   ofst.Write(out_name);
 
   return 0;

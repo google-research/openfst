@@ -199,16 +199,16 @@ int main(int argc, char **argv) {
       log_log_sparse_expectation_tester(log_log_sparse_expectation_generate);
 
   struct UnionWeightOptions {
-    struct first {
+    using Compare = NaturalLess<TropicalWeight>;
+
+    struct Merge {
       TropicalWeight operator()(const TropicalWeight &w1,
-                                const TropicalWeight &w2) {
+                                const TropicalWeight &w2) const {
         return w1;
       }
     };
 
     using ReverseOptions = UnionWeightOptions;
-    using Compare = NaturalLess<TropicalWeight>;
-    using Merge = first;
   };
 
   using TropicalUnionWeight = UnionWeight<TropicalWeight, UnionWeightOptions>;

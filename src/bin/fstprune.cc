@@ -3,6 +3,8 @@
 //
 // Prunes states and arcs of an FST w.r.t. the shortest path weight.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -14,7 +16,6 @@ DEFINE_string(weight, "", "Weight threshold");
 
 int main(int argc, char **argv) {
   namespace s = fst::script;
-  using fst::script::FstClass;
   using fst::script::MutableFstClass;
   using fst::script::WeightClass;
 
@@ -29,13 +30,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  string out_name = argc > 2 ? argv[2] : "";
+  const string in_name = (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
+  const string out_name = argc > 2 ? argv[2] : "";
 
   std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_name, true));
   if (!fst) return 1;
 
-  WeightClass weight_threshold =
+  const auto weight_threshold =
       FLAGS_weight.empty() ? WeightClass::Zero(fst->WeightType())
                            : WeightClass(fst->WeightType(), FLAGS_weight);
 

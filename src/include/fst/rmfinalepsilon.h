@@ -15,53 +15,48 @@
 
 namespace fst {
 
-template <class A>
-void RmFinalEpsilon(MutableFst<A>* fst) {
-  typedef typename A::StateId StateId;
-  typedef typename A::Weight Weight;
-
-  // Determine the coaccesibility of states.
+// Removes final states that have epsilon-only input arcs.
+template <class Arc>
+void RmFinalEpsilon(MutableFst<Arc> *fst) {
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+  // Determines the coaccesibility of states.
   std::vector<bool> access;
   std::vector<bool> coaccess;
   uint64 props = 0;
-  SccVisitor<A> scc_visitor(nullptr, &access, &coaccess, &props);
+  SccVisitor<Arc> scc_visitor(nullptr, &access, &coaccess, &props);
   DfsVisit(*fst, &scc_visitor);
-
-  // Find potential list of removable final states. These are final states
-  // that have no outgoing transitions or final states that have a
-  // non-coaccessible future. Complexity O(S)
+  // Finds potential list of removable final states. These are final states that
+  // have no outgoing transitions or final states that have a non-coaccessible
+  // future.
   std::unordered_set<StateId> finals;
-  for (StateIterator<Fst<A>> siter(*fst); !siter.Done(); siter.Next()) {
-    StateId s = siter.Value();
+  for (StateIterator<Fst<Arc>> siter(*fst); !siter.Done(); siter.Next()) {
+    const auto s = siter.Value();
     if (fst->Final(s) != Weight::Zero()) {
       bool future_coaccess = false;
-      for (ArcIterator<Fst<A>> aiter(*fst, s); !aiter.Done(); aiter.Next()) {
-        const A& arc = aiter.Value();
+      for (ArcIterator<Fst<Arc>> aiter(*fst, s); !aiter.Done(); aiter.Next()) {
+        const auto &arc = aiter.Value();
         if (coaccess[arc.nextstate]) {
           future_coaccess = true;
           break;
         }
       }
-      if (!future_coaccess) {
-        finals.insert(s);
-      }
+      if (!future_coaccess) finals.insert(s);
     }
   }
-
-  // Move the final weight. Complexity O(E)
-  std::vector<A> arcs;
-  for (StateIterator<Fst<A>> siter(*fst); !siter.Done(); siter.Next()) {
-    StateId s = siter.Value();
-    Weight w(fst->Final(s));
-
+  // Moves the final weight.
+  std::vector<Arc> arcs;
+  for (StateIterator<Fst<Arc>> siter(*fst); !siter.Done(); siter.Next()) {
+    const auto s = siter.Value();
+    auto weight = fst->Final(s);
     arcs.clear();
-    for (ArcIterator<Fst<A>> aiter(*fst, s); !aiter.Done(); aiter.Next()) {
-      const A& arc = aiter.Value();
-      // is next state in the list of finals
+    for (ArcIterator<Fst<Arc>> aiter(*fst, s); !aiter.Done(); aiter.Next()) {
+      const auto &arc = aiter.Value();
+      // Next state is in the list of finals.
       if (finals.find(arc.nextstate) != finals.end()) {
-        // sum up all epsilon arcs
+        // Sums up all epsilon arcs.
         if (arc.ilabel == 0 && arc.olabel == 0) {
-          w = Plus(Times(fst->Final(arc.nextstate), arc.weight), w);
+          weight = Plus(Times(fst->Final(arc.nextstate), arc.weight), weight);
         } else {
           arcs.push_back(arc);
         }
@@ -69,18 +64,14 @@ void RmFinalEpsilon(MutableFst<A>* fst) {
         arcs.push_back(arc);
       }
     }
-
-    // If some arcs (epsilon arcs) were deleted, delete all
-    // arcs and add back only the non epsilon arcs
+    // If some arcs (epsilon arcs) were deleted, delete all arcs and add back
+    // only the non-epsilon arcs.
     if (arcs.size() < fst->NumArcs(s)) {
       fst->DeleteArcs(s);
-      fst->SetFinal(s, w);
-      for (size_t i = 0; i < arcs.size(); ++i) {
-        fst->AddArc(s, arcs[i]);
-      }
+      fst->SetFinal(s, weight);
+      for (const auto &arc : arcs) fst->AddArc(s, arc);
     }
   }
-
   Connect(fst);
 }
 

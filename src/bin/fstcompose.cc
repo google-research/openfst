@@ -3,6 +3,8 @@
 //
 // Composes two FSTs.
 
+#include <cstring>
+
 #include <memory>
 #include <string>
 
@@ -17,7 +19,6 @@ DEFINE_bool(connect, true, "Trim output");
 int main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
-  using fst::script::MutableFstClass;
   using fst::script::VectorFstClass;
 
   string usage = "Composes two FSTs.\n\n  Usage: ";
@@ -31,12 +32,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  string in1_name = strcmp(argv[1], "-") != 0 ? argv[1] : "";
-  string in2_name = (argc > 2 && (strcmp(argv[2], "-") != 0)) ? argv[2] : "";
-  string out_name = argc > 3 ? argv[3] : "";
+  const string in1_name = strcmp(argv[1], "-") != 0 ? argv[1] : "";
+  const string in2_name =
+      (argc > 2 && (strcmp(argv[2], "-") != 0)) ? argv[2] : "";
+  const string out_name = argc > 3 ? argv[3] : "";
 
   if (in1_name.empty() && in2_name.empty()) {
-    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input.";
+    LOG(ERROR) << argv[0] << ": Can't take both inputs from standard input";
     return 1;
   }
 
@@ -47,7 +49,7 @@ int main(int argc, char **argv) {
   if (!ifst2) return 1;
 
   if (ifst1->ArcType() != ifst2->ArcType()) {
-    LOG(ERROR) << argv[0] << ": Input FSTs must have the same arc type.";
+    LOG(ERROR) << argv[0] << ": Input FSTs must have the same arc type";
     return 1;
   }
 

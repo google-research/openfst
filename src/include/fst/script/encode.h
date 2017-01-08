@@ -16,8 +16,8 @@ namespace fst {
 namespace script {
 
 // 1: Encode using encoder on disk.
-typedef args::Package<MutableFstClass *, uint32, bool, const string &>
-    EncodeArgs1;
+using EncodeArgs1 =
+    args::Package<MutableFstClass *, uint32, bool, const string &>;
 
 template <class Arc>
 void Encode(EncodeArgs1 *args) {
@@ -36,7 +36,7 @@ void Encode(MutableFstClass *fst, uint32 flags, bool reuse_encoder,
             const string &coder_fname);
 
 // 2: Encode using an EncodeMapperClass object.
-typedef args::Package<MutableFstClass *, EncodeMapperClass *> EncodeArgs2;
+using EncodeArgs2 = args::Package<MutableFstClass *, EncodeMapperClass *>;
 
 template <class Arc>
 void Encode(EncodeArgs2 *args) {

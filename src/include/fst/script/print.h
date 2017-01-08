@@ -51,7 +51,6 @@ struct FstPrinterArgs {
 template <class Arc>
 void PrintFst(FstPrinterArgs *args) {
   const Fst<Arc> &fst = *(args->fst.GetFst<Arc>());
-
   fst::FstPrinter<Arc> fstprinter(
       fst, args->isyms, args->osyms, args->ssyms, args->accept,
       args->show_weight_one, args->sep, args->missing_symbol);
