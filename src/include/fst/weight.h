@@ -3,8 +3,8 @@
 //
 // General weight set and associated semiring operation definitions.
 
-#ifndef FST_LIB_WEIGHT_H_
-#define FST_LIB_WEIGHT_H_
+#ifndef FST_WEIGHT_H_
+#define FST_WEIGHT_H_
 
 #include <cctype>
 #include <cmath>
@@ -344,8 +344,10 @@ inline bool CompositeWeightReader::ReadElement(T *comp, bool last) {
   std::istringstream istrm(s);
   istrm >> *comp;
   // Skips separator/close parenthesis.
+  if (c_ != std::istream::traits_type::eof() && !std::isspace(c_)) {
+    c_ = istrm_.get();
+  }
   const bool is_eof = c_ == std::istream::traits_type::eof();
-  if (!is_eof && !std::isspace(c_)) c_ = istrm_.get();
   // Clears fail bit if just EOF.
   if (is_eof && !istrm_.bad()) istrm_.clear(std::ios::eofbit);
   return !is_eof && !std::isspace(c_);
@@ -353,4 +355,4 @@ inline bool CompositeWeightReader::ReadElement(T *comp, bool last) {
 
 }  // namespace fst
 
-#endif  // FST_LIB_WEIGHT_H_
+#endif  // FST_WEIGHT_H_

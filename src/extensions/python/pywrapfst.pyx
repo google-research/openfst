@@ -2429,24 +2429,28 @@ cdef class _MutableFst(_Fst):
     return self
 
   cdef void _rmepsilon(self,
+                       queue_type=b"auto",
                        bool connect=True,
-                       float delta=fst.kDelta,
+                       weight=None,
                        int64 nstate=fst.kNoStateId,
-                       weight=None) except *:
-    # Threshold is set to semiring Zero (no pruning) if weight unspecified.
+                       float delta=fst.kDelta) except *:
     cdef fst.WeightClass wc = _get_WeightClass_or_Zero(self.weight_type(),
                                                        weight)
-    fst.RmEpsilon(self._mfst.get(), connect, wc, nstate, delta)
+    cdef unique_ptr[fst.RmEpsilonOptions] opts
+    opts.reset(new fst.RmEpsilonOptions(_get_queue_type(tostring(queue_type)),
+                                        connect, wc, nstate, delta))
+    fst.RmEpsilon(self._mfst.get(), deref(opts))
     self._check_mutating_imethod()
 
   def rmepsilon(self,
+                queue_type=b"auto",
                 bool connect=True,
-                float delta=fst.kDelta,
+                weight=None,
                 int64 nstate=fst.kNoStateId,
-                weight=None):
+                float delta=fst.kDelta):
     """
-    rmepsilon(self, connect=True, delta=0.0009765625, nstate=NO_STATE_ID,
-              weight=None)
+    rmepsilon(self, queue_type="auto", connect=True, weight=None,
+              nstate=NO_STATE_ID, delta=0.0009765625):
 
     Removes epsilon transitions.
 
@@ -2454,19 +2458,18 @@ cdef class _MutableFst(_Fst):
     both input and output labels are epsilon) from an FST.
 
     Args:
+      queue_type: A string matching a known queue type; one of: "auto", "fifo",
+          "lifo", "shortest", "state", "top".
       connect: Should output be trimmed?
-      delta: Comparison/quantization delta.
-      nstate: State number threshold.
       weight: A Weight or weight string indicating the desired weight threshold
           below which paths are pruned; if omitted, no paths are pruned.
+      nstate: State number threshold.
+      delta: Comparison/quantization delta.
 
     Returns:
       self.
-
-    See also: The constructive variant, which also supports epsilon removal in
-        reverse (and which may be more efficient).
     """
-    self._rmepsilon(connect, delta, nstate, weight)
+    self._rmepsilon(queue_type, connect, weight, nstate, delta)
     return self
 
   cdef void _set_final(self, int64 state, weight=None) except *:
@@ -2488,6 +2491,9 @@ cdef class _MutableFst(_Fst):
       state: The integer index of a state.
       weight: A Weight or weight string indicating the desired final weight; if
           omitted, it is set to semiring One.
+
+    Returns:
+      self.
 
     Raises:
       FstIndexError: State index out of range.
@@ -3573,17 +3579,9 @@ cpdef bool equivalent(_Fst ifst1, _Fst ifst2, float delta=fst.kDelta) except *:
   Returns:
     True if the FSTs satisfy the above condition, else False.
 
-  Raises:
-    FstOpError: Equivalence test encountered error.
-
   See also: `equal`, `isomorphic`, `randequivalent`.
   """
-  cdef bool error
-  cdef bool result = fst.Equivalent(deref(ifst1._fst), deref(ifst2._fst), delta,
-                                    addr(error))
-  if error:
-    raise FstOpError("Equivalence test encountered error")
-  return result
+  return fst.Equivalent(deref(ifst1._fst), deref(ifst2._fst), delta)
 
 
 cpdef _MutableFst intersect(_Fst ifst1,
@@ -3765,9 +3763,6 @@ cpdef bool randequivalent(_Fst ifst1,
   Returns:
     True if the two transducers satisfy the above condition, else False.
 
-  Raise:
-    FstOpError: Random equivalence test encountered error.
-
   See also: `equal`, `equivalent`, `isomorphic`, `randgen`.
   """
   cdef fst.RandArcSelection ras = _get_rand_arc_selection(tostring(select))
@@ -3777,13 +3772,8 @@ cpdef bool randequivalent(_Fst ifst1,
                                                           1, False, False))
   if seed == 0:
     seed = time(NULL) + getpid()
-  cdef bool error
-  cdef bool result = fst.RandEquivalent(deref(ifst1._fst), deref(ifst2._fst),
-                                        npath, delta, seed, deref(opts),
-                                        addr(error))
-  if error:
-    raise FstOpError("Random equivalence test encountered error")
-  return result
+  return fst.RandEquivalent(deref(ifst1._fst), deref(ifst2._fst), npath, delta,
+                           seed, deref(opts))
 
 
 cpdef _MutableFst randgen(_Fst ifst,
@@ -3924,46 +3914,6 @@ cpdef _MutableFst reverse(_Fst ifst, bool require_superinitial=True):
   return _init_MutableFst(tfst.release())
 
 
-cpdef _MutableFst rmepsilon(_Fst ifst,
-                            bool connect=True,
-                            float delta=fst.kDelta,
-                            int64 nstate=fst.kNoStateId,
-                            queue_type=b"auto",
-                            bool reverse=False,
-                            weight=None):
-  """
-  rmepsilon(ifst, connect=True, delta=0.0009765625, nstate=NO_STATE_ID,
-            queue_type="auto", reverse=False, weight=None)
-
-  Constructively removes epsilon transitions from an FST.
-
-  This operation removes epsilon transitions (those where both input and output
-  labels are epsilon) from an FST.
-
-  Args:
-    ifst: The input FST.
-    connect: Should output be trimmed?
-    delta: Comparison/quantization delta.
-    nstate: State number threshold.
-    queue_type: A string matching a known queue type; one of: "auto", "fifo",
-        "lifo", "shortest", "state", "top".
-    reverse: Should epsilon transitions be removed in reverse order?
-    weight: A string indicating the desired weight threshold; paths with
-        weights below this threshold will be pruned.
-
-  Returns:
-    An equivalent FST with no epsilon transitions.
-  """
-  cdef fst.WeightClass wc = _get_WeightClass_or_Zero(ifst.weight_type(), weight)
-  cdef unique_ptr[fst.RmEpsilonOptions] opts
-  opts.reset(new fst.RmEpsilonOptions(_get_queue_type(tostring(queue_type)),
-                                      delta, connect, wc, nstate))
-  cdef unique_ptr[fst.VectorFstClass] tfst
-  tfst.reset(new fst.VectorFstClass(ifst.arc_type()))
-  fst.RmEpsilon(deref(ifst._fst), tfst.get(), reverse, deref(opts))
-  return _init_MutableFst(tfst.release())
-
-
 # Pure C++ helper for shortestdistance.
 
 
@@ -4020,15 +3970,8 @@ def shortestdistance(_Fst ifst,
   """
   cdef unique_ptr[vector[fst.WeightClass]] distance
   distance.reset(_shortestdistance(ifst, delta, nstate, queue_type, reverse))
-  # Packs the distances, as strings, into a Python list.
   cdef string weight_type = ifst.weight_type()
-  result = []
-  # This is just the Cython version of the normal vector iteration idiom.
-  cdef vector[fst.WeightClass].iterator it = distance.get().begin()
-  while it != distance.get().end():
-    result.append(Weight(weight_type, deref(it).ToString()))
-    inc(it)
-  return result
+  return [Weight(weight_type, weight.ToString()) for weight in deref(distance)]
 
 
 cpdef _MutableFst shortestpath(_Fst ifst,
@@ -4070,15 +4013,12 @@ cpdef _MutableFst shortestpath(_Fst ifst,
   """
   cdef unique_ptr[fst.VectorFstClass] tfst
   tfst.reset(new fst.VectorFstClass(ifst.arc_type()))
-  cdef unique_ptr[vector[fst.WeightClass]] distance
-  distance.reset(new vector[fst.WeightClass]())
   # Threshold is set to semiring Zero (no pruning) if no weight is specified.
   cdef fst.WeightClass wc = _get_WeightClass_or_Zero(ifst.weight_type(), weight)
   cdef unique_ptr[fst.ShortestPathOptions] opts
   opts.reset(new fst.ShortestPathOptions(_get_queue_type(tostring(queue_type)),
-                                         nshortest, unique, False, delta,
-                                         False, wc, nstate))
-  fst.ShortestPath(deref(ifst._fst), tfst.get(), distance.get(), deref(opts))
+                                         nshortest, unique, delta, wc, nstate))
+  fst.ShortestPath(deref(ifst._fst), tfst.get(), deref(opts))
   return _init_MutableFst(tfst.release())
 
 

@@ -25,9 +25,10 @@ DECLARE_bool(classifier);
 
 namespace fst {
 namespace script {
-typedef args::Package<const string &, const string &, const string &, char **,
-                      int, const string &, const string &, const string &,
-                      const string &> LinearCompileArgs;
+typedef std::tuple<const string &, const string &, const string &, char **, int,
+                   const string &, const string &, const string &,
+                   const string &>
+    LinearCompileArgs;
 
 bool ValidateDelimiter();
 bool ValidateEmptySymbol();
@@ -267,15 +268,15 @@ int ScanNumClasses(char **models, int models_length);
 
 template <class Arc>
 void LinearCompileTpl(LinearCompileArgs *args) {
-  const string &epsilon_symbol = args->arg1;
-  const string &unknown_symbol = args->arg2;
-  const string &vocab = args->arg3;
-  char **models = args->arg4;
-  const int models_length = args->arg5;
-  const string &out = args->arg6;
-  const string &save_isymbols = args->arg7;
-  const string &save_fsymbols = args->arg8;
-  const string &save_osymbols = args->arg9;
+  const string &epsilon_symbol = std::get<0>(*args);
+  const string &unknown_symbol = std::get<1>(*args);
+  const string &vocab = std::get<2>(*args);
+  char **models = std::get<3>(*args);
+  const int models_length = std::get<4>(*args);
+  const string &out = std::get<5>(*args);
+  const string &save_isymbols = std::get<6>(*args);
+  const string &save_fsymbols = std::get<7>(*args);
+  const string &save_osymbols = std::get<8>(*args);
 
   SymbolTable isyms,  // input (e.g. word tokens)
       osyms,          // output (e.g. tags)

@@ -3,8 +3,8 @@
 //
 // Commonly used FST arc types.
 
-#ifndef FST_LIB_ARC_H_
-#define FST_LIB_ARC_H_
+#ifndef FST_ARC_H_
+#define FST_ARC_H_
 
 #include <climits>
 #include <string>
@@ -307,4 +307,4 @@ struct ExpectationArc {
 
 }  // namespace fst
 
-#endif  // FST_LIB_ARC_H_
+#endif  // FST_ARC_H_

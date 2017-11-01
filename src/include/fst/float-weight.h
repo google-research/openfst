@@ -3,13 +3,15 @@
 //
 // Float weight set and associated semiring operation definitions.
 
-#ifndef FST_LIB_FLOAT_WEIGHT_H_
-#define FST_LIB_FLOAT_WEIGHT_H_
+#ifndef FST_FLOAT_WEIGHT_H_
+#define FST_FLOAT_WEIGHT_H_
 
 #include <climits>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 
+#include <algorithm>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -57,13 +59,13 @@ class FloatWeightTpl {
   }
 
   size_t Hash() const {
-    union {
-      T f;
-      size_t s;
-    } u;
-    u.s = 0;
-    u.f = value_;
-    return u.s;
+    size_t hash = 0;
+    // Avoid using union, which would be undefined behavior.
+    // Use memcpy, similar to bit_cast, but sizes may be different.
+    // This should be optimized into a single move instruction by
+    // any reasonable compiler.
+    std::memcpy(&hash, &value_, std::min(sizeof(hash), sizeof(value_)));
+    return hash;
   }
 
   const T &Value() const { return value_; }
@@ -374,16 +376,23 @@ using Log64Weight = LogWeightTpl<double>;
 namespace internal {
 
 // -log(e^-x + e^-y) = x - LogPosExp(y - x), assuming x >= 0.0.
-inline double LogPosExp(double x) { return log1p(exp(-x)); }
+inline double LogPosExp(double x) {
+  DCHECK(!(x < 0));  // NB: NaN values are allowed.
+  return log1p(exp(-x));
+}
 
 // -log(e^-x - e^-y) = x - LogNegExp(y - x), assuming x > 0.0.
-inline double LogNegExp(double x) { return log1p(-exp(-x)); }
+inline double LogNegExp(double x) {
+  DCHECK_GT(x, 0);
+  return log1p(-exp(-x));
+}
 
 // a +_log b = -log(e^-a + e^-b) = KahanLogSum(a, b, ...).
 // Kahan compensated summation provides an error bound that is
 // independent of the number of addends. Assumes b >= a;
 // c is the compensation.
 inline double KahanLogSum(double a, double b, double *c) {
+  DCHECK_GE(b, a);
   double y = -LogPosExp(b - a) - *c;
   double t = a + y;
   *c = (t - a) - y;
@@ -395,6 +404,7 @@ inline double KahanLogSum(double a, double b, double *c) {
 // independent of the number of addends. Assumes b > a;
 // c is the compensation.
 inline double KahanLogDiff(double a, double b, double *c) {
+  DCHECK_GT(b, a);
   double y = -LogNegExp(b - a) - *c;
   double t = a + y;
   *c = (t - a) - y;
@@ -767,4 +777,4 @@ class WeightGenerate<MinMaxWeightTpl<T>> {
 
 }  // namespace fst
 
-#endif  // FST_LIB_FLOAT_WEIGHT_H_
+#endif  // FST_FLOAT_WEIGHT_H_

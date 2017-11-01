@@ -3,8 +3,8 @@
 //
 // Classes for representing the mapping between state tuples and state IDs.
 
-#ifndef FST_LIB_STATE_TABLE_H_
-#define FST_LIB_STATE_TABLE_H_
+#ifndef FST_STATE_TABLE_H_
+#define FST_STATE_TABLE_H_
 
 #include <deque>
 #include <utility>
@@ -491,4 +491,4 @@ class ErasableComposeStateTable
 
 }  // namespace fst
 
-#endif  // FST_LIB_STATE_TABLE_H_
+#endif  // FST_STATE_TABLE_H_

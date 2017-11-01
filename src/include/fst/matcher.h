@@ -3,8 +3,8 @@
 //
 // Classes to allow matching labels leaving FST states.
 
-#ifndef FST_LIB_MATCHER_H_
-#define FST_LIB_MATCHER_H_
+#ifndef FST_MATCHER_H_
+#define FST_MATCHER_H_
 
 #include <algorithm>
 #include <unordered_map>
@@ -318,35 +318,25 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
   MemoryPool<ArcIterator<FST>> aiter_pool_;  // Pool of arc iterators.
 };
 
-// Returns true iff match to match_label_, positioning arc iterator at lower
-// bound.
+// Returns true iff match to match_label_. The arc iterator is positioned at the
+// lower bound, that is, the first element greater than or equal to
+// match_label_, or the end if all elements are less than match_label_.
 template <class FST>
 inline bool SortedMatcher<FST>::BinarySearch() {
   size_t low = 0;
   size_t high = narcs_;
   while (low < high) {
-    const size_t mid = (low + high) / 2;
+    const size_t mid = low + (high - low) / 2;
     aiter_->Seek(mid);
-    const auto label = GetLabel();
-    if (label > match_label_) {
-      high = mid;
-    } else if (label < match_label_) {
+    if (GetLabel() < match_label_) {
       low = mid + 1;
     } else {
-      // Otherwise, search backwards for the first match.
-      for (size_t i = mid; i > low; --i) {
-        aiter_->Seek(i - 1);
-        const auto label = GetLabel();
-        if (label != match_label_) {
-          aiter_->Seek(i);
-          return true;
-        }
-      }
-      return true;
+      high = mid;
     }
   }
+
   aiter_->Seek(low);
-  return false;
+  return low < narcs_ && GetLabel() == match_label_;
 }
 
 // Returns true iff match to match_label_, positioning arc iterator at lower
@@ -1465,4 +1455,4 @@ class Matcher {
 
 }  // namespace fst
 
-#endif  // FST_LIB_MATCHER_H_
+#endif  // FST_MATCHER_H_

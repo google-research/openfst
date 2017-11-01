@@ -4,8 +4,8 @@
 // Classes for representing a bijective mapping between an arbitrary entry
 // of type T and a signed integral ID.
 
-#ifndef FST_LIB_BI_TABLE_H_
-#define FST_LIB_BI_TABLE_H_
+#ifndef FST_BI_TABLE_H_
+#define FST_BI_TABLE_H_
 
 #include <deque>
 #include <memory>
@@ -470,4 +470,4 @@ class ErasableBiTable {
 
 }  // namespace fst
 
-#endif  // FST_LIB_BI_TABLE_H_
+#endif  // FST_BI_TABLE_H_

@@ -3,14 +3,15 @@
 //
 // Utilities to convert strings into FSTs.
 
-#ifndef FST_LIB_STRING_H_
-#define FST_LIB_STRING_H_
+#ifndef FST_STRING_H_
+#define FST_STRING_H_
 
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 
 #include <fst/compact-fst.h>
@@ -266,4 +267,4 @@ class StringPrinter {
 
 }  // namespace fst
 
-#endif  // FST_LIB_STRING_H_
+#endif  // FST_STRING_H_

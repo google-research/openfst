@@ -55,10 +55,8 @@ struct CompileFstInnerArgs {
         allow_negative_labels(allow_negative_labels) {}
 };
 
-// 1
-using CompileFstArgs = args::WithReturnValue<FstClass *, CompileFstInnerArgs>;
+using CompileFstArgs = WithReturnValue<FstClass *, CompileFstInnerArgs>;
 
-// 2
 template <class Arc>
 void CompileFstInternal(CompileFstArgs *args) {
   using fst::Convert;
@@ -81,14 +79,12 @@ void CompileFstInternal(CompileFstArgs *args) {
   args->retval = fst ? new FstClass(*fst) : nullptr;
 }
 
-// 1
 void CompileFst(std::istream &istrm, const string &source, const string &dest,
                 const string &fst_type, const string &arc_type,
                 const SymbolTable *isyms, const SymbolTable *osyms,
                 const SymbolTable *ssyms, bool accep, bool ikeep, bool okeep,
                 bool nkeep, bool allow_negative_labels);
 
-// 2
 FstClass *CompileFstInternal(std::istream &istrm, const string &source,
                              const string &fst_type, const string &arc_type,
                              const SymbolTable *isyms, const SymbolTable *osyms,

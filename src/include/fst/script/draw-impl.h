@@ -49,7 +49,7 @@ class FstDrawer {
         float_format_(float_format),
         show_weight_one_(show_weight_one) {}
 
-  // Draw Fst to an output buffer (or stdout if buf = 0)
+  // Draws FST to an output buffer.
   void Draw(std::ostream *strm, const string &dest) {
     ostrm_ = strm;
     SetStreamState(ostrm_);

@@ -3,8 +3,8 @@
 //
 // Classes for registering derived FST for generic reading.
 
-#ifndef FST_LIB_REGISTER_H_
-#define FST_LIB_REGISTER_H_
+#ifndef FST_REGISTER_H_
+#define FST_REGISTER_H_
 
 #include <string>
 #include <type_traits>
@@ -112,4 +112,4 @@ Fst<Arc> *Convert(const Fst<Arc> &fst, const string &fst_type) {
 
 }  // namespace fst
 
-#endif  // FST_LIB_REGISTER_H_
+#endif  // FST_REGISTER_H_

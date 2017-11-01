@@ -3,8 +3,8 @@
 //
 // Class to add a matcher to an FST.
 
-#ifndef FST_LIB_MATCHER_FST_H_
-#define FST_LIB_MATCHER_FST_H_
+#ifndef FST_MATCHER_FST_H_
+#define FST_MATCHER_FST_H_
 
 #include <memory>
 #include <string>
@@ -344,4 +344,4 @@ using StdOLabelLookAheadFst = MatcherFst<
 
 }  // namespace fst
 
-#endif  // FST_LIB_MATCHER_FST_H_
+#endif  // FST_MATCHER_FST_H_

@@ -3,8 +3,8 @@
 //
 // Function to reweight an FST.
 
-#ifndef FST_LIB_REWEIGHT_H_
-#define FST_LIB_REWEIGHT_H_
+#ifndef FST_REWEIGHT_H_
+#define FST_REWEIGHT_H_
 
 #include <vector>
 #include <fst/log.h>
@@ -124,4 +124,4 @@ void Reweight(MutableFst<Arc> *fst,
 
 }  // namespace fst
 
-#endif  // FST_LIB_REWEIGHT_H_
+#endif  // FST_REWEIGHT_H_

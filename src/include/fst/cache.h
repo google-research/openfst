@@ -3,8 +3,8 @@
 //
 // An FST implementation that caches FST elements of a delayed computation.
 
-#ifndef FST_LIB_CACHE_H_
-#define FST_LIB_CACHE_H_
+#ifndef FST_CACHE_H_
+#define FST_CACHE_H_
 
 #include <functional>
 #include <unordered_map>
@@ -13,6 +13,7 @@ using std::unordered_multimap;
 #include <list>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 
 #include <fst/vector-fst.h>
@@ -1024,7 +1025,7 @@ class CacheBaseImpl : public FstImpl<typename State::Arc> {
     if (s < min_unexpanded_state_id_) return;
     if (s == min_unexpanded_state_id_) ++min_unexpanded_state_id_;
     if (cache_gc_ || cache_limit_ == 0) {
-      while (expanded_states_.size() <= s) expanded_states_.push_back(false);
+      if (expanded_states_.size() <= s) expanded_states_.resize(s + 1, false);
       expanded_states_[s] = true;
     }
   }
@@ -1273,4 +1274,4 @@ class ExpanderCacheStore {
 
 }  // namespace fst
 
-#endif  // FST_LIB_CACHE_H_
+#endif  // FST_CACHE_H_

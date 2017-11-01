@@ -8,6 +8,7 @@
 
 #include <fst/extensions/compress/compress-script.h>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>

@@ -3,8 +3,8 @@
 //
 // Tuple weight set operation definitions.
 
-#ifndef FST_LIB_TUPLE_WEIGHT_H_
-#define FST_LIB_TUPLE_WEIGHT_H_
+#ifndef FST_TUPLE_WEIGHT_H_
+#define FST_TUPLE_WEIGHT_H_
 
 #include <algorithm>
 #include <array>
@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 
 #include <fst/weight.h>
@@ -25,7 +26,8 @@ class TupleWeight {
  public:
   using ReverseWeight = TupleWeight<typename W::ReverseWeight, n>;
 
-  TupleWeight() {}
+  using Weight = W;
+  using Index = size_t;
 
   TupleWeight(const TupleWeight &other) { values_ = other.values_; }
 
@@ -39,7 +41,14 @@ class TupleWeight {
     std::copy(begin, end, values_.begin());
   }
 
-  explicit TupleWeight(const W &weight) { values_.fill(weight); }
+  explicit TupleWeight(const W &weight = W::Zero()) { values_.fill(weight); }
+
+  // Initialize component `index` to `weight`; initialize all other components
+  // to `default_weight`
+  TupleWeight(Index index, const W &weight, const W &default_weight)
+      : TupleWeight(default_weight) {
+    values_[index] = weight;
+  }
 
   static const TupleWeight<W, n> &Zero() {
     static const TupleWeight<W, n> zero(W::Zero());
@@ -158,4 +167,4 @@ inline std::istream &operator>>(std::istream &strm, TupleWeight<W, n> &w) {
 
 }  // namespace fst
 
-#endif  // FST_LIB_TUPLE_WEIGHT_H_
+#endif  // FST_TUPLE_WEIGHT_H_
