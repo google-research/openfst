@@ -17,6 +17,7 @@
 //
 // Returns the shortest path in a (bounded-stack) PDT.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -24,7 +25,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
@@ -65,7 +65,7 @@ int pdtshortestpath_main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
+  std::vector<std::pair<int64_t, int64_t>> parens;
   if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens, false))
     return 1;
 
@@ -86,7 +86,7 @@ int pdtshortestpath_main(int argc, char **argv) {
   const s::PdtShortestPathOptions opts(
       qt, FST_FLAGS_keep_parentheses, FST_FLAGS_path_gc);
 
-  s::PdtShortestPath(*ifst, parens, &ofst, opts);
+  s::ShortestPath(*ifst, parens, &ofst, opts);
 
   return !ofst.Write(out_name);
 }

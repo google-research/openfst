@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// See www.openfst.org for extensive documentation on this weighted
+// finite-state transducer library.
+
 #include <fst/flags.h>
 
 DEFINE_string(fst_type, "",
@@ -19,8 +22,8 @@ DEFINE_string(fst_type, "",
               "If empty, each FST's type is unchanged");
 DEFINE_string(far_type, "default",
               "FAR file format type: one of: \"default\", \"fst\", "
-              "\"stlist\", \"sttable\". "
-              "\"default\" means use type of input FAR.");
+              "\"stlist\", \"sttable\"; "
+              "\"default\" means use type of input FAR");
 
 int farconvert_main(int argc, char **argv);
 

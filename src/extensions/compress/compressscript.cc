@@ -17,6 +17,8 @@
 
 #include <fst/extensions/compress/compressscript.h>
 
+#include <string>
+
 #include <fst/arc-map.h>
 #include <fst/script/script-impl.h>
 

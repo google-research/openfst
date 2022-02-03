@@ -19,12 +19,11 @@
 
 #include <fst/fst.h>
 
+#include <cstdint>
 #include <sstream>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
-#include <fst/matcher-fst.h>  // declarations of *_lookahead_fst_type
 
 // FST flag definitions.
 
@@ -46,18 +45,13 @@ DEFINE_string(fst_read_mode, "read",
 
 namespace fst {
 
-// FST type definitions for lookahead FSTs.
-const char arc_lookahead_fst_type[] = "arc_lookahead";
-const char ilabel_lookahead_fst_type[] = "ilabel_lookahead";
-const char olabel_lookahead_fst_type[] = "olabel_lookahead";
-
 // Checks FST magic number and reads in the header; if rewind = true,
 // the stream is repositioned before call if possible.
 bool FstHeader::Read(std::istream &strm, const std::string &source,
                      bool rewind) {
-  int64 pos = 0;
+  int64_t pos = 0;
   if (rewind) pos = strm.tellg();
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   if (magic_number != kFstMagicNumber) {
     LOG(ERROR) << "FstHeader::Read: Bad FST header: " << source
@@ -121,16 +115,9 @@ FstReadOptions::FstReadOptions(const std::string_view source,
 FstReadOptions::FstReadOptions(const std::string_view source,
                                const SymbolTable *isymbols,
                                const SymbolTable *osymbols)
-    : source(source),
-      header(nullptr),
-      isymbols(isymbols),
-      osymbols(osymbols),
-      read_isymbols(true),
-      read_osymbols(true) {
-  mode = ReadMode(FST_FLAGS_fst_read_mode);
-}
+    : FstReadOptions(source, /*header=*/nullptr, isymbols, osymbols) {}
 
-FstReadOptions::FileReadMode FstReadOptions::ReadMode(const std::string &mode) {
+FstReadOptions::FileReadMode FstReadOptions::ReadMode(std::string_view mode) {
   if (mode == "read") return READ;
   if (mode == "map") return MAP;
   LOG(ERROR) << "Unknown file read mode " << mode;

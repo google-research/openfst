@@ -48,7 +48,8 @@ bool ReadLabelTriples(const std::string &source,
   pairs->clear();
   while (fstrm.getline(line, kLineLen)) {
     ++nline;
-    std::vector<std::string_view> col = SplitString(line, "\n\t ", true);
+    std::vector<std::string_view> col =
+        StrSplit(line, ByAnyChar("\n\t "), SkipEmpty());
     // Empty line or comment?
     if (col.empty() || col[0].empty() || col[0][0] == '#') continue;
     if (col.size() != 3) {

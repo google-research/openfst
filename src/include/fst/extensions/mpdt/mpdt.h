@@ -22,19 +22,19 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <unordered_map>
+#include <optional>
 
 namespace fst {
 
-enum class MPdtType : uint8 {
+enum class MPdtType : uint8_t {
   READ_RESTRICT,   // Can only read from first empty stack
   WRITE_RESTRICT,  // Can only write to first empty stack
   NO_RESTRICT,     // No read-write restrictions
@@ -42,44 +42,8 @@ enum class MPdtType : uint8 {
 
 namespace internal {
 
-// PLEASE READ THIS CAREFULLY:
-//
-// When USEVECTOR is set, the stack configurations --- the statewise
-// representation of the StackId's for each substack --- is stored in a vector.
-// I would like to do this using an array for efficiency reasons, thus the
-// definition of StackConfig below. However, while this *works* in that tests
-// pass, etc. It causes a memory leak in the compose and expand tests, evidently
-// in the map[] that is being used to store the mapping between these
-// StackConfigs and the external StackId that the caller sees. There are no
-// memory leaks when I use a vector, only with this StackId. Why there should be
-// memory leaks given that I am not mallocing anything is a mystery. In case you
-// were wondering, clearing the map at the end does not help.
-
 template <typename StackId, typename Level, Level nlevels>
-class StackConfig {
- public:
-  StackConfig() : array_() {}
-
-  StackConfig(const StackConfig &config) { array_ = config.array_; }
-
-  StackId &operator[](const int index) { return array_[index]; }
-
-  const StackId &operator[](const int index) const { return array_[index]; }
-
-  StackConfig &operator=(const StackConfig &config) {
-    if (this == &config) return *this;
-    array_ = config.array_;
-    return *this;
-  }
-
-  friend bool operator<(const StackConfig &config1,
-                        const StackConfig &config2) {
-    return config1.array_ < config2.array_;
-  }
-
- private:
-  std::array<StackId, nlevels> array_;
-};
+using StackConfig = std::array<StackId, nlevels>;
 
 // Forward declaration so `KeyPair` can declare `KeyPairHasher` its friend.
 template <typename Level>
@@ -133,12 +97,8 @@ class MPdtStack {
         paren_id_map_(other.paren_id_map_),
         config_to_stack_id_map_(other.config_to_stack_id_map_),
         stack_id_to_config_map_(other.stack_id_to_config_map_),
-        next_stack_id_(other.next_stack_id_) {
-    std::transform(other.stacks_.begin(), other.stacks_.end(), stacks_.begin(),
-                   [](const std::unique_ptr<PdtStack<StackId, Label>> &ptr) {
-                     return std::make_unique<PdtStack<StackId, Label>>(*ptr);
-                   });
-  }
+        next_stack_id_(other.next_stack_id_),
+        stacks_(other.stacks_) {}
 
   MPdtStack &operator=(const MPdtStack &other) {
     *this = MPdtStack(other);
@@ -176,19 +136,6 @@ class MPdtStack {
   ssize_t ParenId(Label label) const {
     const auto it = paren_map_.find(label);
     return it != paren_map_.end() ? it->second : -1;
-  }
-
-  // TODO(rws): For debugging purposes only: remove later.
-  std::string PrintConfig(const Config &config) const {
-    std::string result = "[";
-    for (Level i = 0; i < nlevels; ++i) {
-      char s[128];
-      snprintf(s, sizeof(s), "%d", config[i]);
-      result += std::string(s);
-      if (i < nlevels - 1) result += ", ";
-    }
-    result += "]";
-    return result;
   }
 
   bool Error() { return error_; }
@@ -247,7 +194,7 @@ class MPdtStack {
   std::unordered_map<StackId, Config> stack_id_to_config_map_;
   StackId next_stack_id_;
   // Array of stacks.
-  std::array<std::unique_ptr<PdtStack<StackId, Label>>, nlevels> stacks_;
+  std::array<std::optional<PdtStack<StackId, Label>>, nlevels> stacks_;
 };
 
 template <typename StackId, typename Level, Level nlevels, MPdtType restrict>
@@ -296,8 +243,7 @@ MPdtStack<StackId, Level, nlevels, restrict>::MPdtStack(
   Config neg_one;
   Config zero;
   for (Level level = 0; level < nlevels; ++level) {
-    stacks_[level] =
-        std::make_unique<PdtStack<StackId, Label>>(vectors[level]);
+    stacks_[level].emplace(vectors[level]);
     neg_one[level] = -1;
     zero[level] = 0;
   }

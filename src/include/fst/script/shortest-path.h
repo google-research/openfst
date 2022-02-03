@@ -18,11 +18,12 @@
 #ifndef FST_SCRIPT_SHORTEST_PATH_H_
 #define FST_SCRIPT_SHORTEST_PATH_H_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/shortest-path.h>
+#include <fst/script/arcfilter-impl.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/shortest-distance.h>
 #include <fst/script/weight-class.h>
@@ -33,14 +34,14 @@ namespace script {
 // Slightly simplified interface: `has_distance` and `first_path` are disabled.
 
 struct ShortestPathOptions : public ShortestDistanceOptions {
-  const int32 nshortest;
+  const int32_t nshortest;
   const bool unique;
   const WeightClass &weight_threshold;
-  const int64 state_threshold;
+  const int64_t state_threshold;
 
-  ShortestPathOptions(QueueType queue_type, int32 nshortest, bool unique,
+  ShortestPathOptions(QueueType queue_type, int32_t nshortest, bool unique,
                       float delta, const WeightClass &weight_threshold,
-                      int64 state_threshold = kNoStateId)
+                      int64_t state_threshold = kNoStateId)
       : ShortestDistanceOptions(queue_type, ArcFilterType::ANY, kNoStateId,
                                 delta),
         nshortest(nshortest),
@@ -122,11 +123,11 @@ void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
 
 }  // namespace internal
 
-using ShortestPathArgs = std::tuple<const FstClass &, MutableFstClass *,
-                                    const ShortestPathOptions &>;
+using FstShortestPathArgs = std::tuple<const FstClass &, MutableFstClass *,
+                                       const ShortestPathOptions &>;
 
 template <class Arc>
-void ShortestPath(ShortestPathArgs *args) {
+void ShortestPath(FstShortestPathArgs *args) {
   const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
   MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   const ShortestPathOptions &opts = std::get<2>(*args);

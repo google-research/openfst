@@ -122,7 +122,7 @@ class FarReaderClass {
   const FarReader<Arc> *GetFarReader() const {
     if (Arc::Type() != ArcType()) return nullptr;
     const FarReaderClassImpl<Arc> *typed_impl =
-        fst::down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
+        down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
     return typed_impl->GetFarReader();
   }
 
@@ -130,7 +130,7 @@ class FarReaderClass {
   FarReader<Arc> *GetFarReader() {
     if (Arc::Type() != ArcType()) return nullptr;
     FarReaderClassImpl<Arc> *typed_impl =
-        fst::down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
+        down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
     return typed_impl->GetFarReader();
   }
 
@@ -243,7 +243,7 @@ class FarWriterClass {
   const FarWriter<Arc> *GetFarWriter() const {
     if (Arc::Type() != ArcType()) return nullptr;
     const FarWriterClassImpl<Arc> *typed_impl =
-        fst::down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
+        down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
     return typed_impl->GetFarWriter();
   }
 
@@ -251,7 +251,7 @@ class FarWriterClass {
   FarWriter<Arc> *GetFarWriter() {
     if (Arc::Type() != ArcType()) return nullptr;
     FarWriterClassImpl<Arc> *typed_impl =
-        fst::down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
+        down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
     return typed_impl->GetFarWriter();
   }
 

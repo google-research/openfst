@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <cstdint>
 #include <limits>
 #include <random>
 
@@ -21,7 +22,7 @@
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 DEFINE_bool(random, false,
             "Test equivalence by randomly selecting paths in the input FSTs");
-DEFINE_int32(max_length, std::numeric_limits<int32>::max(),
+DEFINE_int32(max_length, std::numeric_limits<int32_t>::max(),
              "Maximum path length");
 DEFINE_int32(npath, 1, "Number of paths to generate");
 DEFINE_uint64(seed, std::random_device()(), "Random seed");

@@ -29,11 +29,12 @@
 namespace fst {
 namespace script {
 
-using ReweightArgs = std::tuple<MutableFstClass *,
-                                const std::vector<WeightClass> &, ReweightType>;
+using FstReweightArgs =
+    std::tuple<MutableFstClass *, const std::vector<WeightClass> &,
+               ReweightType>;
 
 template <class Arc>
-void Reweight(ReweightArgs *args) {
+void Reweight(FstReweightArgs *args) {
   using Weight = typename Arc::Weight;
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   const std::vector<WeightClass> &potentials = std::get<1>(*args);

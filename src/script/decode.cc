@@ -27,11 +27,11 @@ void Decode(MutableFstClass *fst, const EncodeMapperClass &mapper) {
     fst->SetProperties(kError, kError);
     return;
   }
-  DecodeArgs args(fst, mapper);
-  Apply<Operation<DecodeArgs>>("Decode", fst->ArcType(), &args);
+  FstDecodeArgs args{fst, mapper};
+  Apply<Operation<FstDecodeArgs>>("Decode", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Decode, DecodeArgs);
+REGISTER_FST_OPERATION_3ARCS(Decode, FstDecodeArgs);
 
 }  // namespace script
 }  // namespace fst

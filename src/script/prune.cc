@@ -17,35 +17,37 @@
 
 #include <fst/script/prune.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
 void Prune(const FstClass &ifst, MutableFstClass *ofst,
-           const WeightClass &weight_threshold, int64 state_threshold,
+           const WeightClass &weight_threshold, int64_t state_threshold,
            float delta) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Prune") ||
       !ofst->WeightTypesMatch(weight_threshold, "Prune")) {
     ofst->SetProperties(kError, kError);
     return;
   }
-  PruneArgs1 args(ifst, ofst, weight_threshold, state_threshold, delta);
-  Apply<Operation<PruneArgs1>>("Prune", ifst.ArcType(), &args);
+  FstPruneArgs1 args{ifst, ofst, weight_threshold, state_threshold, delta};
+  Apply<Operation<FstPruneArgs1>>("Prune", ifst.ArcType(), &args);
 }
 
 void Prune(MutableFstClass *fst, const WeightClass &weight_threshold,
-           int64 state_threshold, float delta) {
+           int64_t state_threshold, float delta) {
   if (!fst->WeightTypesMatch(weight_threshold, "Prune")) {
     fst->SetProperties(kError, kError);
     return;
   }
-  PruneArgs2 args(fst, weight_threshold, state_threshold, delta);
-  Apply<Operation<PruneArgs2>>("Prune", fst->ArcType(), &args);
+  FstPruneArgs2 args{fst, weight_threshold, state_threshold, delta};
+  Apply<Operation<FstPruneArgs2>>("Prune", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Prune, PruneArgs1);
-REGISTER_FST_OPERATION_3ARCS(Prune, PruneArgs2);
+REGISTER_FST_OPERATION_3ARCS(Prune, FstPruneArgs1);
+REGISTER_FST_OPERATION_3ARCS(Prune, FstPruneArgs2);
 
 }  // namespace script
 }  // namespace fst

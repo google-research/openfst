@@ -20,13 +20,12 @@
 #ifndef FST_RMEPSILON_H_
 #define FST_RMEPSILON_H_
 
-#include <forward_list>
+#include <cstdint>
 #include <stack>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/arcfilter.h>
@@ -133,9 +132,10 @@ class RmEpsilonState {
   // the arcs_ vector if p.first is equal to the state being expanded.
   ElementMap element_map_;
   EpsilonArcFilter<Arc> eps_filter_;
-  std::stack<StateId> eps_queue_;  // Queue used to visit the epsilon-closure.
+  std::stack<StateId, std::vector<StateId>>
+      eps_queue_;                  // Queue used to visit the epsilon-closure.
   std::vector<bool> visited_;      // True if the state has been visited.
-  std::forward_list<StateId> visited_states_;  // List of visited states.
+  std::vector<StateId> visited_states_;        // List of visited states.
   std::vector<Arc> arcs_;                      // Arcs of state being expanded.
   Weight final_weight_;  // Final weight of state being expanded.
   StateId expand_id_;    // Unique ID for each call to Expand
@@ -159,7 +159,7 @@ void RmEpsilonState<Arc, Queue>::Expand(typename Arc::StateId source) {
     }
     if (visited_[state]) continue;
     visited_[state] = true;
-    visited_states_.push_front(state);
+    visited_states_.push_back(state);
     for (ArcIterator<Fst<Arc>> aiter(fst_, state); !aiter.Done();
          aiter.Next()) {
       auto arc = aiter.Value();
@@ -170,31 +170,26 @@ void RmEpsilonState<Arc, Queue>::Expand(typename Arc::StateId source) {
           visited_.resize(arc.nextstate + 1, false);
         }
         if (!visited_[arc.nextstate]) eps_queue_.push(arc.nextstate);
+      } else if (auto [insert_it, success] = element_map_.emplace(
+                     Element(arc.ilabel, arc.olabel, arc.nextstate),
+                     std::make_pair(expand_id_, arcs_.size()));
+                 success) {
+        arcs_.push_back(std::move(arc));
+      } else if (auto &[xid, arc_idx] = insert_it->second; xid == expand_id_) {
+        auto &weight = arcs_[arc_idx].weight;
+        weight = Plus(weight, arc.weight);
       } else {
-        const Element element(arc.ilabel, arc.olabel, arc.nextstate);
-        auto insert_result = element_map_.emplace(
-            element, std::make_pair(expand_id_, arcs_.size()));
-        if (insert_result.second) {
-          arcs_.push_back(std::move(arc));
-        } else {
-          if (insert_result.first->second.first == expand_id_) {
-            auto &weight = arcs_[insert_result.first->second.second].weight;
-            weight = Plus(weight, arc.weight);
-          } else {
-            insert_result.first->second.first = expand_id_;
-            insert_result.first->second.second = arcs_.size();
-            arcs_.push_back(std::move(arc));
-          }
-        }
+        xid = expand_id_;
+        arc_idx = arcs_.size();
+        arcs_.push_back(std::move(arc));
       }
     }
     final_weight_ =
         Plus(final_weight_, Times((*distance_)[state], fst_.Final(state)));
   }
-  while (!visited_states_.empty()) {
-    visited_[visited_states_.front()] = false;
-    visited_states_.pop_front();
-  }
+
+  for (const auto state_id : visited_states_) visited_[state_id] = false;
+  visited_states_.clear();
   ++expand_id_;
 }
 
@@ -247,7 +242,7 @@ void RmEpsilon(MutableFst<Arc> *fst,
     states.resize(order.size());
     for (StateId i = 0; i < order.size(); i++) states[order[i]] = i;
   } else {
-    uint64 props;
+    uint64_t props;
     std::vector<StateId> scc;
     SccVisitor<Arc> scc_visitor(&scc, nullptr, nullptr, &props);
     DfsVisit(*fst, &scc_visitor, EpsilonArcFilter<Arc>());
@@ -436,10 +431,10 @@ class RmEpsilonFstImpl : public CacheImpl<Arc> {
     return CacheImpl<Arc>::NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) &&
         (fst_->Properties(kError, false) || rmeps_state_.Error())) {
       SetProperties(kError, kError);

@@ -17,6 +17,8 @@
 
 #include <fst/script/draw.h>
 
+#include <string>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -28,13 +30,14 @@ void Draw(const FstClass &fst, const SymbolTable *isyms,
           bool vertical, float ranksep, float nodesep, int fontsize,
           int precision, const std::string &float_format, bool show_weight_one,
           std::ostream &ostrm, const std::string &dest) {
-  DrawArgs args{fst, isyms, osyms, ssyms, accep, title, width, height, portrait,
-                vertical, ranksep, nodesep, fontsize, precision, float_format,
-                show_weight_one, ostrm, dest};
-  Apply<Operation<DrawArgs>>("Draw", fst.ArcType(), &args);
+  FstDrawArgs args{
+      fst,      isyms,     osyms,        ssyms,           accep,   title,
+      width,    height,    portrait,     vertical,        ranksep, nodesep,
+      fontsize, precision, float_format, show_weight_one, ostrm,   dest};
+  Apply<Operation<FstDrawArgs>>("Draw", fst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Draw, DrawArgs);
+REGISTER_FST_OPERATION_3ARCS(Draw, FstDrawArgs);
 
 }  // namespace script
 }  // namespace fst

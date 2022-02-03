@@ -20,6 +20,7 @@
 #ifndef FST_REWEIGHT_H_
 #define FST_REWEIGHT_H_
 
+#include <cstdint>
 #include <vector>
 
 #include <fst/log.h>
@@ -64,7 +65,7 @@ void Reweight(MutableFst<Arc> *fst,
     fst->SetProperties(kError, kError);
     return;
   }
-  const uint64 input_props = fst->Properties(kFstProperties, false);
+  const uint64_t input_props = fst->Properties(kFstProperties, false);
   StateIterator<MutableFst<Arc>> siter(*fst);
   for (; !siter.Done(); siter.Next()) {
     const auto s = siter.Value();

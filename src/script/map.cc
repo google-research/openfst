@@ -17,6 +17,8 @@
 
 #include <fst/script/map.h>
 
+#include <utility>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -26,13 +28,13 @@ std::unique_ptr<FstClass> Map(const FstClass &ifst, MapType map_type,
                               float delta, double power,
                               const WeightClass &weight) {
   if (!ifst.WeightTypesMatch(weight, "Map")) return nullptr;
-  MapInnerArgs iargs(ifst, map_type, delta, power, weight);
-  MapArgs args(iargs);
-  Apply<Operation<MapArgs>>("Map", ifst.ArcType(), &args);
+  FstMapInnerArgs iargs{ifst, map_type, delta, power, weight};
+  FstMapArgs args(iargs);
+  Apply<Operation<FstMapArgs>>("Map", ifst.ArcType(), &args);
   return std::move(args.retval);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Map, MapArgs);
+REGISTER_FST_OPERATION_3ARCS(Map, FstMapArgs);
 
 }  // namespace script
 }  // namespace fst

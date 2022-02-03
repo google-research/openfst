@@ -18,6 +18,7 @@
 #ifndef FST_SCRIPT_DISAMBIGUATE_H_
 #define FST_SCRIPT_DISAMBIGUATE_H_
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 
@@ -31,23 +32,23 @@ namespace script {
 struct DisambiguateOptions {
   const float delta;
   const WeightClass &weight_threshold;
-  const int64 state_threshold;
-  const int64 subsequential_label;
+  const int64_t state_threshold;
+  const int64_t subsequential_label;
 
   DisambiguateOptions(float delta, const WeightClass &weight_threshold,
-                      int64 state_threshold = kNoStateId,
-                      int64 subsequential_label = 0)
+                      int64_t state_threshold = kNoStateId,
+                      int64_t subsequential_label = 0)
       : delta(delta),
         weight_threshold(weight_threshold),
         state_threshold(state_threshold),
         subsequential_label(subsequential_label) {}
 };
 
-using DisambiguateArgs = std::tuple<const FstClass &, MutableFstClass *,
-                                    const DisambiguateOptions &>;
+using FstDisambiguateArgs = std::tuple<const FstClass &, MutableFstClass *,
+                                       const DisambiguateOptions &>;
 
 template <class Arc>
-void Disambiguate(DisambiguateArgs *args) {
+void Disambiguate(FstDisambiguateArgs *args) {
   using Weight = typename Arc::Weight;
   const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
   MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();

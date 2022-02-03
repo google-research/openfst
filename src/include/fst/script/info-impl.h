@@ -21,11 +21,11 @@
 #ifndef FST_SCRIPT_INFO_IMPL_H_
 #define FST_SCRIPT_INFO_IMPL_H_
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/connect.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
@@ -35,6 +35,8 @@
 #include <fst/test-properties.h>
 #include <fst/verify.h>
 #include <fst/visit.h>
+#include <fst/script/arcfilter-impl.h>
+#include <string_view>
 
 namespace fst {
 
@@ -48,8 +50,8 @@ class FstInfo {
   // minimal info is computed and can be requested.
   template <typename Arc>
   FstInfo(const Fst<Arc> &fst, bool test_properties,
-          const std::string &arc_filter_type = "any",
-          const std::string &info_type = "auto", bool verify = true)
+          script::ArcFilterType arc_filter_type = script::ArcFilterType::ANY,
+          std::string_view info_type = "auto", bool verify = true)
       : fst_type_(fst.Type()),
         input_symbols_(fst.InputSymbols() ? fst.InputSymbols()->Name()
                                           : "none"),
@@ -128,17 +130,23 @@ class FstInfo {
       std::vector<StateId> cc;
       CcVisitor<Arc> cc_visitor(&cc);
       FifoQueue<StateId> fifo_queue;
-      if (arc_filter_type == "any") {
-        Visit(fst, &cc_visitor, &fifo_queue);
-      } else if (arc_filter_type == "epsilon") {
-        Visit(fst, &cc_visitor, &fifo_queue, EpsilonArcFilter<Arc>());
-      } else if (arc_filter_type == "iepsilon") {
-        Visit(fst, &cc_visitor, &fifo_queue, InputEpsilonArcFilter<Arc>());
-      } else if (arc_filter_type == "oepsilon") {
-        Visit(fst, &cc_visitor, &fifo_queue, OutputEpsilonArcFilter<Arc>());
-      } else {
-        FSTERROR() << "Bad arc filter type: " << arc_filter_type;
-        return;
+      switch (arc_filter_type) {
+        case script::ArcFilterType::ANY: {
+          Visit(fst, &cc_visitor, &fifo_queue);
+          break;
+        }
+        case script::ArcFilterType::EPSILON: {
+          Visit(fst, &cc_visitor, &fifo_queue, EpsilonArcFilter<Arc>());
+          break;
+        }
+        case script::ArcFilterType::INPUT_EPSILON: {
+          Visit(fst, &cc_visitor, &fifo_queue, InputEpsilonArcFilter<Arc>());
+          break;
+        }
+        case script::ArcFilterType::OUTPUT_EPSILON: {
+          Visit(fst, &cc_visitor, &fifo_queue, OutputEpsilonArcFilter<Arc>());
+          break;
+        }
       }
       for (StateId s = 0; s < cc.size(); ++s) {
         if (cc[s] >= ncc_) ncc_ = cc[s] + 1;
@@ -147,19 +155,25 @@ class FstInfo {
     {
       std::vector<StateId> scc;
       std::vector<bool> access, coaccess;
-      uint64 props = 0;
+      uint64_t props = 0;
       SccVisitor<Arc> scc_visitor(&scc, &access, &coaccess, &props);
-      if (arc_filter_type == "any") {
-        DfsVisit(fst, &scc_visitor);
-      } else if (arc_filter_type == "epsilon") {
-        DfsVisit(fst, &scc_visitor, EpsilonArcFilter<Arc>());
-      } else if (arc_filter_type == "iepsilon") {
-        DfsVisit(fst, &scc_visitor, InputEpsilonArcFilter<Arc>());
-      } else if (arc_filter_type == "oepsilon") {
-        DfsVisit(fst, &scc_visitor, OutputEpsilonArcFilter<Arc>());
-      } else {
-        FSTERROR() << "Bad arc filter type: " << arc_filter_type;
-        return;
+      switch (arc_filter_type) {
+        case script::ArcFilterType::ANY: {
+          DfsVisit(fst, &scc_visitor);
+          break;
+        }
+        case script::ArcFilterType::EPSILON: {
+          DfsVisit(fst, &scc_visitor, EpsilonArcFilter<Arc>());
+          break;
+        }
+        case script::ArcFilterType::INPUT_EPSILON: {
+          DfsVisit(fst, &scc_visitor, InputEpsilonArcFilter<Arc>());
+          break;
+        }
+        case script::ArcFilterType::OUTPUT_EPSILON: {
+          DfsVisit(fst, &scc_visitor, OutputEpsilonArcFilter<Arc>());
+          break;
+        }
       }
       for (StateId s = 0; s < scc.size(); ++s) {
         if (access[s]) ++naccess_;
@@ -188,7 +202,7 @@ class FstInfo {
 
   bool LongInfo() const { return long_info_; }
 
-  const std::string &ArcFilterType() const { return arc_filter_type_; }
+  script::ArcFilterType ArcFilterType() const { return arc_filter_type_; }
 
   // Long info.
 
@@ -212,7 +226,7 @@ class FstInfo {
     return output_lookahead_;
   }
 
-  int64 NumStates() const {
+  int64_t NumStates() const {
     CheckLong();
     return nstates_;
   }
@@ -222,7 +236,7 @@ class FstInfo {
     return narcs_;
   }
 
-  int64 Start() const {
+  int64_t Start() const {
     CheckLong();
     return start_;
   }
@@ -282,7 +296,7 @@ class FstInfo {
     return nscc_;
   }
 
-  uint64 Properties() const {
+  uint64_t Properties() const {
     CheckLong();
     return properties_;
   }
@@ -298,9 +312,9 @@ class FstInfo {
   std::string fst_type_;
   std::string input_symbols_;
   std::string output_symbols_;
-  int64 nstates_;
+  int64_t nstates_;
   size_t narcs_;
-  int64 start_;
+  int64_t start_;
   size_t nfinal_;
   size_t nepsilons_;
   size_t niepsilons_;
@@ -316,14 +330,14 @@ class FstInfo {
   MatchType output_match_type_;
   bool input_lookahead_;
   bool output_lookahead_;
-  uint64 properties_;
-  std::string arc_filter_type_;
+  uint64_t properties_;
+  script::ArcFilterType arc_filter_type_;
   bool long_info_;
   std::string arc_type_;
 };
 
 // Prints `properties` to `ostrm` in a user-friendly multi-line format.
-void PrintProperties(std::ostream &ostrm, uint64 properties);
+void PrintProperties(std::ostream &ostrm, uint64_t properties);
 
 // Prints `header` to `ostrm` in a user-friendly multi-line format.
 void PrintHeader(std::ostream &ostrm, const FstHeader &header);

@@ -17,8 +17,9 @@
 
 #include <fst/flags.h>
 
-DEFINE_bool(closure_plus, false,
-            "Do not add the empty path (T+ instead of T*)?");
+DEFINE_string(closure_type, "star",
+              "Do not add the empty path (T+ instead of T*)?, one of: "
+              "\"star\", \"plus\"");
 
 int fstclosure_main(int argc, char **argv);
 

@@ -20,6 +20,7 @@
 #ifndef FST_EXTENSIONS_FAR_PRINT_STRINGS_H_
 #define FST_EXTENSIONS_FAR_PRINT_STRINGS_H_
 
+#include <cstdint>
 #include <iomanip>
 #include <string>
 #include <vector>
@@ -35,31 +36,28 @@ DECLARE_string(far_field_separator);
 namespace fst {
 
 template <class Arc>
-void FarPrintStrings(const std::vector<std::string> &isources,
-                     FarEntryType entry_type, TokenType token_type,
-                     const std::string &begin_key, const std::string &end_key,
-                     bool print_key, bool print_weight,
-                     const std::string &symbols_source, bool initial_symbols,
-                     int32 generate_sources, const std::string &source_prefix,
-                     const std::string &source_suffix) {
+void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
+                  TokenType token_type, const std::string &begin_key,
+                  const std::string &end_key, bool print_key, bool print_weight,
+                  const std::string &symbols_source, bool initial_symbols,
+                  int32_t generate_sources, const std::string &source_prefix,
+                  const std::string &source_suffix) {
   std::unique_ptr<const SymbolTable> syms;
   if (!symbols_source.empty()) {
     // TODO(kbg): Allow negative flag?
     const SymbolTableTextOptions opts(true);
     syms.reset(SymbolTable::ReadText(symbols_source, opts));
     if (!syms) {
-      LOG(ERROR) << "FarPrintStrings: Error reading symbol table "
+      LOG(ERROR) << "PrintStrings: Error reading symbol table "
                  << symbols_source;
       return;
     }
   }
-  std::unique_ptr<FarReader<Arc>> far_reader(FarReader<Arc>::Open(isources));
-  if (!far_reader) return;
-  if (!begin_key.empty()) far_reader->Find(begin_key);
+  if (!begin_key.empty()) reader.Find(begin_key);
   std::string okey;
   int nrep = 0;
-  for (int i = 1; !far_reader->Done(); far_reader->Next(), ++i) {
-    const auto &key = far_reader->GetKey();
+  for (int i = 1; !reader.Done(); reader.Next(), ++i) {
+    const auto &key = reader.GetKey();
     if (!end_key.empty() && end_key < key) break;
     if (okey == key) {
       ++nrep;
@@ -67,7 +65,7 @@ void FarPrintStrings(const std::vector<std::string> &isources,
       nrep = 0;
     }
     okey = key;
-    const auto *fst = far_reader->GetFst();
+    const auto *fst = reader.GetFst();
     if (i == 1 && initial_symbols && !syms && fst->InputSymbols()) {
       syms.reset(fst->InputSymbols()->Copy());
     }
@@ -99,7 +97,7 @@ void FarPrintStrings(const std::vector<std::string> &isources,
       source = source_prefix + sstrm.str() + source_suffix;
       std::ofstream ostrm(source);
       if (!ostrm) {
-        LOG(ERROR) << "FarPrintStrings: Can't open file: " << source;
+        LOG(ERROR) << "PrintStrings: Can't open file: " << source;
         return;
       }
       ostrm << str;

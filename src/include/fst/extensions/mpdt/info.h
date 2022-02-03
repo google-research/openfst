@@ -20,9 +20,10 @@
 #ifndef FST_EXTENSIONS_MPDT_INFO_H_
 #define FST_EXTENSIONS_MPDT_INFO_H_
 
+#include <cstdint>
+#include <string>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/extensions/mpdt/mpdt.h>
 #include <fst/fst.h>
 #include <unordered_map>
@@ -46,28 +47,28 @@ class MPdtInfo {
 
   const std::string &ArcType() const { return Arc::Type(); }
 
-  int64 NumStates() const { return nstates_; }
+  int64_t NumStates() const { return nstates_; }
 
-  int64 NumArcs() const { return narcs_; }
+  int64_t NumArcs() const { return narcs_; }
 
-  int64 NumLevels() const { return nlevels; }
+  int64_t NumLevels() const { return nlevels; }
 
-  int64 NumOpenParens(Label level) const { return nopen_parens_[level]; }
+  int64_t NumOpenParens(Label level) const { return nopen_parens_[level]; }
 
-  int64 NumCloseParens(Label level) const { return nclose_parens_[level]; }
+  int64_t NumCloseParens(Label level) const { return nclose_parens_[level]; }
 
-  int64 NumUniqueOpenParens(Label level) const {
+  int64_t NumUniqueOpenParens(Label level) const {
     return nuniq_open_parens_[level];
   }
 
-  int64 NumUniqueCloseParens(Label level) const {
+  int64_t NumUniqueCloseParens(Label level) const {
     return nuniq_close_parens_[level];
   }
-  int64 NumOpenParenStates(Label level) const {
+  int64_t NumOpenParenStates(Label level) const {
     return nopen_paren_states_[level];
   }
 
-  int64 NumCloseParenStates(Label level) const {
+  int64_t NumCloseParenStates(Label level) const {
     return nclose_paren_states_[level];
   }
 
@@ -75,14 +76,14 @@ class MPdtInfo {
 
  private:
   std::string fst_type_;
-  int64 nstates_;
-  int64 narcs_;
-  int64 nopen_parens_[nlevels];
-  int64 nclose_parens_[nlevels];
-  int64 nuniq_open_parens_[nlevels];
-  int64 nuniq_close_parens_[nlevels];
-  int64 nopen_paren_states_[nlevels];
-  int64 nclose_paren_states_[nlevels];
+  int64_t nstates_;
+  int64_t narcs_;
+  int64_t nopen_parens_[nlevels];
+  int64_t nclose_parens_[nlevels];
+  int64_t nuniq_open_parens_[nlevels];
+  int64_t nuniq_close_parens_[nlevels];
+  int64_t nopen_paren_states_[nlevels];
+  int64_t nclose_paren_states_[nlevels];
   bool error_;
 };
 
@@ -175,22 +176,22 @@ void MPdtInfo<Arc, nlevels>::Print() {
   std::cout.width(50);
   for (typename Arc::Label i = 0; i < nlevels; ++i) {
     int level = i + 1;
-    std::cout << "# of open parentheses at levelel " << level << "\t"
+    std::cout << "# of open parentheses at level " << level << "\t"
               << NumOpenParens(i) << std::endl;
     std::cout.width(50);
-    std::cout << "# of close parentheses at levelel " << level << "\t"
+    std::cout << "# of close parentheses at level " << level << "\t"
               << NumCloseParens(i) << std::endl;
     std::cout.width(50);
-    std::cout << "# of unique open parentheses at levelel " << level << "\t"
+    std::cout << "# of unique open parentheses at level " << level << "\t"
               << NumUniqueOpenParens(i) << std::endl;
     std::cout.width(50);
-    std::cout << "# of unique close parentheses at levelel " << level << "\t"
+    std::cout << "# of unique close parentheses at level " << level << "\t"
               << NumUniqueCloseParens(i) << std::endl;
     std::cout.width(50);
-    std::cout << "# of open parenthesis dest. states at levelel " << level
-              << "\t" << NumOpenParenStates(i) << std::endl;
+    std::cout << "# of open parenthesis dest. states at level " << level << "\t"
+              << NumOpenParenStates(i) << std::endl;
     std::cout.width(50);
-    std::cout << "# of close parenthesis source states at levelel " << level
+    std::cout << "# of close parenthesis source states at level " << level
               << "\t" << NumCloseParenStates(i) << std::endl;
     std::cout.width(50);
   }

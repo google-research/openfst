@@ -17,6 +17,9 @@
 
 #include <fst/script/relabel.h>
 
+#include <cstdint>
+#include <string>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -27,21 +30,27 @@ void Relabel(MutableFstClass *ofst, const SymbolTable *old_isyms,
              const std::string &unknown_isymbol, bool attach_new_isyms,
              const SymbolTable *old_osyms, const SymbolTable *relabel_osyms,
              const std::string &unknown_osymbol, bool attach_new_osyms) {
-  RelabelArgs1 args(ofst, old_isyms, relabel_isyms, unknown_isymbol,
-                    attach_new_isyms, old_osyms, relabel_osyms, unknown_osymbol,
-                    attach_new_osyms);
-  Apply<Operation<RelabelArgs1>>("Relabel", ofst->ArcType(), &args);
+  FstRelabelArgs1 args{ofst,
+                       old_isyms,
+                       relabel_isyms,
+                       unknown_isymbol,
+                       attach_new_isyms,
+                       old_osyms,
+                       relabel_osyms,
+                       unknown_osymbol,
+                       attach_new_osyms};
+  Apply<Operation<FstRelabelArgs1>>("Relabel", ofst->ArcType(), &args);
 }
 
 void Relabel(MutableFstClass *ofst,
-             const std::vector<std::pair<int64, int64>> &ipairs,
-             const std::vector<std::pair<int64, int64>> &opairs) {
-  RelabelArgs2 args(ofst, ipairs, opairs);
-  Apply<Operation<RelabelArgs2>>("Relabel", ofst->ArcType(), &args);
+             const std::vector<std::pair<int64_t, int64_t>> &ipairs,
+             const std::vector<std::pair<int64_t, int64_t>> &opairs) {
+  FstRelabelArgs2 args{ofst, ipairs, opairs};
+  Apply<Operation<FstRelabelArgs2>>("Relabel", ofst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Relabel, RelabelArgs1);
-REGISTER_FST_OPERATION_3ARCS(Relabel, RelabelArgs2);
+REGISTER_FST_OPERATION_3ARCS(Relabel, FstRelabelArgs1);
+REGISTER_FST_OPERATION_3ARCS(Relabel, FstRelabelArgs2);
 
 }  // namespace script
 }  // namespace fst

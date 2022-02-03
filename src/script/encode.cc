@@ -27,11 +27,11 @@ void Encode(MutableFstClass *fst, EncodeMapperClass *mapper) {
     fst->SetProperties(kError, kError);
     return;
   }
-  EncodeArgs args(fst, mapper);
-  Apply<Operation<EncodeArgs>>("Encode", fst->ArcType(), &args);
+  FstEncodeArgs args{fst, mapper};
+  Apply<Operation<FstEncodeArgs>>("Encode", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Encode, EncodeArgs);
+REGISTER_FST_OPERATION_3ARCS(Encode, FstEncodeArgs);
 
 }  // namespace script
 }  // namespace fst

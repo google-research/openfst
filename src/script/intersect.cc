@@ -29,11 +29,11 @@ void Intersect(const FstClass &ifst1, const FstClass &ifst2,
     ofst->SetProperties(kError, kError);
     return;
   }
-  IntersectArgs args(ifst1, ifst2, ofst, opts);
-  Apply<Operation<IntersectArgs>>("Intersect", ifst1.ArcType(), &args);
+  FstIntersectArgs args{ifst1, ifst2, ofst, opts};
+  Apply<Operation<FstIntersectArgs>>("Intersect", ifst1.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Intersect, IntersectArgs);
+REGISTER_FST_OPERATION_3ARCS(Intersect, FstIntersectArgs);
 
 }  // namespace script
 }  // namespace fst

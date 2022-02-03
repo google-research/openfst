@@ -18,13 +18,14 @@
 // Performs operations (set, clear, relabel) on the symbols table attached to an
 // input FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/verify.h>
@@ -105,7 +106,7 @@ int fstsymbols_main(int argc, char **argv) {
     fst->SetOutputSymbols(nullptr);
   }
 
-  using Label = int64;
+  using Label = int64_t;
   if (!FST_FLAGS_relabel_ipairs.empty()) {
     std::vector<std::pair<Label, Label>> ipairs;
     ReadLabelPairs(FST_FLAGS_relabel_ipairs, &ipairs,

@@ -40,9 +40,9 @@
 #ifndef FST_EXPECTATION_WEIGHT_H_
 #define FST_EXPECTATION_WEIGHT_H_
 
+#include <cstdint>
 #include <string>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/pair-weight.h>
@@ -109,7 +109,7 @@ class ExpectationWeight : public PairWeight<W1, W2> {
 
   bool Member() const { return PairWeight<W1, W2>::Member(); }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return W1::Properties() & W2::Properties() &
            (kLeftSemiring | kRightSemiring | kCommutative | kIdempotent);
   }
@@ -214,7 +214,7 @@ class WeightGenerate<ExpectationWeight<W1, W2>> {
   using Weight = ExpectationWeight<W1, W2>;
   using Generate = WeightGenerate<PairWeight<W1, W2>>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true)
       : generate_(seed, allow_zero) {}
 

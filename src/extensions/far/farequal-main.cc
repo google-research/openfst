@@ -15,11 +15,13 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Tests if two Far files contains the same (key,fst) pairs.
+// Tests whether two FAR files contains the same (key, fst) pairs.
 
+#include <memory>
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 
@@ -29,6 +31,7 @@ DECLARE_double(delta);
 
 int farequal_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FarReaderClass;
 
   std::string usage = "Compares the FSTs in two FST archives for equality.";
   usage += "\n\n  Usage:";
@@ -43,14 +46,26 @@ int farequal_main(int argc, char **argv) {
     return 1;
   }
 
-  const auto arc_type = s::LoadArcTypeFromFar(argv[1]);
-  if (arc_type.empty()) return 1;
+  std::unique_ptr<FarReaderClass> reader1(FarReaderClass::Open(argv[1]));
+  if (!reader1) return 1;
 
-  bool result =
-      s::FarEqual(argv[1], argv[2], arc_type, FST_FLAGS_delta,
-                  FST_FLAGS_begin_key, FST_FLAGS_end_key);
+  std::unique_ptr<FarReaderClass> reader2(FarReaderClass::Open(argv[2]));
+  if (!reader2) return 1;
 
-  if (!result) VLOG(1) << "FARs are not equal.";
+  const bool result =
+      s::Equal(*reader1, *reader2, FST_FLAGS_delta,
+               FST_FLAGS_begin_key, FST_FLAGS_end_key);
+
+  if (reader1->Error()) {
+    FSTERROR() << "Error reading FAR: " << argv[1];
+    return 1;
+  }
+  if (reader2->Error()) {
+    FSTERROR() << "Error reading FAR: " << argv[2];
+    return 1;
+  }
+
+  if (!result) VLOG(1) << "FARs are not equal";
 
   return result ? 0 : 2;
 }

@@ -21,9 +21,9 @@
 #define FST_CONNECT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
-#include <fst/types.h>
 
 #include <fst/dfs-visit.h>
 #include <fst/mutable-fst.h>
@@ -123,9 +123,9 @@ class SccVisitor {
   // props: related property bits (cyclicity, initial cyclicity,
   //   accessibility, coaccessibility) set/cleared (o.w. unchanged).
   SccVisitor(std::vector<StateId> *scc, std::vector<bool> *access,
-             std::vector<bool> *coaccess, uint64 *props)
+             std::vector<bool> *coaccess, uint64_t *props)
       : scc_(scc), access_(access), coaccess_(coaccess), props_(props) {}
-  explicit SccVisitor(uint64 *props)
+  explicit SccVisitor(uint64_t *props)
       : scc_(nullptr), access_(nullptr), coaccess_(nullptr), props_(props) {}
 
   void InitVisit(const Fst<Arc> &fst);
@@ -174,7 +174,7 @@ class SccVisitor {
   std::vector<StateId> *scc_;    // State's scc number.
   std::vector<bool> *access_;    // State's accessibility.
   std::vector<bool> *coaccess_;  // State's coaccessibility.
-  uint64 *props_;
+  uint64_t *props_;
   const Fst<Arc> *fst_;
   StateId start_;
   StateId nstates_;  // State count.
@@ -279,7 +279,7 @@ void Connect(MutableFst<Arc> *fst) {
   using StateId = typename Arc::StateId;
   std::vector<bool> access;
   std::vector<bool> coaccess;
-  uint64 props = 0;
+  uint64_t props = 0;
   SccVisitor<Arc> scc_visitor(nullptr, &access, &coaccess, &props);
   DfsVisit(*fst, &scc_visitor);
   std::vector<StateId> dstates;
@@ -299,7 +299,7 @@ void Condense(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
               std::vector<typename Arc::StateId> *scc) {
   using StateId = typename Arc::StateId;
   ofst->DeleteStates();
-  uint64 props = 0;
+  uint64_t props = 0;
   SccVisitor<Arc> scc_visitor(scc, nullptr, nullptr, &props);
   DfsVisit(ifst, &scc_visitor);
   const auto iter = std::max_element(scc->cbegin(), scc->cend());

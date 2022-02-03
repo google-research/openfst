@@ -26,11 +26,12 @@ DEFINE_string(far_field_separator, "\t",
               "Set of characters used as a separator between printed fields");
 
 namespace fst {
+namespace internal {
 
 // Computes the minimal length required to encode each line number as a decimal
 // number, or zero if the number of lines could not be determined because the
 // file was not seekable.
-int KeySize(const char *source) {
+int KeySize(const std::string &source) {
   std::ifstream istrm(source);
   istrm.seekg(0);
   // TODO(jrosenstock): Change this to is_regular_file when <filesystem> is
@@ -49,4 +50,5 @@ int KeySize(const char *source) {
   return nline ? ceil(log10(nline + 1)) : 1;
 }
 
+}  // namespace internal
 }  // namespace fst

@@ -24,6 +24,7 @@
 #define FST_EXTENSIONS_FAR_STLIST_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -38,8 +39,8 @@
 
 namespace fst {
 
-static constexpr int32 kSTListMagicNumber = 5656924;
-static constexpr int32 kSTListFileVersion = 1;
+inline constexpr int32_t kSTListMagicNumber = 5656924;
+inline constexpr int32_t kSTListFileVersion = 1;
 
 // String-type list writing class for object of type T using a functor Writer.
 // The Writer functor must provide at least the following interface:
@@ -69,7 +70,7 @@ class STListWriter {
     return new STListWriter<T, Writer>(source);
   }
 
-  void Add(const std::string &key, const T &t) {
+  void Add(std::string_view key, const T &t) {
     if (key.empty()) {
       FSTERROR() << "STListWriter::Add: Key empty: " << key;
       error_ = true;
@@ -78,7 +79,8 @@ class STListWriter {
       error_ = true;
     }
     if (error_) return;
-    last_key_ = key;
+    // TODO(jrosenstock,glebm): Use assign(key) when C++17 is required
+    last_key_.assign(key.data(), key.size());
     WriteType(*stream_, key);
     entry_writer_(*stream_, t);
   }
@@ -135,9 +137,9 @@ class STListReader {
           return;
         }
       }
-      int32 magic_number = 0;
+      int32_t magic_number = 0;
       ReadType(*streams_[i], &magic_number);
-      int32 file_version = 0;
+      int32_t file_version = 0;
       ReadType(*streams_[i], &file_version);
       if (magic_number != kSTListMagicNumber) {
         FSTERROR() << "STListReader::STListReader: Wrong file type: "
@@ -261,9 +263,9 @@ bool ReadSTListHeader(const std::string &source, Header *header) {
     LOG(ERROR) << "ReadSTListHeader: Could not open file: " << source;
     return false;
   }
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
-  int32 file_version = 0;
+  int32_t file_version = 0;
   ReadType(strm, &file_version);
   if (magic_number != kSTListMagicNumber) {
     LOG(ERROR) << "ReadSTListHeader: Wrong file type: " << source;

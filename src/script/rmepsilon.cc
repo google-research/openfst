@@ -27,11 +27,11 @@ void RmEpsilon(MutableFstClass *fst, const RmEpsilonOptions &opts) {
     fst->SetProperties(kError, kError);
     return;
   }
-  RmEpsilonArgs args(fst, opts);
-  Apply<Operation<RmEpsilonArgs>>("RmEpsilon", fst->ArcType(), &args);
+  FstRmEpsilonArgs args{fst, opts};
+  Apply<Operation<FstRmEpsilonArgs>>("RmEpsilon", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(RmEpsilon, RmEpsilonArgs);
+REGISTER_FST_OPERATION_3ARCS(RmEpsilon, FstRmEpsilonArgs);
 
 }  // namespace script
 }  // namespace fst

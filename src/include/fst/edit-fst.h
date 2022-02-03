@@ -39,10 +39,10 @@
 #ifndef FST_EDIT_FST_H_
 #define FST_EDIT_FST_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/cache.h>
@@ -135,7 +135,7 @@ class EditFstData {
                                   : edits_.NumOutputEpsilons(it->second);
   }
 
-  void SetEditedProperties(uint64 props, uint64 mask) {
+  void SetEditedProperties(uint64_t props, uint64_t mask) {
     edits_.SetProperties(props, mask);
   }
 
@@ -393,10 +393,10 @@ class EditFstImpl : public FstImpl<A> {
   // As it happens, the API for the ImplToMutableFst<I,F> class requires that
   // the implementation class--the template parameter "I"--have a constructor
   // taking a const Fst<A> reference. Accordingly, the constructor here must
-  // perform a fst::down_cast to the WrappedFstT type required by EditFst and
+  // perform a down_cast to the WrappedFstT type required by EditFst and
   // therefore EditFstImpl.
   explicit EditFstImpl(const Fst<Arc> &wrapped)
-      : wrapped_(fst::down_cast<WrappedFstT *>(wrapped.Copy())) {
+      : wrapped_(down_cast<WrappedFstT *>(wrapped.Copy())) {
     FstImpl<Arc>::SetType("edit");
     data_ = std::make_shared<EditFstData<Arc, WrappedFstT, MutableFstT>>();
     // have edits_ inherit all properties from wrapped_
@@ -409,7 +409,7 @@ class EditFstImpl : public FstImpl<A> {
   // the Copy() method of the Fst interface.
   EditFstImpl(const EditFstImpl &impl)
       : FstImpl<Arc>(),
-        wrapped_(fst::down_cast<WrappedFstT *>(impl.wrapped_->Copy(true))),
+        wrapped_(down_cast<WrappedFstT *>(impl.wrapped_->Copy(true))),
         data_(impl.data_) {
     SetProperties(impl.Properties());
   }
@@ -547,7 +547,7 @@ class EditFstImpl : public FstImpl<A> {
 
  private:
   // Properties always true of this FST class.
-  static constexpr uint64 kStaticProperties = kExpanded | kMutable;
+  static constexpr uint64_t kStaticProperties = kExpanded | kMutable;
   // Current file format version.
   static constexpr int kFileVersion = 2;
   // Minimum file format version supported
@@ -589,15 +589,6 @@ class EditFstImpl : public FstImpl<A> {
 };
 
 template <typename Arc, typename WrappedFstT, typename MutableFstT>
-constexpr uint64 EditFstImpl<Arc, WrappedFstT, MutableFstT>::kStaticProperties;
-
-template <typename Arc, typename WrappedFstT, typename MutableFstT>
-constexpr int EditFstImpl<Arc, WrappedFstT, MutableFstT>::kFileVersion;
-
-template <typename Arc, typename WrappedFstT, typename MutableFstT>
-constexpr int EditFstImpl<Arc, WrappedFstT, MutableFstT>::kMinFileVersion;
-
-template <typename Arc, typename WrappedFstT, typename MutableFstT>
 inline void EditFstImpl<Arc, WrappedFstT, MutableFstT>::DeleteStates() {
   data_->DeleteStates();
   // we are deleting all states, so just forget about pointer to wrapped_
@@ -622,7 +613,7 @@ EditFstImpl<Arc, WrappedFstT, MutableFstT>::Read(std::istream &strm,
   wrapped_opts.header = nullptr;
   std::unique_ptr<Fst<Arc>> wrapped_fst(Fst<Arc>::Read(strm, wrapped_opts));
   if (!wrapped_fst) return nullptr;
-  impl->wrapped_.reset(fst::down_cast<WrappedFstT *>(wrapped_fst.release()));
+  impl->wrapped_.reset(down_cast<WrappedFstT *>(wrapped_fst.release()));
   impl->data_ = std::shared_ptr<EditFstData<Arc, WrappedFstT, MutableFstT>>(
       EditFstData<Arc, WrappedFstT, MutableFstT>::Read(strm, opts));
   if (!impl->data_) return nullptr;

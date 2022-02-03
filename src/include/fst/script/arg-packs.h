@@ -37,7 +37,7 @@ namespace script {
 template <class Retval, class ArgTuple>
 struct WithReturnValue {
   // Avoid reference-to-reference if ArgTuple is a reference.
-  using Args = typename std::remove_reference<ArgTuple>::type;
+  using Args = std::remove_reference_t<ArgTuple>;
 
   Retval retval;
   const Args &args;

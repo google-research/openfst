@@ -20,7 +20,8 @@
 #ifndef FST_VERIFY_H_
 #define FST_VERIFY_H_
 
-#include <fst/types.h>
+#include <cstdint>
+
 #include <fst/log.h>
 
 #include <fst/fst.h>
@@ -95,8 +96,8 @@ bool Verify(const Fst<Arc> &fst, bool allow_negative_labels = false) {
     LOG(ERROR) << "Verify: FST error property is set";
     return false;
   }
-  uint64 known_props;
-  uint64 test_props =
+  uint64_t known_props;
+  uint64_t test_props =
       internal::ComputeProperties(fst, kFstProperties, &known_props);
   if (!internal::CompatProperties(fst_props, test_props)) {
     LOG(ERROR) << "Verify: Stored FST properties incorrect "

@@ -21,6 +21,7 @@
 #ifndef FST_BI_TABLE_H_
 #define FST_BI_TABLE_H_
 
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -28,7 +29,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/memory.h>
 #include <fst/windows_defs.inc>
@@ -116,8 +116,10 @@ enum HSType { HS_STL, HS_FLAT };
 // Default hash set is STL hash_set.
 template <class K, class H, class E, HSType HS>
 struct HashSet : public std::unordered_set<K, H, E, PoolAllocator<K>> {
-  explicit HashSet(size_t n = 0, const H &h = H(), const E &e = E())
-      : std::unordered_set<K, H, E, PoolAllocator<K>>(n, h, e) {}
+ private:
+  using Base = std::unordered_set<K, H, E, PoolAllocator<K>>;
+ public:
+  using Base::Base;
 
   void rehash(size_t n) {}
 };
@@ -147,25 +149,24 @@ class CompactHashBiTable {
     if (table_size) id2entry_.reserve(table_size);
   }
 
-  CompactHashBiTable(const CompactHashBiTable<I, T, H, E, HS> &table)
+  CompactHashBiTable(const CompactHashBiTable &table)
       : hash_func_(table.hash_func_),
         hash_equal_(table.hash_equal_),
         compact_hash_func_(*this),
         compact_hash_equal_(*this),
-        keys_(table.keys_.size(), compact_hash_func_, compact_hash_equal_),
-        id2entry_(table.id2entry_) {
-    keys_.insert(table.keys_.begin(), table.keys_.end());
-  }
+        id2entry_(table.id2entry_),
+        keys_(table.keys_.begin(), table.keys_.end(), table.keys_.size(),
+              compact_hash_func_, compact_hash_equal_) {}
 
   I FindId(const T &entry, bool insert = true) {
     current_entry_ = &entry;
     if (insert) {
-      auto result = keys_.insert(kCurrentKey);
-      if (!result.second) return *result.first;  // Already exists.
+      auto [iter, was_inserted] = keys_.insert(kCurrentKey);
+      if (!was_inserted) return *iter;  // Already exists.
       // Overwrites kCurrentKey with a new key value; this is safe because it
       // doesn't affect hashing or equality testing.
       I key = id2entry_.size();
-      const_cast<I &>(*result.first) = key;
+      const_cast<I &>(*iter) = key;
       id2entry_.push_back(entry);
       return key;
     }
@@ -198,7 +199,7 @@ class CompactHashBiTable {
   }
 
  private:
-  static_assert(std::is_signed<I>::value, "I must be a signed type");
+  static_assert(std::is_signed_v<I>, "I must be a signed type");
   // ... otherwise >= kCurrentKey comparisons as used below don't work.
   // TODO(rybach): (1) don't use >= for key comparison, (2) allow unsigned key
   // types.
@@ -252,13 +253,10 @@ class CompactHashBiTable {
   E hash_equal_;
   HashFunc compact_hash_func_;
   HashEqual compact_hash_equal_;
-  KeyHashSet keys_;
   std::vector<T> id2entry_;
+  KeyHashSet keys_;
   const T *current_entry_;
 };
-
-template <class I, class T, class H, class E, HSType HS>
-constexpr I CompactHashBiTable<I, T, H, E, HS>::kCurrentKey;
 
 // An implementation using a vector for the entry to ID mapping. It is passed a
 // function object FP that should fingerprint entries uniquely to an integer
@@ -340,7 +338,7 @@ class VectorHashBiTable {
 
   I FindId(const T &entry, bool insert = true) {
     if ((selector_)(entry)) {  // Uses the vector if selector_(entry) == true.
-      uint64 fp = (fp_)(entry);
+      uint64_t fp = (fp_)(entry);
       if (fp2id_.size() <= fp) fp2id_.resize(fp + 1, 0);
       if (fp2id_[fp] == 0) {  // T not found.
         if (insert) {         // Stores and assigns a new ID.
@@ -438,9 +436,6 @@ class VectorHashBiTable {
   KeyHashSet keys_;
   const T *current_entry_;
 };
-
-template <class I, class T, class S, class FP, class H, HSType HS>
-constexpr I VectorHashBiTable<I, T, S, FP, H, HS>::kCurrentKey;
 
 // An implementation using a hash map for the entry to ID mapping. This version
 // permits erasing of arbitrary states. The entry T must have == defined and

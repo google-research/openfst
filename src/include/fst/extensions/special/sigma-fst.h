@@ -18,7 +18,10 @@
 #ifndef FST_EXTENSIONS_SPECIAL_SIGMA_FST_H_
 #define FST_EXTENSIONS_SPECIAL_SIGMA_FST_H_
 
+#include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 
 #include <fst/const-fst.h>
@@ -47,7 +50,7 @@ class SigmaFstMatcherData {
                                           const FstReadOptions &read) {
     auto *data = new SigmaFstMatcherData<Label>();
     ReadType(istrm, &data->sigma_label_);
-    int32 rewrite_mode;
+    int32_t rewrite_mode;
     ReadType(istrm, &rewrite_mode);
     data->rewrite_mode_ = static_cast<MatcherRewriteMode>(rewrite_mode);
     return data;
@@ -55,7 +58,7 @@ class SigmaFstMatcherData {
 
   bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
     WriteType(ostrm, sigma_label_);
-    WriteType(ostrm, static_cast<int32>(rewrite_mode_));
+    WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
     return !ostrm ? false : true;
   }
 
@@ -79,10 +82,12 @@ class SigmaFstMatcherData {
 
 }  // namespace internal
 
-constexpr uint8 kSigmaFstMatchInput = 0x01;   // Input matcher is SigmaMatcher.
-constexpr uint8 kSigmaFstMatchOutput = 0x02;  // Output matcher is SigmaMatcher.
+inline constexpr uint8_t kSigmaFstMatchInput =
+    0x01;  // Input matcher is SigmaMatcher.
+inline constexpr uint8_t kSigmaFstMatchOutput =
+    0x02;  // Output matcher is SigmaMatcher.
 
-template <class M, uint8 flags = kSigmaFstMatchInput | kSigmaFstMatchOutput>
+template <class M, uint8_t flags = kSigmaFstMatchInput | kSigmaFstMatchOutput>
 class SigmaFstMatcher : public SigmaMatcher<M> {
  public:
   using FST = typename M::FST;
@@ -92,7 +97,7 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
   using Weight = typename Arc::Weight;
   using MatcherData = internal::SigmaFstMatcherData<Label>;
 
-  enum : uint8 { kFlags = flags };
+  static constexpr uint8_t kFlags = flags;
 
   // This makes a copy of the FST.
   SigmaFstMatcher(
@@ -139,9 +144,9 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
   std::shared_ptr<MatcherData> data_;
 };
 
-extern const char sigma_fst_type[];
-extern const char input_sigma_fst_type[];
-extern const char output_sigma_fst_type[];
+inline constexpr char sigma_fst_type[] = "sigma";
+inline constexpr char input_sigma_fst_type[] = "input_sigma";
+inline constexpr char output_sigma_fst_type[] = "output_sigma";
 
 template <class Arc>
 using SigmaFst =

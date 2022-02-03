@@ -19,6 +19,7 @@
 #define FST_SCRIPT_DRAW_H_
 
 #include <ostream>
+#include <string>
 
 #include <fst/script/draw-impl.h>
 #include <fst/script/fst-class.h>
@@ -29,7 +30,7 @@ namespace script {
 // Note: it is safe to pass these strings as references because this struct is
 // only used to pass them deeper in the call graph. Be sure you understand why
 // this is so before using this struct for anything else!
-struct DrawArgs {
+struct FstDrawArgs {
   const FstClass &fst;
   const SymbolTable *isyms;
   const SymbolTable *osyms;
@@ -51,7 +52,7 @@ struct DrawArgs {
 };
 
 template <class Arc>
-void Draw(DrawArgs *args) {
+void Draw(FstDrawArgs *args) {
   const Fst<Arc> &fst = *args->fst.GetFst<Arc>();
   FstDrawer<Arc> fstdrawer(fst, args->isyms, args->osyms, args->ssyms,
                            args->accep, args->title, args->width, args->height,

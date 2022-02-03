@@ -22,10 +22,10 @@
 #define FST_EXTENSIONS_MPDT_MPDTSCRIPT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/compose.h>
 #include <fst/extensions/mpdt/expand.h>
@@ -45,12 +45,12 @@ namespace script {
 
 using MPdtComposeArgs =
     std::tuple<const FstClass &, const FstClass &,
-               const std::vector<std::pair<int64, int64>> &,
-               const std::vector<int64> &, MutableFstClass *,
+               const std::vector<std::pair<int64_t, int64_t>> &,
+               const std::vector<int64_t> &, MutableFstClass *,
                const MPdtComposeOptions &, bool>;
 
 template <class Arc>
-void MPdtCompose(MPdtComposeArgs *args) {
+void Compose(MPdtComposeArgs *args) {
   const Fst<Arc> &ifst1 = *(std::get<0>(*args).GetFst<Arc>());
   const Fst<Arc> &ifst2 = *(std::get<1>(*args).GetFst<Arc>());
   MutableFst<Arc> *ofst = std::get<4>(*args)->GetMutableFst<Arc>();
@@ -71,18 +71,17 @@ void MPdtCompose(MPdtComposeArgs *args) {
   }
 }
 
-void MPdtCompose(const FstClass &ifst1, const FstClass &ifst2,
-                 const std::vector<std::pair<int64, int64>> &parens,
-                 const std::vector<int64> &assignments, MutableFstClass *ofst,
-                 const MPdtComposeOptions &copts, bool left_pdt);
+void Compose(const FstClass &ifst1, const FstClass &ifst2,
+             const std::vector<std::pair<int64_t, int64_t>> &parens,
+             const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+             const MPdtComposeOptions &copts, bool left_pdt);
 
-using MPdtExpandArgs =
-    std::tuple<const FstClass &, const std::vector<std::pair<int64, int64>> &,
-               const std::vector<int64> &, MutableFstClass *,
-               const MPdtExpandOptions &>;
+using MPdtExpandArgs = std::tuple<
+    const FstClass &, const std::vector<std::pair<int64_t, int64_t>> &,
+    const std::vector<int64_t> &, MutableFstClass *, const MPdtExpandOptions &>;
 
 template <class Arc>
-void MPdtExpand(MPdtExpandArgs *args) {
+void Expand(MPdtExpandArgs *args) {
   const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
   MutableFst<Arc> *ofst = std::get<3>(*args)->GetMutableFst<Arc>();
   // In case Arc::Label is not the same as FstClass::Label, we make copies.
@@ -101,17 +100,18 @@ void MPdtExpand(MPdtExpandArgs *args) {
                            std::get<4>(*args).keep_parentheses));
 }
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<std::pair<int64, int64>> &parens,
-                const std::vector<int64> &assignments, MutableFstClass *ofst,
-                const MPdtExpandOptions &opts);
+void Expand(const FstClass &ifst,
+            const std::vector<std::pair<int64_t, int64_t>> &parens,
+            const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+            const MPdtExpandOptions &opts);
 
 using MPdtReverseArgs =
-    std::tuple<const FstClass &, const std::vector<std::pair<int64, int64>> &,
-               std::vector<int64> *, MutableFstClass *>;
+    std::tuple<const FstClass &,
+               const std::vector<std::pair<int64_t, int64_t>> &,
+               std::vector<int64_t> *, MutableFstClass *>;
 
 template <class Arc>
-void MPdtReverse(MPdtReverseArgs *args) {
+void Reverse(MPdtReverseArgs *args) {
   const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
   MutableFst<Arc> *ofst = std::get<3>(*args)->GetMutableFst<Arc>();
   // In case Arc::Label is not the same as FstClass::Label, we make copies.
@@ -131,16 +131,17 @@ void MPdtReverse(MPdtReverseArgs *args) {
             std::get<2>(*args)->begin());
 }
 
-void MPdtReverse(const FstClass &ifst,
-                 const std::vector<std::pair<int64, int64>> &parens,
-                 std::vector<int64> *assignments, MutableFstClass *ofst);
+void Reverse(const FstClass &ifst,
+             const std::vector<std::pair<int64_t, int64_t>> &parens,
+             std::vector<int64_t> *assignments, MutableFstClass *ofst);
 
-using PrintMPdtInfoArgs =
-    std::tuple<const FstClass &, const std::vector<std::pair<int64, int64>> &,
-               const std::vector<int64> &>;
+using MPdtInfoArgs =
+    std::tuple<const FstClass &,
+               const std::vector<std::pair<int64_t, int64_t>> &,
+               const std::vector<int64_t> &>;
 
 template <class Arc>
-void PrintMPdtInfo(PrintMPdtInfoArgs *args) {
+void Info(MPdtInfoArgs *args) {
   const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
   // In case Arc::Label is not the same as FstClass::Label, we make copies.
   // Truncation may occur if FstClass::Label has more precision than
@@ -157,9 +158,9 @@ void PrintMPdtInfo(PrintMPdtInfoArgs *args) {
   mpdtinfo.Print();
 }
 
-void PrintMPdtInfo(const FstClass &ifst,
-                   const std::vector<std::pair<int64, int64>> &parens,
-                   const std::vector<int64> &assignments);
+void Info(const FstClass &ifst,
+          const std::vector<std::pair<int64_t, int64_t>> &parens,
+          const std::vector<int64_t> &assignments);
 
 }  // namespace script
 }  // namespace fst

@@ -23,12 +23,12 @@ namespace fst {
 namespace script {
 
 bool Verify(const FstClass &fst) {
-  VerifyArgs args(fst);
-  Apply<Operation<VerifyArgs>>("Verify", fst.ArcType(), &args);
+  FstVerifyArgs args(fst);
+  Apply<Operation<FstVerifyArgs>>("Verify", fst.ArcType(), &args);
   return args.retval;
 }
 
-REGISTER_FST_OPERATION_3ARCS(Verify, VerifyArgs);
+REGISTER_FST_OPERATION_3ARCS(Verify, FstVerifyArgs);
 
 }  // namespace script
 }  // namespace fst

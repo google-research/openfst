@@ -21,10 +21,10 @@
 #define FST_EQUIVALENT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <queue>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/encode.h>
@@ -64,7 +64,7 @@ struct EquivalenceUtil {
   // Maps state ID to the representative of the corresponding
   // equivalence class. The parameter 'which_fst' takes the values 1
   // and 2, identifying the input FST.
-  static MappedId MapState(StateId s, int32 which_fst) {
+  static MappedId MapState(StateId s, int32_t which_fst) {
     return (kNoStateId == s) ? kDeadState
                              : (static_cast<MappedId>(s) << 1) + which_fst;
   }
@@ -92,14 +92,6 @@ struct EquivalenceUtil {
     }
   }
 };
-
-template <class Arc>
-constexpr
-    typename EquivalenceUtil<Arc>::MappedId EquivalenceUtil<Arc>::kDeadState;
-
-template <class Arc>
-constexpr
-    typename EquivalenceUtil<Arc>::MappedId EquivalenceUtil<Arc>::kInvalidId;
 
 }  // namespace internal
 

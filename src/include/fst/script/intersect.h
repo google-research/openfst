@@ -27,11 +27,11 @@
 namespace fst {
 namespace script {
 
-using IntersectArgs = std::tuple<const FstClass &, const FstClass &,
-                                 MutableFstClass *, const ComposeOptions &>;
+using FstIntersectArgs = std::tuple<const FstClass &, const FstClass &,
+                                    MutableFstClass *, const ComposeOptions &>;
 
 template <class Arc>
-void Intersect(IntersectArgs *args) {
+void Intersect(FstIntersectArgs *args) {
   const Fst<Arc> &ifst1 = *std::get<0>(*args).GetFst<Arc>();
   const Fst<Arc> &ifst2 = *std::get<1>(*args).GetFst<Arc>();
   MutableFst<Arc> *ofst = std::get<2>(*args)->GetMutableFst<Arc>();

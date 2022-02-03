@@ -20,13 +20,14 @@
 #ifndef FST_TEST_ALGO_TEST_H_
 #define FST_TEST_ALGO_TEST_H_
 
+#include <cstdint>
 #include <memory>
 #include <random>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/fstlib.h>
+#include <fst/weight.h>
 #include <fst/test/rand-fst.h>
 
 DECLARE_int32(repeat);  // defined in ./algo_test.cc
@@ -44,7 +45,7 @@ class EpsMapper {
     return A(0, 0, arc.weight, arc.nextstate);
   }
 
-  uint64 Properties(uint64 props) const {
+  uint64_t Properties(uint64_t props) const {
     props &= ~kNotAcceptor;
     props |= kAcceptor;
     props &= ~kNoIEpsilons & ~kNoOEpsilons & ~kNoEpsilons;
@@ -87,15 +88,17 @@ inline void LookAheadCompose(const Fst<StdArc> &ifst1, const Fst<StdArc> &ifst2,
 
 // This class tests a variety of identities and properties that must
 // hold for various algorithms on weighted FSTs.
-template <class Arc, class WeightGenerator>
+template <class Arc>
 class WeightedTester {
  public:
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  using WeightGenerator = WeightGenerate<Weight>;
 
-  WeightedTester(uint64 seed, const Fst<Arc> &zero_fst, const Fst<Arc> &one_fst,
-                 const Fst<Arc> &univ_fst, WeightGenerator weight_generator)
+  WeightedTester(uint64_t seed, const Fst<Arc> &zero_fst,
+                 const Fst<Arc> &one_fst, const Fst<Arc> &univ_fst,
+                 WeightGenerator weight_generator)
       : seed_(seed),
         rand_(seed),
         zero_fst_(zero_fst),
@@ -426,7 +429,7 @@ class WeightedTester {
     {
       VLOG(1) << "Check encoding/decoding (destructive).";
       VectorFst<Arc> D(T);
-      uint8 encode_props = 0;
+      uint8_t encode_props = 0;
       if (std::bernoulli_distribution(.5)(rand_)) {
         encode_props |= kEncodeLabels;
       }
@@ -441,7 +444,7 @@ class WeightedTester {
 
     {
       VLOG(1) << "Check encoding/decoding (delayed).";
-      uint8 encode_props = 0;
+      uint8_t encode_props = 0;
       if (std::bernoulli_distribution(.5)(rand_)) {
         encode_props |= kEncodeLabels;
       }
@@ -468,8 +471,8 @@ class WeightedTester {
 
     {
       VLOG(1) << "Check gallic mappers (delayed).";
-      auto G = MakeArcMapFst(T, ToGallicMapper<Arc>());
-      auto F = MakeArcMapFst(G, FromGallicMapper<Arc>());
+      ArcMapFst G(T, ToGallicMapper<Arc>());
+      ArcMapFst F(G, FromGallicMapper<Arc>());
       CHECK(Equiv(T, F));
     }
   }
@@ -630,8 +633,8 @@ class WeightedTester {
 
   // Tests optimization operations
   void TestOptimize(const Fst<Arc> &T) {
-    uint64 tprops = T.Properties(kFstProperties, true);
-    uint64 wprops = Weight::Properties();
+    uint64_t tprops = T.Properties(kFstProperties, true);
+    uint64_t wprops = Weight::Properties();
 
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::INPUT);
@@ -743,10 +746,10 @@ class WeightedTester {
         // Skip test if A is the empty machine or contains epsilons or
         // if the semiring is not idempotent (to avoid floating point
         // errors)
-        VectorFst<Arc> R;
+        VectorFst<ReverseArc<Arc>> R;
         Reverse(A, &R);
         RmEpsilon(&R);
-        DeterminizeFst<Arc> DR(R);
+        DeterminizeFst<ReverseArc<Arc>> DR(R);
         VectorFst<Arc> RD;
         Reverse(DR, &RD);
         DeterminizeFst<Arc> DRD(RD);
@@ -872,7 +875,7 @@ class WeightedTester {
   // Tests search operations
   void TestSearch(const Fst<Arc> &T) {
     if constexpr (IsPath<Weight>::value) {
-      uint64 wprops = Weight::Properties();
+      uint64_t wprops = Weight::Properties();
 
       VectorFst<Arc> A(T);
       Project(&A, ProjectType::INPUT);
@@ -941,10 +944,10 @@ class WeightedTester {
   bool Unambiguous(const Fst<Arc> &fst) {
     VectorFst<StdArc> sfst, dfst;
     VectorFst<LogArc> lfst1, lfst2;
-    Map(fst, &sfst, RmWeightMapper<Arc, StdArc>());
+    ArcMap(fst, &sfst, RmWeightMapper<Arc, StdArc>());
     Determinize(sfst, &dfst);
-    Map(fst, &lfst1, RmWeightMapper<Arc, LogArc>());
-    Map(dfst, &lfst2, RmWeightMapper<StdArc, LogArc>());
+    ArcMap(fst, &lfst1, RmWeightMapper<Arc, LogArc>());
+    ArcMap(dfst, &lfst2, RmWeightMapper<StdArc, LogArc>());
     return Equiv(lfst1, lfst2);
   }
 
@@ -971,7 +974,7 @@ class WeightedTester {
     for (ssize_t n = 0; n < kNumRandomPaths; ++n) {
       RandGen(fst1, &path, opts);
       Invert(&path);
-      Map(&path, RmWeightMapper<Arc>());
+      ArcMap(&path, RmWeightMapper<Arc>());
       Compose(path, fst2, &paths1);
       Weight sum1 = ShortestDistance(paths1);
       Compose(paths1, path, &paths2);
@@ -992,14 +995,14 @@ class WeightedTester {
     CHECK(Verify(pfst));
 
     DifferenceFst<Arc> D(fst, DeterminizeFst<Arc>(RmEpsilonFst<Arc>(
-                                  MakeArcMapFst(pfst, RmWeightMapper<Arc>()))));
+                                  ArcMapFst(pfst, RmWeightMapper<Arc>()))));
     const Weight sum1 = Times(ShortestDistance(fst), threshold);
     const Weight sum2 = ShortestDistance(D);
     return ApproxEqual(Plus(sum1, sum2), sum1, kTestDelta);
   }
 
   // Random seed.
-  uint64 seed_;
+  uint64_t seed_;
   // Random state (for randomness in this class).
   std::mt19937_64 rand_;
   // FST with no states
@@ -1011,34 +1014,19 @@ class WeightedTester {
   // Generates weights used in testing.
   WeightGenerator generate_;
   // Maximum random path length.
-  static const int kRandomPathLength;
+  static constexpr int kRandomPathLength = 25;
   // Number of random paths to explore.
-  static const int kNumRandomPaths;
+  static constexpr int kNumRandomPaths = 100;
   // Maximum number of nshortest paths.
-  static const int kNumRandomShortestPaths;
+  static constexpr int kNumRandomShortestPaths = 100;
   // Maximum number of nshortest states.
-  static const int kNumShortestStates;
+  static constexpr int kNumShortestStates = 10000;
   // Delta for equivalence tests.
-  static const float kTestDelta;
+  static constexpr float kTestDelta = .05;
 
   WeightedTester(const WeightedTester &) = delete;
   WeightedTester &operator=(const WeightedTester &) = delete;
 };
-
-template <class A, class WG>
-const int WeightedTester<A, WG>::kRandomPathLength = 25;
-
-template <class A, class WG>
-const int WeightedTester<A, WG>::kNumRandomPaths = 100;
-
-template <class A, class WG>
-const int WeightedTester<A, WG>::kNumRandomShortestPaths = 100;
-
-template <class A, class WG>
-const int WeightedTester<A, WG>::kNumShortestStates = 10000;
-
-template <class A, class WG>
-const float WeightedTester<A, WG>::kTestDelta = .05;
 
 // This class tests a variety of identities and properties that must
 // hold for various algorithms on unweighted FSAs and that are not tested
@@ -1047,7 +1035,7 @@ template <class Arc>
 class UnweightedTester {
  public:
   UnweightedTester(const Fst<Arc> &zero_fsa, const Fst<Arc> &one_fsa,
-                   const Fst<Arc> &univ_fsa, uint64 seed) {}
+                   const Fst<Arc> &univ_fsa, uint64_t seed) {}
 
   void Test(const Fst<Arc> &A1, const Fst<Arc> &A2, const Fst<Arc> &A3) {}
 };
@@ -1064,7 +1052,7 @@ class UnweightedTester<StdArc> {
   using Weight = Arc::Weight;
 
   UnweightedTester(const Fst<Arc> &zero_fsa, const Fst<Arc> &one_fsa,
-                   const Fst<Arc> &univ_fsa, uint64 seed)
+                   const Fst<Arc> &univ_fsa, uint64_t seed)
       : zero_fsa_(zero_fsa),
         one_fsa_(one_fsa),
         univ_fsa_(univ_fsa),
@@ -1111,15 +1099,12 @@ class UnweightedTester<StdArc> {
     {
       VLOG(1) << "Check if A^n c A* (delayed).";
       const int n = std::uniform_int_distribution<>(0, 4)(rand_);
-      Fst<Arc> *C = new VectorFst<Arc>(one_fsa_);
+      std::unique_ptr<Fst<Arc>> C = std::make_unique<VectorFst<Arc>>(one_fsa_);
       for (int i = 0; i < n; ++i) {
-        ConcatFst<Arc> *F = new ConcatFst<Arc>(*C, A1);
-        delete C;
-        C = F;
+        C = std::make_unique<ConcatFst<Arc>>(*C, A1);
       }
       ClosureFst<Arc> S(A1, CLOSURE_STAR);
       CHECK(Subset(*C, S));
-      delete C;
     }
   }
 
@@ -1320,14 +1305,15 @@ class UnweightedTester<StdArc> {
 // hold for various FST algorithms. It randomly generates FSTs, using
 // function object 'weight_generator' to select weights. 'WeightTester'
 // and 'UnweightedTester' are then called.
-template <class Arc, class WeightGenerator>
+template <class Arc>
 class AlgoTester {
  public:
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  using WeightGenerator = WeightGenerate<Weight>;
 
-  AlgoTester(WeightGenerator generator, uint64 seed)
+  AlgoTester(WeightGenerator generator, uint64_t seed)
       : generate_(std::move(generator)), rand_(seed) {
     one_fst_.AddState();
     one_fst_.SetStart(0);
@@ -1338,8 +1324,8 @@ class AlgoTester {
     univ_fst_.SetFinal(0);
     for (int i = 0; i < kNumRandomLabels; ++i) univ_fst_.EmplaceArc(0, i, i, 0);
 
-    weighted_tester_.reset(new WeightedTester<Arc, WeightGenerator>(
-        seed, zero_fst_, one_fst_, univ_fst_, generate_));
+    weighted_tester_.reset(new WeightedTester<Arc>(seed, zero_fst_, one_fst_,
+                                                   univ_fst_, generate_));
 
     unweighted_tester_.reset(
         new UnweightedTester<Arc>(zero_fst_, one_fst_, univ_fst_, seed));
@@ -1389,46 +1375,27 @@ class AlgoTester {
   // FST with one state that accepts all strings.
   VectorFst<Arc> univ_fst_;
   // Tests weighted FSTs
-  std::unique_ptr<WeightedTester<Arc, WeightGenerator>> weighted_tester_;
+  std::unique_ptr<WeightedTester<Arc>> weighted_tester_;
   // Tests unweighted FSTs
   std::unique_ptr<UnweightedTester<Arc>> unweighted_tester_;
   // Mapper to remove weights from an Fst
   RmWeightMapper<Arc> rm_weight_mapper_;
   // Maximum number of states in random test Fst.
-  static const int kNumRandomStates;
+  static constexpr int kNumRandomStates = 10;
   // Maximum number of arcs in random test Fst.
-  static const int kNumRandomArcs;
+  static constexpr int kNumRandomArcs = 25;
   // Number of alternative random labels.
-  static const int kNumRandomLabels;
+  static constexpr int kNumRandomLabels = 5;
   // Probability to force an acyclic Fst
-  static const float kAcyclicProb;
+  static constexpr float kAcyclicProb = .25;
   // Maximum random path length.
-  static const int kRandomPathLength;
+  static constexpr int kRandomPathLength = 25;
   // Number of random paths to explore.
-  static const int kNumRandomPaths;
+  static constexpr int kNumRandomPaths = 100;
 
   AlgoTester(const AlgoTester &) = delete;
   AlgoTester &operator=(const AlgoTester &) = delete;
 };
-
-template <class A, class G>
-const int AlgoTester<A, G>::kNumRandomStates = 10;
-
-template <class A, class G>
-const int AlgoTester<A, G>::kNumRandomArcs = 25;
-
-template <class A, class G>
-const int AlgoTester<A, G>::kNumRandomLabels = 5;
-
-template <class A, class G>
-const float AlgoTester<A, G>::kAcyclicProb = .25;
-
-template <class A, class G>
-const int AlgoTester<A, G>::kRandomPathLength = 25;
-
-template <class A, class G>
-const int AlgoTester<A, G>::kNumRandomPaths = 100;
-
 }  // namespace fst
 
 #endif  // FST_TEST_ALGO_TEST_H_

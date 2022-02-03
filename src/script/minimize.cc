@@ -29,11 +29,11 @@ void Minimize(MutableFstClass *ofst1, MutableFstClass *ofst2, float delta,
     ofst2->SetProperties(kError, kError);
     return;
   }
-  MinimizeArgs args(ofst1, ofst2, delta, allow_nondet);
-  Apply<Operation<MinimizeArgs>>("Minimize", ofst1->ArcType(), &args);
+  FstMinimizeArgs args{ofst1, ofst2, delta, allow_nondet};
+  Apply<Operation<FstMinimizeArgs>>("Minimize", ofst1->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Minimize, MinimizeArgs);
+REGISTER_FST_OPERATION_3ARCS(Minimize, FstMinimizeArgs);
 
 }  // namespace script
 }  // namespace fst

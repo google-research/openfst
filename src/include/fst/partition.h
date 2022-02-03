@@ -21,6 +21,7 @@
 #define FST_PARTITION_H_
 
 #include <algorithm>
+#include <type_traits>
 #include <vector>
 
 
@@ -65,6 +66,9 @@ class PartitionIterator;
 // a subsequent call to FinalizeSplit()
 template <typename T>
 class Partition {
+  static_assert(std::is_signed_v<T> && std::is_integral_v<T>,
+                "T must be a signed integer type");
+
  public:
   Partition() {}
 

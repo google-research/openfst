@@ -21,6 +21,8 @@
 #define FST_VISIT_H_
 
 
+#include <cstdint>
+
 #include <fst/arcfilter.h>
 #include <fst/mutable-fst.h>
 
@@ -80,12 +82,12 @@ void Visit(const FST &fst, Visitor *visitor, Queue *queue, ArcFilter filter,
     return;
   }
   // An FST's state's visit color.
-  static constexpr uint8 kWhiteState = 0x01;  // Undiscovered.
-  static constexpr uint8 kGreyState = 0x02;   // Discovered & unfinished.
-  static constexpr uint8 kBlackState = 0x04;  // Finished.
+  static constexpr uint8_t kWhiteState = 0x01;  // Undiscovered.
+  static constexpr uint8_t kGreyState = 0x02;   // Discovered & unfinished.
+  static constexpr uint8_t kBlackState = 0x04;  // Finished.
   // We destroy an iterator as soon as possible and mark it so.
-  static constexpr uint8 kArcIterDone = 0x08;
-  std::vector<uint8> state_status;
+  static constexpr uint8_t kArcIterDone = 0x08;
+  std::vector<uint8_t> state_status;
   std::vector<ArcIterator<FST> *> arc_iterator;
   MemoryPool<ArcIterator<FST>> aiter_pool;
   StateId nstates = start + 1;  // Number of known states in general case.

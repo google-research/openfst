@@ -22,12 +22,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/weight.h>
@@ -90,7 +90,7 @@ class TupleWeight {
   }
 
   size_t Hash() const {
-    uint64 hash = 0;
+    uint64_t hash = 0;
     for (size_t i = 0; i < n; ++i) hash = 5 * hash + values_[i].Hash();
     return size_t(hash);
   }

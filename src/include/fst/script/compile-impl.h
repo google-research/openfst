@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <fst/fst.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/vector-fst.h>
 #include <unordered_map>
@@ -36,7 +37,7 @@ DECLARE_string(fst_field_separator);
 
 namespace fst {
 
-// Compile a binary Fst from textual input, helper class for fstcompile.cc
+// Compile a binary FST from textual input, helper class for fstcompile.cc.
 // WARNING: Stand-alone use of this class not recommended, most code should
 // read/write using the binary format which is much more efficient.
 template <class Arc>
@@ -89,7 +90,8 @@ class FstCompiler {
         FST_FLAGS_fst_field_separator + "\n";
     while (istrm.getline(line, kLineLen)) {
       ++nline_;
-      std::vector<std::string_view> col = SplitString(line, separator, true);
+      std::vector<std::string_view> col =
+          StrSplit(line, ByAnyChar(separator), SkipEmpty());
       if (col.empty() || col[0].empty()) continue;
       if (col.size() > 5 || (col.size() > 4 && accep) ||
           (col.size() == 3 && !accep)) {
@@ -152,12 +154,12 @@ class FstCompiler {
   // Maximum line length in text file.
   static constexpr int kLineLen = 8096;
 
-  StateId StrToId(std::string_view s, SymbolTable *syms, const char *name,
-                  bool allow_negative = false) const {
+  StateId StrToId(std::string_view s, SymbolTable *syms,
+                  std::string_view name, bool allow_negative = false) const {
     StateId n = 0;
     if (syms) {
       n = (add_symbols_) ? syms->AddSymbol(s) : syms->Find(s);
-      if (n == -1 || (!allow_negative && n < 0)) {
+      if (n == kNoSymbol || (!allow_negative && n < 0)) {
         FSTERROR() << "FstCompiler: Symbol \"" << s
                    << "\" is not mapped to any integer " << name
                    << ", symbol table = " << syms->Name()

@@ -24,17 +24,18 @@
 #include <sys/types.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <istream>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fstream>
 
 #include <fst/expanded-fst.h>
+#include <string_view>
 
 
 namespace fst {
@@ -64,7 +65,7 @@ class MutableFst : public ExpandedFst<A> {
   virtual void SetFinal(StateId s, Weight weight = Weight::One()) = 0;
 
   // Sets property bits w.r.t. mask.
-  virtual void SetProperties(uint64 props, uint64 mask) = 0;
+  virtual void SetProperties(uint64_t props, uint64_t mask) = 0;
 
   // Adds a state and returns its ID.
   virtual StateId AddState() = 0;
@@ -141,7 +142,7 @@ class MutableFst : public ExpandedFst<A> {
     }
     auto *fst = reader(strm, ropts);
     if (!fst) return nullptr;
-    return fst::down_cast<MutableFst *>(fst);
+    return down_cast<MutableFst *>(fst);
   }
 
   // Reads a MutableFst from a file; returns nullptr on error. An empty
@@ -149,7 +150,7 @@ class MutableFst : public ExpandedFst<A> {
   // convert to a mutable FST subclass (given by convert_type) in the case
   // that the input FST is non-mutable.
   static MutableFst *Read(const std::string &source, bool convert = false,
-                          const std::string &convert_type = "vector") {
+                          std::string_view convert_type = "vector") {
     if (convert == false) {
       if (!source.empty()) {
         std::ifstream strm(source,
@@ -166,7 +167,7 @@ class MutableFst : public ExpandedFst<A> {
       std::unique_ptr<Fst<Arc>> ifst(Fst<Arc>::Read(source));
       if (!ifst) return nullptr;
       if (ifst->Properties(kMutable, false)) {
-        return fst::down_cast<MutableFst *>(ifst.release());
+        return down_cast<MutableFst *>(ifst.release());
       } else {
         std::unique_ptr<Fst<Arc>> ofst(Convert(*ifst, convert_type));
         ifst.reset();
@@ -174,7 +175,7 @@ class MutableFst : public ExpandedFst<A> {
         if (!ofst->Properties(kMutable, false)) {
           LOG(ERROR) << "MutableFst: Bad convert type: " << convert_type;
         }
-        return fst::down_cast<MutableFst *>(ofst.release());
+        return down_cast<MutableFst *>(ofst.release());
       }
     }
   }
@@ -239,9 +240,9 @@ class MutableArcIterator {
 
   void SetValue(const Arc &arc) { data_.base->SetValue(arc); }
 
-  uint8 Flags() const { return data_.base->Flags(); }
+  uint8_t Flags() const { return data_.base->Flags(); }
 
-  void SetFlags(uint8 flags, uint8 mask) {
+  void SetFlags(uint8_t flags, uint8_t mask) {
     return data_.base->SetFlags(flags, mask);
   }
 
@@ -304,7 +305,7 @@ class ImplToMutableFst : public ImplToExpandedFst<Impl, FST> {
     GetMutableImpl()->SetFinal(s, std::move(weight));
   }
 
-  void SetProperties(uint64 props, uint64 mask) override {
+  void SetProperties(uint64_t props, uint64_t mask) override {
     // Can skip mutate check if extrinsic properties don't change,
     // since it is then safe to update all (shallow) copies
     const auto exprops = kExtrinsicProperties & mask;

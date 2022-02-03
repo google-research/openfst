@@ -56,8 +56,8 @@ class LinearFstData {
 
   // Sentence boundary labels. Both of them are negative labels other
   // than `kNoLabel`.
-  static const Label kStartOfSentence;
-  static const Label kEndOfSentence;
+  static constexpr Label kStartOfSentence = -3;
+  static constexpr Label kEndOfSentence = -2;
 
   // Constructs empty data; for non-trivial ways of construction see
   // `Read()` and `LinearFstDataBuilder`.
@@ -150,11 +150,6 @@ class LinearFstData {
   LinearFstData(const LinearFstData &) = delete;
   LinearFstData &operator=(const LinearFstData &) = delete;
 };
-
-template <class A>
-const typename A::Label LinearFstData<A>::kStartOfSentence = -3;
-template <class A>
-const typename A::Label LinearFstData<A>::kEndOfSentence = -2;
 
 template <class A>
 template <class Iterator>

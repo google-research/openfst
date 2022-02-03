@@ -23,11 +23,11 @@ namespace fst {
 namespace script {
 
 void Project(MutableFstClass *ofst, ProjectType project_type) {
-  ProjectArgs args(ofst, project_type);
-  Apply<Operation<ProjectArgs>>("Project", ofst->ArcType(), &args);
+  FstProjectArgs args(ofst, project_type);
+  Apply<Operation<FstProjectArgs>>("Project", ofst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Project, ProjectArgs);
+REGISTER_FST_OPERATION_3ARCS(Project, FstProjectArgs);
 
 }  // namespace script
 }  // namespace fst

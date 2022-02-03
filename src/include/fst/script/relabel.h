@@ -19,36 +19,38 @@
 #define FST_SCRIPT_RELABEL_H_
 
 #include <algorithm>
+#include <cstdint>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/relabel.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {
 namespace script {
 
-using RelabelArgs1 =
+using FstRelabelArgs1 =
     std::tuple<MutableFstClass *, const SymbolTable *, const SymbolTable *,
                const std::string &, bool, const SymbolTable *,
                const SymbolTable *, const std::string &, bool>;
 
 template <class Arc>
-void Relabel(RelabelArgs1 *args) {
+void Relabel(FstRelabelArgs1 *args) {
   MutableFst<Arc> *ofst = std::get<0>(*args)->GetMutableFst<Arc>();
   Relabel(ofst, std::get<1>(*args), std::get<2>(*args), std::get<3>(*args),
           std::get<4>(*args), std::get<5>(*args), std::get<6>(*args),
           std::get<7>(*args), std::get<8>(*args));
 }
 
-using RelabelArgs2 =
-    std::tuple<MutableFstClass *, const std::vector<std::pair<int64, int64>> &,
-               const std::vector<std::pair<int64, int64>> &>;
+using FstRelabelArgs2 =
+    std::tuple<MutableFstClass *,
+               const std::vector<std::pair<int64_t, int64_t>> &,
+               const std::vector<std::pair<int64_t, int64_t>> &>;
 
 template <class Arc>
-void Relabel(RelabelArgs2 *args) {
+void Relabel(FstRelabelArgs2 *args) {
   MutableFst<Arc> *ofst = std::get<0>(*args)->GetMutableFst<Arc>();
   using LabelPair = std::pair<typename Arc::Label, typename Arc::Label>;
   // In case the MutableFstClass::Label is not the same as Arc::Label,
@@ -69,8 +71,8 @@ void Relabel(MutableFstClass *ofst, const SymbolTable *old_isymbols,
              const std::string &unknown_osymbol, bool attach_new_osymbols);
 
 void Relabel(MutableFstClass *ofst,
-             const std::vector<std::pair<int64, int64>> &ipairs,
-             const std::vector<std::pair<int64, int64>> &opairs);
+             const std::vector<std::pair<int64_t, int64_t>> &ipairs,
+             const std::vector<std::pair<int64_t, int64_t>> &opairs);
 
 }  // namespace script
 }  // namespace fst

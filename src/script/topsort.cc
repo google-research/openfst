@@ -23,12 +23,12 @@ namespace fst {
 namespace script {
 
 bool TopSort(MutableFstClass *fst) {
-  TopSortArgs args(fst);
-  Apply<Operation<TopSortArgs>>("TopSort", fst->ArcType(), &args);
+  FstTopSortArgs args(fst);
+  Apply<Operation<FstTopSortArgs>>("TopSort", fst->ArcType(), &args);
   return args.retval;
 }
 
-REGISTER_FST_OPERATION_3ARCS(TopSort, TopSortArgs);
+REGISTER_FST_OPERATION_3ARCS(TopSort, FstTopSortArgs);
 
 }  // namespace script
 }  // namespace fst

@@ -26,29 +26,29 @@
 namespace fst {
 namespace script {
 
-using ConcatArgs1 = std::pair<MutableFstClass *, const FstClass &>;
+using FstConcatArgs1 = std::pair<MutableFstClass *, const FstClass &>;
 
 template <class Arc>
-void Concat(ConcatArgs1 *args) {
+void Concat(FstConcatArgs1 *args) {
   MutableFst<Arc> *fst1 = std::get<0>(*args)->GetMutableFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(*args).GetFst<Arc>();
   Concat(fst1, fst2);
 }
 
-using ConcatArgs2 = std::pair<const FstClass &, MutableFstClass *>;
+using FstConcatArgs2 = std::pair<const FstClass &, MutableFstClass *>;
 
 template <class Arc>
-void Concat(ConcatArgs2 *args) {
+void Concat(FstConcatArgs2 *args) {
   const Fst<Arc> &fst1 = *std::get<0>(*args).GetFst<Arc>();
   MutableFst<Arc> *fst2 = std::get<1>(*args)->GetMutableFst<Arc>();
   Concat(fst1, fst2);
 }
 
-using ConcatArgs3 =
+using FstConcatArgs3 =
     std::pair<const std::vector<FstClass *> &, MutableFstClass *>;
 
 template <class Arc>
-void Concat(ConcatArgs3 *args) {
+void Concat(FstConcatArgs3 *args) {
   const auto &untyped_fsts1 = std::get<0>(*args);
   std::vector<const Fst<Arc> *> typed_fsts1;
   typed_fsts1.reserve(untyped_fsts1.size());

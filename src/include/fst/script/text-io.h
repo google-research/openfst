@@ -26,11 +26,12 @@
 #include <vector>
 
 #include <fst/script/weight-class.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool ReadPotentials(const std::string &weight_type, const std::string &source,
+bool ReadPotentials(std::string_view weight_type, const std::string &source,
                     std::vector<WeightClass> *potentials);
 
 bool WritePotentials(const std::string &source,

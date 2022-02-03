@@ -18,6 +18,7 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_BUILDER_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_BUILDER_H_
 
+#include <cstdint>
 #include <map>
 #include <queue>
 #include <set>
@@ -27,7 +28,6 @@
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
 #include <fst/fst.h>
@@ -41,7 +41,7 @@ template <class A>
 class FeatureGroupBuilder;
 
 // For logging purposes
-inline std::string TranslateLabel(int64 label, const SymbolTable *syms);
+inline std::string TranslateLabel(int64_t label, const SymbolTable *syms);
 template <class Iterator>
 std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable *syms);
 template <class Label>
@@ -1013,7 +1013,7 @@ std::string FeatureGroupBuilder<A>::TriePath(int node,
   return strm.str();
 }
 
-inline std::string TranslateLabel(int64 label, const SymbolTable *syms) {
+inline std::string TranslateLabel(int64_t label, const SymbolTable *syms) {
   std::string ret;
   if (syms != nullptr) ret += syms->Find(label);
   if (ret.empty()) {

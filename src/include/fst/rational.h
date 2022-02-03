@@ -22,10 +22,10 @@
 #define FST_RATIONAL_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include <fst/types.h>
 
 #include <fst/mutable-fst.h>
 #include <fst/replace.h>
@@ -108,10 +108,10 @@ class RationalFstImpl : public FstImpl<A> {
     return Replace()->NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && Replace()->Properties(kError, false)) {
       SetProperties(kError, kError);
     }

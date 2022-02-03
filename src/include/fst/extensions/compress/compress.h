@@ -21,16 +21,19 @@
 #define FST_EXTENSIONS_COMPRESS_COMPRESS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <queue>
 #include <string>
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/compress/elias.h>
 #include <fst/encode.h>
@@ -44,7 +47,7 @@
 namespace fst {
 
 // Identifies stream data as a vanilla compressed FST.
-static const int32 kCompressMagicNumber = 1858869554;
+inline constexpr int32_t kCompressMagicNumber = 1858869554;
 
 namespace internal {
 
@@ -151,14 +154,14 @@ void LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchEncode(
 template <class Var, class Edge, class EdgeLessThan, class EdgeEquals>
 bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
     const std::vector<std::pair<Var, Edge>> &input, std::vector<Edge> *output) {
-  for (auto it = input.cbegin(); it != input.cend(); ++it) {
+  for (const auto &[var, edge] : input) {
     std::vector<Edge> temp_output;
     EdgeEquals InstEdgeEquals;
-    if (InstEdgeEquals(it->second, default_edge_) != 1) {
-      decode_vector_.push_back(*it);
-      temp_output.push_back(it->second);
+    if (InstEdgeEquals(edge, default_edge_) != 1) {
+      decode_vector_.emplace_back(var, edge);
+      temp_output.push_back(edge);
     }
-    auto temp_integer = it->first;
+    auto temp_integer = var;
     if (temp_integer >= decode_vector_.size()) {
       LOG(ERROR) << "LempelZiv::BatchDecode: "
                  << "Index exceeded the dictionary size";
@@ -168,8 +171,7 @@ bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
         temp_output.push_back(decode_vector_[temp_integer].second);
         temp_integer = decode_vector_[temp_integer].first;
       }
-      std::reverse(temp_output.begin(), temp_output.end());
-      output->insert(output->cend(), temp_output.begin(), temp_output.end());
+      output->insert(output->cend(), temp_output.rbegin(), temp_output.rend());
     }
   }
   return true;
@@ -457,7 +459,7 @@ void Compressor<Arc>::EncodeProcessedFst(const ExpandedFst<Arc> &fst,
     }
   }
   WriteToStream(strm);
-  const uint8 unweighted = fst.Properties(kUnweighted, true) == kUnweighted;
+  const uint8_t unweighted = fst.Properties(kUnweighted, true) == kUnweighted;
   WriteType(strm, unweighted);
   if (unweighted == 0) {
     WriteWeight(arc_weight_, strm);
@@ -644,10 +646,10 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId> &input,
 template <class Arc>
 void Compressor<Arc>::ReadWeight(std::istream &strm,
                                  std::vector<Weight> *output) {
-  int64 size;
+  int64_t size;
   Weight weight;
   ReadType(strm, &size);
-  for (int64 i = 0; i < size; ++i) {
+  for (int64_t i = 0; i < size; ++i) {
     weight.Read(strm);
     output->push_back(weight);
   }
@@ -657,7 +659,7 @@ template <class Arc>
 bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
                                  MutableFst<Arc> *fst) {
   fst->DeleteStates();
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   if (magic_number != kCompressMagicNumber) {
     LOG(ERROR) << "Decompress: Bad compressed Fst: " << source;
@@ -666,14 +668,14 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
   std::unique_ptr<EncodeMapper<Arc>> encoder(
       EncodeMapper<Arc>::Read(strm, "Decoding", DECODE));
   std::vector<bool> bool_code;
-  uint8 block;
-  uint8 msb = 128;
-  int64 data_size;
+  uint8_t block;
+  uint8_t msb = 128;
+  int64_t data_size;
   ReadType(strm, &data_size);
-  for (int64 i = 0; i < data_size; ++i) {
+  for (int64_t i = 0; i < data_size; ++i) {
     ReadType(strm, &block);
     for (int j = 0; j < 8; ++j) {
-      uint8 temp = msb & block;
+      uint8_t temp = msb & block;
       bool_code.push_back(temp == 128);
       block = block << 1;
     }
@@ -681,7 +683,7 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
   std::vector<StateId> int_code;
   Elias<StateId>::BatchDecode(bool_code, &int_code);
   bool_code.clear();
-  uint8 unweighted;
+  uint8_t unweighted;
   ReadType(strm, &unweighted);
   if (unweighted == 0) {
     ReadWeight(strm, &arc_weight_);
@@ -695,7 +697,7 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
 template <class Arc>
 void Compressor<Arc>::WriteWeight(const std::vector<Weight> &input,
                                   std::ostream &strm) {
-  int64 size = input.size();
+  int64_t size = input.size();
   WriteType(strm, size);
   for (auto it = input.begin(); it != input.end(); ++it) {
     it->Write(strm);
@@ -705,10 +707,10 @@ void Compressor<Arc>::WriteWeight(const std::vector<Weight> &input,
 template <class Arc>
 void Compressor<Arc>::WriteToStream(std::ostream &strm) {
   while (buffer_code_.size() % 8 != 0) buffer_code_.push_back(true);
-  int64 data_size = buffer_code_.size() / 8;
+  int64_t data_size = buffer_code_.size() / 8;
   WriteType(strm, data_size);
-  int64 i = 0;
-  uint8 block;
+  int64_t i = 0;
+  uint8_t block;
   for (auto it = buffer_code_.begin(); it != buffer_code_.end(); ++it) {
     if (i % 8 == 0) {
       if (i > 0) WriteType(strm, block);

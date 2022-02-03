@@ -25,9 +25,9 @@
 #ifndef FST_SIGNED_LOG_WEIGHT_H_
 #define FST_SIGNED_LOG_WEIGHT_H_
 
+#include <cstdint>
 #include <random>
 
-#include <fst/types.h>
 
 #include <fst/float-weight.h>
 #include <fst/pair-weight.h>
@@ -90,7 +90,7 @@ class SignedLogWeightTpl : public PairWeight<TropicalWeight, LogWeightTpl<T>> {
   bool Member() const { return PairWeight<W1, W2>::Member(); }
 
   // Neither idempotent nor path.
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kLeftSemiring | kRightSemiring | kCommutative;
   }
 
@@ -585,7 +585,7 @@ class WeightGenerate<SignedLogWeightTpl<T>> {
   using W1 = typename Weight::W1;
   using W2 = typename Weight::W2;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : rand_(seed),

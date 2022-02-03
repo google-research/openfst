@@ -29,11 +29,11 @@ void Difference(const FstClass &ifst1, const FstClass &ifst2,
     ofst->SetProperties(kError, kError);
     return;
   }
-  DifferenceArgs args(ifst1, ifst2, ofst, opts);
-  Apply<Operation<DifferenceArgs>>("Difference", ifst1.ArcType(), &args);
+  FstDifferenceArgs args{ifst1, ifst2, ofst, opts};
+  Apply<Operation<FstDifferenceArgs>>("Difference", ifst1.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Difference, DifferenceArgs);
+REGISTER_FST_OPERATION_3ARCS(Difference, FstDifferenceArgs);
 
 }  // namespace script
 }  // namespace fst

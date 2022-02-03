@@ -95,12 +95,12 @@
 // This file contains general-purpose templates which are used in the
 // implementation of the operations.
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/generic-register.h>
 #include <fst/script/fst-class.h>
@@ -108,7 +108,7 @@
 namespace fst {
 namespace script {
 
-enum class RandArcSelection : uint8 { UNIFORM, LOG_PROB, FAST_LOG_PROB };
+enum class RandArcSelection : uint8_t { UNIFORM, LOG_PROB, FAST_LOG_PROB };
 
 // A generic register for operations with various kinds of signatures.
 // Needed since every function signature requires a new registration class.
@@ -132,7 +132,8 @@ class GenericOperationRegister
     // Uses the old-style FST for now.
     std::string legal_type(key.second);  // The arc type.
     ConvertToLegalCSymbol(&legal_type);
-    return legal_type + "-arc.so";
+    legal_type.append("-arc.so");
+    return legal_type;
   }
 };
 
@@ -221,10 +222,10 @@ void CopyWeights(const std::vector<Weight> &typed_weights,
 }  // namespace internal
 
 // Used for Replace operations.
-inline std::vector<std::pair<int64, const FstClass *>> BorrowPairs(
-    const std::vector<std::pair<int64, std::unique_ptr<const FstClass>>>
+inline std::vector<std::pair<int64_t, const FstClass *>> BorrowPairs(
+    const std::vector<std::pair<int64_t, std::unique_ptr<const FstClass>>>
         &pairs) {
-  std::vector<std::pair<int64, const FstClass *>> borrowed_pairs;
+  std::vector<std::pair<int64_t, const FstClass *>> borrowed_pairs;
   borrowed_pairs.reserve(pairs.size());
   for (const auto &pair : pairs) {
     borrowed_pairs.emplace_back(pair.first, pair.second.get());

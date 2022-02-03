@@ -17,6 +17,7 @@
 //
 // Expands a (bounded-stack) MPDT as an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -24,7 +25,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
 #include <fst/extensions/mpdt/read_write_utils.h>
@@ -65,8 +65,8 @@ int mpdtexpand_main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
-  std::vector<int64> assignments;
+  std::vector<std::pair<int64_t, int64_t>> parens;
+  std::vector<int64_t> assignments;
   if (!ReadLabelTriples(FST_FLAGS_mpdt_parentheses, &parens,
                         &assignments, false)) {
     return 1;
@@ -77,7 +77,7 @@ int mpdtexpand_main(int argc, char **argv) {
   const MPdtExpandOptions opts(FST_FLAGS_connect,
                                FST_FLAGS_keep_parentheses);
 
-  s::MPdtExpand(*ifst, parens, assignments, &ofst, opts);
+  s::Expand(*ifst, parens, assignments, &ofst, opts);
 
   return !ofst.Write(out_name);
 }

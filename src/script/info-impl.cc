@@ -17,6 +17,9 @@
 
 #include <fst/script/info-impl.h>
 
+#include <cstdint>
+#include <string>
+
 namespace fst {
 
 // Column width for property names.
@@ -58,12 +61,22 @@ void FstInfo::Info() const {
         << std::endl;
   ostrm.width(kWidth);
   std::string arc_type = "";
-  if (ArcFilterType() == "epsilon")
-    arc_type = "epsilon ";
-  else if (ArcFilterType() == "iepsilon")
-    arc_type = "input-epsilon ";
-  else if (ArcFilterType() == "oepsilon")
-    arc_type = "output-epsilon ";
+  switch (ArcFilterType()) {
+    case script::ArcFilterType::ANY:
+      break;
+    case script::ArcFilterType::EPSILON: {
+      arc_type = "epsilon ";
+      break;
+    }
+    case script::ArcFilterType::INPUT_EPSILON: {
+      arc_type = "input-epsilon ";
+      break;
+    }
+    case script::ArcFilterType::OUTPUT_EPSILON: {
+      arc_type = "output-epsilon ";
+      break;
+    }
+  }
   const auto accessible_label = "# of " + arc_type + "accessible states";
   ostrm.width(kWidth);
   ostrm << accessible_label << NumAccessible() << std::endl;
@@ -99,13 +112,13 @@ void FstInfo::Info() const {
   ostrm.setf(old);
 }
 
-void PrintProperties(std::ostream &ostrm, const uint64 properties) {
-  uint64 prop = 1;
+void PrintProperties(std::ostream &ostrm, const uint64_t properties) {
+  uint64_t prop = 1;
   for (auto i = 0; i < 64; ++i, prop <<= 1) {
     if (prop & kBinaryProperties) {
       const char value = properties & prop ? 'y' : 'n';
       ostrm.width(kWidth);
-      ostrm << PropertyNames[i] << value << std::endl;
+      ostrm << internal::PropertyNames[i] << value << std::endl;
     } else if (prop & kPosTrinaryProperties) {
       char value = '?';
       if (properties & prop) {
@@ -114,7 +127,7 @@ void PrintProperties(std::ostream &ostrm, const uint64 properties) {
         value = 'n';
       }
       ostrm.width(kWidth);
-      ostrm << PropertyNames[i] << value << std::endl;
+      ostrm << internal::PropertyNames[i] << value << std::endl;
     }
   }
 }

@@ -27,20 +27,20 @@
 namespace fst {
 namespace script {
 
-using UnionArgs1 = std::pair<MutableFstClass *, const FstClass &>;
+using FstUnionArgs1 = std::pair<MutableFstClass *, const FstClass &>;
 
 template <class Arc>
-void Union(UnionArgs1 *args) {
+void Union(FstUnionArgs1 *args) {
   MutableFst<Arc> *fst1 = std::get<0>(*args)->GetMutableFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(*args).GetFst<Arc>();
   Union(fst1, fst2);
 }
 
-using UnionArgs2 =
+using FstUnionArgs2 =
     std::tuple<MutableFstClass *, const std::vector<const FstClass *> &>;
 
 template <class Arc>
-void Union(UnionArgs2 *args) {
+void Union(FstUnionArgs2 *args) {
   MutableFst<Arc> *fst1 = std::get<0>(*args)->GetMutableFst<Arc>();
   const auto &untyped_fsts2 = std::get<1>(*args);
   std::vector<const Fst<Arc> *> typed_fsts2;

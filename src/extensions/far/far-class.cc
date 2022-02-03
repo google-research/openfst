@@ -17,6 +17,9 @@
 
 #include <fst/extensions/far/far-class.h>
 
+#include <string>
+#include <utility>
+
 #include <fst/extensions/far/script-impl.h>
 #include <fst/arc.h>
 #include <fst/script/script-impl.h>

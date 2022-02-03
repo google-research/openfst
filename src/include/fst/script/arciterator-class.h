@@ -18,10 +18,10 @@
 #ifndef FST_SCRIPT_ARCITERATOR_CLASS_H_
 #define FST_SCRIPT_ARCITERATOR_CLASS_H_
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/fstlib.h>
 #include <fst/script/fst-class.h>
 
@@ -39,12 +39,12 @@ namespace script {
 class ArcIteratorImplBase {
  public:
   virtual bool Done() const = 0;
-  virtual uint8 Flags() const = 0;
+  virtual uint8_t Flags() const = 0;
   virtual void Next() = 0;
   virtual size_t Position() const = 0;
   virtual void Reset() = 0;
   virtual void Seek(size_t a) = 0;
-  virtual void SetFlags(uint8 flags, uint8 mask) = 0;
+  virtual void SetFlags(uint8_t flags, uint8_t mask) = 0;
   virtual ArcClass Value() const = 0;
   virtual ~ArcIteratorImplBase() {}
 };
@@ -53,12 +53,12 @@ class ArcIteratorImplBase {
 template <class Arc>
 class ArcIteratorClassImpl : public ArcIteratorImplBase {
  public:
-  explicit ArcIteratorClassImpl(const Fst<Arc> &fst, int64 s)
+  explicit ArcIteratorClassImpl(const Fst<Arc> &fst, int64_t s)
       : aiter_(fst, s) {}
 
   bool Done() const final { return aiter_.Done(); }
 
-  uint8 Flags() const final { return aiter_.Flags(); }
+  uint8_t Flags() const final { return aiter_.Flags(); }
 
   void Next() final { aiter_.Next(); }
 
@@ -68,13 +68,15 @@ class ArcIteratorClassImpl : public ArcIteratorImplBase {
 
   void Seek(size_t a) final { aiter_.Seek(a); }
 
-  void SetFlags(uint8 flags, uint8 mask) final { aiter_.SetFlags(flags, mask); }
+  void SetFlags(uint8_t flags, uint8_t mask) final {
+    aiter_.SetFlags(flags, mask);
+  }
 
   // This is returned by value because it has not yet been constructed, and
   // is likely to participate in return-value optimization.
   ArcClass Value() const final { return ArcClass(aiter_.Value()); }
 
-  ~ArcIteratorClassImpl() final {}
+  ~ArcIteratorClassImpl() override {}
 
  private:
   ArcIterator<Fst<Arc>> aiter_;
@@ -83,20 +85,20 @@ class ArcIteratorClassImpl : public ArcIteratorImplBase {
 class ArcIteratorClass;
 
 using InitArcIteratorClassArgs =
-    std::tuple<const FstClass &, int64, ArcIteratorClass *>;
+    std::tuple<const FstClass &, int64_t, ArcIteratorClass *>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class ArcIteratorClass {
  public:
-  ArcIteratorClass(const FstClass &fst, int64 s);
+  ArcIteratorClass(const FstClass &fst, int64_t s);
 
   template <class Arc>
-  ArcIteratorClass(const Fst<Arc> &fst, int64 s)
-      : impl_(new ArcIteratorClassImpl<Arc>(fst, s)) {}
+  ArcIteratorClass(const Fst<Arc> &fst, int64_t s)
+      : impl_(std::make_unique<ArcIteratorClassImpl<Arc>>(fst, s)) {}
 
   bool Done() const { return impl_->Done(); }
 
-  uint8 Flags() const { return impl_->Flags(); }
+  uint8_t Flags() const { return impl_->Flags(); }
 
   void Next() { impl_->Next(); }
 
@@ -106,7 +108,7 @@ class ArcIteratorClass {
 
   void Seek(size_t a) { impl_->Seek(a); }
 
-  void SetFlags(uint8 flags, uint8 mask) { impl_->SetFlags(flags, mask); }
+  void SetFlags(uint8_t flags, uint8_t mask) { impl_->SetFlags(flags, mask); }
 
   ArcClass Value() const { return impl_->Value(); }
 
@@ -120,8 +122,8 @@ class ArcIteratorClass {
 template <class Arc>
 void InitArcIteratorClass(InitArcIteratorClassArgs *args) {
   const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
-  std::get<2>(*args)->impl_.reset(
-      new ArcIteratorClassImpl<Arc>(fst, std::get<1>(*args)));
+  std::get<2>(*args)->impl_ =
+      std::make_unique<ArcIteratorClassImpl<Arc>>(fst, std::get<1>(*args));
 }
 
 // Mutable arc iterators.
@@ -138,12 +140,12 @@ class MutableArcIteratorImplBase : public ArcIteratorImplBase {
 template <class Arc>
 class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
  public:
-  explicit MutableArcIteratorClassImpl(MutableFst<Arc> *fst, int64 s)
+  explicit MutableArcIteratorClassImpl(MutableFst<Arc> *fst, int64_t s)
       : aiter_(fst, s) {}
 
   bool Done() const final { return aiter_.Done(); }
 
-  uint8 Flags() const final { return aiter_.Flags(); }
+  uint8_t Flags() const final { return aiter_.Flags(); }
 
   void Next() final { aiter_.Next(); }
 
@@ -153,7 +155,9 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
 
   void Seek(size_t a) final { aiter_.Seek(a); }
 
-  void SetFlags(uint8 flags, uint8 mask) final { aiter_.SetFlags(flags, mask); }
+  void SetFlags(uint8_t flags, uint8_t mask) final {
+    aiter_.SetFlags(flags, mask);
+  }
 
   void SetValue(const ArcClass &ac) final { SetValue(ac.GetArc<Arc>()); }
 
@@ -172,20 +176,20 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
 class MutableArcIteratorClass;
 
 using InitMutableArcIteratorClassArgs =
-    std::tuple<MutableFstClass *, int64, MutableArcIteratorClass *>;
+    std::tuple<MutableFstClass *, int64_t, MutableArcIteratorClass *>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class MutableArcIteratorClass {
  public:
-  MutableArcIteratorClass(MutableFstClass *fst, int64 s);
+  MutableArcIteratorClass(MutableFstClass *fst, int64_t s);
 
   template <class Arc>
-  MutableArcIteratorClass(MutableFst<Arc> *fst, int64 s)
-      : impl_(new MutableArcIteratorClassImpl<Arc>(fst, s)) {}
+  MutableArcIteratorClass(MutableFst<Arc> *fst, int64_t s)
+      : impl_(std::make_unique<MutableArcIteratorClassImpl<Arc>>(fst, s)) {}
 
   bool Done() const { return impl_->Done(); }
 
-  uint8 Flags() const { return impl_->Flags(); }
+  uint8_t Flags() const { return impl_->Flags(); }
 
   void Next() { impl_->Next(); }
 
@@ -195,7 +199,7 @@ class MutableArcIteratorClass {
 
   void Seek(size_t a) { impl_->Seek(a); }
 
-  void SetFlags(uint8 flags, uint8 mask) { impl_->SetFlags(flags, mask); }
+  void SetFlags(uint8_t flags, uint8_t mask) { impl_->SetFlags(flags, mask); }
 
   void SetValue(const ArcClass &ac) { impl_->SetValue(ac); }
 
@@ -212,8 +216,9 @@ class MutableArcIteratorClass {
 template <class Arc>
 void InitMutableArcIteratorClass(InitMutableArcIteratorClassArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
-  std::get<2>(*args)->impl_.reset(
-      new MutableArcIteratorClassImpl<Arc>(fst, std::get<1>(*args)));
+  std::get<2>(*args)->impl_ =
+      std::make_unique<MutableArcIteratorClassImpl<Arc>>(fst,
+                                                          std::get<1>(*args));
 }
 
 }  // namespace script

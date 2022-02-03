@@ -22,13 +22,13 @@
 
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <type_traits>
 #include <utility>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/util.h>
@@ -127,37 +127,36 @@ namespace fst {
 // CONSTANT DEFINITIONS
 
 // A representable float near .001.
-constexpr float kDelta = 1.0F / 1024.0F;
+inline constexpr float kDelta = 1.0F / 1024.0F;
 
 // For all a, b, c: Times(c, Plus(a, b)) = Plus(Times(c, a), Times(c, b)).
-constexpr uint64 kLeftSemiring = 0x0000000000000001ULL;
+inline constexpr uint64_t kLeftSemiring = 0x0000000000000001ULL;
 
 // For all a, b, c: Times(Plus(a, b), c) = Plus(Times(a, c), Times(b, c)).
-constexpr uint64 kRightSemiring = 0x0000000000000002ULL;
+inline constexpr uint64_t kRightSemiring = 0x0000000000000002ULL;
 
-constexpr uint64 kSemiring = kLeftSemiring | kRightSemiring;
+inline constexpr uint64_t kSemiring = kLeftSemiring | kRightSemiring;
 
 // For all a, b: Times(a, b) = Times(b, a).
-constexpr uint64 kCommutative = 0x0000000000000004ULL;
+inline constexpr uint64_t kCommutative = 0x0000000000000004ULL;
 
 // For all a: Plus(a, a) = a.
-constexpr uint64 kIdempotent = 0x0000000000000008ULL;
+inline constexpr uint64_t kIdempotent = 0x0000000000000008ULL;
 
 // For all a, b: Plus(a, b) = a or Plus(a, b) = b.
-constexpr uint64 kPath = 0x0000000000000010ULL;
+inline constexpr uint64_t kPath = 0x0000000000000010ULL;
 
 // For random weight generation: default number of distinct weights.
 // This is also used for a few other weight generation defaults.
-constexpr size_t kNumRandomWeights = 5;
+inline constexpr size_t kNumRandomWeights = 5;
 
 // Weight property boolean constants needed for SFINAE.
 
 template <class W>
-using IsIdempotent =
-    std::integral_constant<bool, (W::Properties() & kIdempotent) != 0>;
+using IsIdempotent = std::bool_constant<(W::Properties() & kIdempotent) != 0>;
 
 template <class W>
-using IsPath = std::integral_constant<bool, (W::Properties() & kPath) != 0>;
+using IsPath = std::bool_constant<(W::Properties() & kPath) != 0>;
 
 // Determines direction of division.
 enum DivideType {
@@ -251,7 +250,7 @@ struct WeightConvert<W, W> {
 //
 // class WeightGenerate<MyWeight> {
 //  public:
-//   explicit WeightGenerate(uint64 seed = std::random_device()(),
+//   explicit WeightGenerate(uint64_t seed = std::random_device()(),
 //                           bool allow_zero = true,
 //                           ...);
 //

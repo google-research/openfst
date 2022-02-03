@@ -145,18 +145,23 @@ MappedFile *MappedFile::MapFromFileDescriptor(int fd, size_t pos, size_t size) {
     LOG(ERROR) << "Invalid file descriptor fd=" << fd;
     return nullptr;
   }
+  const DWORD max_size_hi =
+      sizeof(size_t) > sizeof(DWORD) ? upsize >> (CHAR_BIT * sizeof(DWORD)) : 0;
+  const DWORD max_size_lo = upsize & DWORD_MAX;
   HANDLE file_mapping = CreateFileMappingA(file, nullptr, PAGE_READONLY,
-                                           upsize >> (8 * sizeof(DWORD)),
-                                           upsize & DWORD_MAX, nullptr);
+                                           max_size_hi, max_size_lo, nullptr);
   if (file_mapping == INVALID_HANDLE_VALUE) {
     LOG(ERROR) << "Can't create mapping for fd=" << fd << " size=" << upsize
                << ": " << GetLastError();
     return nullptr;
   }
 
+  const DWORD offset_pos_hi =
+      sizeof(size_t) > sizeof(DWORD) ? offset_pos >> (CHAR_BIT * sizeof(DWORD))
+                                     : 0;
+  const DWORD offset_pos_lo = offset_pos & DWORD_MAX;
   void *map = MapViewOfFile(file_mapping, FILE_MAP_READ,
-                            offset_pos >> (8 * sizeof(DWORD)),
-                            offset_pos & DWORD_MAX, upsize);
+                            offset_pos_hi, offset_pos_lo, upsize);
   if (!map) {
     LOG(ERROR) << "mmap failed for fd=" << fd << " size=" << upsize
                << " offset=" << offset_pos << ": " << GetLastError();
@@ -207,9 +212,5 @@ MappedFile *MappedFile::Borrow(void *data) {
   region.offset = 0;
   return new MappedFile(region);
 }
-
-constexpr size_t MappedFile::kArchAlignment;
-
-constexpr size_t MappedFile::kMaxReadChunk;
 
 }  // namespace fst

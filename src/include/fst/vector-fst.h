@@ -22,11 +22,12 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/fst-decl.h>  // For optional argument declarations
@@ -50,8 +51,8 @@ class VectorState {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   using ArcAllocator = M;
-  using StateAllocator =
-      typename ArcAllocator::template rebind<VectorState<Arc, M>>::other;
+  using StateAllocator = typename std::allocator_traits<
+      ArcAllocator>::template rebind_alloc<VectorState<Arc, M>>;
 
   // Provide STL allocator for arcs.
   explicit VectorState(const ArcAllocator &alloc)
@@ -425,7 +426,7 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
   }
 
   // Properties always true of this FST class
-  static constexpr uint64 kStaticProperties = kExpanded | kMutable;
+  static constexpr uint64_t kStaticProperties = kExpanded | kMutable;
 
  private:
   void UpdatePropertiesAfterAddArc(StateId state) {
@@ -442,12 +443,6 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
   // Minimum file format version supported.
   static constexpr int kMinFileVersion = 2;
 };
-
-template <class S>
-constexpr uint64 VectorFstImpl<S>::kStaticProperties;
-
-template <class S>
-constexpr int VectorFstImpl<S>::kMinFileVersion;
 
 template <class S>
 VectorFstImpl<S>::VectorFstImpl(const Fst<Arc> &fst) {
@@ -486,14 +481,14 @@ VectorFstImpl<S> *VectorFstImpl<S>::Read(std::istream &strm,
     impl->BaseImpl::AddState();
     auto *vstate = impl->GetState(state);
     vstate->SetFinal(weight);
-    int64 narcs;
+    int64_t narcs;
     ReadType(strm, &narcs);
     if (!strm) {
       LOG(ERROR) << "VectorFst::Read: Read failed: " << opts.source;
       return nullptr;
     }
     impl->ReserveArcs(state, narcs);
-    for (int64 i = 0; i < narcs; ++i) {
+    for (int64_t i = 0; i < narcs; ++i) {
       Arc arc;
       ReadType(strm, &arc.ilabel);
       ReadType(strm, &arc.olabel);
@@ -648,7 +643,7 @@ bool VectorFst<Arc, State>::WriteFst(const FST &fst, std::ostream &strm,
   for (StateIterator<FST> siter(fst); !siter.Done(); siter.Next()) {
     const auto s = siter.Value();
     fst.Final(s).Write(strm);
-    const int64 narcs = fst.NumArcs(s);
+    const int64_t narcs = fst.NumArcs(s);
     WriteType(strm, narcs);
     for (ArcIterator<FST> aiter(fst, s); !aiter.Done(); aiter.Next()) {
       const auto &arc = aiter.Value();
@@ -725,9 +720,9 @@ class ArcIterator<VectorFst<Arc, State>> {
 
   size_t Position() const { return i_; }
 
-  constexpr uint8 Flags() const { return kArcValueFlags; }
+  constexpr uint8_t Flags() const { return kArcValueFlags; }
 
-  void SetFlags(uint8, uint8) {}
+  void SetFlags(uint8_t, uint8_t) {}
 
  private:
   const Arc *arcs_;
@@ -764,7 +759,7 @@ class MutableArcIterator<VectorFst<Arc, State>>
 
   void SetValue(const Arc &arc) final {
     const auto &oarc = state_->GetArc(i_);
-    uint64 properties = properties_->load(std::memory_order_relaxed);
+    uint64_t properties = properties_->load(std::memory_order_relaxed);
     if (oarc.ilabel != oarc.olabel) properties &= ~kNotAcceptor;
     if (oarc.ilabel == 0) {
       properties &= ~kIEpsilons;
@@ -801,13 +796,13 @@ class MutableArcIterator<VectorFst<Arc, State>>
     properties_->store(properties, std::memory_order_relaxed);
   }
 
-  uint8 Flags() const final { return kArcValueFlags; }
+  uint8_t Flags() const final { return kArcValueFlags; }
 
-  void SetFlags(uint8, uint8) final {}
+  void SetFlags(uint8_t, uint8_t) final {}
 
  private:
   State *state_;
-  std::atomic<uint64> *properties_;
+  std::atomic<uint64_t> *properties_;
   size_t i_;
 };
 

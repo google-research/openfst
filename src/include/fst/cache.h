@@ -21,12 +21,13 @@
 #define FST_CACHE_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <list>
+#include <memory>
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/vector-fst.h>
@@ -69,11 +70,11 @@ struct CacheImplOptions {
 };
 
 // Cache flags.
-constexpr uint8 kCacheFinal = 0x01;   // Final weight has been cached.
-constexpr uint8 kCacheArcs = 0x02;    // Arcs have been cached.
-constexpr uint8 kCacheInit = 0x04;    // Initialized by GC.
-constexpr uint8 kCacheRecent = 0x08;  // Visited since GC.
-constexpr uint8 kCacheFlags =
+inline constexpr uint8_t kCacheFinal = 0x01;   // Final weight has been cached.
+inline constexpr uint8_t kCacheArcs = 0x02;    // Arcs have been cached.
+inline constexpr uint8_t kCacheInit = 0x04;    // Initialized by GC.
+inline constexpr uint8_t kCacheRecent = 0x08;  // Visited since GC.
+inline constexpr uint8_t kCacheFlags =
     kCacheFinal | kCacheArcs | kCacheInit | kCacheRecent;
 
 // Cache state, with arcs stored in a per-state std::vector.
@@ -86,8 +87,8 @@ class CacheState {
   using Weight = typename Arc::Weight;
 
   using ArcAllocator = M;
-  using StateAllocator =
-      typename ArcAllocator::template rebind<CacheState<A, M>>::other;
+  using StateAllocator = typename std::allocator_traits<
+      ArcAllocator>::template rebind_alloc<CacheState<A, M>>;
 
   // Provides STL allocator for arcs.
   explicit CacheState(const ArcAllocator &alloc)
@@ -129,7 +130,7 @@ class CacheState {
   const Arc *Arcs() const { return !arcs_.empty() ? &arcs_[0] : nullptr; }
 
   // Accesses flags; used by the caller.
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
   // Accesses ref count; used by the caller.
   int RefCount() const { return ref_count_; }
@@ -194,7 +195,7 @@ class CacheState {
   }
 
   // Sets status flags; used by the caller.
-  void SetFlags(uint8 flags, uint8 mask) const {
+  void SetFlags(uint8_t flags, uint8_t mask) const {
     flags_ &= ~mask;
     flags_ |= flags;
   }
@@ -232,7 +233,7 @@ class CacheState {
   size_t niepsilons_;                    // # of input epsilons.
   size_t noepsilons_;                    // # of output epsilons.
   std::vector<Arc, ArcAllocator> arcs_;  // Arcs representation.
-  mutable uint8 flags_;
+  mutable uint8_t flags_;
   mutable int ref_count_;  // If 0, available for GC.
 };
 
@@ -483,8 +484,8 @@ class HashCacheStore {
 
   // Deletes all cached states.
   void Clear() {
-    for (auto it = state_map_.begin(); it != state_map_.end(); ++it) {
-      State::Destroy(it->second, &state_alloc_);
+    for (auto &[unused_state_id, state_ptr] : state_map_) {
+      State::Destroy(state_ptr, &state_alloc_);
     }
     state_map_.clear();
   }
@@ -509,10 +510,8 @@ class HashCacheStore {
  private:
   void CopyStates(const HashCacheStore<State> &store) {
     Clear();
-    for (auto it = store.state_map_.begin(); it != store.state_map_.end();
-         ++it) {
-      state_map_[it->first] =
-          new (&state_alloc_) State(*it->second, arc_alloc_);
+    for (auto &[state_id, state_ptr] : store.state_map_) {
+      state_map_[state_id] = new (&state_alloc_) State(*state_ptr, arc_alloc_);
     }
   }
 
@@ -823,9 +822,6 @@ void GCCacheStore<CacheStore>::GC(const State *current, bool free_recent,
           << ", cache frac = " << cache_fraction
           << ", cache limit = " << cache_limit_ << "\n";
 }
-
-template <class CacheStore>
-constexpr size_t GCCacheStore<CacheStore>::kMinCacheLimit;
 
 // This class is the default cache state and store used by CacheBaseImpl.
 // It uses VectorCacheStore for storage decorated by FirstCacheStore
@@ -1223,9 +1219,9 @@ class CacheArcIterator {
 
   void Seek(size_t a) { i_ = a; }
 
-  constexpr uint8 Flags() const { return kArcValueFlags; }
+  constexpr uint8_t Flags() const { return kArcValueFlags; }
 
-  void SetFlags(uint8 flags, uint8 mask) {}
+  void SetFlags(uint8_t flags, uint8_t mask) {}
 
  private:
   const State *state_;
@@ -1271,9 +1267,9 @@ class CacheMutableArcIterator
 
   void SetValue(const Arc &arc) final { state_->SetArc(arc, i_); }
 
-  uint8 Flags() const final { return kArcValueFlags; }
+  uint8_t Flags() const final { return kArcValueFlags; }
 
-  void SetFlags(uint8, uint8) final {}
+  void SetFlags(uint8_t, uint8_t) final {}
 
  private:
   size_t i_;

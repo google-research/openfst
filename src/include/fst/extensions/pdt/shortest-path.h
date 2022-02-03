@@ -20,12 +20,12 @@
 #ifndef FST_EXTENSIONS_PDT_SHORTEST_PATH_H_
 #define FST_EXTENSIONS_PDT_SHORTEST_PATH_H_
 
+#include <cstdint>
 #include <stack>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/paren.h>
 #include <fst/extensions/pdt/pdt.h>
@@ -48,9 +48,9 @@ namespace internal {
 
 // Flags for shortest path data.
 
-constexpr uint8 kPdtInited = 0x01;
-constexpr uint8 kPdtFinal = 0x02;
-constexpr uint8 kPdtMarked = 0x04;
+inline constexpr uint8_t kPdtInited = 0x01;
+inline constexpr uint8_t kPdtFinal = 0x02;
+inline constexpr uint8_t kPdtMarked = 0x04;
 
 // Stores shortest path tree info Distance(), Parent(), and ArcParent()
 // information keyed on two types:
@@ -116,8 +116,8 @@ class PdtShortestPathData {
 
     Weight distance;     // Distance to this state from PDT "start" state.
     SearchState parent;  // Parent state in shortest path tree.
-    int16 paren_id;      // If parent arc has paren, paren ID (or kNoLabel).
-    uint8 flags;         // First byte reserved for PdtShortestPathData use.
+    int16_t paren_id;    // If parent arc has paren, paren ID (or kNoLabel).
+    uint8_t flags;       // First byte reserved for PdtShortestPathData use.
   };
 
   explicit PdtShortestPathData(bool gc)
@@ -155,7 +155,7 @@ class PdtShortestPathData {
 
   Label ParenId(SearchState s) const { return GetSearchData(s)->paren_id; }
 
-  uint8 Flags(SearchState s) const { return GetSearchData(s)->flags; }
+  uint8_t Flags(SearchState s) const { return GetSearchData(s)->flags; }
 
   void SetDistance(SearchState s, Weight weight) {
     GetSearchData(s)->distance = std::move(weight);
@@ -173,12 +173,12 @@ class PdtShortestPathData {
 
   void SetParenId(SearchState s, Label p) {
     if (p >= 32768) {
-      FSTERROR() << "PdtShortestPathData: Paren ID does not fit in an int16";
+      FSTERROR() << "PdtShortestPathData: Paren ID does not fit in an int16_t";
     }
     GetSearchData(s)->paren_id = p;
   }
 
-  void SetFlags(SearchState s, uint8 f, uint8 mask) {
+  void SetFlags(SearchState s, uint8_t f, uint8_t mask) {
     auto *data = GetSearchData(s);
     data->flags &= ~mask;
     data->flags |= f & mask;
@@ -433,9 +433,9 @@ class PdtShortestPath {
   ssize_t nenqueued_;
   bool error_;
 
-  static constexpr uint8 kEnqueued = 0x10;
-  static constexpr uint8 kExpanded = 0x20;
-  static constexpr uint8 kFinished = 0x40;
+  static constexpr uint8_t kEnqueued = 0x10;
+  static constexpr uint8_t kExpanded = 0x20;
+  static constexpr uint8_t kFinished = 0x40;
 
   static const Arc kNoArc;
 };

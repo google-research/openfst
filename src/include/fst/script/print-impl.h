@@ -50,27 +50,25 @@ class FstPrinter {
         osyms_(osyms),
         ssyms_(ssyms),
         accept_(accept && (fst.Properties(kAcceptor, true) == kAcceptor)),
-        ostrm_(nullptr),
         show_weight_one_(show_weight_one),
         sep_(field_separator),
         missing_symbol_(missing_symbol) {}
 
   // Prints FST to an output stream.
   void Print(std::ostream &ostrm, const std::string &dest) {
-    ostrm_ = &ostrm;
     dest_ = dest;
     const auto start = fst_.Start();
     if (start == kNoStateId) return;
     // Initial state first.
-    PrintState(start);
+    PrintState(ostrm, start);
     for (StateIterator<Fst<Arc>> siter(fst_); !siter.Done(); siter.Next()) {
       const auto s = siter.Value();
-      if (s != start) PrintState(s);
+      if (s != start) PrintState(ostrm, s);
     }
   }
 
  private:
-  void PrintId(StateId id, const SymbolTable *syms, const char *name) const {
+  std::string FormatId(StateId id, const SymbolTable *syms) const {
     if (syms) {
       std::string symbol = syms->Find(id);
       if (symbol.empty()) {
@@ -84,43 +82,40 @@ class FstPrinter {
           symbol = missing_symbol_;
         }
       }
-      *ostrm_ << symbol;
+      return symbol;
     } else {
-      *ostrm_ << id;
+      return std::to_string(id);
     }
   }
 
-  void PrintStateId(StateId s) const { PrintId(s, ssyms_, "state ID"); }
+  std::string FormatStateId(StateId s) const { return FormatId(s, ssyms_); }
 
-  void PrintILabel(Label l) const { PrintId(l, isyms_, "arc input label"); }
+  std::string FormatILabel(Label l) const { return FormatId(l, isyms_); }
 
-  void PrintOLabel(Label l) const { PrintId(l, osyms_, "arc output label"); }
+  std::string FormatOLabel(Label l) const { return FormatId(l, osyms_); }
 
-  void PrintState(StateId s) const {
+  void PrintState(std::ostream &ostrm, StateId s) const {
     bool output = false;
     for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
       const auto &arc = aiter.Value();
-      PrintStateId(s);
-      *ostrm_ << sep_;
-      PrintStateId(arc.nextstate);
-      *ostrm_ << sep_;
-      PrintILabel(arc.ilabel);
+      ostrm << FormatStateId(s) << sep_ << FormatStateId(arc.nextstate)
+              << sep_ << FormatILabel(arc.ilabel);
       if (!accept_) {
-        *ostrm_ << sep_;
-        PrintOLabel(arc.olabel);
+        ostrm << sep_ << FormatOLabel(arc.olabel);
       }
-      if (show_weight_one_ || arc.weight != Weight::One())
-        *ostrm_ << sep_ << arc.weight;
-      *ostrm_ << "\n";
+      if (show_weight_one_ || arc.weight != Weight::One()) {
+        ostrm << sep_ << arc.weight;
+      }
+      ostrm << "\n";
       output = true;
     }
     const auto weight = fst_.Final(s);
     if (weight != Weight::Zero() || !output) {
-      PrintStateId(s);
+      ostrm << FormatStateId(s);
       if (show_weight_one_ || weight != Weight::One()) {
-        *ostrm_ << sep_ << weight;
+        ostrm << sep_ << weight;
       }
-      *ostrm_ << "\n";
+      ostrm << "\n";
     }
   }
 
@@ -129,7 +124,6 @@ class FstPrinter {
   const SymbolTable *osyms_;    // olabel symbol table.
   const SymbolTable *ssyms_;    // slabel symbol table.
   bool accept_;                 // Print as acceptor when possible?
-  std::ostream *ostrm_;         // Text FST destination.
   std::string dest_;            // Text FST destination name.
   bool show_weight_one_;        // Print weights equal to Weight::One()?
   std::string sep_;             // Separator character between fields.

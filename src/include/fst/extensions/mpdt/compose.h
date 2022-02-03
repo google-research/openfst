@@ -20,6 +20,7 @@
 #ifndef FST_EXTENSIONS_MPDT_COMPOSE_H_
 #define FST_EXTENSIONS_MPDT_COMPOSE_H_
 
+#include <cstdint>
 #include <list>
 
 #include <fst/extensions/mpdt/mpdt.h>
@@ -138,7 +139,7 @@ class MPdtParenFilter {
 
   Matcher2 *GetMatcher2() { return filter_.GetMatcher2(); }
 
-  uint64 Properties(uint64 iprops) const {
+  uint64_t Properties(uint64_t iprops) const {
     const auto oprops = filter_.Properties(iprops);
     return oprops & kILabelInvariantProperties & kOLabelInvariantProperties;
   }

@@ -18,28 +18,28 @@
 #ifndef FST_SCRIPT_PUSH_H_
 #define FST_SCRIPT_PUSH_H_
 
+#include <cstdint>
 #include <tuple>
 
-#include <fst/types.h>
 #include <fst/push.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {
 namespace script {
 
-using PushArgs1 = std::tuple<MutableFstClass *, ReweightType, float, bool>;
+using FstPushArgs1 = std::tuple<MutableFstClass *, ReweightType, float, bool>;
 
 template <class Arc>
-void Push(PushArgs1 *args) {
+void Push(FstPushArgs1 *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   Push(fst, std::get<1>(*args), std::get<2>(*args), std::get<3>(*args));
 }
 
-using PushArgs2 =
-    std::tuple<const FstClass &, MutableFstClass *, uint8, ReweightType, float>;
+using FstPushArgs2 = std::tuple<const FstClass &, MutableFstClass *, uint8_t,
+                                ReweightType, float>;
 
 template <class Arc>
-void Push(PushArgs2 *args) {
+void Push(FstPushArgs2 *args) {
   const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
   MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   switch (std::get<3>(*args)) {
@@ -59,7 +59,7 @@ void Push(PushArgs2 *args) {
 void Push(MutableFstClass *fst, ReweightType type = REWEIGHT_TO_INITIAL,
           float delta = kShortestDelta, bool remove_total_weight = false);
 
-void Push(const FstClass &ifst, MutableFstClass *ofst, uint8 flags,
+void Push(const FstClass &ifst, MutableFstClass *ofst, uint8_t flags,
           ReweightType rew_type, float delta = kShortestDelta);
 
 }  // namespace script

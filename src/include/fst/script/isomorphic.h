@@ -27,13 +27,13 @@
 namespace fst {
 namespace script {
 
-using IsomorphicInnerArgs =
+using FstIsomorphicInnerArgs =
     std::tuple<const FstClass &, const FstClass &, float>;
 
-using IsomorphicArgs = WithReturnValue<bool, IsomorphicInnerArgs>;
+using FstIsomorphicArgs = WithReturnValue<bool, FstIsomorphicInnerArgs>;
 
 template <class Arc>
-void Isomorphic(IsomorphicArgs *args) {
+void Isomorphic(FstIsomorphicArgs *args) {
   const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
   args->retval = Isomorphic(fst1, fst2, std::get<2>(args->args));

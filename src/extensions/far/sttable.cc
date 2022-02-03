@@ -17,6 +17,9 @@
 
 #include <fst/extensions/far/sttable.h>
 
+#include <cstdint>
+#include <string>
+
 #include <fstream>
 
 namespace fst {
@@ -25,7 +28,7 @@ bool IsSTTable(const std::string &source) {
   std::ifstream strm(source);
   if (!strm.good()) return false;
 
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   return magic_number == kSTTableMagicNumber;
 }

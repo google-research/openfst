@@ -20,10 +20,10 @@
 #ifndef FST_MATCHER_FST_H_
 #define FST_MATCHER_FST_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
-#include <fst/types.h>
 
 #include <fst/add-on.h>
 #include <fst/const-fst.h>
@@ -271,9 +271,11 @@ class Matcher<MatcherFst<F, M, Name, Init>> {
 
   void Next() { matcher_->Next(); }
 
-  uint64 Properties(uint64 props) const { return matcher_->Properties(props); }
+  uint64_t Properties(uint64_t props) const {
+    return matcher_->Properties(props);
+  }
 
-  uint32 Flags() const { return matcher_->Flags(); }
+  uint32_t Flags() const { return matcher_->Flags(); }
 
  private:
   std::unique_ptr<M> matcher_;
@@ -314,9 +316,11 @@ class LookAheadMatcher<MatcherFst<F, M, Name, Init>> {
 
   const FST &GetFst() const { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 props) const { return matcher_->Properties(props); }
+  uint64_t Properties(uint64_t props) const {
+    return matcher_->Properties(props);
+  }
 
-  uint32 Flags() const { return matcher_->Flags(); }
+  uint32_t Flags() const { return matcher_->Flags(); }
 
   bool LookAheadLabel(Label label) const {
     return matcher_->LookAheadLabel(label);
@@ -342,15 +346,15 @@ class LookAheadMatcher<MatcherFst<F, M, Name, Init>> {
 
 // Useful aliases when using StdArc.
 
-extern const char arc_lookahead_fst_type[];
+inline constexpr char arc_lookahead_fst_type[] = "arc_lookahead";
 
 using StdArcLookAheadFst =
     MatcherFst<ConstFst<StdArc>,
                ArcLookAheadMatcher<SortedMatcher<ConstFst<StdArc>>>,
                arc_lookahead_fst_type>;
 
-extern const char ilabel_lookahead_fst_type[];
-extern const char olabel_lookahead_fst_type[];
+inline constexpr char ilabel_lookahead_fst_type[] = "ilabel_lookahead";
+inline constexpr char olabel_lookahead_fst_type[] = "olabel_lookahead";
 
 constexpr auto ilabel_lookahead_flags =
     kInputLookAheadMatcher | kLookAheadWeight | kLookAheadPrefix |

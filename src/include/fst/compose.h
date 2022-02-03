@@ -21,10 +21,10 @@
 #define FST_COMPOSE_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/cache.h>
@@ -274,10 +274,10 @@ class ComposeFstImpl
 
   ComposeFstImpl *Copy() const override { return new ComposeFstImpl(*this); }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) &&
         (fst1_.Properties(kError, false) || fst2_.Properties(kError, false) ||
          (matcher1_->Properties(0) & kError) ||
@@ -746,7 +746,7 @@ class ComposeFstMatcher : public MatcherBase<typename CacheStore::Arc> {
                     MatchType match_type)
       : owned_fst_(fst.Copy()),
         fst_(*owned_fst_),
-        impl_(fst::down_cast<const Impl *>(fst_.GetImpl())),
+        impl_(down_cast<const Impl *>(fst_.GetImpl())),
         s_(kNoStateId),
         match_type_(match_type),
         matcher1_(impl_->matcher1_->Copy()),
@@ -761,7 +761,7 @@ class ComposeFstMatcher : public MatcherBase<typename CacheStore::Arc> {
   ComposeFstMatcher(const ComposeFst<Arc, CacheStore> *fst,
                     MatchType match_type)
       : fst_(*fst),
-        impl_(fst::down_cast<const Impl *>(fst_.GetImpl())),
+        impl_(down_cast<const Impl *>(fst_.GetImpl())),
         s_(kNoStateId),
         match_type_(match_type),
         matcher1_(impl_->matcher1_->Copy()),
@@ -777,7 +777,7 @@ class ComposeFstMatcher : public MatcherBase<typename CacheStore::Arc> {
       bool safe = false)
       : owned_fst_(matcher.fst_.Copy(safe)),
         fst_(*owned_fst_),
-        impl_(fst::down_cast<const Impl *>(fst_.GetImpl())),
+        impl_(down_cast<const Impl *>(fst_.GetImpl())),
         s_(kNoStateId),
         match_type_(matcher.match_type_),
         matcher1_(matcher.matcher1_->Copy(safe)),
@@ -813,7 +813,7 @@ class ComposeFstMatcher : public MatcherBase<typename CacheStore::Arc> {
 
   const Fst<Arc> &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 inprops) const override { return inprops; }
+  uint64_t Properties(uint64_t inprops) const override { return inprops; }
 
   void SetState(StateId s) final {
     if (s_ == s) return;

@@ -27,8 +27,8 @@ void Union(MutableFstClass *fst1, const FstClass &fst2) {
     fst1->SetProperties(kError, kError);
     return;
   }
-  UnionArgs1 args(fst1, fst2);
-  Apply<Operation<UnionArgs1>>("Union", fst1->ArcType(), &args);
+  FstUnionArgs1 args{fst1, fst2};
+  Apply<Operation<FstUnionArgs1>>("Union", fst1->ArcType(), &args);
 }
 
 void Union(MutableFstClass *fst1, const std::vector<const FstClass *> &fsts2) {
@@ -38,12 +38,12 @@ void Union(MutableFstClass *fst1, const std::vector<const FstClass *> &fsts2) {
       return;
     }
   }
-  UnionArgs2 args(fst1, fsts2);
-  Apply<Operation<UnionArgs2>>("Union", fst1->ArcType(), &args);
+  FstUnionArgs2 args{fst1, fsts2};
+  Apply<Operation<FstUnionArgs2>>("Union", fst1->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Union, UnionArgs1);
-REGISTER_FST_OPERATION_3ARCS(Union, UnionArgs2);
+REGISTER_FST_OPERATION_3ARCS(Union, FstUnionArgs1);
+REGISTER_FST_OPERATION_3ARCS(Union, FstUnionArgs2);
 
 }  // namespace script
 }  // namespace fst

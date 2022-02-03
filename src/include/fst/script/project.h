@@ -26,10 +26,10 @@
 namespace fst {
 namespace script {
 
-using ProjectArgs = std::pair<MutableFstClass *, ProjectType>;
+using FstProjectArgs = std::pair<MutableFstClass *, ProjectType>;
 
 template <class Arc>
-void Project(ProjectArgs *args) {
+void Project(FstProjectArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   Project(fst, std::get<1>(*args));
 }

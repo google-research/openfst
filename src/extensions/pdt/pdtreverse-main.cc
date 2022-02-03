@@ -17,6 +17,7 @@
 //
 // Reverses a PDT.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -24,7 +25,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
@@ -61,13 +61,13 @@ int pdtreverse_main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
+  std::vector<std::pair<int64_t, int64_t>> parens;
   if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens, false))
     return 1;
 
   VectorFstClass ofst(ifst->ArcType());
 
-  s::PdtReverse(*ifst, parens, &ofst);
+  s::Reverse(*ifst, parens, &ofst);
 
   return !ofst.Write(out_name);
 }

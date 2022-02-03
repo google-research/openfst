@@ -18,21 +18,21 @@
 #ifndef FST_SCRIPT_ARCSORT_H_
 #define FST_SCRIPT_ARCSORT_H_
 
+#include <cstdint>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/arcsort.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {
 namespace script {
 
-enum class ArcSortType : uint8 { ILABEL, OLABEL };
+enum class ArcSortType : uint8_t { ILABEL, OLABEL };
 
-using ArcSortArgs = std::pair<MutableFstClass *, ArcSortType>;
+using FstArcSortArgs = std::pair<MutableFstClass *, ArcSortType>;
 
 template <class Arc>
-void ArcSort(ArcSortArgs *args) {
+void ArcSort(FstArcSortArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   switch (std::get<1>(*args)) {
     case ArcSortType::ILABEL: {

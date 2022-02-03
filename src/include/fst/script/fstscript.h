@@ -100,61 +100,61 @@ class AllFstOperationsRegisterer {
 
  private:
   void RegisterBatch1() {
-    REGISTER_FST_OPERATION(ArcSort, Arc, ArcSortArgs);
-    REGISTER_FST_OPERATION(Closure, Arc, ClosureArgs);
-    REGISTER_FST_OPERATION(CompileFstInternal, Arc, CompileFstArgs);
-    REGISTER_FST_OPERATION(Compose, Arc, ComposeArgs);
-    REGISTER_FST_OPERATION(Concat, Arc, ConcatArgs1);
-    REGISTER_FST_OPERATION(Concat, Arc, ConcatArgs2);
-    REGISTER_FST_OPERATION(Concat, Arc, ConcatArgs3);
+    REGISTER_FST_OPERATION(ArcSort, Arc, FstArcSortArgs);
+    REGISTER_FST_OPERATION(Closure, Arc, FstClosureArgs);
+    REGISTER_FST_OPERATION(CompileInternal, Arc, FstCompileArgs);
+    REGISTER_FST_OPERATION(Compose, Arc, FstComposeArgs);
+    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs1);
+    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs2);
+    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs3);
     REGISTER_FST_OPERATION(Connect, Arc, MutableFstClass);
-    REGISTER_FST_OPERATION(Convert, Arc, ConvertArgs);
-    REGISTER_FST_OPERATION(Decode, Arc, DecodeArgs);
-    REGISTER_FST_OPERATION(Determinize, Arc, DeterminizeArgs);
-    REGISTER_FST_OPERATION(Difference, Arc, DifferenceArgs);
-    REGISTER_FST_OPERATION(Disambiguate, Arc, DisambiguateArgs);
-    REGISTER_FST_OPERATION(Draw, Arc, DrawArgs);
-    REGISTER_FST_OPERATION(Encode, Arc, EncodeArgs);
-    REGISTER_FST_OPERATION(EpsNormalize, Arc, EpsNormalizeArgs);
-    REGISTER_FST_OPERATION(Equal, Arc, EqualArgs);
-    REGISTER_FST_OPERATION(Equivalent, Arc, EquivalentArgs);
+    REGISTER_FST_OPERATION(Convert, Arc, FstConvertArgs);
+    REGISTER_FST_OPERATION(Decode, Arc, FstDecodeArgs);
+    REGISTER_FST_OPERATION(Determinize, Arc, FstDeterminizeArgs);
+    REGISTER_FST_OPERATION(Difference, Arc, FstDifferenceArgs);
+    REGISTER_FST_OPERATION(Disambiguate, Arc, FstDisambiguateArgs);
+    REGISTER_FST_OPERATION(Draw, Arc, FstDrawArgs);
+    REGISTER_FST_OPERATION(Encode, Arc, FstEncodeArgs);
+    REGISTER_FST_OPERATION(EpsNormalize, Arc, FstEpsNormalizeArgs);
+    REGISTER_FST_OPERATION(Equal, Arc, FstEqualArgs);
+    REGISTER_FST_OPERATION(Equivalent, Arc, FstEquivalentArgs);
+    REGISTER_FST_OPERATION(Info, Arc, FstInfoArgs);
     REGISTER_FST_OPERATION(InitArcIteratorClass, Arc, InitArcIteratorClassArgs);
     REGISTER_FST_OPERATION(InitMutableArcIteratorClass, Arc,
                            InitMutableArcIteratorClassArgs);
     REGISTER_FST_OPERATION(InitStateIteratorClass, Arc,
                            InitStateIteratorClassArgs);
-    REGISTER_FST_OPERATION(Info, Arc, InfoArgs);
-    REGISTER_FST_OPERATION(Intersect, Arc, IntersectArgs);
+    REGISTER_FST_OPERATION(Intersect, Arc, FstIntersectArgs);
     REGISTER_FST_OPERATION(Invert, Arc, MutableFstClass);
-    REGISTER_FST_OPERATION(Isomorphic, Arc, IsomorphicArgs);
+    REGISTER_FST_OPERATION(Isomorphic, Arc, FstIsomorphicArgs);
   }
 
   void RegisterBatch2() {
-    REGISTER_FST_OPERATION(Map, Arc, MapArgs);
-    REGISTER_FST_OPERATION(Minimize, Arc, MinimizeArgs);
-    REGISTER_FST_OPERATION(Print, Arc, PrintArgs);
-    REGISTER_FST_OPERATION(Project, Arc, ProjectArgs);
-    REGISTER_FST_OPERATION(Prune, Arc, PruneArgs1);
-    REGISTER_FST_OPERATION(Prune, Arc, PruneArgs2);
-    REGISTER_FST_OPERATION(Push, Arc, PushArgs1);
-    REGISTER_FST_OPERATION(Push, Arc, PushArgs2);
-    REGISTER_FST_OPERATION(RandEquivalent, Arc, RandEquivalentArgs);
-    REGISTER_FST_OPERATION(RandGen, Arc, RandGenArgs);
-    REGISTER_FST_OPERATION(Relabel, Arc, RelabelArgs1);
-    REGISTER_FST_OPERATION(Relabel, Arc, RelabelArgs2);
-    REGISTER_FST_OPERATION(Replace, Arc, ReplaceArgs);
-    REGISTER_FST_OPERATION(Reverse, Arc, ReverseArgs);
-    REGISTER_FST_OPERATION(Reweight, Arc, ReweightArgs);
-    REGISTER_FST_OPERATION(RmEpsilon, Arc, RmEpsilonArgs);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs1);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs2);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, ShortestDistanceArgs3);
-    REGISTER_FST_OPERATION(ShortestPath, Arc, ShortestPathArgs);
-    REGISTER_FST_OPERATION(Synchronize, Arc, SynchronizeArgs);
-    REGISTER_FST_OPERATION(TopSort, Arc, TopSortArgs);
-    REGISTER_FST_OPERATION(Union, Arc, UnionArgs1);
-    REGISTER_FST_OPERATION(Union, Arc, UnionArgs2);
-    REGISTER_FST_OPERATION(Verify, Arc, VerifyArgs);
+    REGISTER_FST_OPERATION(Map, Arc, FstMapArgs);
+    REGISTER_FST_OPERATION(Minimize, Arc, FstMinimizeArgs);
+    REGISTER_FST_OPERATION(Print, Arc, FstPrintArgs);
+    REGISTER_FST_OPERATION(Project, Arc, FstProjectArgs);
+    REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs1);
+    REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs2);
+    REGISTER_FST_OPERATION(Push, Arc, FstPushArgs1);
+    REGISTER_FST_OPERATION(Push, Arc, FstPushArgs2);
+    REGISTER_FST_OPERATION(RandEquivalent, Arc, FstRandEquivalentArgs);
+    REGISTER_FST_OPERATION(RandGen, Arc, FstRandGenArgs);
+    REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs1);
+    REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs2);
+    REGISTER_FST_OPERATION(Replace, Arc, FstReplaceArgs);
+    REGISTER_FST_OPERATION(Reverse, Arc, FstReverseArgs);
+    REGISTER_FST_OPERATION(Reweight, Arc, FstReweightArgs);
+    REGISTER_FST_OPERATION(RmEpsilon, Arc, FstRmEpsilonArgs);
+    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs1);
+    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs2);
+    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs3);
+    REGISTER_FST_OPERATION(ShortestPath, Arc, FstShortestPathArgs);
+    REGISTER_FST_OPERATION(Synchronize, Arc, FstSynchronizeArgs);
+    REGISTER_FST_OPERATION(TopSort, Arc, FstTopSortArgs);
+    REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs1);
+    REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs2);
+    REGISTER_FST_OPERATION(Verify, Arc, FstVerifyArgs);
   }
 };
 

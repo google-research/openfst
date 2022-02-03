@@ -28,11 +28,11 @@ void Reverse(const FstClass &ifst, MutableFstClass *ofst,
     ofst->SetProperties(kError, kError);
     return;
   }
-  ReverseArgs args(ifst, ofst, require_superinitial);
-  Apply<Operation<ReverseArgs>>("Reverse", ifst.ArcType(), &args);
+  FstReverseArgs args{ifst, ofst, require_superinitial};
+  Apply<Operation<FstReverseArgs>>("Reverse", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Reverse, ReverseArgs);
+REGISTER_FST_OPERATION_3ARCS(Reverse, FstReverseArgs);
 
 }  // namespace script
 }  // namespace fst

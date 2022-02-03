@@ -19,8 +19,10 @@
 
 #include <fst/test/fst_test.h>
 
+#include <cstdint>
+#include <string>
+
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
@@ -33,9 +35,9 @@ namespace {
 
 // A user-defined arc type.
 struct CustomArc {
-  using Label = int16;
+  using Label = int16_t;
   using Weight = ProductWeight<TropicalWeight, LogWeight>;
-  using StateId = int64;
+  using StateId = int64_t;
 
   CustomArc(Label i, Label o, Weight w, StateId s)
       : ilabel(i), olabel(o), weight(w), nextstate(s) {}
@@ -60,10 +62,10 @@ static fst::FstRegisterer<
 static fst::FstRegisterer<
     CompactArcFst<CustomArc, TrivialArcCompactor<CustomArc>>>
     CompactFst_CustomArc_TrivialCompactor_registerer;
-static fst::FstRegisterer<ConstFst<StdArc, uint16>>
+static fst::FstRegisterer<ConstFst<StdArc, uint16_t>>
     ConstFst_StdArc_uint16_registerer;
 static fst::FstRegisterer<
-    CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>>
+    CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>>
     CompactFst_StdArc_TrivialCompactor_uint16_registerer;
 static fst::FstRegisterer<CompactFst<StdArc, TrivialCompactor<StdArc>>>
     CompactFst_StdArc_CustomCompactor_registerer;
@@ -219,18 +221,18 @@ int main(int argc, char **argv) {
     // TODO(jrosenstock): Add tests on default-constructed Fst.
   }
 
-  // ConstFst<StdArc, uint16> tests
+  // ConstFst<StdArc, uint16_t> tests
   {
-    FstTester<ConstFst<StdArc, uint16>> std_const_tester;
+    FstTester<ConstFst<StdArc, uint16_t>> std_const_tester;
     std_const_tester.TestBase();
     std_const_tester.TestExpanded();
     std_const_tester.TestCopy();
     std_const_tester.TestIO();
   }
 
-  // CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>
+  // CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>
   {
-    FstTester<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>>
+    FstTester<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>>
         std_compact_tester;
     std_compact_tester.TestBase();
     std_compact_tester.TestExpanded();

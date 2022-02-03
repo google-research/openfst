@@ -26,6 +26,8 @@
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/log.h>
+
 namespace fst {
 
 // A templated heap implementation that supports in-place update of values.
@@ -81,6 +83,7 @@ class Heap {
 
   // Returns the least value.
   Value Pop() {
+    DCHECK(!Empty());
     Value top = values_.front();
     Swap(0, size_ - 1);
     size_--;
@@ -90,10 +93,16 @@ class Heap {
 
   // Returns the least value w.r.t. the comparison function from the
   // heap.
-  const Value &Top() const { return values_.front(); }
+  const Value &Top() const {
+    DCHECK(!Empty());
+    return values_.front();
+  }
 
   // Returns the element for the given key.
-  const Value &Get(int key) const { return values_[pos_[key]]; }
+  const Value &Get(int key) const {
+    DCHECK_LT(key, pos_.size());
+    return values_[pos_[key]];
+  }
 
   // Checks if the heap is empty.
   bool Empty() const { return size_ == 0; }
@@ -173,9 +182,6 @@ class Heap {
   std::vector<Value> values_;
   int size_;
 };
-
-template <class T, class Compare>
-constexpr int Heap<T, Compare>::kNoKey;
 
 }  // namespace fst
 

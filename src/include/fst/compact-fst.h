@@ -22,13 +22,13 @@
 #define FST_COMPACT_FST_H_
 
 #include <climits>
+#include <cstdint>
 #include <iterator>
 #include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/cache.h>
@@ -87,7 +87,7 @@ struct CompactFstOptions : public CacheOptions {
 //     size_t NumArcs() const;
 //     // Gets the 'i'th arc for the state. Requires i < NumArcs().
 //     // Flags are a bitmask of the kArc*Value flags that ArcIterator uses.
-//     Arc GetArc(size_t i, uint8 flags) const;
+//     Arc GetArc(size_t i, uint8_t flags) const;
 //   };
 //
 //   // Modifies 'state' accessor to provide access to state id 's'.
@@ -101,7 +101,7 @@ struct CompactFstOptions : public CacheOptions {
 //   // specified properties is compacted using this compactor.
 //   // This function should clear bits for properties that no longer
 //   // hold and set those for properties that are known to hold.
-//   uint64 Properties(uint64 props) const;
+//   uint64_t Properties(uint64_t props) const;
 //
 //   // Returns a string identifying the type of compactor.
 //   static const std::string &Type();
@@ -177,7 +177,7 @@ struct CompactFstOptions : public CacheOptions {
 //   // Returns the properties that are always true for an FST compacted using
 //   // this compactor. Any Fst with the inverse of these properties should
 //   // be incompatible.
-//   uint64 Properties() const;
+//   uint64_t Properties() const;
 //
 //   // Returns a string identifying the type of compactor.
 //   static const std::string &Type();
@@ -632,7 +632,7 @@ class CompactArcCompactor {
     return arc_compactor_->Write(strm) && compact_store_->Write(strm, opts);
   }
 
-  uint64 Properties(uint64 props) const {
+  uint64_t Properties(uint64_t props) const {
     // ArcCompactor properties can just be or-ed in since it is assumed that
     // if the ArcCompactor sets a property, any FST with the inverse
     // property is incompatible.
@@ -650,7 +650,7 @@ class CompactArcCompactor {
   static const std::string &Type() {
     static const std::string *const type = [] {
       std::string type = "compact";
-      if (sizeof(U) != sizeof(uint32)) type += std::to_string(8 * sizeof(U));
+      if (sizeof(U) != sizeof(uint32_t)) type += std::to_string(8 * sizeof(U));
       type += "_";
       type += ArcCompactor::Type();
       if (CompactStore::Type() != "compact") {
@@ -672,7 +672,7 @@ class CompactArcCompactor {
   std::shared_ptr<CompactStore> SharedCompactStore() { return compact_store_; }
 
   // TODO(allauzen): remove dependencies on this method and make private.
-  Arc ComputeArc(StateId s, Unsigned i, uint8 flags) const {
+  Arc ComputeArc(StateId s, Unsigned i, uint8_t flags) const {
     return arc_compactor_->Expand(s, compact_store_->Compacts(i), flags);
   }
 
@@ -744,7 +744,7 @@ class CompactArcState {
 
   size_t NumArcs() const { return range_.second; }
 
-  Arc GetArc(size_t i, uint8 flags) const {
+  Arc GetArc(size_t i, uint8_t flags) const {
     return compactor_->ComputeArc(s_, range_.first + i, flags);
   }
 
@@ -789,7 +789,7 @@ class CompactArcState<ArcCompactor, U,
 
   size_t NumArcs() const { return num_arcs_; }
 
-  Arc GetArc(size_t i, uint8 flags) const {
+  Arc GetArc(size_t i, uint8_t flags) const {
     return arc_compactor_->Expand(s_, compacts_[i], flags);
   }
 
@@ -881,7 +881,7 @@ class CompactFstImpl
     SetInputSymbols(fst.InputSymbols());
     SetOutputSymbols(fst.OutputSymbols());
     if (compactor_->Error()) SetProperties(kError, kError);
-    uint64 copy_properties =
+    uint64_t copy_properties =
         fst.Properties(kMutable, false)
             ? fst.Properties(kCopyProperties, true)
             : CheckProperties(
@@ -966,7 +966,7 @@ class CompactFstImpl
 
   size_t CountEpsilons(StateId s, bool output_epsilons) {
     compactor_->SetState(s, &state_);
-    const uint8 flags = output_epsilons ? kArcOLabelValue : kArcILabelValue;
+    const uint8_t flags = output_epsilons ? kArcOLabelValue : kArcILabelValue;
     size_t num_eps = 0;
     const size_t num_arcs = state_.NumArcs();
     for (size_t i = 0; i < num_arcs; ++i) {
@@ -1041,7 +1041,7 @@ class CompactFstImpl
   }
 
   // Properties always true of this FST class.
-  static constexpr uint64 kStaticProperties = kExpanded;
+  static constexpr uint64_t kStaticProperties = kExpanded;
 
  protected:
   template <class OtherArc, class OtherCompactor, class OtherCacheStore>
@@ -1072,18 +1072,6 @@ class CompactFstImpl
   std::shared_ptr<Compactor> compactor_;
   typename Compactor::State state_;
 };
-
-template <class Arc, class Compactor, class CacheStore>
-constexpr uint64 CompactFstImpl<Arc, Compactor, CacheStore>::kStaticProperties;
-
-template <class Arc, class Compactor, class CacheStore>
-constexpr int CompactFstImpl<Arc, Compactor, CacheStore>::kFileVersion;
-
-template <class Arc, class Compactor, class CacheStore>
-constexpr int CompactFstImpl<Arc, Compactor, CacheStore>::kAlignedFileVersion;
-
-template <class Arc, class Compactor, class CacheStore>
-constexpr int CompactFstImpl<Arc, Compactor, CacheStore>::kMinFileVersion;
 
 // Returns the compactor for the CompactFst; intended to be called as
 // GetCompactor<CompactorType>(fst), which returns the compactor only if it
@@ -1261,7 +1249,7 @@ bool WriteCompactArcFst(
   hdr.SetNumStates(num_states);
   hdr.SetNumArcs(num_arcs);
   std::string type = "compact";
-  if (sizeof(Unsigned) != sizeof(uint32)) {
+  if (sizeof(Unsigned) != sizeof(uint32_t)) {
     type += std::to_string(CHAR_BIT * sizeof(Unsigned));
   }
   type += "_";
@@ -1275,7 +1263,7 @@ bool WriteCompactArcFst(
     FSTERROR() << "Fst incompatible with compactor";
     return false;
   }
-  uint64 properties = copy_properties | Impl::kStaticProperties;
+  uint64_t properties = copy_properties | Impl::kStaticProperties;
   internal::FstImpl<Arc>::WriteFstHeader(fst, strm, opts, file_version, type,
                                          properties, &hdr);
   first_pass_arc_compactor.Write(strm);
@@ -1372,9 +1360,9 @@ class ArcIterator<CompactFst<Arc, Compactor, CacheStore>> {
 
   void Seek(size_t pos) { pos_ = pos; }
 
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
-  void SetFlags(uint8 flags, uint8 mask) {
+  void SetFlags(uint8_t flags, uint8_t mask) {
     flags_ &= ~mask;
     flags_ |= (flags & kArcValueFlags);
   }
@@ -1385,7 +1373,7 @@ class ArcIterator<CompactFst<Arc, Compactor, CacheStore>> {
   // Cache the value of NumArcs(), since it is used in Done() and may be slow.
   size_t num_arcs_;
   mutable Arc arc_;
-  uint8 flags_;
+  uint8_t flags_;
 };
 
 // ArcCompactor for unweighted string FSTs.
@@ -1401,13 +1389,14 @@ class StringCompactor {
 
   Element Compact(StateId s, const Arc &arc) const { return arc.ilabel; }
 
-  Arc Expand(StateId s, const Element &p, uint8 flags = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &p,
+             uint8_t flags = kArcValueFlags) const {
     return Arc(p, p, Weight::One(), p != kNoLabel ? s + 1 : kNoStateId);
   }
 
   constexpr ssize_t Size() const { return 1; }
 
-  constexpr uint64 Properties() const { return kCompiledStringProperties; }
+  constexpr uint64_t Properties() const { return kCompiledStringProperties; }
 
   bool Compatible(const Fst<Arc> &fst) const {
     const auto props = Properties();
@@ -1441,14 +1430,15 @@ class WeightedStringCompactor {
     return std::make_pair(arc.ilabel, arc.weight);
   }
 
-  Arc Expand(StateId s, const Element &p, uint8 flags = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &p,
+             uint8_t flags = kArcValueFlags) const {
     return Arc(p.first, p.first, p.second,
                p.first != kNoLabel ? s + 1 : kNoStateId);
   }
 
   constexpr ssize_t Size() const { return 1; }
 
-  constexpr uint64 Properties() const { return kString | kAcceptor; }
+  constexpr uint64_t Properties() const { return kString | kAcceptor; }
 
   bool Compatible(const Fst<Arc> &fst) const {
     const auto props = Properties();
@@ -1482,13 +1472,14 @@ class UnweightedAcceptorCompactor {
     return std::make_pair(arc.ilabel, arc.nextstate);
   }
 
-  Arc Expand(StateId s, const Element &p, uint8 flags = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &p,
+             uint8_t flags = kArcValueFlags) const {
     return Arc(p.first, p.first, Weight::One(), p.second);
   }
 
   constexpr ssize_t Size() const { return -1; }
 
-  constexpr uint64 Properties() const { return kAcceptor | kUnweighted; }
+  constexpr uint64_t Properties() const { return kAcceptor | kUnweighted; }
 
   bool Compatible(const Fst<Arc> &fst) const {
     const auto props = Properties();
@@ -1524,13 +1515,14 @@ class AcceptorCompactor {
                           arc.nextstate);
   }
 
-  Arc Expand(StateId s, const Element &p, uint8 flags = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &p,
+             uint8_t flags = kArcValueFlags) const {
     return Arc(p.first.first, p.first.first, p.first.second, p.second);
   }
 
   constexpr ssize_t Size() const { return -1; }
 
-  constexpr uint64 Properties() const { return kAcceptor; }
+  constexpr uint64_t Properties() const { return kAcceptor; }
 
   bool Compatible(const Fst<Arc> &fst) const {
     const auto props = Properties();
@@ -1565,13 +1557,14 @@ class UnweightedCompactor {
                           arc.nextstate);
   }
 
-  Arc Expand(StateId s, const Element &p, uint8 flags = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &p,
+             uint8_t flags = kArcValueFlags) const {
     return Arc(p.first.first, p.first.second, Weight::One(), p.second);
   }
 
   constexpr ssize_t Size() const { return -1; }
 
-  constexpr uint64 Properties() const { return kUnweighted; }
+  constexpr uint64_t Properties() const { return kUnweighted; }
 
   bool Compatible(const Fst<Arc> &fst) const {
     const auto props = Properties();
@@ -1590,38 +1583,38 @@ class UnweightedCompactor {
   }
 };
 
-template <class Arc, class Unsigned /* = uint32 */>
+template <class Arc, class Unsigned /* = uint32_t */>
 using CompactStringFst = CompactArcFst<Arc, StringCompactor<Arc>, Unsigned>;
 
-template <class Arc, class Unsigned /* = uint32 */>
+template <class Arc, class Unsigned /* = uint32_t */>
 using CompactWeightedStringFst =
     CompactArcFst<Arc, WeightedStringCompactor<Arc>, Unsigned>;
 
-template <class Arc, class Unsigned /* = uint32 */>
+template <class Arc, class Unsigned /* = uint32_t */>
 using CompactAcceptorFst = CompactArcFst<Arc, AcceptorCompactor<Arc>, Unsigned>;
 
-template <class Arc, class Unsigned /* = uint32 */>
+template <class Arc, class Unsigned /* = uint32_t */>
 using CompactUnweightedFst =
     CompactArcFst<Arc, UnweightedCompactor<Arc>, Unsigned>;
 
-template <class Arc, class Unsigned /* = uint32 */>
+template <class Arc, class Unsigned /* = uint32_t */>
 using CompactUnweightedAcceptorFst =
     CompactArcFst<Arc, UnweightedAcceptorCompactor<Arc>, Unsigned>;
 
-using StdCompactStringFst = CompactStringFst<StdArc, uint32>;
+using StdCompactStringFst = CompactStringFst<StdArc, uint32_t>;
 
-using StdCompactWeightedStringFst = CompactWeightedStringFst<StdArc, uint32>;
+using StdCompactWeightedStringFst = CompactWeightedStringFst<StdArc, uint32_t>;
 
-using StdCompactAcceptorFst = CompactAcceptorFst<StdArc, uint32>;
+using StdCompactAcceptorFst = CompactAcceptorFst<StdArc, uint32_t>;
 
-using StdCompactUnweightedFst = CompactUnweightedFst<StdArc, uint32>;
+using StdCompactUnweightedFst = CompactUnweightedFst<StdArc, uint32_t>;
 
 using StdCompactUnweightedAcceptorFst =
-    CompactUnweightedAcceptorFst<StdArc, uint32>;
+    CompactUnweightedAcceptorFst<StdArc, uint32_t>;
 
 // Convenience function to make a CompactStringFst from a sequence
 // of Arc::Labels. LabelIterator must be an input iterator.
-template <class Arc, class Unsigned = uint32, class LabelIterator>
+template <class Arc, class Unsigned = uint32_t, class LabelIterator>
 inline CompactStringFst<Arc, Unsigned> MakeCompactStringFst(
     const LabelIterator begin, const LabelIterator end) {
   using CompactStringFst = CompactStringFst<Arc, Unsigned>;

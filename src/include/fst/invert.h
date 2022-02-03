@@ -20,7 +20,8 @@
 #ifndef FST_INVERT_H_
 #define FST_INVERT_H_
 
-#include <fst/types.h>
+#include <cstdint>
+
 
 #include <fst/arc-map.h>
 #include <fst/mutable-fst.h>
@@ -50,7 +51,7 @@ struct InvertMapper {
     return MAP_CLEAR_SYMBOLS;
   }
 
-  uint64 Properties(uint64 props) const { return InvertProperties(props); }
+  uint64_t Properties(uint64_t props) const { return InvertProperties(props); }
 };
 
 // Inverts the transduction corresponding to an FST by exchanging the
@@ -104,8 +105,7 @@ class InvertFst : public ArcMapFst<A, A, InvertMapper<A>> {
   using Mapper = InvertMapper<Arc>;
   using Impl = internal::ArcMapFstImpl<A, A, InvertMapper<A>>;
 
-  explicit InvertFst(const Fst<Arc> &fst)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, Mapper()) {
+  explicit InvertFst(const Fst<Arc> &fst) : ArcMapFst<Arc, Arc, Mapper>(fst) {
     GetMutableImpl()->SetOutputSymbols(fst.InputSymbols());
     GetMutableImpl()->SetInputSymbols(fst.OutputSymbols());
   }

@@ -20,9 +20,9 @@
 #ifndef FST_RMFINALEPSILON_H_
 #define FST_RMFINALEPSILON_H_
 
+#include <cstdint>
 #include <vector>
 
-#include <fst/types.h>
 
 #include <fst/connect.h>
 #include <fst/mutable-fst.h>
@@ -39,7 +39,7 @@ void RmFinalEpsilon(MutableFst<Arc> *fst) {
   // Determines the coaccesibility of states.
   std::vector<bool> access;
   std::vector<bool> coaccess;
-  uint64 props = 0;
+  uint64_t props = 0;
   SccVisitor<Arc> scc_visitor(nullptr, &access, &coaccess, &props);
   DfsVisit(*fst, &scc_visitor);
   // Finds potential list of removable final states. These are final states that

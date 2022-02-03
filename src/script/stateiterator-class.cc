@@ -23,7 +23,7 @@ namespace fst {
 namespace script {
 
 StateIteratorClass::StateIteratorClass(const FstClass &fst) : impl_(nullptr) {
-  InitStateIteratorClassArgs args(fst, this);
+  InitStateIteratorClassArgs args{fst, this};
   Apply<Operation<InitStateIteratorClassArgs>>("InitStateIteratorClass",
                                                fst.ArcType(), &args);
 }

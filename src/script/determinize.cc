@@ -29,11 +29,11 @@ void Determinize(const FstClass &ifst, MutableFstClass *ofst,
     ofst->SetProperties(kError, kError);
     return;
   }
-  DeterminizeArgs args(ifst, ofst, opts);
-  Apply<Operation<DeterminizeArgs>>("Determinize", ifst.ArcType(), &args);
+  FstDeterminizeArgs args{ifst, ofst, opts};
+  Apply<Operation<FstDeterminizeArgs>>("Determinize", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Determinize, DeterminizeArgs);
+REGISTER_FST_OPERATION_3ARCS(Determinize, FstDeterminizeArgs);
 
 }  // namespace script
 }  // namespace fst

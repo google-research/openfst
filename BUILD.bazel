@@ -30,6 +30,13 @@ DEFINES = select({
     "//conditions:default": [],
 })
 
+# Following default compile options will disable signed/unsigned integer
+# comparison warning for gcc/clang and Microsoft Visual Studio compilers.
+COPTS = select({
+    "@bazel_tools//src/conditions:windows": ["/wd4388"],
+    "//conditions:default": ["-Wno-sign-compare"],
+})
+
 prefix_dir = "src/"
 
 static_binary = 1
@@ -85,7 +92,6 @@ PUBLIC_HEADERS = [
     prefix_dir + "include/fst/label-reachable.h",
     prefix_dir + "include/fst/lookahead-filter.h",
     prefix_dir + "include/fst/lookahead-matcher.h",
-    prefix_dir + "include/fst/map.h",
     prefix_dir + "include/fst/matcher-fst.h",
     prefix_dir + "include/fst/matcher.h",
     prefix_dir + "include/fst/memory.h",
@@ -136,7 +142,7 @@ cc_library(
         prefix_dir + "lib/symbol-table-ops.cc",
     ],
     hdrs = PUBLIC_HEADERS,
-    copts = ["-Wno-sign-compare"],
+    copts = COPTS,
     defines = DEFINES,
     includes = [prefix_dir + "include"],
     linkopts = ["-lm"],
@@ -182,7 +188,7 @@ cc_library(
     name = "symbol-table",
     srcs = [prefix_dir + "lib/symbol-table.cc"],
     hdrs = [prefix_dir + "include/fst/symbol-table.h"],
-    copts = ["-Wno-sign-compare"],
+    copts = COPTS,
     defines = DEFINES,
     includes = [prefix_dir + "include"],
     deps = [
@@ -280,12 +286,10 @@ cc_library(
     ],
     hdrs = [
         prefix_dir + "include/fst/compat.h",
-        prefix_dir + "include/fst/config.h",
         prefix_dir + "include/fst/flags.h",
         prefix_dir + "include/fst/icu.h",
         prefix_dir + "include/fst/lock.h",
         prefix_dir + "include/fst/log.h",
-        prefix_dir + "include/fst/types.h",
         prefix_dir + "include/fst/windows_defs.inc",
     ],
     defines = select({
@@ -325,7 +329,10 @@ cc_test(
     name = "weight_test",
     timeout = "short",
     srcs = [prefix_dir + "test/weight_test.cc"],
-    copts = ["-Wno-unused-local-typedefs"],
+    copts = COPTS + select({
+        "@bazel_tools//src/conditions:windows": [],
+        "//conditions:default": ["-Wno-unused-local-typedefs"],
+    }),
     deps = [
         ":fst",
         ":weight-tester",
@@ -367,6 +374,7 @@ cc_library(
     ],
     hdrs = [
         prefix_dir + "include/fst/script/arc-class.h",
+        prefix_dir + "include/fst/script/arcfilter-impl.h",
         prefix_dir + "include/fst/script/arciterator-class.h",
         prefix_dir + "include/fst/script/arg-packs.h",
         prefix_dir + "include/fst/script/encodemapper-class.h",
@@ -423,7 +431,7 @@ cc_library(
         prefix_dir + "include/fst/script/union.h",
         prefix_dir + "include/fst/script/verify.h",
     ],
-    copts = ["-Wno-sign-compare"],
+    copts = COPTS,
     includes = [prefix_dir + "include"],
     deps = [":fst"],
 )
@@ -753,7 +761,6 @@ cc_library(
 
 cc_library(
     name = "far",
-    srcs = [prefix_dir + "extensions/far/strings.cc"],
     hdrs = [
         prefix_dir + "include/fst/extensions/far/compile-strings.h",
         prefix_dir + "include/fst/extensions/far/convert.h",
@@ -775,11 +782,11 @@ cc_library(
 cc_library(
     name = "farscript",
     srcs = [
+        prefix_dir + "extensions/far/compile-strings.cc",
         prefix_dir + "extensions/far/far-class.cc",
         prefix_dir + "extensions/far/farscript.cc",
         prefix_dir + "extensions/far/getters.cc",
         prefix_dir + "extensions/far/script-impl.cc",
-        prefix_dir + "extensions/far/strings.cc",
     ],
     hdrs = [
         prefix_dir + "include/fst/extensions/far/compile-strings.h",
@@ -1080,6 +1087,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":fst",
+        ":pdt",
     ],
 )
 
@@ -1096,6 +1104,7 @@ cc_library(
         ":base",
         ":fstscript_base",
         ":linear-fst",
+        ":pdt",
     ],
 )
 

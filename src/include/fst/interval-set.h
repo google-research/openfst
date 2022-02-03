@@ -286,13 +286,13 @@ void IntervalSet<T, Store>::Complement(T maxval,
   T count = 0;
   Interval interval;
   interval.begin = 0;
-  for (auto it = intervals_.begin(); it != intervals_.end(); ++it) {
-    interval.end = std::min(it->begin, maxval);
+  for (const auto current_interval : intervals_) {
+    interval.end = std::min(current_interval.begin, maxval);
     if ((interval.begin) < (interval.end)) {
       ointervals->push_back(interval);
       count += interval.end - interval.begin;
     }
-    interval.begin = it->end;
+    interval.begin = current_interval.end;
   }
   interval.end = maxval;
   if ((interval.begin) < (interval.end)) {

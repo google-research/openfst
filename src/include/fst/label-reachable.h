@@ -25,7 +25,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/accumulator.h>
@@ -147,6 +146,60 @@ bool StateSort(LabelReachableData<Label> *data,
   return StateSort(data->MutableIntervalSets(), order);
 }
 
+// Functor to find the LowerBound of a Label using an ArcIterator.
+// Used by LabelReachable.  Other, more efficient implementations of
+// this interface specialized to certain FST types may be used instead.
+template <class Arc>
+class LabelLowerBound {
+ public:
+  using Label = typename Arc::Label;
+  using StateId = typename Arc::StateId;
+
+  // Initializes with the FST that will later supply the ArcIterator for
+  // `operator()`.  `reach_input` specified whether `operator()` will search
+  // input or output labels.  If `is_copy == true`, then `fst` is a copy
+  // of the one previously passed to `Init`, so any expensive initialization
+  // can be skipped.
+  template <class FST>
+  void Init(const FST &fst, bool reach_input, bool is_copy) {
+    reach_input_ = reach_input;
+  }
+
+  // Sets state that will be searched by `operator()`.
+  void SetState(StateId aiter_s) {}
+
+  // Positions `aiter` at the first Arc with `label >= match_label` in the
+  // half-open interval `[aiter_begin, aiter_end)`.  Returns the position
+  // of `aiter`.  `aiter` must be an iterator of the FST that was passed to
+  // `Init`.
+  template <class ArcIterator>
+  ssize_t operator()(ArcIterator *aiter, ssize_t aiter_begin, ssize_t aiter_end,
+                     Label match_label) const {
+    // Only needs to compute the ilabel or olabel of arcs when performing the
+    // binary search.
+    aiter->SetFlags(reach_input_ ? kArcILabelValue : kArcOLabelValue,
+                    kArcValueFlags);
+    ssize_t low = aiter_begin;
+    ssize_t high = aiter_end;
+    while (low < high) {
+      const ssize_t mid = low + (high - low) / 2;
+      aiter->Seek(mid);
+      auto label = reach_input_ ? aiter->Value().ilabel : aiter->Value().olabel;
+      if (label < match_label) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    aiter->Seek(low);
+    aiter->SetFlags(kArcValueFlags, kArcValueFlags);
+    return low;
+  }
+
+ private:
+  bool reach_input_ = false;
+};
+
 // Tests reachability of labels from a given state. If reach_input is true, then
 // input labels are considered, o.w. output labels are considered. To test for
 // reachability from a state s, first do SetState(s), then a label l can be
@@ -176,13 +229,15 @@ bool StateSort(LabelReachableData<Label> *data,
 // default uses semiring Plus(). Alternative ones can be used to distribute the
 // weights in composition in various ways.
 template <class Arc, class Accumulator = DefaultAccumulator<Arc>,
-          class D = LabelReachableData<typename Arc::Label>>
+          class D = LabelReachableData<typename Arc::Label>,
+          class LB = LabelLowerBound<Arc>>
 class LabelReachable {
  public:
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   using Data = D;
+  using LowerBound = LB;
 
   using LabelIntervalSet = typename Data::LabelIntervalSet;
 
@@ -195,11 +250,7 @@ class LabelReachable {
         s_(kNoStateId),
         data_(std::make_shared<Data>(reach_input, keep_relabel_data)),
         accumulator_(accumulator ? std::move(accumulator)
-                                 : std::make_unique<Accumulator>()),
-        ncalls_(0),
-        nintervals_(0),
-        reach_fst_input_(false),
-        error_(false) {
+                                 : std::make_unique<Accumulator>()) {
     const auto ins = fst_->NumStates();
     TransformFst();
     FindIntervals(ins);
@@ -211,20 +262,14 @@ class LabelReachable {
       : s_(kNoStateId),
         data_(std::move(data)),
         accumulator_(accumulator ? std::move(accumulator)
-                                 : std::make_unique<Accumulator>()),
-        ncalls_(0),
-        nintervals_(0),
-        reach_fst_input_(false),
-        error_(false) {}
+                                 : std::make_unique<Accumulator>()) {}
 
-  LabelReachable(const LabelReachable<Arc, Accumulator, Data> &reachable,
-                 bool safe = false)
+  LabelReachable(const LabelReachable &reachable, bool safe = false)
       : s_(kNoStateId),
         data_(reachable.data_),
         accumulator_(
             std::make_unique<Accumulator>(*reachable.accumulator_, safe)),
-        ncalls_(0),
-        nintervals_(0),
+        lower_bound_(reachable.lower_bound_),
         reach_fst_input_(reachable.reach_fst_input_),
         error_(reachable.error_) {}
 
@@ -310,6 +355,7 @@ class LabelReachable {
     if (aiter_s != kNoStateId) {
       accumulator_->SetState(aiter_s);
       if (accumulator_->Error()) error_ = true;
+      lower_bound_.SetState(aiter_s);
     }
   }
 
@@ -341,6 +387,7 @@ class LabelReachable {
     }
     accumulator_->Init(fst, copy);
     if (accumulator_->Error()) error_ = true;
+    lower_bound_.Init(fst, /*reach_input=*/reach_input, /*is_copy=*/copy);
   }
 
   // Can reach any arc iterator label between iterator positions
@@ -400,8 +447,8 @@ class LabelReachable {
       auto begin_low = aiter_begin;
       auto end_low = aiter_begin;
       for (const auto &interval : interval_set) {
-        begin_low = LowerBound(aiter, end_low, aiter_end, interval.begin);
-        end_low = LowerBound(aiter, begin_low, aiter_end, interval.end);
+        begin_low = lower_bound_(aiter, end_low, aiter_end, interval.begin);
+        end_low = lower_bound_(aiter, begin_low, aiter_end, interval.end);
         if (end_low - begin_low > 0) {
           if (reach_begin_ < 0) reach_begin_ = begin_low;
           reach_end_ = end_low;
@@ -429,7 +476,7 @@ class LabelReachable {
 
   // Access to the relabeling map. Excludes epsilon (0) label but
   // includes kNoLabel that is used internally for super-final
-  // transitons.
+  // transitions.
   const std::unordered_map<Label, Label> &Label2Index() const {
     return *data_->Label2Index();
   }
@@ -457,8 +504,8 @@ class LabelReachable {
         auto arc = aiter.Value();
         const auto label = data_->ReachInput() ? arc.ilabel : arc.olabel;
         if (label) {
-          auto insert_result = label2state_.emplace(label, ons);
-          if (insert_result.second) {
+          if (auto insert_result = label2state_.emplace(label, ons);
+              insert_result.second) {
             indeg.push_back(0);
             ++ons;
           }
@@ -470,8 +517,8 @@ class LabelReachable {
       // Redirects final weights to new final state.
       auto final_weight = fst_->Final(s);
       if (final_weight != Weight::Zero()) {
-        auto insert_result = label2state_.emplace(kNoLabel, ons);
-        if (insert_result.second) {
+        if (auto insert_result = label2state_.emplace(kNoLabel, ons);
+            insert_result.second) {
           indeg.push_back(0);
           ++ons;
         }
@@ -528,31 +575,6 @@ class LabelReachable {
     VLOG(2) << "# of non-interval states: " << non_intervals;
   }
 
-  template <class Iterator>
-  ssize_t LowerBound(Iterator *aiter, ssize_t aiter_begin, ssize_t aiter_end,
-                     Label match_label) const {
-    // Only needs to compute the ilabel or olabel of arcs when performing the
-    // binary search.
-    aiter->SetFlags(reach_fst_input_ ? kArcILabelValue : kArcOLabelValue,
-                    kArcValueFlags);
-    ssize_t low = aiter_begin;
-    ssize_t high = aiter_end;
-    while (low < high) {
-      const ssize_t mid = low + (high - low) / 2;
-      aiter->Seek(mid);
-      auto label =
-          reach_fst_input_ ? aiter->Value().ilabel : aiter->Value().olabel;
-      if (label < match_label) {
-        low = mid + 1;
-      } else {
-        high = mid;
-      }
-    }
-    aiter->Seek(low);
-    aiter->SetFlags(kArcValueFlags, kArcValueFlags);
-    return low;
-  }
-
   std::unique_ptr<VectorFst<Arc>> fst_;
   // Current state
   StateId s_;
@@ -568,12 +590,14 @@ class LabelReachable {
   std::shared_ptr<Data> data_;
   // Sums arc weights.
   std::unique_ptr<Accumulator> accumulator_;
+  // Functor for computing LowerBound(Iterator*, begin, end, label).
+  LowerBound lower_bound_;
   // Relabeling map for OOV labels.
   std::unordered_map<Label, Label> oov_label2index_;
-  double ncalls_;
-  double nintervals_;
-  bool reach_fst_input_;
-  bool error_;
+  double ncalls_ = 0;
+  double nintervals_ = 0;
+  bool reach_fst_input_ = false;
+  bool error_ = false;
 };
 
 }  // namespace fst

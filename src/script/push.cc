@@ -17,6 +17,8 @@
 
 #include <fst/script/push.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -24,22 +26,22 @@ namespace script {
 
 void Push(MutableFstClass *fst, ReweightType rew_type, float delta,
           bool remove_total_weight) {
-  PushArgs1 args(fst, rew_type, delta, remove_total_weight);
-  Apply<Operation<PushArgs1>>("Push", fst->ArcType(), &args);
+  FstPushArgs1 args{fst, rew_type, delta, remove_total_weight};
+  Apply<Operation<FstPushArgs1>>("Push", fst->ArcType(), &args);
 }
 
-void Push(const FstClass &ifst, MutableFstClass *ofst, uint8 flags,
+void Push(const FstClass &ifst, MutableFstClass *ofst, uint8_t flags,
           ReweightType rew_type, float delta) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Push")) {
     ofst->SetProperties(kError, kError);
     return;
   }
-  PushArgs2 args(ifst, ofst, flags, rew_type, delta);
-  Apply<Operation<PushArgs2>>("Push", ifst.ArcType(), &args);
+  FstPushArgs2 args{ifst, ofst, flags, rew_type, delta};
+  Apply<Operation<FstPushArgs2>>("Push", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Push, PushArgs1);
-REGISTER_FST_OPERATION_3ARCS(Push, PushArgs2);
+REGISTER_FST_OPERATION_3ARCS(Push, FstPushArgs1);
+REGISTER_FST_OPERATION_3ARCS(Push, FstPushArgs2);
 
 }  // namespace script
 }  // namespace fst

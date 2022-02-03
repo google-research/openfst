@@ -772,8 +772,8 @@ class ReplaceAccumulator {
       offset_ = 0;
       offset_weight_ = Weight::Zero();
     }
-    aiter_.reset(
-        new ArcIterator<Fst<Arc>>(*data_->GetFst(fst_id_), tuple.fst_state));
+    aiter_ = std::make_unique<ArcIterator<Fst<Arc>>>(*data_->GetFst(fst_id_),
+                                                      tuple.fst_state);
   }
 
   Weight Sum(Weight w, Weight v) {

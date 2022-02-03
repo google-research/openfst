@@ -20,39 +20,39 @@
 #ifndef FST_ENCODE_H_
 #define FST_ENCODE_H_
 
+#include <cstdint>
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/arc-map.h>
 #include <fstream>
 #include <fst/properties.h>
 #include <fst/rmfinalepsilon.h>
+#include <fst/util.h>
 #include <unordered_map>
 
 namespace fst {
 
 enum EncodeType { ENCODE = 1, DECODE = 2 };
 
-static constexpr uint8 kEncodeLabels = 0x01;
-static constexpr uint8 kEncodeWeights = 0x02;
-static constexpr uint8 kEncodeFlags = 0x03;
+inline constexpr uint8_t kEncodeLabels = 0x01;
+inline constexpr uint8_t kEncodeWeights = 0x02;
+inline constexpr uint8_t kEncodeFlags = 0x03;
 
 namespace internal {
 
 // Bits storing whether or not an encode table has input and/or output symbol
 // tables, for internal use only.
-static constexpr uint8 kEncodeHasISymbols = 0x04;
-static constexpr uint8 kEncodeHasOSymbols = 0x08;
+inline constexpr uint8_t kEncodeHasISymbols = 0x04;
+inline constexpr uint8_t kEncodeHasOSymbols = 0x08;
 
 // Identifies stream data as an encode table (and its endianity).
-static const int32 kEncodeMagicNumber = 2128178506;
-// TODO(b/141172858): deprecated, remove by 2020-01-01.
-static const int32 kEncodeDeprecatedMagicNumber = 2129983209;
+inline constexpr int32_t kEncodeMagicNumber = 2128178506;
 
 }  // namespace internal
 
@@ -65,7 +65,7 @@ class EncodeTableHeader {
 
   const std::string &ArcType() const { return arctype_; }
 
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
   size_t Size() const { return size_; }
 
@@ -73,7 +73,7 @@ class EncodeTableHeader {
 
   void SetArcType(const std::string &arctype) { arctype_ = arctype; }
 
-  void SetFlags(uint8 flags) { flags_ = flags; }
+  void SetFlags(uint8_t flags) { flags_ = flags; }
 
   void SetSize(size_t size) { size_ = size; }
 
@@ -85,7 +85,7 @@ class EncodeTableHeader {
 
  private:
   std::string arctype_;
-  uint8 flags_;
+  uint8_t flags_;
   size_t size_;
 };
 
@@ -109,7 +109,7 @@ class EncodeTable {
         : ilabel(ilabel), olabel(olabel), weight(std::move(weight)) {}
 
     // Constructs from arc and flags.
-    Triple(const Arc &arc, uint8 flags)
+    Triple(const Arc &arc, uint8_t flags)
         : ilabel(arc.ilabel),
           olabel(flags & kEncodeLabels ? arc.olabel : 0),
           weight(flags & kEncodeWeights ? arc.weight : Weight::One()) {}
@@ -120,6 +120,12 @@ class EncodeTable {
       ReadType(strm, &triple->olabel);
       ReadType(strm, &triple->weight);
       return triple;
+    }
+
+    void Write(std::ostream &strm) const {
+      WriteType(strm, ilabel);
+      WriteType(strm, olabel);
+      WriteType(strm, weight);
     }
 
     // Exploited below for TripleEqual functor.
@@ -141,7 +147,7 @@ class EncodeTable {
   // Hash functor for one Triple pointer.
   class TripleHash {
    public:
-    explicit TripleHash(uint8 flags) : flags_(flags) {}
+    explicit TripleHash(uint8_t flags) : flags_(flags) {}
 
     size_t operator()(const Triple *triple) const {
       size_t hash = triple->ilabel;
@@ -157,10 +163,10 @@ class EncodeTable {
     }
 
    private:
-    uint8 flags_;
+    uint8_t flags_;
   };
 
-  explicit EncodeTable(uint8 flags)
+  explicit EncodeTable(uint8_t flags)
       : flags_(flags), triple2label_(1024, TripleHash(flags)) {}
 
   // Given an arc, encodes either input/output labels or input/costs or both.
@@ -192,7 +198,7 @@ class EncodeTable {
 
   // This is masked to hide internal-only isymbol and osymbol bits.
 
-  uint8 Flags() const { return flags_ & kEncodeFlags; }
+  uint8_t Flags() const { return flags_ & kEncodeFlags; }
 
   const SymbolTable *InputSymbols() const { return isymbols_.get(); }
 
@@ -226,7 +232,7 @@ class EncodeTable {
     return insert_result.first->second;
   }
 
-  uint8 flags_;
+  uint8_t flags_;
   std::vector<std::unique_ptr<Triple>> triples_;
   std::unordered_map<const Triple *, Label, TripleHash, TripleEqual>
       triple2label_;
@@ -245,7 +251,7 @@ EncodeTable<Arc> *EncodeTable<Arc>::Read(std::istream &strm,
   const auto flags = hdr.Flags();
   const auto size = hdr.Size();
   auto table = std::make_unique<EncodeTable>(flags);
-  for (int64 i = 0; i < size; ++i) {
+  for (int64_t i = 0; i < size; ++i) {
     table->triples_.emplace_back(std::move(Triple::Read(strm)));
     table->triple2label_[table->triples_.back().get()] = table->triples_.size();
   }
@@ -270,11 +276,7 @@ bool EncodeTable<Arc>::Write(std::ostream &strm,
   hdr.SetFlags(flags_);  // Real flags, not masked ones.
   hdr.SetSize(Size());
   if (!hdr.Write(strm, source)) return false;
-  for (const auto &triple : triples_) {
-    WriteType(strm, triple->ilabel);
-    WriteType(strm, triple->olabel);
-    WriteType(strm, triple->weight);
-  }
+  for (const auto &triple : triples_) triple->Write(strm);
   if (flags_ & kEncodeHasISymbols) isymbols_->Write(strm);
   if (flags_ & kEncodeHasOSymbols) osymbols_->Write(strm);
   strm.flush();
@@ -309,7 +311,7 @@ class EncodeMapper {
   using Weight = typename Arc::Weight;
 
  public:
-  explicit EncodeMapper(uint8 flags, EncodeType type = ENCODE)
+  explicit EncodeMapper(uint8_t flags, EncodeType type = ENCODE)
       : flags_(flags),
         type_(type),
         table_(std::make_shared<internal::EncodeTable<Arc>>(flags)),
@@ -344,12 +346,12 @@ class EncodeMapper {
     return MAP_CLEAR_SYMBOLS;
   }
 
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
-  uint64 Properties(uint64 inprops) {
-    uint64 outprops = inprops;
+  uint64_t Properties(uint64_t inprops) {
+    uint64_t outprops = inprops;
     if (error_) outprops |= kError;
-    uint64 mask = kFstProperties;
+    uint64_t mask = kFstProperties;
     if (flags_ & kEncodeLabels) {
       mask &= kILabelInvariantProperties & kOLabelInvariantProperties;
     }
@@ -407,12 +409,12 @@ class EncodeMapper {
   }
 
  private:
-  uint8 flags_;
+  uint8_t flags_;
   EncodeType type_;
   std::shared_ptr<internal::EncodeTable<Arc>> table_;
   bool error_;
 
-  explicit EncodeMapper(uint8 flags, EncodeType type,
+  explicit EncodeMapper(uint8_t flags, EncodeType type,
                         internal::EncodeTable<Arc> *table)
       : flags_(flags), type_(type), table_(table), error_(false) {}
 

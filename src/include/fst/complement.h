@@ -21,10 +21,10 @@
 #define FST_COMPLEMENT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/fst.h>
@@ -105,10 +105,10 @@ class ComplementFstImpl : public FstImpl<A> {
     return s == 0 ? 0 : fst_->NumOutputEpsilons(s - 1);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && fst_->Properties(kError, false)) {
       SetProperties(kError, kError);
     }
@@ -165,16 +165,13 @@ class ComplementFst : public ImplToFst<internal::ComplementFstImpl<A>> {
 
   // Label that represents the ρ-transition; we use a negative value private to
   // the library and which will preserve FST label sort order.
-  static const Label kRhoLabel = -2;
+  static constexpr Label kRhoLabel = -2;
 
  private:
   using ImplToFst<Impl>::GetImpl;
 
   ComplementFst &operator=(const ComplementFst &) = delete;
 };
-
-template <class Arc>
-const typename Arc::Label ComplementFst<Arc>::kRhoLabel;
 
 // Specialization for ComplementFst.
 template <class Arc>
@@ -262,9 +259,9 @@ class ArcIterator<ComplementFst<Arc>> : public ArcIteratorBase<Arc> {
     pos_ = a;
   }
 
-  uint8 Flags() const final { return kArcValueFlags; }
+  uint8_t Flags() const final { return kArcValueFlags; }
 
-  void SetFlags(uint8, uint8) final {}
+  void SetFlags(uint8_t, uint8_t) final {}
 
  private:
   std::unique_ptr<ArcIterator<Fst<Arc>>> aiter_;

@@ -21,10 +21,10 @@
 #ifndef FST_SPARSE_POWER_WEIGHT_H_
 #define FST_SPARSE_POWER_WEIGHT_H_
 
+#include <cstdint>
 #include <random>
 #include <string>
 
-#include <fst/types.h>
 
 #include <fst/sparse-tuple-weight.h>
 #include <fst/weight.h>
@@ -84,7 +84,7 @@ class SparsePowerWeight : public SparseTupleWeight<W, K> {
   static const std::string &Type() {
     static const std::string *const type = [] {
       std::string type = W::Type() + "_^n";
-      if (sizeof(K) != sizeof(uint32)) {
+      if (sizeof(K) != sizeof(uint32_t)) {
         type += "_" + std::to_string(CHAR_BIT * sizeof(K));
       }
       return new std::string(type);
@@ -92,7 +92,7 @@ class SparsePowerWeight : public SparseTupleWeight<W, K> {
     return *type;
   }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return W::Properties() &
            (kLeftSemiring | kRightSemiring | kCommutative | kIdempotent);
   }
@@ -207,7 +207,7 @@ class WeightGenerate<SparsePowerWeight<W, K>> {
   using Weight = SparsePowerWeight<W, K>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true, size_t sparse_power_rank = 3)
       : generate_(seed, allow_zero), sparse_power_rank_(sparse_power_rank) {}
 

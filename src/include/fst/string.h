@@ -20,6 +20,7 @@
 #ifndef FST_STRING_H_
 #define FST_STRING_H_
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
 #include <sstream>
@@ -27,7 +28,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/compact-fst.h>
@@ -37,13 +37,14 @@
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 
+#include <fst/compat.h>
 #include <string_view>
 
 DECLARE_string(fst_field_separator);
 
 namespace fst {
 
-enum class TokenType : uint8 { SYMBOL = 1, BYTE = 2, UTF8 = 3 };
+enum class TokenType : uint8_t { SYMBOL = 1, BYTE = 2, UTF8 = 3 };
 
 inline std::ostream &operator<<(std::ostream &strm,
                                 const TokenType &token_type) {
@@ -64,7 +65,7 @@ template <class Label>
 bool ConvertSymbolToLabel(std::string_view str, const SymbolTable *syms,
                           Label unknown_label, bool allow_negative,
                           Label *output) {
-  int64 n;
+  int64_t n;
   if (syms) {
     n = syms->Find(str);
     if ((n == kNoSymbol) && (unknown_label != kNoLabel)) n = unknown_label;
@@ -88,11 +89,10 @@ bool ConvertSymbolToLabel(std::string_view str, const SymbolTable *syms,
 }
 
 template <class Label>
-bool ConvertStringToLabels(const std::string &str, TokenType token_type,
-                           const SymbolTable *syms, Label unknown_label,
-                           bool allow_negative, std::vector<Label> *labels,
-                           const std::string &sep =
-                               FST_FLAGS_fst_field_separator) {
+bool ConvertStringToLabels(
+    std::string_view str, TokenType token_type, const SymbolTable *syms,
+    Label unknown_label, bool allow_negative, std::vector<Label> *labels,
+    const std::string &sep = FST_FLAGS_fst_field_separator) {
   labels->clear();
   switch (token_type) {
     case TokenType::BYTE: {
@@ -103,8 +103,9 @@ bool ConvertStringToLabels(const std::string &str, TokenType token_type,
       return UTF8StringToLabels(str, labels);
     }
     case TokenType::SYMBOL: {
-      const std::string separator = "\n" + sep;
-      for (std::string_view c : SplitString(str, separator, true)) {
+      const std::string separator = fst::StrCat("\n", sep);
+      for (std::string_view c :
+           StrSplit(str, ByAnyChar(separator), SkipEmpty())) {
         Label label;
         if (!ConvertSymbolToLabel(c, syms, unknown_label, allow_negative,
                                   &label)) {
@@ -122,12 +123,12 @@ bool ConvertStringToLabels(const std::string &str, TokenType token_type,
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
-bool LabelsToSymbolString(
-    const std::vector<Label> &labels, std::string *str, const SymbolTable &syms,
-    const std::string &sep = FST_FLAGS_fst_field_separator,
-    bool omit_epsilon = true) {
+bool LabelsToSymbolString(const std::vector<Label> &labels, std::string *str,
+                          const SymbolTable &syms, std::string_view sep,
+                          bool omit_epsilon) {
   std::stringstream ostrm;
-  std::string delim = "";
+  sep.remove_prefix(sep.size() - 1);  // We only respect the final char of sep.
+  std::string_view delim = "";
   for (auto label : labels) {
     if (omit_epsilon && !label) continue;
     ostrm << delim;
@@ -139,7 +140,7 @@ bool LabelsToSymbolString(
       return false;
     }
     ostrm << symbol;
-    delim = std::string(1, sep.back());
+    delim = sep;
   }
   *str = ostrm.str();
   return !!ostrm;
@@ -149,17 +150,16 @@ bool LabelsToSymbolString(
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
-bool LabelsToNumericString(
-    const std::vector<Label> &labels, std::string *str,
-    const std::string &sep = FST_FLAGS_fst_field_separator,
-    bool omit_epsilon = true) {
+bool LabelsToNumericString(const std::vector<Label> &labels, std::string *str,
+                           std::string_view sep, bool omit_epsilon) {
   std::stringstream ostrm;
-  std::string delim = "";
+  sep.remove_prefix(sep.size() - 1);  // We only respect the final char of sep.
+  std::string_view delim = "";
   for (auto label : labels) {
     if (omit_epsilon && !label) continue;
     ostrm << delim;
     ostrm << label;
-    delim = std::string(1, sep.back());
+    delim = sep;
   }
   *str = ostrm.str();
   return !!ostrm;
@@ -189,9 +189,9 @@ class StringCompiler {
   // of '\n' which is always treated as a separator.
   // Returns true on success.
   template <class FST>
-  bool operator()(const std::string &str, FST *fst,
-                  const std::string &sep =
-                      FST_FLAGS_fst_field_separator) const {
+  bool operator()(
+      std::string_view str, FST *fst,
+      const std::string &sep = FST_FLAGS_fst_field_separator) const {
     std::vector<Label> labels;
     if (!internal::ConvertStringToLabels(str, token_type_, syms_,
                                          unknown_label_, allow_negative_,
@@ -205,7 +205,7 @@ class StringCompiler {
   // Same as above but allows to specify a weight for the string.
   template <class FST>
   bool operator()(
-      const std::string &str, FST *fst, Weight weight,
+      std::string_view str, FST *fst, Weight weight,
       const std::string &sep = FST_FLAGS_fst_field_separator) const {
     std::vector<Label> labels;
     if (!internal::ConvertStringToLabels(str, token_type_, syms_,
@@ -346,9 +346,9 @@ class StringPrinter {
 
   // Converts the FST into a string. With SYMBOL token type, the last character
   // of sep is used as a separator between symbols. Returns true on success.
-  bool operator()(const Fst<Arc> &fst, std::string *str,
-                  const std::string &sep =
-                      FST_FLAGS_fst_field_separator) const {
+  bool operator()(
+      const Fst<Arc> &fst, std::string *str,
+      const std::string &sep = FST_FLAGS_fst_field_separator) const {
     std::vector<Label> labels;
     return StringFstToOutputLabels(fst, &labels) &&
            LabelsToString(labels, str, token_type_, syms_, sep, omit_epsilon_);

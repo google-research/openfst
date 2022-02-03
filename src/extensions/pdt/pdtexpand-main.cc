@@ -17,6 +17,7 @@
 //
 // Expands a (bounded-stack) PDT as an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -24,7 +25,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
@@ -65,7 +65,7 @@ int pdtexpand_main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
+  std::vector<std::pair<int64_t, int64_t>> parens;
   if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens, false))
     return 1;
 
@@ -75,10 +75,10 @@ int pdtexpand_main(int argc, char **argv) {
           : WeightClass(ifst->WeightType(), FST_FLAGS_weight);
 
   VectorFstClass ofst(ifst->ArcType());
-  s::PdtExpand(*ifst, parens, &ofst,
-               s::PdtExpandOptions(FST_FLAGS_connect,
-                                   FST_FLAGS_keep_parentheses,
-                                   weight_threshold));
+  s::Expand(*ifst, parens, &ofst,
+            s::PdtExpandOptions(FST_FLAGS_connect,
+                                FST_FLAGS_keep_parentheses,
+                                weight_threshold));
 
   return !ofst.Write(out_name);
 }

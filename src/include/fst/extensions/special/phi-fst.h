@@ -18,7 +18,10 @@
 #ifndef FST_EXTENSIONS_SPECIAL_PHI_FST_H_
 #define FST_EXTENSIONS_SPECIAL_PHI_FST_H_
 
+#include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 
 #include <fst/const-fst.h>
@@ -54,7 +57,7 @@ class PhiFstMatcherData {
     auto *data = new PhiFstMatcherData<Label>();
     ReadType(istrm, &data->phi_label_);
     ReadType(istrm, &data->phi_loop_);
-    int32 rewrite_mode;
+    int32_t rewrite_mode;
     ReadType(istrm, &rewrite_mode);
     data->rewrite_mode_ = static_cast<MatcherRewriteMode>(rewrite_mode);
     return data;
@@ -63,7 +66,7 @@ class PhiFstMatcherData {
   bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
     WriteType(ostrm, phi_label_);
     WriteType(ostrm, phi_loop_);
-    WriteType(ostrm, static_cast<int32>(rewrite_mode_));
+    WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
     return !ostrm ? false : true;
   }
 
@@ -90,10 +93,12 @@ class PhiFstMatcherData {
 
 }  // namespace internal
 
-constexpr uint8 kPhiFstMatchInput = 0x01;   // Input matcher is PhiMatcher.
-constexpr uint8 kPhiFstMatchOutput = 0x02;  // Output matcher is PhiMatcher.
+inline constexpr uint8_t kPhiFstMatchInput =
+    0x01;  // Input matcher is PhiMatcher.
+inline constexpr uint8_t kPhiFstMatchOutput =
+    0x02;  // Output matcher is PhiMatcher.
 
-template <class M, uint8 flags = kPhiFstMatchInput | kPhiFstMatchOutput>
+template <class M, uint8_t flags = kPhiFstMatchInput | kPhiFstMatchOutput>
 class PhiFstMatcher : public PhiMatcher<M> {
  public:
   using FST = typename M::FST;
@@ -103,7 +108,7 @@ class PhiFstMatcher : public PhiMatcher<M> {
   using Weight = typename Arc::Weight;
   using MatcherData = internal::PhiFstMatcherData<Label>;
 
-  enum : uint8 { kFlags = flags };
+  static constexpr uint8_t kFlags = flags;
 
   // This makes a copy of the FST.
   PhiFstMatcher(
@@ -149,9 +154,9 @@ class PhiFstMatcher : public PhiMatcher<M> {
   std::shared_ptr<MatcherData> data_;
 };
 
-extern const char phi_fst_type[];
-extern const char input_phi_fst_type[];
-extern const char output_phi_fst_type[];
+inline constexpr char phi_fst_type[] = "phi";
+inline constexpr char input_phi_fst_type[] = "input_phi";
+inline constexpr char output_phi_fst_type[] = "output_phi";
 
 template <class Arc>
 using PhiFst =

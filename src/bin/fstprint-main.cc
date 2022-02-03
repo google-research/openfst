@@ -18,6 +18,7 @@
 // Prints out binary FSTs in simple text format used by AT&T.
 
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>

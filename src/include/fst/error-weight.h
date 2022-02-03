@@ -15,6 +15,7 @@
 #ifndef FST_ERROR_WEIGHT_H_
 #define FST_ERROR_WEIGHT_H_
 
+#include <cstdint>
 #include <ostream>
 #include <string>
 
@@ -29,13 +30,13 @@ struct ErrorWeight {
 
   ErrorWeight() { FSTERROR() << "ErrorWeight::ErrorWeight called"; }
 
-  uint64 Hash() const { return 0; }
+  uint64_t Hash() const { return 0; }
   bool Member() const { return false; }
   ErrorWeight Quantize(float = 0.0) const { return ErrorWeight(); }
   ReverseWeight Reverse() const { return ErrorWeight(); }
   void Write(std::ostream &) const { }
 
-  static constexpr uint64 Properties() { return 0; }
+  static constexpr uint64_t Properties() { return 0; }
   static ErrorWeight Zero() { return ErrorWeight(); }
   static ErrorWeight One() { return ErrorWeight(); }
   static ErrorWeight NoWeight() { return ErrorWeight(); }

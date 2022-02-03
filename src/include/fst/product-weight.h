@@ -20,11 +20,11 @@
 #ifndef FST_PRODUCT_WEIGHT_H_
 #define FST_PRODUCT_WEIGHT_H_
 
+#include <cstdint>
 #include <random>
 #include <string>
 #include <utility>
 
-#include <fst/types.h>
 
 #include <fst/pair-weight.h>
 #include <fst/weight.h>
@@ -68,7 +68,7 @@ class ProductWeight : public PairWeight<W1, W2> {
     return *type;
   }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return W1::Properties() & W2::Properties() &
            (kLeftSemiring | kRightSemiring | kCommutative | kIdempotent);
   }
@@ -141,7 +141,7 @@ class WeightGenerate<ProductWeight<W1, W2>> {
   using Weight = ProductWeight<W1, W2>;
   using Generate = WeightGenerate<PairWeight<W1, W2>>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true)
       : generate_(seed, allow_zero) {}
 

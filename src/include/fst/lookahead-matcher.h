@@ -21,12 +21,12 @@
 #ifndef FST_LOOKAHEAD_MATCHER_H_
 #define FST_LOOKAHEAD_MATCHER_H_
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/add-on.h>
@@ -75,7 +75,7 @@ namespace fst {
 //  void InitLookAheadFst(const Fst<Arc> &fst, bool copy = false) override;
 //
 //  // Are there paths from a state in the lookahead FST that can be read from
-//  // the curent matcher state?
+//  // the current matcher state?
 //  bool LookAheadFst(const Fst<Arc> &fst, StateId s) override;
 //
 //  // Can the label be read from the current matcher state after possibly
@@ -101,35 +101,35 @@ namespace fst {
 
 // Look-ahead flags.
 // Matcher is a lookahead matcher when match_type is MATCH_INPUT.
-constexpr uint32 kInputLookAheadMatcher = 0x00000010;
+inline constexpr uint32_t kInputLookAheadMatcher = 0x00000010;
 
 // Matcher is a lookahead matcher when match_type is MATCH_OUTPUT.
-constexpr uint32 kOutputLookAheadMatcher = 0x00000020;
+inline constexpr uint32_t kOutputLookAheadMatcher = 0x00000020;
 
 // Is a non-trivial implementation of LookAheadWeight() method defined and
 // if so, should it be used?
-constexpr uint32 kLookAheadWeight = 0x00000040;
+inline constexpr uint32_t kLookAheadWeight = 0x00000040;
 
 // Is a non-trivial implementation of LookAheadPrefix() method defined and
 // if so, should it be used?
-constexpr uint32 kLookAheadPrefix = 0x00000080;
+inline constexpr uint32_t kLookAheadPrefix = 0x00000080;
 
 // Look-ahead of matcher FST non-epsilon arcs?
-constexpr uint32 kLookAheadNonEpsilons = 0x00000100;
+inline constexpr uint32_t kLookAheadNonEpsilons = 0x00000100;
 
 // Look-ahead of matcher FST epsilon arcs?
-constexpr uint32 kLookAheadEpsilons = 0x00000200;
+inline constexpr uint32_t kLookAheadEpsilons = 0x00000200;
 
 // Ignore epsilon paths for the lookahead prefix? This gives correct results in
 // composition only with an appropriate composition filter since it depends on
 // the filter blocking the ignored paths.
-constexpr uint32 kLookAheadNonEpsilonPrefix = 0x00000400;
+inline constexpr uint32_t kLookAheadNonEpsilonPrefix = 0x00000400;
 
 // For LabelLookAheadMatcher, save relabeling data to file?
-constexpr uint32 kLookAheadKeepRelabelData = 0x00000800;
+inline constexpr uint32_t kLookAheadKeepRelabelData = 0x00000800;
 
 // Flags used for lookahead matchers.
-constexpr uint32 kLookAheadFlags = 0x00000ff0;
+inline constexpr uint32_t kLookAheadFlags = 0x00000ff0;
 
 // LookAhead Matcher interface, templated on the Arc definition; used
 // for lookahead matcher specializations that are returned by the
@@ -220,11 +220,11 @@ class TrivialLookAheadMatcher
 
   const FST &GetFst() const override { return matcher_.GetFst(); }
 
-  uint64 Properties(uint64 props) const override {
+  uint64_t Properties(uint64_t props) const override {
     return matcher_.Properties(props);
   }
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     return matcher_.Flags() | kInputLookAheadMatcher | kOutputLookAheadMatcher;
   }
 
@@ -246,8 +246,8 @@ class TrivialLookAheadMatcher
 
 // Look-ahead of one transition. Template argument flags accepts flags to
 // control behavior.
-template <class M, uint32 flags = kLookAheadNonEpsilons | kLookAheadEpsilons |
-                                  kLookAheadWeight | kLookAheadPrefix>
+template <class M, uint32_t flags = kLookAheadNonEpsilons | kLookAheadEpsilons |
+                                    kLookAheadWeight | kLookAheadPrefix>
 class ArcLookAheadMatcher : public LookAheadMatcherBase<typename M::FST::Arc> {
  public:
   using FST = typename M::FST;
@@ -264,7 +264,7 @@ class ArcLookAheadMatcher : public LookAheadMatcherBase<typename M::FST::Arc> {
   using LookAheadMatcherBase<Arc>::LookAheadPrefix;
   using LookAheadMatcherBase<Arc>::SetLookAheadPrefix;
 
-  enum : uint32 { kFlags = flags };
+  static constexpr uint32_t kFlags = flags;
 
   // This makes a copy of the FST.
   ArcLookAheadMatcher(const FST &fst, MatchType match_type,
@@ -315,11 +315,11 @@ class ArcLookAheadMatcher : public LookAheadMatcherBase<typename M::FST::Arc> {
 
   const FST &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 props) const override {
+  uint64_t Properties(uint64_t props) const override {
     return matcher_.Properties(props);
   }
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     return matcher_.Flags() | kInputLookAheadMatcher | kOutputLookAheadMatcher |
            kFlags;
   }
@@ -347,7 +347,7 @@ class ArcLookAheadMatcher : public LookAheadMatcherBase<typename M::FST::Arc> {
   StateId state_;         // Matcher state.
 };
 
-template <class M, uint32 flags>
+template <class M, uint32_t flags>
 bool ArcLookAheadMatcher<M, flags>::LookAheadFst(const Fst<Arc> &fst,
                                                  StateId s) {
   if (&fst != lfst_) InitLookAheadFst(fst);
@@ -423,9 +423,9 @@ bool ArcLookAheadMatcher<M, flags>::LookAheadFst(const Fst<Arc> &fst,
 // Template argument flags accepts flags to control behavior. It must include
 // precisely one of kInputLookAheadMatcher or kOutputLookAheadMatcher.
 template <class M,
-          uint32 flags = kLookAheadEpsilons | kLookAheadWeight |
-                         kLookAheadPrefix | kLookAheadNonEpsilonPrefix |
-                         kLookAheadKeepRelabelData,
+          uint32_t flags = kLookAheadEpsilons | kLookAheadWeight |
+                           kLookAheadPrefix | kLookAheadNonEpsilonPrefix |
+                           kLookAheadKeepRelabelData,
           class Accum = DefaultAccumulator<typename M::Arc>,
           class R = LabelReachable<typename M::Arc, Accum>>
 class LabelLookAheadMatcher
@@ -453,7 +453,7 @@ class LabelLookAheadMatcher
                     !(flags & kOutputLookAheadMatcher),
                 "Must include precisely one of kInputLookAheadMatcher and "
                 "kOutputLookAheadMatcher");
-  enum : uint32 { kFlags = flags };
+  static constexpr uint32_t kFlags = flags;
 
   // This makes a copy of the FST.
   LabelLookAheadMatcher(const FST &fst, MatchType match_type,
@@ -521,7 +521,7 @@ class LabelLookAheadMatcher
 
   const FST &GetFst() const override { return matcher_.GetFst(); }
 
-  uint64 Properties(uint64 inprops) const override {
+  uint64_t Properties(uint64_t inprops) const override {
     auto outprops = matcher_.Properties(inprops);
     if (error_ || (label_reachable_ && label_reachable_->Error())) {
       outprops |= kError;
@@ -529,7 +529,7 @@ class LabelLookAheadMatcher
     return outprops;
   }
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     if (label_reachable_ && label_reachable_->GetData()->ReachInput()) {
       return matcher_.Flags() | kFlags | kInputLookAheadMatcher;
     } else if (label_reachable_ && !label_reachable_->GetData()->ReachInput()) {
@@ -613,7 +613,7 @@ class LabelLookAheadMatcher
   bool error_;                                  // Error encountered?
 };
 
-template <class M, uint32 flags, class Accumulator, class Reachable>
+template <class M, uint32_t flags, class Accumulator, class Reachable>
 template <class LFST>
 inline bool LabelLookAheadMatcher<M, flags, Accumulator,
                                   Reachable>::LookAheadFst(const LFST &fst,
@@ -726,7 +726,7 @@ inline LabelLookAheadRelabeler<Arc, Data>::LabelLookAheadRelabeler(
     // Borrow pointer from fst without increasing ref count; it will
     // be released below. We do not want to call Copy() since that would
     // do a deep copy when the Fst is modified.
-    mfst.reset(fst::down_cast<MutableFst<Arc> *>(&fst));
+    mfst.reset(down_cast<MutableFst<Arc> *>(&fst));
   } else {
     mfst = std::make_unique<VectorFst<Arc>>(fst);
   }
@@ -800,15 +800,15 @@ class LookAheadMatcher {
 
   ssize_t Priority(StateId s) { return base_->Priority(s); }
 
-  const FST &GetFst() const { return fst::down_cast<const FST &>(base_->GetFst()); }
+  const FST &GetFst() const { return down_cast<const FST &>(base_->GetFst()); }
 
-  uint64 Properties(uint64 props) const { return base_->Properties(props); }
+  uint64_t Properties(uint64_t props) const { return base_->Properties(props); }
 
-  uint32 Flags() const { return base_->Flags(); }
+  uint32_t Flags() const { return base_->Flags(); }
 
   bool LookAheadLabel(Label label) const {
     if (LookAheadCheck()) {
-      return fst::down_cast<LBase *>(base_.get())->LookAheadLabel(label);
+      return down_cast<LBase *>(base_.get())->LookAheadLabel(label);
     } else {
       return true;
     }
@@ -816,7 +816,7 @@ class LookAheadMatcher {
 
   bool LookAheadFst(const Fst<Arc> &fst, StateId s) {
     if (LookAheadCheck()) {
-      return fst::down_cast<LBase *>(base_.get())->LookAheadFst(fst, s);
+      return down_cast<LBase *>(base_.get())->LookAheadFst(fst, s);
     } else {
       return true;
     }
@@ -824,7 +824,7 @@ class LookAheadMatcher {
 
   Weight LookAheadWeight() const {
     if (LookAheadCheck()) {
-      return fst::down_cast<LBase *>(base_.get())->LookAheadWeight();
+      return down_cast<LBase *>(base_.get())->LookAheadWeight();
     } else {
       return Weight::One();
     }
@@ -832,7 +832,7 @@ class LookAheadMatcher {
 
   bool LookAheadPrefix(Arc *arc) const {
     if (LookAheadCheck()) {
-      return fst::down_cast<LBase *>(base_.get())->LookAheadPrefix(arc);
+      return down_cast<LBase *>(base_.get())->LookAheadPrefix(arc);
     } else {
       return false;
     }
@@ -840,7 +840,7 @@ class LookAheadMatcher {
 
   void InitLookAheadFst(const Fst<Arc> &fst, bool copy = false) {
     if (LookAheadCheck()) {
-      fst::down_cast<LBase *>(base_.get())->InitLookAheadFst(fst, copy);
+      down_cast<LBase *>(base_.get())->InitLookAheadFst(fst, copy);
     }
   }
 

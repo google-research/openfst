@@ -24,6 +24,7 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/script/arcfilter-impl.h>
 #include <fst/script/getters.h>
 #include <fst/script/shortest-distance.h>
 #include <fst/script/text-io.h>

@@ -24,11 +24,11 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/fst.h>
@@ -36,7 +36,7 @@
 namespace fst {
 
 // Identifies stream data as an add-on FST.
-static constexpr int32 kAddOnMagicNumber = 446681434;
+inline constexpr int32_t kAddOnMagicNumber = 446681434;
 
 // Nothing to save.
 class NullAddOn {
@@ -176,7 +176,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
     auto impl = fst::WrapUnique(new AddOnImpl(nopts.header->FstType()));
     if (!impl->ReadHeader(strm, nopts, kMinFileVersion, &hdr)) return nullptr;
     impl.reset();
-    int32 magic_number = 0;
+    int32_t magic_number = 0;
     ReadType(strm, &magic_number);  // Ensures this is an add-on FST.
     if (magic_number != kAddOnMagicNumber) {
       LOG(ERROR) << "AddOnImpl::Read: Bad add-on header: " << nopts.source;
@@ -247,12 +247,6 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
 
   AddOnImpl &operator=(const AddOnImpl &) = delete;
 };
-
-template <class FST, class T>
-constexpr int AddOnImpl<FST, T>::kFileVersion;
-
-template <class FST, class T>
-constexpr int AddOnImpl<FST, T>::kMinFileVersion;
 
 }  // namespace internal
 }  // namespace fst

@@ -21,6 +21,7 @@
 #ifndef FST_DFS_VISIT_H_
 #define FST_DFS_VISIT_H_
 
+#include <cstdint>
 #include <stack>
 #include <vector>
 
@@ -114,7 +115,7 @@ void DfsVisit(const FST &fst, Visitor *visitor, ArcFilter filter,
     return;
   }
   // An FST state's DFS status
-  enum class StateColor : uint8 {
+  enum class StateColor : uint8_t {
     kWhite = 0,  // Undiscovered.
     kGrey = 1,   // Discovered but unfinished.
     kBlack = 2,  // Finished.

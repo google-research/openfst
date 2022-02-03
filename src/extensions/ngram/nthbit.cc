@@ -17,7 +17,8 @@
 
 #include <fst/extensions/ngram/nthbit.h>
 
-#include <fst/types.h>
+#include <cstdint>
+
 
 namespace fst {
 
@@ -30,7 +31,7 @@ namespace fst {
 
 // These tables were generated using:
 //
-//  uint32 nth_bit_scan(uint64 v, uint32 r) {
+//  uint32_t nth_bit_scan(uint64_t v, uint32_t r) {
 //    for (int i = 0; i < 64; ++i) {
 //      if ((r -= v & 1) == 0) return i;
 //      v >>= 1;
@@ -38,17 +39,17 @@ namespace fst {
 //    return -1;
 //  }
 //
-//  printf("static const uint8 nth_bit_bit_count[256] = {\n");
+//  printf("static const uint8_t nth_bit_bit_count[256] = {\n");
 //  for (size_t i = 0; i < 256; ++i) {
 //    printf("%d, ", __builtin_popcount(i));
 //    if (i % 16 == 15) printf("\n");
 //  }
 //  printf("};\n");
 //
-//  printf("static const uint8 nth_bit_bit_pos[8][256] = {{\n");
+//  printf("static const uint8_t nth_bit_bit_pos[8][256] = {{\n");
 //  for (size_t j = 0; j < 8; ++j) {
 //    for (size_t i = 0; i < 256; ++i) {
-//      uint8 pos = nth_bit_scan(i, j);
+//      uint8_t pos = nth_bit_scan(i, j);
 //      printf("%d, ", pos);
 //      if (i % 16 == 15) printf("\n");
 //    }
@@ -58,7 +59,7 @@ namespace fst {
 //
 // This table contains the popcount of 1-byte values:
 // nth_bit_bit_count[v] == __builtin_popcount(v).
-static const uint8 nth_bit_bit_count[256] = {
+static const uint8_t nth_bit_bit_count[256] = {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4,
     2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -75,7 +76,7 @@ static const uint8 nth_bit_bit_count[256] = {
 // This table contains the bit position of the r-th set bit in v, for 1-byte v,
 // (or 255 if there are fewer than r bits set, but those values are never used):
 // nth_bit_bit_pos[r][v] == nth_bit_scan(v, r).
-static const uint8 nth_bit_bit_pos[8][256] = {
+static const uint8_t nth_bit_bit_pos[8][256] = {
     {
         255, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0,
         1,   0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0,
@@ -231,13 +232,13 @@ static const uint8 nth_bit_bit_pos[8][256] = {
         255, 255, 255, 7,
     }};
 
-uint32 nth_bit(const uint64 v, uint32 r) {
+uint32_t nth_bit(const uint64_t v, uint32_t r) {
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
   DCHECK_LT(r, __builtin_popcountll(v));
 
-  uint32 next_byte = v & 255;
-  uint32 byte_popcount = nth_bit_bit_count[next_byte];
+  uint32_t next_byte = v & 255;
+  uint32_t byte_popcount = nth_bit_bit_count[next_byte];
   if (r < byte_popcount) return nth_bit_bit_pos[r][next_byte];
   r -= byte_popcount;
   next_byte = (v >> 8) & 255;
@@ -273,14 +274,14 @@ uint32 nth_bit(const uint64 v, uint32 r) {
 #elif SIZE_MAX == UINT64_MAX  // 64-bit, non-BMI2
 // These tables are generated using:
 //
-//  constexpr uint64 kOnesStep8 = 0x0101010101010101;
-//  printf("const uint64 kPrefixSumOverflow[64] = {\n");
+//  constexpr uint64_t kOnesStep8 = 0x0101010101010101;
+//  printf("const uint64_t kPrefixSumOverflow[64] = {\n");
 //  for (int k = 0; k < 64; ++k) {
 //    printf("  0x%x,\n",  (0x7F - k) * kOnesStep8);
 //  }
 //  printf("};\n");
 //
-//  printf("const uint8 kSelectInByte[8 * 256] = {\n");
+//  printf("const uint8_t kSelectInByte[8 * 256] = {\n");
 //  for (int j = 0; j < 8; ++j) {
 //    for (int i = 0; i < 256; ++i) {
 //      if (i > 0) printf(" ");
@@ -295,7 +296,7 @@ uint32 nth_bit(const uint64 v, uint32 r) {
 namespace internal {
 
 // clang-format off
-const uint64 kPrefixSumOverflow[64] = {
+const uint64_t kPrefixSumOverflow[64] = {
   0x7f7f7f7f7f7f7f7f,
   0x7e7e7e7e7e7e7e7e,
   0x7d7d7d7d7d7d7d7d,
@@ -362,7 +363,7 @@ const uint64 kPrefixSumOverflow[64] = {
   0x4040404040404040
 };
 
-const uint8 kSelectInByte[8 * 256] = {
+const uint8_t kSelectInByte[8 * 256] = {
   0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
   5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,

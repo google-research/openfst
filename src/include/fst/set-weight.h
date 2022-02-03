@@ -23,12 +23,11 @@
 #define FST_SET_WEIGHT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <list>
 #include <random>
 #include <string>
 #include <vector>
-
-#include <fst/types.h>
 
 #include <fst/union-weight.h>
 #include <fst/weight.h>
@@ -37,10 +36,10 @@
 
 namespace fst {
 
-constexpr int kSetEmpty = 0;           // Label for the empty set.
-constexpr int kSetUniv = -1;           // Label for the universal set.
-constexpr int kSetBad = -2;            // Label for a non-set.
-constexpr char kSetSeparator[] = "_";  // Label separator in sets.
+inline constexpr int kSetEmpty = 0;         // Label for the empty set.
+inline constexpr int kSetUniv = -1;         // Label for the universal set.
+inline constexpr int kSetBad = -2;          // Label for a non-set.
+inline constexpr char kSetSeparator = '_';  // Label separator in sets.
 
 // Determines whether to use (intersect, union) or (union, intersect)
 // as (+, *) for the semiring. SET_INTERSECT_UNION_RESTRICTED is a
@@ -146,7 +145,7 @@ class SetWeight {
 
   ReverseWeight Reverse() const;
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kIdempotent | kLeftSemiring | kRightSemiring | kCommutative;
   }
 
@@ -247,9 +246,9 @@ class SetWeightIterator {
 template <typename Label, SetType S>
 inline std::istream &SetWeight<Label, S>::Read(std::istream &strm) {
   Clear();
-  int32 size;
+  int32_t size;
   ReadType(strm, &size);
-  for (int32 i = 0; i < size; ++i) {
+  for (int32_t i = 0; i < size; ++i) {
     Label label;
     ReadType(strm, &label);
     PushBack(label);
@@ -259,7 +258,7 @@ inline std::istream &SetWeight<Label, S>::Read(std::istream &strm) {
 
 template <typename Label, SetType S>
 inline std::ostream &SetWeight<Label, S>::Write(std::ostream &strm) const {
-  const int32 size = Size();
+  const int32_t size = Size();
   WriteType(strm, size);
   for (Iterator iter(*this); !iter.Done(); iter.Next()) {
     WriteType(strm, iter.Value());
@@ -366,7 +365,7 @@ inline std::istream &operator>>(std::istream &strm,
     weight = Weight(Label(kSetUniv));
   } else {
     weight.Clear();
-    for (std::string_view sv : SplitString(str, kSetSeparator, false)) {
+    for (std::string_view sv : StrSplit(str, kSetSeparator)) {
       auto maybe_label = ParseInt64(sv);
       if (!maybe_label.has_value()) {
         strm.clear(std::ios::badbit);
@@ -596,7 +595,7 @@ class WeightGenerate<SetWeight<Label, S>> {
  public:
   using Weight = SetWeight<Label, S>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t alphabet_size = kNumRandomWeights,
                           size_t max_set_length = kNumRandomWeights)

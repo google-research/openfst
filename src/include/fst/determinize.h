@@ -22,13 +22,14 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstdint>
 #include <forward_list>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/const-fst.h>
 
@@ -190,11 +191,14 @@ struct DeterminizeArc {
       : label(kNoLabel), weight(Weight::Zero()), dest_tuple(nullptr) {}
 
   explicit DeterminizeArc(const Arc &arc)
-      : label(arc.ilabel), weight(Weight::Zero()), dest_tuple(new StateTuple) {}
+      : label(arc.ilabel),
+        weight(Weight::Zero()),
+        dest_tuple(fst::make_unique_for_overwrite<StateTuple>()) {}
 
   Label label;             // Arc label.
   Weight weight;           // Arc weight.
-  StateTuple *dest_tuple;  // Destination subset and filter state.
+  std::unique_ptr<StateTuple>
+      dest_tuple;  // Destination subset and filter state.
 };
 
 }  // namespace internal
@@ -226,12 +230,9 @@ class DefaultDeterminizeFilter {
   explicit DefaultDeterminizeFilter(const Fst<Arc> &fst) : fst_(fst.Copy()) {}
 
   // This is needed (e.g.) to go into the gallic domain for transducers.
-  // Ownership of the templated filter argument is given to this class.
   template <class Filter>
-  DefaultDeterminizeFilter(const Fst<Arc> &fst, Filter *filter)
-      : fst_(fst.Copy()) {
-    delete filter;
-  }
+  DefaultDeterminizeFilter(const Fst<Arc> &fst, std::unique_ptr<Filter> filter)
+      : fst_(fst.Copy()) {}
 
   // Copy constructor; the FST can be passed if it has been deep-copied.
   DefaultDeterminizeFilter(const DefaultDeterminizeFilter<Arc> &filter,
@@ -260,7 +261,7 @@ class DefaultDeterminizeFilter {
   // Filters super-final transition, returning new final weight.
   Weight FilterFinal(Weight weight, const Element &element) { return weight; }
 
-  static uint64 Properties(uint64 props) { return props; }
+  static uint64_t Properties(uint64_t props) { return props; }
 
  private:
   std::unique_ptr<Fst<Arc>> fst_;
@@ -290,7 +291,7 @@ class DefaultDeterminizeFilter {
 //   // Looks up state ID by state tuple; if it doesn't exist, then adds it.
 //   // FindState takes ownership of the state tuple argument so that it
 //   // doesn't have to copy it if it creates a new state.
-//   StateId FindState(StateTuple *tuple);
+//   StateId FindState(std::unique_ptr<StateTuple> tuple);
 //
 //   // Looks up state tuple by ID.
 //   const StateTuple *Tuple(StateId id) const;
@@ -327,10 +328,13 @@ class DefaultDeterminizeStateTable {
   // Finds the state corresponding to a state tuple. Only creates a new state if
   // the tuple is not found. FindState takes ownership of the tuple argument so
   // that it doesn't have to copy it if it creates a new state.
-  StateId FindState(StateTuple *tuple) {
+  StateId FindState(std::unique_ptr<StateTuple> tuple) {
+    StateTuple *raw_tuple = tuple.release();
     const StateId ns = tuples_.Size();
-    const auto s = tuples_.FindId(tuple);
-    if (s != ns) delete tuple;  // Tuple found.
+    // TODO(wolfsonkin): Make CompactHashBiTable support move semantics so we
+    // can store a `std::unique_ptr` in `tuples_`.
+    const auto s = tuples_.FindId(raw_tuple);
+    if (s != ns) delete raw_tuple;  // Tuple found.
     return s;
   }
 
@@ -350,11 +354,11 @@ class DefaultDeterminizeStateTable {
    public:
     size_t operator()(const StateTuple *tuple) const {
       size_t h = tuple->filter_state.Hash();
-      for (auto it = tuple->subset.begin(); it != tuple->subset.end(); ++it) {
-        const size_t h1 = it->state_id;
+      for (auto &element : tuple->subset) {
+        const size_t h1 = element.state_id;
         static constexpr auto lshift = 5;
         static constexpr auto rshift = CHAR_BIT * sizeof(size_t) - 5;
-        h ^= h << 1 ^ h1 << lshift ^ h1 >> rshift ^ it->weight.Hash();
+        h ^= h << 1 ^ h1 << lshift ^ h1 >> rshift ^ element.weight.Hash();
       }
       return h;
     }
@@ -588,10 +592,10 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
     return new DeterminizeFsaImpl(*this);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && (GetFst().Properties(kError, false))) {
       SetProperties(kError, kError);
     }
@@ -601,18 +605,17 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   StateId ComputeStart() override {
     const auto s = GetFst().Start();
     if (s == kNoStateId) return kNoStateId;
-    auto *tuple = new StateTuple;
+    auto tuple = fst::make_unique_for_overwrite<StateTuple>();
     tuple->subset.emplace_front(s, Weight::One());
     tuple->filter_state = filter_->Start();
-    return FindState(tuple);
+    return FindState(std::move(tuple));
   }
 
   Weight ComputeFinal(StateId s) override {
     const auto *tuple = state_table_->Tuple(s);
     filter_->SetState(s, *tuple);
     auto final_weight = Weight::Zero();
-    for (auto it = tuple->subset.begin(); it != tuple->subset.end(); ++it) {
-      const auto &element = *it;
+    for (const auto &element : tuple->subset) {
       final_weight =
           Plus(final_weight,
                Times(element.weight, GetFst().Final(element.state_id)));
@@ -622,10 +625,11 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
     return final_weight;
   }
 
-  StateId FindState(StateTuple *tuple) {
-    const auto s = state_table_->FindState(tuple);
+  StateId FindState(std::unique_ptr<StateTuple> tuple) {
+    const auto &subset = tuple->subset;
+    const auto s = state_table_->FindState(std::move(tuple));
     if (in_dist_ && out_dist_->size() <= s) {
-      out_dist_->push_back(ComputeDistance(tuple->subset));
+      out_dist_->push_back(ComputeDistance(subset));
     }
     return s;
   }
@@ -634,8 +638,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   // distances in the NFA.
   Weight ComputeDistance(const Subset &subset) {
     auto outd = Weight::Zero();
-    for (auto it = subset.begin(); it != subset.end(); ++it) {
-      const auto &element = *it;
+    for (const auto &element : subset) {
       const auto ind =
           (element.state_id < in_dist_->size() ? (*in_dist_)[element.state_id]
                                                : Weight::Zero());
@@ -649,8 +652,8 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   void Expand(StateId s) override {
     LabelMap label_map;
     GetLabelMap(s, &label_map);
-    for (auto it = label_map.begin(); it != label_map.end(); ++it) {
-      AddArc(s, std::move(it->second));
+    for (auto &[unused_label, arc] : label_map) {
+      AddArc(s, std::move(arc));
     }
     SetArcs(s);
   }
@@ -663,9 +666,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   void GetLabelMap(StateId s, LabelMap *label_map) {
     const auto *src_tuple = state_table_->Tuple(s);
     filter_->SetState(s, *src_tuple);
-    for (auto it = src_tuple->subset.begin(); it != src_tuple->subset.end();
-         ++it) {
-      const auto &src_element = *it;
+    for (const auto &src_element : src_tuple->subset) {
       for (ArcIterator<Fst<Arc>> aiter(GetFst(), src_element.state_id);
            !aiter.Done(); aiter.Next()) {
         const auto &arc = aiter.Value();
@@ -675,15 +676,15 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
                            label_map);
       }
     }
-    for (auto it = label_map->begin(); it != label_map->end(); ++it) {
-      NormArc(&it->second);
+    for (auto &[unused_label, arc] : *label_map) {
+      NormArc(&arc);
     }
   }
 
   // Sorts subsets and removes duplicate elements, normalizing transition and
   // subset weights.
   void NormArc(DetArc *det_arc) {
-    auto *dest_tuple = det_arc->dest_tuple;
+    std::unique_ptr<StateTuple> &dest_tuple = det_arc->dest_tuple;
     dest_tuple->subset.sort();
     auto piter = dest_tuple->subset.begin();
     for (auto diter = dest_tuple->subset.begin();
@@ -705,9 +706,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
     }
     // Divides out label weight from destination subset elements, quantizing to
     // ensure comparisons are effective.
-    for (auto diter = dest_tuple->subset.begin();
-         diter != dest_tuple->subset.end(); ++diter) {
-      auto &dest_element = *diter;
+    for (auto &dest_element : dest_tuple->subset) {
       dest_element.weight =
           Divide(dest_element.weight, det_arc->weight, DIVIDE_LEFT);
       dest_element.weight = dest_element.weight.Quantize(delta_);
@@ -719,7 +718,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   void AddArc(StateId s, DetArc &&det_arc) {
     CacheImpl<Arc>::EmplaceArc(s, det_arc.label, det_arc.label,
                                std::move(det_arc.weight),
-                               FindState(det_arc.dest_tuple));
+                               FindState(std::move(det_arc.dest_tuple)));
   }
 
   float delta_;                         // Quantization delta for weights.
@@ -778,7 +777,8 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<Arc> {
       SetProperties(kError, kError);
       return;
     }
-    Init(GetFst(), opts.filter);
+    // Takes ownership of filter.
+    Init(GetFst(), fst::WrapUnique(opts.filter));
   }
 
   DeterminizeFstImpl(const DeterminizeFstImpl &impl)
@@ -793,10 +793,10 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<Arc> {
     return new DeterminizeFstImpl(*this);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && (GetFst().Properties(kError, false) ||
                             from_fst_->Properties(kError, false))) {
       SetProperties(kError, kError);
@@ -819,7 +819,7 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<Arc> {
  private:
   // Initialization of transducer determinization implementation, which is
   // defined after DeterminizeFst since it calls it.
-  void Init(const Fst<Arc> &fst, Filter *filter);
+  void Init(const Fst<Arc> &fst, std::unique_ptr<Filter> filter);
 
   float delta_;
   Label subsequential_label_;
@@ -976,10 +976,11 @@ namespace internal {
 // Initialization of transducer determinization implementation, which is defined
 // after DeterminizeFst since it calls it.
 template <class A, GallicType G, class D, class F, class T>
-void DeterminizeFstImpl<A, G, D, F, T>::Init(const Fst<A> &fst, F *filter) {
+void DeterminizeFstImpl<A, G, D, F, T>::Init(const Fst<A> &fst,
+                                             std::unique_ptr<F> filter) {
   // Mapper to an acceptor.
-  const ToFst to_fst(fst, ToMapper());
-  auto *to_filter = filter ? new ToFilter(to_fst, filter) : nullptr;
+  const ToFst to_fst(fst);
+  auto *to_filter = filter ? new ToFilter(to_fst, std::move(filter)) : nullptr;
   // This recursive call terminates since it is to a (non-recursive)
   // different constructor.
   const CacheOptions copts(GetCacheGc(), GetCacheLimit());

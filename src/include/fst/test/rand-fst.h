@@ -15,9 +15,9 @@
 #ifndef FST_TEST_RAND_FST_H_
 #define FST_TEST_RAND_FST_H_
 
+#include <cstdint>
 #include <random>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/mutable-fst.h>
 #include <fst/verify.h>
@@ -28,7 +28,7 @@ namespace fst {
 template <class Arc, class Generate>
 void RandFst(const int num_random_states, const int num_random_arcs,
              const int num_random_labels, const float acyclic_prob,
-             Generate generate, uint64 seed, MutableFst<Arc> *fst) {
+             Generate generate, uint64_t seed, MutableFst<Arc> *fst) {
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
@@ -96,10 +96,10 @@ void RandFst(const int num_random_states, const int num_random_arcs,
   CHECK(Verify(*fst));
 
   // Get/compute all properties.
-  const uint64 props = fst->Properties(kFstProperties, true);
+  const uint64_t props = fst->Properties(kFstProperties, true);
 
   // Select random set of properties to be unknown.
-  uint64 mask = 0;
+  uint64_t mask = 0;
   for (int n = 0; n < 8; ++n) {
     mask |= std::uniform_int_distribution<>(0, 0xff)(rand);
     mask <<= 8;

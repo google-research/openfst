@@ -24,13 +24,13 @@ namespace script {
 
 bool Isomorphic(const FstClass &fst1, const FstClass &fst2, float delta) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Isomorphic")) return false;
-  IsomorphicInnerArgs iargs(fst1, fst2, delta);
-  IsomorphicArgs args(iargs);
-  Apply<Operation<IsomorphicArgs>>("Isomorphic", fst1.ArcType(), &args);
+  FstIsomorphicInnerArgs iargs{fst1, fst2, delta};
+  FstIsomorphicArgs args(iargs);
+  Apply<Operation<FstIsomorphicArgs>>("Isomorphic", fst1.ArcType(), &args);
   return args.retval;
 }
 
-REGISTER_FST_OPERATION_3ARCS(Isomorphic, IsomorphicArgs);
+REGISTER_FST_OPERATION_3ARCS(Isomorphic, FstIsomorphicArgs);
 
 }  // namespace script
 }  // namespace fst

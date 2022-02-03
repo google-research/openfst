@@ -19,13 +19,15 @@
 
 #include <fst/symbol-table.h>
 
+#include <cstdint>
+
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fstream>
 #include <fst/util.h>
 #include <string_view>
+#include <fst/lock.h>
 
 DEFINE_bool(fst_compat_symbols, true,
             "Require symbol tables to match when appropriate");
@@ -40,20 +42,15 @@ SymbolTableTextOptions::SymbolTableTextOptions(bool allow_negative_labels)
 
 namespace internal {
 
-// Maximum line length in textual symbols file.
-const int kLineLen = 8096;
-
 // Identifies stream data as a symbol table (and its endianity).
-static constexpr int32 kSymbolTableMagicNumber = 2125658996;
-
-constexpr int64 DenseSymbolMap::kEmptyBucket;
+static constexpr int32_t kSymbolTableMagicNumber = 2125658996;
 
 DenseSymbolMap::DenseSymbolMap()
     : str_hash_(),
       buckets_(1 << 4, kEmptyBucket),
       hash_mask_(buckets_.size() - 1) {}
 
-std::pair<int64, bool> DenseSymbolMap::InsertOrFind(std::string_view key) {
+std::pair<int64_t, bool> DenseSymbolMap::InsertOrFind(std::string_view key) {
   static constexpr float kMaxOccupancyRatio = 0.75;  // Grows when 75% full.
   if (Size() >= kMaxOccupancyRatio * buckets_.size()) {
     Rehash(buckets_.size() * 2);
@@ -70,7 +67,7 @@ std::pair<int64, bool> DenseSymbolMap::InsertOrFind(std::string_view key) {
   return {next, true};
 }
 
-int64 DenseSymbolMap::Find(std::string_view key) const {
+int64_t DenseSymbolMap::Find(std::string_view key) const {
   size_t idx = str_hash_(key) & hash_mask_;
   while (buckets_[idx] != kEmptyBucket) {
     const auto stored_value = buckets_[idx];
@@ -111,20 +108,20 @@ std::unique_ptr<SymbolTableImplBase> ConstSymbolTableImpl::Copy() const {
   return nullptr;
 }
 
-int64 ConstSymbolTableImpl::AddSymbol(std::string_view symbol, int64 key) {
+int64_t ConstSymbolTableImpl::AddSymbol(std::string_view symbol, int64_t key) {
   LOG(FATAL) << "ConstSymbolTableImpl does not support AddSymbol";
   return kNoSymbol;
 }
 
-int64 ConstSymbolTableImpl::AddSymbol(std::string_view symbol) {
+int64_t ConstSymbolTableImpl::AddSymbol(std::string_view symbol) {
   return AddSymbol(symbol, kNoSymbol);
 }
 
-void ConstSymbolTableImpl::RemoveSymbol(int64 key) {
+void ConstSymbolTableImpl::RemoveSymbol(int64_t key) {
   LOG(FATAL) << "ConstSymbolTableImpl does not support RemoveSymbol";
 }
 
-void ConstSymbolTableImpl::SetName(const std::string &new_name) {
+void ConstSymbolTableImpl::SetName(std::string_view new_name) {
   LOG(FATAL) << "ConstSymbolTableImpl does not support SetName";
 }
 
@@ -133,20 +130,21 @@ void ConstSymbolTableImpl::AddTable(const SymbolTable &table) {
 }
 
 SymbolTableImpl *SymbolTableImpl::ReadText(std::istream &strm,
-                                           const std::string &source,
+                                           std::string_view name,
                                            const SymbolTableTextOptions &opts) {
-  auto impl = std::make_unique<SymbolTableImpl>(source);
-  int64 nline = 0;
+  auto impl = std::make_unique<SymbolTableImpl>(name);
+  int64_t nline = 0;
   char line[kLineLen];
   const auto separator = opts.fst_field_separator + "\n";
   while (!strm.getline(line, kLineLen).fail()) {
     ++nline;
-    std::vector<std::string_view> col = SplitString(line, separator, true);
+    std::vector<std::string_view> col =
+        StrSplit(line, ByAnyChar(separator), SkipEmpty());
     if (col.empty()) continue;  // Empty line.
     if (col.size() != 2) {
       LOG(ERROR) << "SymbolTable::ReadText: Bad number of columns ("
                  << col.size() << "), "
-                 << "file = " << source << ", line = " << nline << ":<" << line
+                 << "file = " << name << ", line = " << nline << ":<" << line
                  << ">";
       return nullptr;
     }
@@ -158,7 +156,7 @@ SymbolTableImpl *SymbolTableImpl::ReadText(std::istream &strm,
         *maybe_key == kNoSymbol) {
       LOG(ERROR) << "SymbolTable::ReadText: Bad non-negative integer \""
                  << value << "\", "
-                 << "file = " << source << ", line = " << nline;
+                 << "file = " << name << ", line = " << nline;
       return nullptr;
     }
     impl->AddSymbol(symbol, *maybe_key);
@@ -180,33 +178,32 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
   // Calculates the original label-agnostic checksum.
   CheckSummer check_sum;
   for (size_t i = 0; i < symbols_.Size(); ++i) {
-    const auto &symbol = symbols_.GetSymbol(i);
-    check_sum.Update(symbol.data(), symbol.size());
-    check_sum.Update("", 1);
+    check_sum.Update(symbols_.GetSymbol(i));
+    check_sum.Update(std::string_view{"\0", 1});
   }
   check_sum_string_ = check_sum.Digest();
   // Calculates the safer, label-dependent checksum.
   CheckSummer labeled_check_sum;
-  for (int64 i = 0; i < dense_key_limit_; ++i) {
+  for (int64_t i = 0; i < dense_key_limit_; ++i) {
     std::ostringstream line;
     line << symbols_.GetSymbol(i) << '\t' << i;
-    labeled_check_sum.Update(line.str().data(), line.str().size());
+    labeled_check_sum.Update(line.str());
   }
-  using citer = std::map<int64, int64>::const_iterator;
+  using citer = std::map<int64_t, int64_t>::const_iterator;
   for (citer it = key_map_.begin(); it != key_map_.end(); ++it) {
     // TODO(tombagby, 2013-11-22) This line maintains a bug that ignores
     // negative labels in the checksum that too many tests rely on.
     if (it->first < dense_key_limit_) continue;
     std::ostringstream line;
     line << symbols_.GetSymbol(it->second) << '\t' << it->first;
-    labeled_check_sum.Update(line.str().data(), line.str().size());
+    labeled_check_sum.Update(line.str());
   }
   labeled_check_sum_string_ = labeled_check_sum.Digest();
   check_sum_finalized_ = true;
 }
 
-std::string SymbolTableImpl::Find(int64 key) const {
-  int64 idx = key;
+std::string SymbolTableImpl::Find(int64_t key) const {
+  int64_t idx = key;
   if (key < 0 || key >= dense_key_limit_) {
     const auto it = key_map_.find(key);
     if (it == key_map_.end()) return "";
@@ -216,18 +213,18 @@ std::string SymbolTableImpl::Find(int64 key) const {
   return symbols_.GetSymbol(idx);
 }
 
-int64 SymbolTableImpl::AddSymbol(std::string_view symbol, int64 key) {
+int64_t SymbolTableImpl::AddSymbol(std::string_view symbol, int64_t key) {
   if (key == kNoSymbol) return key;
-  const auto insert_key = symbols_.InsertOrFind(symbol);
-  if (!insert_key.second) {
-    const auto key_already = GetNthKey(insert_key.first);
+  if (const auto &[insert_key, inserted] = symbols_.InsertOrFind(symbol);
+      !inserted) {
+    const auto key_already = GetNthKey(insert_key);
     if (key_already == key) return key;
     VLOG(1) << "SymbolTable::AddSymbol: symbol = " << symbol
             << " already in symbol_map_ with key = " << key_already
             << " but supplied new key = " << key << " (ignoring new key)";
     return key_already;
   }
-  if (key + 1 == static_cast<int64>(symbols_.Size()) &&
+  if (key + 1 == static_cast<int64_t>(symbols_.Size()) &&
       key == dense_key_limit_) {
     ++dense_key_limit_;
   } else {
@@ -241,7 +238,7 @@ int64 SymbolTableImpl::AddSymbol(std::string_view symbol, int64 key) {
 
 // TODO(rybach): Consider a more efficient implementation which re-uses holes in
 // the dense-key range or re-arranges the dense-key range from time to time.
-void SymbolTableImpl::RemoveSymbol(const int64 key) {
+void SymbolTableImpl::RemoveSymbol(const int64_t key) {
   auto idx = key;
   if (key < 0 || key >= dense_key_limit_) {
     auto iter = key_map_.find(key);
@@ -249,7 +246,7 @@ void SymbolTableImpl::RemoveSymbol(const int64 key) {
     idx = iter->second;
     key_map_.erase(iter);
   }
-  if (idx < 0 || idx >= static_cast<int64>(symbols_.Size())) return;
+  if (idx < 0 || idx >= static_cast<int64_t>(symbols_.Size())) return;
   symbols_.RemoveSymbol(idx);
   // Removed one symbol, all indexes > idx are shifted by -1.
   for (auto &k : key_map_) {
@@ -258,16 +255,16 @@ void SymbolTableImpl::RemoveSymbol(const int64 key) {
   if (key >= 0 && key < dense_key_limit_) {
     // Removal puts a hole in the dense key range. Adjusts range to [0, key).
     const auto new_dense_key_limit = key;
-    for (int64 i = key + 1; i < dense_key_limit_; ++i) {
+    for (int64_t i = key + 1; i < dense_key_limit_; ++i) {
       key_map_[i] = i - 1;
     }
     // Moves existing values in idx_key to new place.
     idx_key_.resize(symbols_.Size() - new_dense_key_limit);
-    for (int64 i = symbols_.Size(); i >= dense_key_limit_; --i) {
+    for (int64_t i = symbols_.Size(); i >= dense_key_limit_; --i) {
       idx_key_[i - new_dense_key_limit - 1] = idx_key_[i - dense_key_limit_];
     }
     // Adds indexes for previously dense keys.
-    for (int64 i = new_dense_key_limit; i < dense_key_limit_ - 1; ++i) {
+    for (int64_t i = new_dense_key_limit; i < dense_key_limit_ - 1; ++i) {
       idx_key_[i - new_dense_key_limit] = i + 1;
     }
     dense_key_limit_ = new_dense_key_limit;
@@ -283,7 +280,7 @@ void SymbolTableImpl::RemoveSymbol(const int64 key) {
 
 SymbolTableImpl *SymbolTableImpl::Read(std::istream &strm,
                                        std::string_view source) {
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   if (strm.fail()) {
     LOG(ERROR) << "SymbolTable::Read: Read failed: " << source;
@@ -293,16 +290,16 @@ SymbolTableImpl *SymbolTableImpl::Read(std::istream &strm,
   ReadType(strm, &name);
   auto impl = std::make_unique<SymbolTableImpl>(name);
   ReadType(strm, &impl->available_key_);
-  int64 size;
+  int64_t size;
   ReadType(strm, &size);
   if (strm.fail()) {
     LOG(ERROR) << "SymbolTable::Read: Read failed: " << source;
     return nullptr;
   }
   std::string symbol;
-  int64 key;
+  int64_t key;
   impl->check_sum_finalized_ = false;
-  for (int64 i = 0; i < size; ++i) {
+  for (int64_t i = 0; i < size; ++i) {
     ReadType(strm, &symbol);
     ReadType(strm, &key);
     if (strm.fail()) {
@@ -319,9 +316,9 @@ bool SymbolTableImpl::Write(std::ostream &strm) const {
   WriteType(strm, kSymbolTableMagicNumber);
   WriteType(strm, name_);
   WriteType(strm, available_key_);
-  const int64 size = symbols_.Size();
+  const int64_t size = symbols_.Size();
   WriteType(strm, size);
-  for (int64 i = 0; i < dense_key_limit_; ++i) {
+  for (int64_t i = 0; i < dense_key_limit_; ++i) {
     WriteType(strm, symbols_.GetSymbol(i));
     WriteType(strm, i);
   }

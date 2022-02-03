@@ -20,10 +20,13 @@
 
 #include <cstring>
 #include <ios>
+#include <iostream>
 #include <memory>
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/script/arcfilter-impl.h>
+#include <fst/script/getters.h>
 #include <fst/script/info.h>
 
 DECLARE_string(arc_filter);
@@ -87,9 +90,14 @@ int fstinfo_main(int argc, char **argv) {
     std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
     if (!ifst) return 1;
 
-    s::Info(*ifst, FST_FLAGS_test_properties,
-            FST_FLAGS_arc_filter, FST_FLAGS_info_type,
-            FST_FLAGS_fst_verify);
+    s::ArcFilterType arc_filter;
+    if (!s::GetArcFilterType(FST_FLAGS_arc_filter, &arc_filter)) {
+      LOG(ERROR) << argv[0] << ": Unknown or unsupported arc filter type "
+                 << FST_FLAGS_arc_filter;
+      return 1;
+    }
+    s::Info(*ifst, FST_FLAGS_test_properties, arc_filter,
+            FST_FLAGS_info_type, FST_FLAGS_fst_verify);
   }
 
   return 0;

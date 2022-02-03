@@ -25,10 +25,11 @@
 #include <fst/script/epsnormalize.h>
 #include <fst/script/getters.h>
 
-DECLARE_bool(eps_norm_output);
+DECLARE_string(eps_norm_type);
 
 int fstepsnormalize_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::EpsNormalizeType;
   using fst::script::FstClass;
   using fst::script::VectorFstClass;
 
@@ -53,8 +54,16 @@ int fstepsnormalize_main(int argc, char **argv) {
 
   VectorFstClass ofst(ifst->ArcType());
 
-  s::EpsNormalize(*ifst, &ofst,
-                  s::GetEpsNormalizeType(FST_FLAGS_eps_norm_output));
+  EpsNormalizeType eps_norm_type;
+  if (!s::GetEpsNormalizeType(FST_FLAGS_eps_norm_type,
+                              &eps_norm_type)) {
+    LOG(ERROR) << argv[0]
+               << ": Unknown or unsupported epsilon normalization type: "
+               << FST_FLAGS_eps_norm_type;
+    return 1;
+  }
+
+  s::EpsNormalize(*ifst, &ofst, eps_norm_type);
 
   return !ofst.Write(out_name);
 }

@@ -30,6 +30,7 @@
 
 
 #include <fst/log.h>
+#include <string_view>
 
 namespace fst {
 
@@ -61,19 +62,20 @@ class FstRegister : public GenericRegister<std::string, FstRegisterEntry<Arc>,
   using Reader = typename FstRegisterEntry<Arc>::Reader;
   using Converter = typename FstRegisterEntry<Arc>::Converter;
 
-  const Reader GetReader(const std::string &type) const {
+  const Reader GetReader(std::string_view type) const {
     return this->GetEntry(type).reader;
   }
 
-  const Converter GetConverter(const std::string &type) const {
+  const Converter GetConverter(std::string_view type) const {
     return this->GetEntry(type).converter;
   }
 
  protected:
-  std::string ConvertKeyToSoFilename(const std::string &key) const override {
+  std::string ConvertKeyToSoFilename(std::string_view key) const override {
     std::string legal_type(key);
     ConvertToLegalCSymbol(&legal_type);
-    return legal_type + "-fst.so";
+    legal_type.append("-fst.so");
+    return legal_type;
   }
 };
 
@@ -93,7 +95,7 @@ class FstRegisterer : public GenericRegisterer<FstRegister<typename FST::Arc>> {
 
  private:
   static Fst<Arc> *ReadGeneric(std::istream &strm, const FstReadOptions &opts) {
-    static_assert(std::is_base_of<Fst<Arc>, FST>::value,
+    static_assert(std::is_base_of_v<Fst<Arc>, FST>,
                   "FST class does not inherit from Fst<Arc>");
     return FST::Read(strm, opts);
   }
@@ -118,7 +120,7 @@ class FstRegisterer : public GenericRegisterer<FstRegister<typename FST::Arc>> {
 
 // Converts an FST to the specified type.
 template <class Arc>
-Fst<Arc> *Convert(const Fst<Arc> &fst, const std::string &fst_type) {
+Fst<Arc> *Convert(const Fst<Arc> &fst, std::string_view fst_type) {
   auto *reg = FstRegister<Arc>::GetRegister();
   const auto converter = reg->GetConverter(fst_type);
   if (!converter) {

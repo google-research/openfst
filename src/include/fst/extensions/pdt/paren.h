@@ -21,18 +21,17 @@
 #define FST_EXTENSIONS_PDT_PAREN_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <set>
 #include <vector>
 
 #include <fst/log.h>
-
 #include <fst/extensions/pdt/collection.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
 #include <unordered_map>
 #include <unordered_set>
-
 
 namespace fst {
 namespace internal {
@@ -217,7 +216,7 @@ class PdtParenReachable {
   // Paren arcs.
   ParenArcMultimap paren_arc_multimap_;
   // DFS states.
-  std::vector<uint8> state_color_;
+  std::vector<uint8_t> state_color_;
   // Reachable states to IDs.
   mutable Collection<ssize_t, StateId> state_sets_;
   // IDs to reachable states.
@@ -231,9 +230,9 @@ class PdtParenReachable {
 // Gathers paren and state set information.
 template <class Arc>
 bool PdtParenReachable<Arc>::DFSearch(StateId s) {
-  static constexpr uint8 kWhiteState = 0x01;  // Undiscovered.
-  static constexpr uint8 kGreyState = 0x02;   // Discovered & unfinished.
-  static constexpr uint8 kBlackState = 0x04;  // Finished.
+  static constexpr uint8_t kWhiteState = 0x01;  // Undiscovered.
+  static constexpr uint8_t kGreyState = 0x02;   // Discovered & unfinished.
+  static constexpr uint8_t kBlackState = 0x04;  // Finished.
   if (s >= state_color_.size()) state_color_.resize(s + 1, kWhiteState);
   if (state_color_[s] == kBlackState) return true;
   if (state_color_[s] == kGreyState) return false;

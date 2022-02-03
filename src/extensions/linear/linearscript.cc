@@ -21,6 +21,7 @@
 #include <cctype>
 #include <cstdio>
 #include <set>
+#include <string>
 
 #include <fst/flags.h>
 #include <fst/arc.h>

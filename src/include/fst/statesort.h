@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/mutable-fst.h>

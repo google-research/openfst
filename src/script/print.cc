@@ -17,6 +17,8 @@
 
 #include <fst/script/print.h>
 
+#include <string>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -27,9 +29,9 @@ void Print(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
            const SymbolTable *ssyms, bool accept, bool show_weight_one,
            const std::string &missing_sym) {
   const auto sep = FST_FLAGS_fst_field_separator.substr(0, 1);
-  PrintArgs args{fst, isyms, osyms, ssyms, accept, show_weight_one, ostrm, dest,
-                 sep, missing_sym};
-  Apply<Operation<PrintArgs>>("Print", fst.ArcType(), &args);
+  FstPrintArgs args{fst,   isyms, osyms, ssyms,      accept, show_weight_one,
+                    ostrm, dest,  sep,   missing_sym};
+  Apply<Operation<FstPrintArgs>>("Print", fst.ArcType(), &args);
 }
 
 // TODO(kbg,2019-09-01): Deprecated.
@@ -41,7 +43,7 @@ void PrintFst(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
         missing_sym);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Print, PrintArgs);
+REGISTER_FST_OPERATION_3ARCS(Print, FstPrintArgs);
 
 }  // namespace script
 }  // namespace fst

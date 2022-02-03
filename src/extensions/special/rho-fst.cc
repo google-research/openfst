@@ -30,10 +30,6 @@ DEFINE_string(rho_fst_rewrite_mode, "auto",
 
 namespace fst {
 
-const char rho_fst_type[] = "rho";
-const char input_rho_fst_type[] = "input_rho";
-const char output_rho_fst_type[] = "output_rho";
-
 REGISTER_FST(RhoFst, StdArc);
 REGISTER_FST(RhoFst, LogArc);
 REGISTER_FST(RhoFst, Log64Arc);

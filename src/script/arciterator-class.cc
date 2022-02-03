@@ -17,21 +17,24 @@
 
 #include <fst/script/arciterator-class.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
-ArcIteratorClass::ArcIteratorClass(const FstClass &fst, int64 s)
+ArcIteratorClass::ArcIteratorClass(const FstClass &fst, int64_t s)
     : impl_(nullptr) {
-  InitArcIteratorClassArgs args(fst, s, this);
+  InitArcIteratorClassArgs args{fst, s, this};
   Apply<Operation<InitArcIteratorClassArgs>>("InitArcIteratorClass",
                                              fst.ArcType(), &args);
 }
 
-MutableArcIteratorClass::MutableArcIteratorClass(MutableFstClass *fst, int64 s)
+MutableArcIteratorClass::MutableArcIteratorClass(MutableFstClass *fst,
+                                                 int64_t s)
     : impl_(nullptr) {
-  InitMutableArcIteratorClassArgs args(fst, s, this);
+  InitMutableArcIteratorClassArgs args{fst, s, this};
   Apply<Operation<InitMutableArcIteratorClassArgs>>(
       "InitMutableArcIteratorClass", fst->ArcType(), &args);
 }

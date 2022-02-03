@@ -20,11 +20,11 @@
 #ifndef FST_ARC_ARENA_H_
 #define FST_ARC_ARENA_H_
 
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/fst.h>
 #include <fst/memory.h>
 #include <unordered_map>
@@ -129,8 +129,8 @@ class ArcArena {
     end_ = arcs_ + new_block_size;
   }
 
-  std::shared_ptr<Arc> MakeSharedBlock(size_t size) {
-    return std::shared_ptr<Arc>(new Arc[size], std::default_delete<Arc[]>());
+  std::shared_ptr<Arc[]> MakeSharedBlock(size_t size) {
+    return std::shared_ptr<Arc[]>(new Arc[size]);
   }
 
   Arc *arcs_;
@@ -140,7 +140,7 @@ class ArcArena {
   size_t first_block_size_;
   size_t total_size_;
   size_t max_retained_size_;
-  std::list<std::shared_ptr<Arc>> blocks_;
+  std::list<std::shared_ptr<Arc[]>> blocks_;
 };
 
 // ArcArenaStateStore uses a resusable ArcArena to store arc arrays and does not
@@ -172,8 +172,8 @@ class ArcArenaStateStore {
     int *MutableRefCount() const { return nullptr; }
 
    private:
-    State(Weight final_weight, int32 niepsilons, int32 noepsilons, int32 narcs,
-          const Arc *arcs)
+    State(Weight final_weight, int32_t niepsilons, int32_t noepsilons,
+          int32_t narcs, const Arc *arcs)
         : final_weight_(std::move(final_weight)),
           niepsilons_(niepsilons),
           noepsilons_(noepsilons),
@@ -191,8 +191,8 @@ class ArcArenaStateStore {
 
   template <class Expander>
   State *FindOrExpand(Expander &expander, StateId state_id) {
-    auto it = cache_.insert(std::pair<StateId, State *>(state_id, nullptr));
-    if (!it.second) return it.first->second;
+    const auto &[it, success] = cache_.emplace(state_id, nullptr);
+    if (!success) return it->second;
     // Needs a new state.
     StateBuilder builder(&arena_);
     expander.Expand(state_id, &builder);
@@ -208,7 +208,7 @@ class ArcArenaStateStore {
         State(builder.final_weight_, niepsilons, noepsilons, narcs, arcs));
     // Places it in the cache.
     auto state = &states_.back();
-    it.first->second = state;
+    it->second = state;
     return state;
   }
 

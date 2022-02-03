@@ -1,11 +1,13 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Copyright 2005-2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
+// distributed under the License is distributed on an 'AS IS' BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -15,18 +17,19 @@
 //
 // Google-style flag handling declarations and inline definitions.
 
-#ifndef FST_LIB_FLAGS_H_
-#define FST_LIB_FLAGS_H_
+#ifndef FST_FLAGS_H_
+#define FST_FLAGS_H_
 
+#include <cstdint>
 #include <cstdlib>
-
 #include <iostream>
 #include <map>
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <utility>
 
-#include <fst/types.h>
 #include <fst/lock.h>
 
 // FLAGS USAGE:
@@ -48,15 +51,15 @@
 
 #define DECLARE_bool(name) extern bool FST_FLAGS_ ## name
 #define DECLARE_string(name) extern std::string FST_FLAGS_##name
-#define DECLARE_int32(name) extern int32 FST_FLAGS_ ## name
-#define DECLARE_int64(name) extern int64 FST_FLAGS_ ## name
-#define DECLARE_uint64(name) extern uint64 FST_FLAGS_##name
+#define DECLARE_int32(name) extern int32_t FST_FLAGS_##name
+#define DECLARE_int64(name) extern int64_t FST_FLAGS_##name
+#define DECLARE_uint64(name) extern uint64_t FST_FLAGS_##name
 #define DECLARE_double(name) extern double FST_FLAGS_ ## name
 
 template <typename T>
 struct FlagDescription {
-  FlagDescription(T *addr, const char *doc, const char *type,
-                  const char *file, const T val)
+  FlagDescription(T *addr, std::string_view doc, std::string_view type,
+                  std::string_view file, const T val)
       : address(addr),
     doc_string(doc),
     type_name(type),
@@ -64,9 +67,9 @@ struct FlagDescription {
     default_value(val) {}
 
   T *address;
-  const char *doc_string;
-  const char *type_name;
-  const char *file_name;
+  std::string_view doc_string;
+  std::string_view type_name;
+  std::string_view file_name;
   const T default_value;
 };
 
@@ -86,7 +89,7 @@ class FlagRegister {
 
   void SetDescription(const std::string &name, const FlagDescription<T> &desc) {
     fst::MutexLock l(&flag_lock_);
-    flag_table_.insert(make_pair(name, desc));
+    flag_table_.insert(std::make_pair(name, desc));
   }
 
   bool SetFlag(const std::string &val, bool *address) const {
@@ -96,8 +99,7 @@ class FlagRegister {
     } else if (val == "false" || val == "0") {
       *address = false;
       return true;
-    }
-    else {
+    } else {
       return false;
     }
   }
@@ -107,20 +109,20 @@ class FlagRegister {
     return true;
   }
 
-  bool SetFlag(const std::string &val, int32 *address) const {
+  bool SetFlag(const std::string &val, int32_t *address) const {
     char *p = nullptr;
     *address = strtol(val.c_str(), &p, 0);
     return !val.empty() && *p == '\0';
   }
 
-  bool SetFlag(const std::string &val, int64 *address) const {
+  bool SetFlag(const std::string &val, int64_t *address) const {
     char *p = nullptr;
     *address = strtoll(val.c_str(), &p, 0);
     return !val.empty() && *p == '\0';
   }
 
-  bool SetFlag(const std::string &val, uint64 *address) const {
-    char *p = 0;
+  bool SetFlag(const std::string &val, uint64_t *address) const {
+    char *p = nullptr;
     *address = strtoull(val.c_str(), &p, 0);
     return !val.empty() && *p == '\0';
   }
@@ -151,7 +153,7 @@ class FlagRegister {
       usage += ", default = ";
       usage += GetDefault(desc.default_value) + "\n  ";
       usage += desc.doc_string;
-      usage_set->insert(make_pair(desc.file_name, usage));
+      usage_set->insert(std::make_pair(std::string(desc.file_name), usage));
     }
   }
 
@@ -171,7 +173,7 @@ class FlagRegister {
     return strm.str();
   }
 
-  mutable fst::Mutex flag_lock_;        // Multithreading lock.
+  mutable fst::Mutex flag_lock_;  // Multithreading lock.
   std::map<std::string, FlagDescription<T>> flag_table_;
 };
 
@@ -201,9 +203,9 @@ class FlagRegisterer {
 #define DEFINE_bool(name, value, doc) DEFINE_VAR(bool, name, value, doc)
 #define DEFINE_string(name, value, doc) \
   DEFINE_VAR(std::string, name, value, doc)
-#define DEFINE_int32(name, value, doc) DEFINE_VAR(int32, name, value, doc)
-#define DEFINE_int64(name, value, doc) DEFINE_VAR(int64, name, value, doc)
-#define DEFINE_uint64(name, value, doc) DEFINE_VAR(uint64, name, value, doc)
+#define DEFINE_int32(name, value, doc) DEFINE_VAR(int32_t, name, value, doc)
+#define DEFINE_int64(name, value, doc) DEFINE_VAR(int64_t, name, value, doc)
+#define DEFINE_uint64(name, value, doc) DEFINE_VAR(uint64_t, name, value, doc)
 #define DEFINE_double(name, value, doc) DEFINE_VAR(double, name, value, doc)
 
 
@@ -213,7 +215,7 @@ DECLARE_string(tmpdir);
 void SetFlags(const char *usage, int *argc, char ***argv, bool remove_flags,
               const char *src = "");
 
-// This is an unpleasant hack around absl::SetFlag API.
+// This is an unpleasant hack around SetFlag API.
 template <typename Type, typename Value>
 void SetFlag(Type *flag, Value value) {
   *flag = Type(value);
@@ -229,4 +231,4 @@ inline void InitFst(const char *usage, int *argc, char ***argv, bool rmflags) {
 
 void ShowUsage(bool long_usage = true);
 
-#endif  // FST_LIB_FLAGS_H_
+#endif  // FST_FLAGS_H_

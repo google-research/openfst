@@ -17,22 +17,24 @@
 
 #include <fst/script/randgen.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
 void RandGen(const FstClass &ifst, MutableFstClass *ofst,
-             const RandGenOptions<RandArcSelection> &opts, uint64 seed) {
+             const RandGenOptions<RandArcSelection> &opts, uint64_t seed) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "RandGen")) {
     ofst->SetProperties(kError, kError);
     return;
   }
-  RandGenArgs args(ifst, ofst, opts, seed);
-  Apply<Operation<RandGenArgs>>("RandGen", ifst.ArcType(), &args);
+  FstRandGenArgs args{ifst, ofst, opts, seed};
+  Apply<Operation<FstRandGenArgs>>("RandGen", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(RandGen, RandGenArgs);
+REGISTER_FST_OPERATION_3ARCS(RandGen, FstRandGenArgs);
 
 }  // namespace script
 }  // namespace fst

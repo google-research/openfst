@@ -18,6 +18,7 @@
 // Creates binary FSTs from simple text format used by AT&T.
 
 #include <cstring>
+#include <iostream>
 #include <istream>
 #include <memory>
 #include <string>
@@ -89,13 +90,13 @@ int fstcompile_main(int argc, char **argv) {
 
   const std::string dest = argc > 2 && strcmp(argv[2], "-") != 0 ? argv[2] : "";
 
-  s::CompileFst(istrm, source, dest, FST_FLAGS_fst_type,
-                FST_FLAGS_arc_type, isyms.get(), osyms.get(),
-                ssyms.get(), FST_FLAGS_acceptor,
-                FST_FLAGS_keep_isymbols,
-                FST_FLAGS_keep_osymbols,
-                FST_FLAGS_keep_state_numbering,
-                FST_FLAGS_allow_negative_labels);
+  s::Compile(istrm, source, dest, FST_FLAGS_fst_type,
+             FST_FLAGS_arc_type, isyms.get(), osyms.get(),
+             ssyms.get(), FST_FLAGS_acceptor,
+             FST_FLAGS_keep_isymbols,
+             FST_FLAGS_keep_osymbols,
+             FST_FLAGS_keep_state_numbering,
+             FST_FLAGS_allow_negative_labels);
 
   return 0;
 }

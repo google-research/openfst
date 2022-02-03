@@ -22,6 +22,7 @@
 #ifndef FST_UNION_WEIGHT_H_
 #define FST_UNION_WEIGHT_H_
 
+#include <cstdint>
 #include <iostream>
 #include <list>
 #include <random>
@@ -29,7 +30,6 @@
 #include <string>
 #include <utility>
 
-#include <fst/types.h>
 
 #include <fst/weight.h>
 
@@ -124,7 +124,7 @@ class UnionWeight {
     return *type;
   }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return W::Properties() &
            (kLeftSemiring | kRightSemiring | kCommutative | kIdempotent);
   }
@@ -276,7 +276,7 @@ class UnionWeightReverseIterator {
 template <class W, class O>
 inline std::istream &UnionWeight<W, O>::Read(std::istream &istrm) {
   Clear();
-  int32 size;
+  int32_t size;
   ReadType(istrm, &size);
   for (int i = 0; i < size; ++i) {
     W weight;
@@ -288,7 +288,7 @@ inline std::istream &UnionWeight<W, O>::Read(std::istream &istrm) {
 
 template <class W, class O>
 inline std::ostream &UnionWeight<W, O>::Write(std::ostream &ostrm) const {
-  const int32 size = Size();
+  const int32_t size = Size();
   WriteType(ostrm, size);
   for (UnionWeightIterator<W, O> it(*this); !it.Done(); it.Next()) {
     WriteType(ostrm, it.Value());
@@ -491,7 +491,7 @@ class WeightGenerate<UnionWeight<W, O>> {
   using Weight = UnionWeight<W, O>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : rand_(seed),

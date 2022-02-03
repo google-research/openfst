@@ -26,10 +26,10 @@
 namespace fst {
 namespace script {
 
-using ClosureArgs = std::pair<MutableFstClass *, const ClosureType>;
+using FstClosureArgs = std::pair<MutableFstClass *, const ClosureType>;
 
 template <class Arc>
-void Closure(ClosureArgs *args) {
+void Closure(FstClosureArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   Closure(fst, std::get<1>(*args));
 }

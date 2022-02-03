@@ -28,10 +28,10 @@
 namespace fst {
 namespace script {
 
-using DecodeArgs = std::pair<MutableFstClass *, const EncodeMapperClass &>;
+using FstDecodeArgs = std::pair<MutableFstClass *, const EncodeMapperClass &>;
 
 template <class Arc>
-void Decode(DecodeArgs *args) {
+void Decode(FstDecodeArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   const EncodeMapper<Arc> &mapper = *std::get<1>(*args).GetEncodeMapper<Arc>();
   Decode(fst, mapper);

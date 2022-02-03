@@ -23,11 +23,11 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <queue>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/arcsort.h>
@@ -44,6 +44,7 @@
 #include <fst/shortest-distance.h>
 #include <fst/state-map.h>
 
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {
@@ -118,6 +119,10 @@ class CyclicMinimizer {
   using ClassId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   using RevArc = ReverseArc<Arc>;
+  using RevArcIter = ArcIterator<Fst<RevArc>>;
+  // TODO(wolfsonkin): Consider storing ArcIterator<> directly rather than in
+  // unique_ptr when ArcIterator<Fst<>> is made movable.
+  using RevArcIterPtr = std::unique_ptr<RevArcIter>;
 
   explicit CyclicMinimizer(const ExpandedFst<Arc> &fst) {
     Initialize(fst);
@@ -160,26 +165,16 @@ class CyclicMinimizer {
 
   class ArcIterCompare {
    public:
-    explicit ArcIterCompare(const Partition<StateId> &partition)
-        : partition_(partition) {}
-
-    ArcIterCompare(const ArcIterCompare &comp) : partition_(comp.partition_) {}
-
     // Compares two iterators based on their input labels.
-    bool operator()(const ArcIterator<Fst<RevArc>> *x,
-                    const ArcIterator<Fst<RevArc>> *y) const {
+    bool operator()(const RevArcIterPtr &x, const RevArcIterPtr &y) const {
       const auto &xarc = x->Value();
       const auto &yarc = y->Value();
       return xarc.ilabel > yarc.ilabel;
     }
-
-   private:
-    const Partition<StateId> &partition_;
   };
 
   using ArcIterQueue =
-      std::priority_queue<ArcIterator<Fst<RevArc>> *,
-                          std::vector<ArcIterator<Fst<RevArc>> *>,
+      std::priority_queue<RevArcIterPtr, std::vector<RevArcIterPtr>,
                           ArcIterCompare>;
 
  private:
@@ -239,8 +234,7 @@ class CyclicMinimizer {
     // Prepares initial partition.
     PrePartition(fst);
     // Allocates arc iterator queue.
-    ArcIterCompare comp(P_);
-    aiter_queue_ = std::make_unique<ArcIterQueue>(comp);
+    aiter_queue_ = std::make_unique<ArcIterQueue>();
   }
   // Partitions all classes with destination C.
   void Split(ClassId C) {
@@ -249,14 +243,19 @@ class CyclicMinimizer {
     for (PartitionIterator<StateId> siter(P_, C); !siter.Done(); siter.Next()) {
       const auto s = siter.Value();
       if (Tr_.NumArcs(s + 1)) {
-        aiter_queue_->push(new ArcIterator<Fst<RevArc>>(Tr_, s + 1));
+        aiter_queue_->push(std::make_unique<RevArcIter>(Tr_, s + 1));
       }
     }
     // Now pops arc iterator from queue, splits entering equivalence class, and
     // re-inserts updated iterator into queue.
     Label prev_label = -1;
     while (!aiter_queue_->empty()) {
-      std::unique_ptr<ArcIterator<Fst<RevArc>>> aiter(aiter_queue_->top());
+      // NB: There is no way to "move" out of a std::priority_queue given that
+      // the `top` accessor is a const ref. We const-cast to move out the
+      // unique_ptr out of the priority queue. This is fine and doesn't cause an
+      // issue with the invariants of the pqueue since we immediately pop after.
+      RevArcIterPtr aiter =
+          std::move(const_cast<RevArcIterPtr &>(aiter_queue_->top()));
       aiter_queue_->pop();
       if (aiter->Done()) continue;
       const auto &arc = aiter->Value();
@@ -267,7 +266,7 @@ class CyclicMinimizer {
       if (P_.ClassSize(from_class) > 1) P_.SplitOn(from_state);
       prev_label = from_label;
       aiter->Next();
-      if (!aiter->Done()) aiter_queue_->push(aiter.release());
+      if (!aiter->Done()) aiter_queue_->push(std::move(aiter));
     }
     P_.FinalizeSplit(&L_);
   }
@@ -513,7 +512,7 @@ void Minimize(MutableFst<Arc> *fst, MutableFst<Arc> *sfst = nullptr,
     // idempotent semirings---for non-deterministic inputs, a state could have
     // multiple transitions to states that will get merged, and we'd have to
     // sum their weights. The algorithm doesn't handle that.
-    if (!(Weight::Properties() & kIdempotent)) {
+    if constexpr (!IsIdempotent<Weight>::value) {
       fst->SetProperties(kError, kError);
       FSTERROR() << "Cannot minimize a non-deterministic FST over a "
                     "non-idempotent semiring";

@@ -20,10 +20,10 @@
 #ifndef FST_EXTENSIONS_PDT_EXPAND_H_
 #define FST_EXTENSIONS_PDT_EXPAND_H_
 
+#include <cstdint>
 #include <forward_list>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/paren.h>
 #include <fst/extensions/pdt/pdt.h>
@@ -192,7 +192,7 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
 
  private:
   // Properties for an expanded PDT.
-  inline uint64 PdtExpandProperties(uint64 inprops) {
+  inline uint64_t PdtExpandProperties(uint64_t inprops) {
     return inprops & (kAcceptor | kAcyclic | kInitialAcyclic | kUnweighted);
   }
 
@@ -362,9 +362,9 @@ class PdtPrunedExpand {
   void Expand(MutableFst<Arc> *ofst, const Weight &threshold);
 
  private:
-  static constexpr uint8 kEnqueued = 0x01;
-  static constexpr uint8 kExpanded = 0x02;
-  static constexpr uint8 kSourceState = 0x04;
+  static constexpr uint8_t kEnqueued = 0x01;
+  static constexpr uint8_t kExpanded = 0x02;
+  static constexpr uint8_t kSourceState = 0x04;
 
   // Comparison functor used by the queue:
   //
@@ -433,9 +433,9 @@ class PdtPrunedExpand {
 
   Weight DistanceToDest(StateId source, StateId dest) const;
 
-  uint8 Flags(StateId s) const;
+  uint8_t Flags(StateId s) const;
 
-  void SetFlags(StateId s, uint8 flags, uint8 mask);
+  void SetFlags(StateId s, uint8_t flags, uint8_t mask);
 
   Weight Distance(StateId s) const;
 
@@ -490,7 +490,7 @@ class PdtPrunedExpand {
   // Construction time failure?
   bool error_;
   // Status flags for states in efst_/ofst.
-  std::vector<uint8> flags_;
+  std::vector<uint8_t> flags_;
   // PDT source state for each expanded state.
   std::vector<StateId> sources_;
   // Shortest path for rfst_.
@@ -562,13 +562,13 @@ typename Arc::Weight PdtPrunedExpand<Arc>::DistanceToDest(StateId source,
 
 // Returns the flags for state s in ofst_.
 template <class Arc>
-uint8 PdtPrunedExpand<Arc>::Flags(StateId s) const {
+uint8_t PdtPrunedExpand<Arc>::Flags(StateId s) const {
   return s < flags_.size() ? flags_[s] : 0;
 }
 
 // Modifies the flags for state s in ofst_.
 template <class Arc>
-void PdtPrunedExpand<Arc>::SetFlags(StateId s, uint8 flags, uint8 mask) {
+void PdtPrunedExpand<Arc>::SetFlags(StateId s, uint8_t flags, uint8_t mask) {
   while (flags_.size() <= s) flags_.push_back(0);
   flags_[s] &= ~mask;
   flags_[s] |= flags & mask;

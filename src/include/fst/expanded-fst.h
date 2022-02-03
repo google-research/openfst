@@ -70,7 +70,7 @@ class ExpandedFst : public Fst<A> {
     }
     auto *fst = reader(strm, ropts);
     if (!fst) return nullptr;
-    return fst::down_cast<ExpandedFst *>(fst);
+    return down_cast<ExpandedFst *>(fst);
   }
 
   // Read an ExpandedFst from a file; return NULL on error.
@@ -168,7 +168,7 @@ class ImplToExpandedFst : public ImplToFst<Impl, FST> {
 template <class Arc>
 typename Arc::StateId CountStates(const Fst<Arc> &fst) {
   if (fst.Properties(kExpanded, false)) {
-    const auto *efst = fst::down_cast<const ExpandedFst<Arc> *>(&fst);
+    const auto *efst = down_cast<const ExpandedFst<Arc> *>(&fst);
     return efst->NumStates();
   } else {
     typename Arc::StateId nstates = 0;

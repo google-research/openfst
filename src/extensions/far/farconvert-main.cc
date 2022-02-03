@@ -18,6 +18,7 @@
 // Converts FST and container type of FARs.
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include <fst/flags.h>
@@ -28,8 +29,10 @@
 DECLARE_string(far_type);
 DECLARE_string(fst_type);
 
-int farconvert_main(int argc, char *argv[]) {
+int farconvert_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FarReaderClass;
+  using fst::script::FarWriterClass;
 
   std::string usage = "Converts FST and container types.\n\n Usage:";
   usage += argv[0];
@@ -37,19 +40,19 @@ int farconvert_main(int argc, char *argv[]) {
 
   std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
+  s::ExpandArgs(argc, argv, &argc, &argv);
 
   if (argc > 3) {
     ShowUsage();
     return 1;
   }
 
-  // 0 file args means read from stdin and write to stdout.
-  // 1 file arg means read from in.far and write to stdout.
-  // Only STList can be written to stdout; there will be
-  // an error in Write() when another format is used.
-  const std::string in_far =
+  // No args: read from stdin and write to stdout.
+  // One arg: read from in.far and write to stdout.
+  // Note that only STList can be written to stdout.
+  const std::string in_name =
       argc > 1 && std::strcmp(argv[1], "-") != 0 ? argv[1] : "";
-  const std::string out_far =
+  const std::string out_name =
       argc > 2 && std::strcmp(argv[2], "-") != 0 ? argv[2] : "";
 
   fst::FarType far_type;
@@ -58,33 +61,31 @@ int farconvert_main(int argc, char *argv[]) {
     return 1;
   }
 
-  // We use a different meaning of far_type. DEFAULT means "same as input",
-  // so snoop the input far_type.
-  if (far_type == fst::FarType::DEFAULT) {
-    fst::FarHeader hdr;
-    if (!hdr.Read(in_far)) {
-      LOG(ERROR) << "Couldn't open " << in_far;
-      return 1;
-    }
-    // GetFarType returns STLIST for stdin, regardless of the actual FAR type.
-    // If the input actually has another type, it Open() will fail later.
-    if (!s::GetFarType(hdr.FarType(), &far_type)) {
-      LOG(ERROR) << "Failed to retrieve archive type from " << in_far;
-      return 1;
-    }
-  }
+  std::unique_ptr<FarReaderClass> reader(FarReaderClass::Open(in_name));
+  if (!reader) return 1;
 
-  // LoadArcTypeFromFar returns arc_type=="standard" for stdin. As above
-  // with FarType, Open() will fail later if it actually has a different type.
-  const std::string arc_type = s::LoadArcTypeFromFar(in_far);
-  if (arc_type.empty()) {
-    LOG(ERROR) << "Could not determine arc type for " << in_far;
+  // This uses a different meaning of far_type; since DEFAULT means "same as
+  // input", we must determine the input FarType.
+  if (far_type == fst::FarType::DEFAULT) far_type = reader->Type();
+
+  const auto arc_type = reader->ArcType();
+  if (arc_type.empty()) return 1;
+
+  std::unique_ptr<FarWriterClass> writer(
+      FarWriterClass::Create(out_name, arc_type, far_type));
+  if (!writer) return 1;
+
+  // An unspecified fst_type entails that the input FST types are preserved.
+  s::Convert(*reader, *writer, FST_FLAGS_fst_type);
+
+  if (reader->Error()) {
+    FSTERROR() << "Error reading FAR: " << in_name;
     return 1;
   }
-
-  // Empty fst_type means use input fst type for each fst individually.
-  s::FarConvert(in_far, out_far, arc_type, FST_FLAGS_fst_type,
-                far_type);
+  if (writer->Error()) {
+    FSTERROR() << "Error writing FAR: " << out_name;
+    return 1;
+  }
 
   return 0;
 }

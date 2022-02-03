@@ -111,9 +111,6 @@ class Collection {
 };
 
 template <class I, class T>
-constexpr I Collection<I, T>::kNoNodeId;
-
-template <class I, class T>
 const std::hash<T> Collection<I, T>::hash_ = {};
 
 }  // namespace fst

@@ -21,6 +21,7 @@
 #define FST_ARC_H_
 
 #include <climits>
+#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -51,7 +52,7 @@ struct ArcTpl {
   Weight weight;
   StateId nextstate;
 
-  ArcTpl() noexcept(std::is_nothrow_default_constructible<Weight>::value) {}
+  ArcTpl() noexcept(std::is_nothrow_default_constructible_v<Weight>) {}
 
   template <class T>
   ArcTpl(Label ilabel, Label olabel, T &&weight, StateId nextstate)
@@ -197,65 +198,11 @@ struct ReverseArc {
 
 // Arc with integer labels and state IDs and lexicographic weights.
 template <class Weight1, class Weight2>
-struct LexicographicArc {
-  using Label = int;
-  using StateId = int;
-  using Weight = LexicographicWeight<Weight1, Weight2>;
-
-  Label ilabel;
-  Label olabel;
-  Weight weight;
-  StateId nextstate;
-
-  LexicographicArc() = default;
-
-  template <class T>
-  LexicographicArc(Label ilabel, Label olabel, T &&weight, StateId nextstate)
-      : ilabel(ilabel),
-        olabel(olabel),
-        weight(std::forward<T>(weight)),
-        nextstate(nextstate) {}
-
-  // Arc with weight One.
-  LexicographicArc(Label ilabel, Label olabel, StateId nextstate)
-      : LexicographicArc(ilabel, olabel, Weight::One(), nextstate) {}
-
-  static const std::string &Type() {
-    static const std::string *const type = new std::string(Weight::Type());
-    return *type;
-  }
-};
+using LexicographicArc = ArcTpl<LexicographicWeight<Weight1, Weight2>>;
 
 // Arc with integer labels and state IDs and product weights.
 template <class Weight1, class Weight2>
-struct ProductArc {
-  using Label = int;
-  using StateId = int;
-  using Weight = ProductWeight<Weight1, Weight2>;
-
-  Label ilabel;
-  Label olabel;
-  Weight weight;
-  StateId nextstate;
-
-  ProductArc() = default;
-
-  template <class T>
-  ProductArc(Label ilabel, Label olabel, T &&weight, StateId nextstate)
-      : ilabel(ilabel),
-        olabel(olabel),
-        weight(std::forward<T>(weight)),
-        nextstate(nextstate) {}
-
-  // Arc with weight One.
-  ProductArc(Label ilabel, Label olabel, StateId nextstate)
-      : ProductArc(ilabel, olabel, Weight::One(), nextstate) {}
-
-  static const std::string &Type() {
-    static const auto *const type = new std::string(Weight::Type());
-    return *type;
-  }
-};
+using ProductArc = ArcTpl<ProductWeight<Weight1, Weight2>>;
 
 // Arc with label and state ID type the same as first template argument and with
 // weights over the n-th Cartesian power of the weight type of the template
@@ -322,7 +269,7 @@ struct SparsePowerArc {
   static const std::string &Type() {
     static const std::string *const type = [] {
       std::string type = Arc::Type() + "_^n";
-      if (sizeof(K) != sizeof(uint32)) {
+      if (sizeof(K) != sizeof(uint32_t)) {
         type += "_" + std::to_string(CHAR_BIT * sizeof(K));
       }
       return new std::string(type);

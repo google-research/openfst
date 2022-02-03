@@ -17,12 +17,14 @@
 
 #include <fst/script/replace.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
-void Replace(const std::vector<std::pair<int64, const FstClass *>> &pairs,
+void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
              MutableFstClass *ofst, const ReplaceOptions &opts) {
   for (const auto &pair : pairs) {
     if (!internal::ArcTypesMatch(*pair.second, *ofst, "Replace")) {
@@ -30,11 +32,11 @@ void Replace(const std::vector<std::pair<int64, const FstClass *>> &pairs,
       return;
     }
   }
-  ReplaceArgs args(pairs, ofst, opts);
-  Apply<Operation<ReplaceArgs>>("Replace", ofst->ArcType(), &args);
+  FstReplaceArgs args{pairs, ofst, opts};
+  Apply<Operation<FstReplaceArgs>>("Replace", ofst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Replace, ReplaceArgs);
+REGISTER_FST_OPERATION_3ARCS(Replace, FstReplaceArgs);
 
 }  // namespace script
 }  // namespace fst

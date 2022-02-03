@@ -20,14 +20,15 @@
 #ifndef FST_EXTENSIONS_PDT_REPLACE_H_
 #define FST_EXTENSIONS_PDT_REPLACE_H_
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/replace-util.h>
 #include <fst/replace.h>
 #include <fst/symbol-table-ops.h>
@@ -56,7 +57,7 @@ struct ReplaceParenHash {
 //
 // Mohri, M., and Pereira, F. 1998. Dynamic compilation of weighted context-free
 // grammars. In Proc. ACL, pages 891-897.
-enum class PdtParserType : uint8 {
+enum class PdtParserType : uint8_t {
   // Top-down construction. Applied to a simple LL(1) grammar (among others),
   // gives a DPDA. If promoted to a DPDT, with outputs being production
   // numbers, gives a leftmost derivation. Left recursive grammars are
@@ -808,7 +809,7 @@ void Replace(
     }
     default:
       FSTERROR() << "Replace: Unknown PDT parser type: "
-                 << static_cast<std::underlying_type<PdtParserType>::type>(
+                 << static_cast<std::underlying_type_t<PdtParserType>>(
                         opts.type);
       ofst->DeleteStates();
       ofst->SetProperties(kError, kError);

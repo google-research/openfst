@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 
 #include <fst/expanded-fst.h>
 #include <fst/mutable-fst.h>

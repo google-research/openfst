@@ -20,7 +20,8 @@
 #ifndef FST_PROJECT_H_
 #define FST_PROJECT_H_
 
-#include <fst/types.h>
+#include <cstdint>
+
 
 #include <fst/arc-map.h>
 #include <fst/mutable-fst.h>
@@ -30,9 +31,9 @@ namespace fst {
 // This specifies whether to project on input or output.
 enum class ProjectType { INPUT = 1, OUTPUT = 2 };
 OPENFST_DEPRECATED("Use `ProjectType::INPUT` instead.")
-static constexpr ProjectType PROJECT_INPUT = ProjectType::INPUT;
+inline constexpr ProjectType PROJECT_INPUT = ProjectType::INPUT;
 OPENFST_DEPRECATED("Use `ProjectType::OUTPUT` instead.")
-static constexpr ProjectType PROJECT_OUTPUT = ProjectType::OUTPUT;
+inline constexpr ProjectType PROJECT_OUTPUT = ProjectType::OUTPUT;
 
 // Mapper to implement projection per arc.
 template <class A>
@@ -62,7 +63,7 @@ class ProjectMapper {
                                                 : MAP_CLEAR_SYMBOLS;
   }
 
-  constexpr uint64 Properties(uint64 props) const {
+  constexpr uint64_t Properties(uint64_t props) const {
     return ProjectProperties(props, project_type_ == ProjectType::INPUT);
   }
 

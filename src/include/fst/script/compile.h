@@ -20,6 +20,7 @@
 
 #include <istream>
 #include <memory>
+#include <string>
 
 #include <fst/script/arg-packs.h>
 #include <fst/script/compile-impl.h>
@@ -37,7 +38,7 @@ namespace script {
 // this struct is only used to pass them deeper in the call graph.
 // Be sure you understand why this is so before using this struct
 // for anything else!
-struct CompileFstInnerArgs {
+struct FstCompileInnerArgs {
   std::istream &istrm;
   const std::string &source;
   const std::string &fst_type;
@@ -51,11 +52,11 @@ struct CompileFstInnerArgs {
   const bool allow_negative_labels;
 };
 
-using CompileFstArgs =
-    WithReturnValue<std::unique_ptr<FstClass>, CompileFstInnerArgs>;
+using FstCompileArgs =
+    WithReturnValue<std::unique_ptr<FstClass>, FstCompileInnerArgs>;
 
 template <class Arc>
-void CompileFstInternal(CompileFstArgs *args) {
+void CompileInternal(FstCompileArgs *args) {
   using fst::Convert;
   using fst::Fst;
   using fst::FstCompiler;
@@ -78,13 +79,13 @@ void CompileFstInternal(CompileFstArgs *args) {
   args->retval = fst ? std::make_unique<FstClass>(std::move(fst)) : nullptr;
 }
 
-void CompileFst(std::istream &istrm, const std::string &source,
-                const std::string &dest, const std::string &fst_type,
-                const std::string &arc_type, const SymbolTable *isyms,
-                const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
-                bool ikeep, bool okeep, bool nkeep, bool allow_negative_labels);
+void Compile(std::istream &istrm, const std::string &source,
+             const std::string &dest, const std::string &fst_type,
+             const std::string &arc_type, const SymbolTable *isyms,
+             const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
+             bool ikeep, bool okeep, bool nkeep, bool allow_negative_labels);
 
-std::unique_ptr<FstClass> CompileFstInternal(
+std::unique_ptr<FstClass> CompileInternal(
     std::istream &istrm, const std::string &source, const std::string &fst_type,
     const std::string &arc_type, const SymbolTable *isyms,
     const SymbolTable *osyms, const SymbolTable *ssyms, bool accep, bool ikeep,

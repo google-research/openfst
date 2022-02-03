@@ -1,4 +1,4 @@
-AC_INIT([OpenFst], [1.8.1], [help@www.openfst.org])
+AC_INIT([OpenFst],[1.8.2],[help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror subdir-objects])
 AM_PROG_AR
 
@@ -8,9 +8,9 @@ AC_PROG_CXX
 CXX="$CXX -std=c++17 -fno-exceptions -Wno-deprecated-declarations"
 
 AC_DISABLE_STATIC
-AC_PROG_LIBTOOL
+LT_INIT
 
-AC_CONFIG_HEADERS([config.h src/include/fst/config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/lib/fst.cc])
 AC_CONFIG_FILES([
   Makefile
@@ -106,7 +106,7 @@ AC_ARG_ENABLE([python],
 AM_CONDITIONAL([HAVE_PYTHON], [test "x$enable_python" != xno])
 if test "x$enable_python" != xno; then
   AM_PATH_PYTHON(3.6)
-  AC_PYTHON_DEVEL([>= '3.6'])
+  AX_PYTHON_DEVEL([>= '3.6'])
 fi
 
 AC_ARG_ENABLE([special],

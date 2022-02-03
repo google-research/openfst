@@ -17,7 +17,9 @@
 
 #include <fst/extensions/far/stlist.h>
 
+#include <cstdint>
 #include <ios>
+#include <string>
 
 #include <fstream>
 
@@ -26,7 +28,7 @@ namespace fst {
 bool IsSTList(const std::string &source) {
   std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
   if (!strm) return false;
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   return magic_number == kSTListMagicNumber;
 }

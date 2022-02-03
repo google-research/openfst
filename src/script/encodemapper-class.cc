@@ -17,7 +17,12 @@
 
 #include <fst/script/encodemapper-class.h>
 
+#include <cstdint>
+#include <memory>
+#include <string>
+
 #include <fst/script/script-impl.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -25,8 +30,8 @@ namespace {
 
 // Helper methods.
 
-EncodeMapperClass *ReadEncodeMapper(std::istream &istrm,
-                                    const std::string &source) {
+std::unique_ptr<EncodeMapperClass> ReadEncodeMapper(std::istream &istrm,
+                                                    const std::string &source) {
   if (!istrm) {
     LOG(ERROR) << "ReadEncodeMapperClass: Can't open file: " << source;
     return nullptr;
@@ -51,8 +56,8 @@ EncodeMapperClass *ReadEncodeMapper(std::istream &istrm,
   return reader(istrm, source);
 }
 
-EncodeMapperImplBase *CreateEncodeMapper(const std::string &arc_type,
-                                         uint8 flags, EncodeType type) {
+std::unique_ptr<EncodeMapperImplBase> CreateEncodeMapper(
+    std::string_view arc_type, uint8_t flags, EncodeType type) {
   static const auto *reg =
       EncodeMapperClassIORegistration::Register::GetRegister();
   auto creator = reg->GetCreator(arc_type);
@@ -65,11 +70,12 @@ EncodeMapperImplBase *CreateEncodeMapper(const std::string &arc_type,
 
 }  // namespace
 
-EncodeMapperClass::EncodeMapperClass(const std::string &arc_type, uint8 flags,
+EncodeMapperClass::EncodeMapperClass(std::string_view arc_type, uint8_t flags,
                                      EncodeType type)
     : impl_(CreateEncodeMapper(arc_type, flags, type)) {}
 
-EncodeMapperClass *EncodeMapperClass::Read(const std::string &source) {
+std::unique_ptr<EncodeMapperClass> EncodeMapperClass::Read(
+    const std::string &source) {
   if (!source.empty()) {
     std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
     return ReadEncodeMapper(strm, source);
@@ -78,8 +84,8 @@ EncodeMapperClass *EncodeMapperClass::Read(const std::string &source) {
   }
 }
 
-EncodeMapperClass *EncodeMapperClass::Read(std::istream &strm,
-                                           const std::string &source) {
+std::unique_ptr<EncodeMapperClass> EncodeMapperClass::Read(
+    std::istream &strm, const std::string &source) {
   return ReadEncodeMapper(strm, source);
 }
 

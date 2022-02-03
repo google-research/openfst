@@ -17,7 +17,8 @@
 
 #include <fst/flags.h>
 
-DEFINE_bool(eps_norm_output, false, "Normalize output epsilons");
+DEFINE_string(eps_norm_type, "input",
+              "Side to epsilon normalize, one of: \"input\", \"output\"");
 
 int fstepsnormalize_main(int argc, char **argv);
 

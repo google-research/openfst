@@ -18,7 +18,10 @@
 #ifndef FST_EXTENSIONS_SPECIAL_RHO_FST_H_
 #define FST_EXTENSIONS_SPECIAL_RHO_FST_H_
 
+#include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 
 #include <fst/const-fst.h>
@@ -47,7 +50,7 @@ class RhoFstMatcherData {
                                         const FstReadOptions &read) {
     auto *data = new RhoFstMatcherData<Label>();
     ReadType(istrm, &data->rho_label_);
-    int32 rewrite_mode;
+    int32_t rewrite_mode;
     ReadType(istrm, &rewrite_mode);
     data->rewrite_mode_ = static_cast<MatcherRewriteMode>(rewrite_mode);
     return data;
@@ -55,7 +58,7 @@ class RhoFstMatcherData {
 
   bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
     WriteType(ostrm, rho_label_);
-    WriteType(ostrm, static_cast<int32>(rewrite_mode_));
+    WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
     return !ostrm ? false : true;
   }
 
@@ -79,10 +82,12 @@ class RhoFstMatcherData {
 
 }  // namespace internal
 
-constexpr uint8 kRhoFstMatchInput = 0x01;   // Input matcher is RhoMatcher.
-constexpr uint8 kRhoFstMatchOutput = 0x02;  // Output matcher is RhoMatcher.
+inline constexpr uint8_t kRhoFstMatchInput =
+    0x01;  // Input matcher is RhoMatcher.
+inline constexpr uint8_t kRhoFstMatchOutput =
+    0x02;  // Output matcher is RhoMatcher.
 
-template <class M, uint8 flags = kRhoFstMatchInput | kRhoFstMatchOutput>
+template <class M, uint8_t flags = kRhoFstMatchInput | kRhoFstMatchOutput>
 class RhoFstMatcher : public RhoMatcher<M> {
  public:
   using FST = typename M::FST;
@@ -92,7 +97,7 @@ class RhoFstMatcher : public RhoMatcher<M> {
   using Weight = typename Arc::Weight;
   using MatcherData = internal::RhoFstMatcherData<Label>;
 
-  enum : uint8 { kFlags = flags };
+  static constexpr uint8_t kFlags = flags;
 
   // This makes a copy of the FST.
   RhoFstMatcher(
@@ -136,9 +141,9 @@ class RhoFstMatcher : public RhoMatcher<M> {
   std::shared_ptr<MatcherData> data_;
 };
 
-extern const char rho_fst_type[];
-extern const char input_rho_fst_type[];
-extern const char output_rho_fst_type[];
+inline constexpr char rho_fst_type[] = "rho";
+inline constexpr char input_rho_fst_type[] = "input_rho";
+inline constexpr char output_rho_fst_type[] = "output_rho";
 
 template <class Arc>
 using RhoFst =

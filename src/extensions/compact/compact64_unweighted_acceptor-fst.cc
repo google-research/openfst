@@ -15,18 +15,20 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <cstdint>
+
 #include <fst/compact-fst.h>
 #include <fst/fst.h>
 
 namespace fst {
 
-static FstRegisterer<CompactUnweightedAcceptorFst<StdArc, uint64>>
+static FstRegisterer<CompactUnweightedAcceptorFst<StdArc, uint64_t>>
     CompactUnweightedAcceptorFst_StdArc_uint64_registerer;
 
-static FstRegisterer<CompactUnweightedAcceptorFst<LogArc, uint64>>
+static FstRegisterer<CompactUnweightedAcceptorFst<LogArc, uint64_t>>
     CompactUnweightedAcceptorFst_LogArc_uint64_registerer;
 
-static FstRegisterer<CompactUnweightedAcceptorFst<Log64Arc, uint64>>
+static FstRegisterer<CompactUnweightedAcceptorFst<Log64Arc, uint64_t>>
     CompactUnweightedAcceptorFst_Log64Arc_uint64_registerer;
 
 }  // namespace fst

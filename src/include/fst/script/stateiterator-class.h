@@ -18,6 +18,7 @@
 #ifndef FST_SCRIPT_STATEITERATOR_CLASS_H_
 #define FST_SCRIPT_STATEITERATOR_CLASS_H_
 
+#include <cstdint>
 #include <memory>
 
 #include <fst/fstlib.h>
@@ -32,7 +33,7 @@ namespace script {
 class StateIteratorImplBase {
  public:
   virtual bool Done() const = 0;
-  virtual int64 Value() const = 0;
+  virtual int64_t Value() const = 0;
   virtual void Next() = 0;
   virtual void Reset() = 0;
   virtual ~StateIteratorImplBase() {}
@@ -46,7 +47,7 @@ class StateIteratorClassImpl : public StateIteratorImplBase {
 
   bool Done() const final { return siter_.Done(); }
 
-  int64 Value() const final { return siter_.Value(); }
+  int64_t Value() const final { return siter_.Value(); }
 
   void Next() final { siter_.Next(); }
 
@@ -70,11 +71,11 @@ class StateIteratorClass {
 
   template <class Arc>
   explicit StateIteratorClass(const Fst<Arc> &fst)
-      : impl_(new StateIteratorClassImpl<Arc>(fst)) {}
+      : impl_(std::make_unique<StateIteratorClassImpl<Arc>>(fst)) {}
 
   bool Done() const { return impl_->Done(); }
 
-  int64 Value() const { return impl_->Value(); }
+  int64_t Value() const { return impl_->Value(); }
 
   void Next() { impl_->Next(); }
 
@@ -90,7 +91,8 @@ class StateIteratorClass {
 template <class Arc>
 void InitStateIteratorClass(InitStateIteratorClassArgs *args) {
   const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
-  std::get<1>(*args)->impl_.reset(new StateIteratorClassImpl<Arc>(fst));
+  std::get<1>(*args)->impl_ =
+      std::make_unique<StateIteratorClassImpl<Arc>>(fst);
 }
 
 }  // namespace script

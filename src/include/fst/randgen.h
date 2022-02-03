@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <memory>
@@ -31,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/accumulator.h>
@@ -69,7 +69,7 @@ class UniformArcSelector {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  explicit UniformArcSelector(uint64 seed = std::random_device()())
+  explicit UniformArcSelector(uint64_t seed = std::random_device()())
       : rand_(seed) {}
 
   size_t operator()(const Fst<Arc> &fst, StateId s) const {
@@ -97,7 +97,7 @@ class LogProbArcSelector {
   LogProbArcSelector() : seed_(std::random_device()()), rand_(seed_) {}
 
   // Constructs a selector with a given seed.
-  explicit LogProbArcSelector(uint64 seed) : seed_(seed), rand_(seed) {}
+  explicit LogProbArcSelector(uint64_t seed) : seed_(seed), rand_(seed) {}
 
   size_t operator()(const Fst<Arc> &fst, StateId s) const {
     // Finds total weight leaving state.
@@ -119,7 +119,7 @@ class LogProbArcSelector {
     return n;
   }
 
-  uint64 Seed() const { return seed_; }
+  uint64_t Seed() const { return seed_; }
 
  protected:
   Log64Weight ToLogWeight(const Weight &weight) const {
@@ -129,7 +129,7 @@ class LogProbArcSelector {
   std::mt19937_64 &MutableRand() const { return rand_; }
 
  private:
-  const uint64 seed_;
+  const uint64_t seed_;
   mutable std::mt19937_64 rand_;
   const WeightConvert<Weight, Log64Weight> to_log_weight_{};
 };
@@ -152,7 +152,7 @@ class FastLogProbArcSelector : public LogProbArcSelector<Arc> {
   // Constructs a selector with a non-deterministic seed.
   FastLogProbArcSelector() : LogProbArcSelector<Arc>() {}
   // Constructs a selector with a given seed.
-  explicit FastLogProbArcSelector(uint64 seed)
+  explicit FastLogProbArcSelector(uint64_t seed)
       : LogProbArcSelector<Arc>(seed) {}
 
   size_t operator()(const Fst<Arc> &fst, StateId s,
@@ -209,7 +209,7 @@ class ArcSampler {
   // The max_length argument may be interpreted (or ignored) by a selector as
   // it chooses. This generic version interprets this literally.
   ArcSampler(const Fst<Arc> &fst, const Selector &selector,
-             int32 max_length = std::numeric_limits<int32>::max())
+             int32_t max_length = std::numeric_limits<int32_t>::max())
       : fst_(fst), selector_(selector), max_length_(max_length) {}
 
   // Allow updating FST argument; pass only if changed.
@@ -257,7 +257,7 @@ class ArcSampler {
  private:
   const Fst<Arc> &fst_;
   const Selector &selector_;
-  const int32 max_length_;
+  const int32_t max_length_;
 
   // Stores (N, K) as described for Value().
   std::map<size_t, size_t> sample_map_;
@@ -303,7 +303,7 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
   using Selector = FastLogProbArcSelector<Arc>;
 
   ArcSampler(const Fst<Arc> &fst, const Selector &selector,
-             int32 max_length = std::numeric_limits<int32>::max())
+             int32_t max_length = std::numeric_limits<int32_t>::max())
       : fst_(fst),
         selector_(selector),
         max_length_(max_length),
@@ -380,7 +380,7 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
 
   const Fst<Arc> &fst_;
   const Selector &selector_;
-  const int32 max_length_;
+  const int32_t max_length_;
 
   // Stores (N, K) for Value().
   std::map<size_t, size_t> sample_map_;
@@ -398,13 +398,14 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
 template <class Sampler>
 struct RandGenFstOptions : public CacheOptions {
   Sampler *sampler;          // How to sample transitions at a state.
-  int32 npath;               // Number of paths to generate.
+  int32_t npath;             // Number of paths to generate.
   bool weighted;             // Is the output tree weighted by path count, or
                              // is it just an unweighted DAG?
   bool remove_total_weight;  // Remove total weight when output is weighted.
 
-  RandGenFstOptions(const CacheOptions &opts, Sampler *sampler, int32 npath = 1,
-                    bool weighted = true, bool remove_total_weight = false)
+  RandGenFstOptions(const CacheOptions &opts, Sampler *sampler,
+                    int32_t npath = 1, bool weighted = true,
+                    bool remove_total_weight = false)
       : CacheOptions(opts),
         sampler(sampler),
         npath(npath),
@@ -498,10 +499,10 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
     return CacheImpl<ToArc>::NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) &&
         (fst_->Properties(kError, false) || sampler_->Error())) {
       SetProperties(kError, kError);
@@ -565,7 +566,7 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
  private:
   const std::unique_ptr<Fst<FromArc>> fst_;
   std::unique_ptr<Sampler> sampler_;
-  const int32 npath_;
+  const int32_t npath_;
   std::vector<std::unique_ptr<RandState<FromArc>>> state_table_;
   const bool weighted_;
   bool remove_total_weight_;
@@ -654,16 +655,17 @@ inline void RandGenFst<FromArc, ToArc, Sampler>::InitStateIterator(
 template <class Selector>
 struct RandGenOptions {
   const Selector &selector;  // How an arc is selected at a state.
-  int32 max_length;          // Maximum path length.
-  int32 npath;               // Number of paths to generate.
+  int32_t max_length;        // Maximum path length.
+  int32_t npath;             // Number of paths to generate.
   bool weighted;             // Is the output tree weighted by path count, or
                              // is it just an unweighted DAG?
   bool remove_total_weight;  // Remove total weight when output is weighted?
 
-  explicit RandGenOptions(const Selector &selector,
-                          int32 max_length = std::numeric_limits<int32>::max(),
-                          int32 npath = 1, bool weighted = false,
-                          bool remove_total_weight = false)
+  explicit RandGenOptions(
+      const Selector &selector,
+      int32_t max_length = std::numeric_limits<int32_t>::max(),
+      int32_t npath = 1, bool weighted = false,
+      bool remove_total_weight = false)
       : selector(selector),
         max_length(max_length),
         npath(npath),
@@ -766,7 +768,7 @@ void RandGen(const Fst<FromArc> &ifst, MutableFst<ToArc> *ofst,
 // over the transitions.
 template <class FromArc, class ToArc>
 void RandGen(const Fst<FromArc> &ifst, MutableFst<ToArc> *ofst,
-             uint64 seed = std::random_device()()) {
+             uint64_t seed = std::random_device()()) {
   const UniformArcSelector<FromArc> uniform_selector(seed);
   RandGenOptions<UniformArcSelector<ToArc>> opts(uniform_selector);
   RandGen(ifst, ofst, opts);

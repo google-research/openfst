@@ -18,6 +18,8 @@
 #ifndef FST_SCRIPT_ARC_CLASS_H_
 #define FST_SCRIPT_ARC_CLASS_H_
 
+#include <cstdint>
+
 #include <fst/script/weight-class.h>
 
 namespace fst {
@@ -34,8 +36,8 @@ struct ArcClass {
         weight(arc.weight),
         nextstate(arc.nextstate) {}
 
-  ArcClass(int64 ilabel, int64 olabel, const WeightClass &weight,
-           int64 nextstate)
+  ArcClass(int64_t ilabel, int64_t olabel, const WeightClass &weight,
+           int64_t nextstate)
       : ilabel(ilabel), olabel(olabel), weight(weight), nextstate(nextstate) {}
 
   template <class Arc>
@@ -44,10 +46,10 @@ struct ArcClass {
                nextstate);
   }
 
-  int64 ilabel;
-  int64 olabel;
+  int64_t ilabel;
+  int64_t olabel;
   WeightClass weight;
-  int64 nextstate;
+  int64_t nextstate;
 };
 
 }  // namespace script

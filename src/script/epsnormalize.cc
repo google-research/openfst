@@ -28,11 +28,11 @@ void EpsNormalize(const FstClass &ifst, MutableFstClass *ofst,
     ofst->SetProperties(kError, kError);
     return;
   }
-  EpsNormalizeArgs args(ifst, ofst, norm_type);
-  Apply<Operation<EpsNormalizeArgs>>("EpsNormalize", ifst.ArcType(), &args);
+  FstEpsNormalizeArgs args{ifst, ofst, norm_type};
+  Apply<Operation<FstEpsNormalizeArgs>>("EpsNormalize", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(EpsNormalize, EpsNormalizeArgs);
+REGISTER_FST_OPERATION_3ARCS(EpsNormalize, FstEpsNormalizeArgs);
 
 }  // namespace script
 }  // namespace fst

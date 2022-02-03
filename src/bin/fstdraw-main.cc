@@ -18,6 +18,7 @@
 // Draws a binary FSTs in the Graphviz dot text format.
 
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>

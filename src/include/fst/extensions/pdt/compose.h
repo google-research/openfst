@@ -20,19 +20,19 @@
 #ifndef FST_EXTENSIONS_PDT_COMPOSE_H_
 #define FST_EXTENSIONS_PDT_COMPOSE_H_
 
+#include <cstdint>
 #include <list>
 
-#include <fst/types.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/compose.h>
 
 namespace fst {
 
 // Returns paren arcs for Find(kNoLabel).
-constexpr uint32 kParenList = 0x00000001;
+inline constexpr uint32_t kParenList = 0x00000001;
 
 // Returns a kNolabel loop for Find(paren).
-constexpr uint32 kParenLoop = 0x00000002;
+inline constexpr uint32_t kParenLoop = 0x00000002;
 
 // This class is a matcher that treats parens as multi-epsilon labels.
 // It is most efficient if the parens are in a range non-overlapping with
@@ -49,7 +49,7 @@ class ParenMatcher {
 
   // This makes a copy of the FST.
   ParenMatcher(const FST &fst, MatchType match_type,
-               uint32 flags = (kParenLoop | kParenList))
+               uint32_t flags = (kParenLoop | kParenList))
       : matcher_(fst, match_type), match_type_(match_type), flags_(flags) {
     if (match_type == MATCH_INPUT) {
       loop_.ilabel = kNoLabel;
@@ -64,7 +64,7 @@ class ParenMatcher {
 
   // This doesn't copy the FST.
   ParenMatcher(const FST *fst, MatchType match_type,
-               uint32 flags = (kParenLoop | kParenList))
+               uint32_t flags = (kParenLoop | kParenList))
       : matcher_(fst, match_type), match_type_(match_type), flags_(flags) {
     if (match_type == MATCH_INPUT) {
       loop_.ilabel = kNoLabel;
@@ -113,9 +113,11 @@ class ParenMatcher {
 
   const FST &GetFst() const { return matcher_.GetFst(); }
 
-  uint64 Properties(uint64 props) const { return matcher_.Properties(props); }
+  uint64_t Properties(uint64_t props) const {
+    return matcher_.Properties(props);
+  }
 
-  uint32 Flags() const { return matcher_.Flags(); }
+  uint32_t Flags() const { return matcher_.Flags(); }
 
   void AddOpenParen(Label label) {
     if (label == 0) {
@@ -166,7 +168,7 @@ class ParenMatcher {
 
   M matcher_;
   MatchType match_type_;  // Type of match to perform.
-  uint32 flags_;
+  uint32_t flags_;
   // Open paren label set.
   CompactSet<Label, kNoLabel> open_parens_;
   // Close paren label set.
@@ -369,7 +371,7 @@ class ParenFilter {
 
   Matcher2 *GetMatcher2() { return filter_.GetMatcher2(); }
 
-  uint64 Properties(uint64 iprops) const {
+  uint64_t Properties(uint64_t iprops) const {
     return filter_.Properties(iprops) & kILabelInvariantProperties &
            kOLabelInvariantProperties;
   }
@@ -448,7 +450,7 @@ class PdtComposeFstOptions<Arc, false>
   }
 };
 
-enum class PdtComposeFilter : uint8 {
+enum class PdtComposeFilter : uint8_t {
   PAREN,         // Bar-Hillel construction; keeps parentheses.
   EXPAND,        // Bar-Hillel + expansion; removes parentheses.
   EXPAND_PAREN,  // Bar-Hillel + expansion; keeps parentheses.

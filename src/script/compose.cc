@@ -29,11 +29,11 @@ void Compose(const FstClass &ifst1, const FstClass &ifst2,
     ofst->SetProperties(kError, kError);
     return;
   }
-  ComposeArgs args(ifst1, ifst2, ofst, opts);
-  Apply<Operation<ComposeArgs>>("Compose", ifst1.ArcType(), &args);
+  FstComposeArgs args{ifst1, ifst2, ofst, opts};
+  Apply<Operation<FstComposeArgs>>("Compose", ifst1.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Compose, ComposeArgs);
+REGISTER_FST_OPERATION_3ARCS(Compose, FstComposeArgs);
 
 }  // namespace script
 }  // namespace fst

@@ -21,6 +21,7 @@
 
 #include <fst/extensions/far/getters.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ namespace fst {
 
 namespace script {
 
-bool GetFarType(const std::string &str, FarType *far_type) {
+bool GetFarType(std::string_view str, FarType *far_type) {
   if (str == "fst") {
     *far_type = FarType::FST;
   } else if (str == "stlist") {
@@ -45,7 +46,7 @@ bool GetFarType(const std::string &str, FarType *far_type) {
   return true;
 }
 
-bool GetFarEntryType(const std::string &str, FarEntryType *entry_type) {
+bool GetFarEntryType(std::string_view str, FarEntryType *entry_type) {
   if (str == "line") {
     *entry_type = FarEntryType::LINE;
   } else if (str == "file") {

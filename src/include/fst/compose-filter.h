@@ -21,7 +21,8 @@
 #ifndef FST_COMPOSE_FILTER_H_
 #define FST_COMPOSE_FILTER_H_
 
-#include <fst/types.h>
+#include <cstdint>
+
 
 #include <fst/filter-state.h>
 #include <fst/fst-decl.h>  // For optional argument declarations
@@ -86,7 +87,7 @@ namespace fst {
 //   // This specifies how the filter affects the composition result properties.
 //   It takes as argument the properties that would apply with a trivial
 //   // composition filter.
-//   uint64 Properties(uint64 props) const;
+//   uint64_t Properties(uint64_t props) const;
 // };
 //
 // This filter allows only exact matching of symbols from FST1 with on FST2;
@@ -134,7 +135,7 @@ class NullComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -194,7 +195,7 @@ class TrivialComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -268,7 +269,7 @@ class SequenceComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -347,7 +348,7 @@ class AltSequenceComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -443,7 +444,7 @@ class MatchComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -513,7 +514,7 @@ class NoMatchComposeFilter {
 
   Matcher2 *GetMatcher2() { return matcher2_.get(); }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
  private:
   std::unique_ptr<Matcher1> matcher1_;
@@ -572,7 +573,7 @@ class MultiEpsFilter {
 
   Matcher2 *GetMatcher2() { return filter_.GetMatcher2(); }
 
-  uint64 Properties(uint64 iprops) const {
+  uint64_t Properties(uint64_t iprops) const {
     const auto oprops = filter_.Properties(iprops);
     return oprops & kILabelInvariantProperties & kOLabelInvariantProperties;
   }

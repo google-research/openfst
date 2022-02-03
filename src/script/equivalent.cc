@@ -24,13 +24,13 @@ namespace script {
 
 bool Equivalent(const FstClass &fst1, const FstClass &fst2, float delta) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Equivalent")) return false;
-  EquivalentInnerArgs iargs(fst1, fst2, delta);
-  EquivalentArgs args(iargs);
-  Apply<Operation<EquivalentArgs>>("Equivalent", fst1.ArcType(), &args);
+  FstEquivalentInnerArgs iargs{fst1, fst2, delta};
+  FstEquivalentArgs args(iargs);
+  Apply<Operation<FstEquivalentArgs>>("Equivalent", fst1.ArcType(), &args);
   return args.retval;
 }
 
-REGISTER_FST_OPERATION_3ARCS(Equivalent, EquivalentArgs);
+REGISTER_FST_OPERATION_3ARCS(Equivalent, FstEquivalentArgs);
 
 }  // namespace script
 }  // namespace fst

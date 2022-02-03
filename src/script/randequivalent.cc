@@ -17,22 +17,25 @@
 
 #include <fst/script/randequivalent.h>
 
+#include <cstdint>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
-bool RandEquivalent(const FstClass &fst1, const FstClass &fst2, int32 npath,
+bool RandEquivalent(const FstClass &fst1, const FstClass &fst2, int32_t npath,
                     const RandGenOptions<RandArcSelection> &opts, float delta,
-                    uint64 seed) {
+                    uint64_t seed) {
   if (!internal::ArcTypesMatch(fst1, fst2, "RandEquivalent")) return false;
-  RandEquivalentInnerArgs iargs(fst1, fst2, npath, opts, delta, seed);
-  RandEquivalentArgs args(iargs);
-  Apply<Operation<RandEquivalentArgs>>("RandEquivalent", fst1.ArcType(), &args);
+  FstRandEquivalentInnerArgs iargs{fst1, fst2, npath, opts, delta, seed};
+  FstRandEquivalentArgs args(iargs);
+  Apply<Operation<FstRandEquivalentArgs>>("RandEquivalent", fst1.ArcType(),
+                                          &args);
   return args.retval;
 }
 
-REGISTER_FST_OPERATION_3ARCS(RandEquivalent, RandEquivalentArgs);
+REGISTER_FST_OPERATION_3ARCS(RandEquivalent, FstRandEquivalentArgs);
 
 }  // namespace script
 }  // namespace fst

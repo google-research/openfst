@@ -22,13 +22,14 @@
 
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/replace.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool GetPdtComposeFilter(const std::string &str, PdtComposeFilter *cf);
+bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter *cf);
 
-bool GetPdtParserType(const std::string &str, PdtParserType *pt);
+bool GetPdtParserType(std::string_view str, PdtParserType *pt);
 
 }  // namespace script
 }  // namespace fst

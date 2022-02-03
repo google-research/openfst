@@ -1,4 +1,7 @@
 OpenFst: Release 1.8
+   * Adds farencode (1.8.2)
+   * Deletes MakeArcMapFst in favor of CTAD on ArcMapFst (1.8.2)
+   * Removes `int64` (etc.) type shims in place of <cstdint> (1.8.2)
    * Expands smart-pointer use (1.8.1)
    * Expands std::string_view use (1.8.1)
    * Removes SymbolTableReadOptions (1.8.1)

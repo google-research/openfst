@@ -29,11 +29,11 @@ void Disambiguate(const FstClass &ifst, MutableFstClass *ofst,
     ofst->SetProperties(kError, kError);
     return;
   }
-  DisambiguateArgs args(ifst, ofst, opts);
-  Apply<Operation<DisambiguateArgs>>("Disambiguate", ifst.ArcType(), &args);
+  FstDisambiguateArgs args{ifst, ofst, opts};
+  Apply<Operation<FstDisambiguateArgs>>("Disambiguate", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Disambiguate, DisambiguateArgs);
+REGISTER_FST_OPERATION_3ARCS(Disambiguate, FstDisambiguateArgs);
 
 }  // namespace script
 }  // namespace fst

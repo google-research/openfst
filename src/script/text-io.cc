@@ -20,6 +20,7 @@
 #include <cstring>
 #include <ostream>
 #include <sstream>
+#include <string>
 #include <utility>
 
 #include <fst/log.h>
@@ -32,7 +33,7 @@ namespace fst {
 namespace script {
 
 // Reads vector of weights; returns true on success.
-bool ReadPotentials(const std::string &weight_type, const std::string &source,
+bool ReadPotentials(std::string_view weight_type, const std::string &source,
                     std::vector<WeightClass> *potentials) {
   std::ifstream istrm(source);
   if (!istrm) {
@@ -45,7 +46,8 @@ bool ReadPotentials(const std::string &weight_type, const std::string &source,
   potentials->clear();
   while (!istrm.getline(line, kLineLen).fail()) {
     ++nline;
-    std::vector<std::string_view> col = SplitString(line, "\n\t ", true);
+    std::vector<std::string_view> col =
+        StrSplit(line, ByAnyChar("\n\t "), SkipEmpty());
     if (col.empty() || col[0].empty()) continue;
     if (col.size() != 2) {
       FSTERROR() << "ReadPotentials: Bad number of columns, "

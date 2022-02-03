@@ -25,10 +25,11 @@
 #include <fst/script/closure.h>
 #include <fst/script/getters.h>
 
-DECLARE_bool(closure_plus);
+DECLARE_string(closure_type);
 
 int fstclosure_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::ClosureType;
   using fst::script::MutableFstClass;
 
   std::string usage = "Creates the Kleene closure of an FST.\n\n  Usage: ";
@@ -50,7 +51,14 @@ int fstclosure_main(int argc, char **argv) {
   std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_name, true));
   if (!fst) return 1;
 
-  s::Closure(fst.get(), s::GetClosureType(FST_FLAGS_closure_plus));
+  ClosureType closure_type;
+  if (!s::GetClosureType(FST_FLAGS_closure_type, &closure_type)) {
+    LOG(ERROR) << argv[0] << ": Unknown or unsupported closure type: "
+               << FST_FLAGS_closure_type;
+    return 1;
+  }
+
+  s::Closure(fst.get(), closure_type);
 
   return !fst->Write(out_name);
 }

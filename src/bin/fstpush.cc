@@ -25,7 +25,9 @@ DEFINE_bool(remove_total_weight, false,
             "Remove total weight when pushing weights");
 DEFINE_bool(remove_common_affix, false,
             "Remove common prefix/suffix when pushing labels");
-DEFINE_bool(to_final, false, "Push/reweight to final (vs. to initial) states");
+DEFINE_string(reweight_type, "to_initial",
+              "Push/reweight to final (vs. to initial) states: one of "
+              "\"to_initial\", \"to_final\"");
 
 int fstpush_main(int argc, char **argv);
 

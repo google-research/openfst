@@ -15,56 +15,29 @@
 #ifndef FST_EXTENSIONS_FAR_CONVERT_H_
 #define FST_EXTENSIONS_FAR_CONVERT_H_
 
-#include <memory>
-#include <string>
-
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/extensions/far/map-reduce.h>
 #include <fst/register.h>
+#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-void FarConvert(const std::string &in_source, const std::string &out_source,
-                const std::string &fst_type, const FarType &far_type) {
-  std::unique_ptr<FarReader<Arc>> reader(FarReader<Arc>::Open(in_source));
-  if (!reader) {
-    FSTERROR() << "FarConvert: Cannot open input FAR: " << in_source;
-    return;
-  }
-
-  std::unique_ptr<FarWriter<Arc>> writer(
-      FarWriter<Arc>::Create(out_source, far_type));
-  if (!writer) {
-    FSTERROR() << "FarConvert: Cannot open output FAR as type "
-               << GetFarTypeString(far_type) << " : " << out_source;
-    return;
-  }
-
-  for (; !reader->Done(); reader->Next()) {
-    const std::string key = reader->GetKey();
-    const Fst<Arc> *const fst = reader->GetFst();
-
-    if (fst_type.empty() || fst->Type() == fst_type) {
-      writer->Add(key, *fst);
-    } else {
-      auto converted_fst = fst::WrapUnique(Convert(*fst, fst_type));
-      if (!converted_fst) {
-        FSTERROR() << "FarConvert: Cannot convert FST with key " << key
-                   << " to " << fst_type;
-        return;
-      }
-
-      writer->Add(key, *converted_fst);
-    }
-  }
-
-  if (reader->Error()) {
-    FSTERROR() << "FarConvert: Error reading FAR: " << in_source;
-  }
-  if (writer->Error()) {
-    FSTERROR() << "FarConvert: Error writing FAR: " << out_source;
-  }
+void Convert(FarReader<Arc> &reader, FarWriter<Arc> &writer,
+             std::string_view fst_type) {
+  internal::Map(reader, writer,
+                [&fst_type](std::string_view key, const Fst<Arc> *ifst) {
+                  if (fst_type.empty() || ifst->Type() == fst_type) {
+                    return fst::WrapUnique(ifst->Copy());
+                  }
+                  auto ofst = fst::WrapUnique(Convert(*ifst, fst_type));
+                  if (!ofst) {
+                    FSTERROR() << "FarConvert: Cannot convert FST with key "
+                               << key << " to " << fst_type;
+                  }
+                  return ofst;
+                });
 }
 
 }  // namespace fst

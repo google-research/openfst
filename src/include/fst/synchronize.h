@@ -21,13 +21,12 @@
 #define FST_SYNCHRONIZE_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <fst/types.h>
 
 #include <fst/cache.h>
 #include <fst/test-properties.h>
@@ -139,10 +138,10 @@ class SynchronizeFstImpl : public CacheImpl<Arc> {
     return CacheImpl<Arc>::NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, returning other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && fst_->Properties(kError, false)) {
       SetProperties(kError, kError);
     }
@@ -188,18 +187,19 @@ class SynchronizeFstImpl : public CacheImpl<Arc> {
   }
 
   StringView FindString(String &&str) {
-    const auto insert_result = string_set_.insert(std::forward<String>(str));
-    return *insert_result.first;
+    const auto [str_it, unused] = string_set_.insert(std::forward<String>(str));
+    return *str_it;
   }
 
   // Finds state corresponding to an element. Creates new state if element
   // is not found.
   StateId FindState(const Element &element) {
-    const auto insert_result = element_map_.emplace(element, elements_.size());
-    if (insert_result.second) {
+    const auto &[iter, inserted] =
+        element_map_.emplace(element, elements_.size());
+    if (inserted) {
       elements_.push_back(element);
     }
-    return insert_result.first->second;
+    return iter->second;
   }
 
   // Computes the outgoing transitions from a state, creating new destination

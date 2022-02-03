@@ -21,6 +21,7 @@
 #define FST_UTIL_H_
 
 #include <array>
+#include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <list>
@@ -35,7 +36,6 @@
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fstream>
 #include <fst/mapped-file.h>
@@ -50,8 +50,9 @@
 
 DECLARE_bool(fst_error_fatal);
 
-#define FSTERROR() \
-  (FST_FLAGS_fst_error_fatal ? LOG(FATAL) : LOG(ERROR))
+#define FSTERROR()                                                     \
+  LOG(LEVEL(FST_FLAGS_fst_error_fatal ? base_logging::FATAL \
+                                                 : base_logging::ERROR))
 
 namespace fst {
 
@@ -60,29 +61,33 @@ namespace fst {
 // Reads types from an input stream.
 
 // Generic case.
-template <class T,
-          typename std::enable_if<std::is_class<T>::value, T>::type * = nullptr>
+template <class T, typename std::enable_if_t<std::is_class_v<T>, T> * = nullptr>
 inline std::istream &ReadType(std::istream &strm, T *t) {
   return t->Read(strm);
 }
 
 // Numeric (boolean, integral, floating-point) case.
-template <class T, typename std::enable_if<std::is_arithmetic<T>::value,
-                                           T>::type * = nullptr>
+template <class T,
+          typename std::enable_if_t<std::is_arithmetic_v<T>, T> * = nullptr>
 inline std::istream &ReadType(std::istream &strm, T *t) {
   return strm.read(reinterpret_cast<char *>(t), sizeof(T));
+}
+
+// Numeric (boolean, integral, floating-point) case only.
+template <class T>
+inline std::istream &ReadTypeN(std::istream &strm, size_t n, T *t) {
+  static_assert(std::is_arithmetic_v<T>, "Type not supported for batch read.");
+  return strm.read(reinterpret_cast<char *>(t), sizeof(T) * n);
 }
 
 // String case.
 inline std::istream &ReadType(std::istream &strm, std::string *s) {
   s->clear();
-  int32 ns = 0;
+  int32_t ns = 0;
   ReadType(strm, &ns);
-  for (int32 i = 0; i < ns; ++i) {
-    char c;
-    strm.read(&c, 1);
-    *s += c;
-  }
+  if (ns <= 0) return strm;
+  s->resize(ns);
+  ReadTypeN(strm, ns, s->data());
   return strm;
 }
 
@@ -119,29 +124,53 @@ namespace internal {
 template <class C, class ReserveFn>
 std::istream &ReadContainerType(std::istream &strm, C *c, ReserveFn reserve) {
   c->clear();
-  int64 n = 0;
+  int64_t n = 0;
   ReadType(strm, &n);
   reserve(c, n);
   auto insert = std::inserter(*c, c->begin());
-  for (int64 i = 0; i < n; ++i) {
+  for (int64_t i = 0; i < n; ++i) {
     typename C::value_type value;
     ReadType(strm, &value);
     *insert = value;
   }
   return strm;
 }
+
+// Generic vector case.
+template <typename T, class A,
+          typename std::enable_if_t<std::is_class_v<T>, T> * = nullptr>
+inline std::istream &ReadVectorType(std::istream &strm, std::vector<T, A> *c) {
+  return internal::ReadContainerType(
+      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+}
+
+// Vector of numerics (boolean, integral, floating-point, char) case.
+template <typename T, class A,
+          typename std::enable_if_t<std::is_arithmetic_v<T>, T> * = nullptr>
+inline std::istream &ReadVectorType(std::istream &strm, std::vector<T, A> *c) {
+  c->clear();
+  int64_t n = 0;
+  ReadType(strm, &n);
+  if (n == 0) return strm;
+  c->resize(n);
+  ReadTypeN(strm, n, c->data());
+  return strm;
+}
 }  // namespace internal
 
 template <class T, size_t N>
 std::istream &ReadType(std::istream &strm, std::array<T, N> *c) {
-  for (auto &v : *c) ReadType(strm, &v);
+  if (std::is_arithmetic_v<T>) {
+    ReadTypeN(strm, c->size(), c->data());
+  } else {
+    for (auto &v : *c) ReadType(strm, &v);
+  }
   return strm;
 }
 
 template <class... T>
 std::istream &ReadType(std::istream &strm, std::vector<T...> *c) {
-  return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+  return internal::ReadVectorType(strm, c);
 }
 
 template <class... T>
@@ -174,23 +203,25 @@ std::istream &ReadType(std::istream &strm, std::unordered_map<T...> *c) {
 // Writes types to an output stream.
 
 // Generic case.
-template <class T,
-          typename std::enable_if<std::is_class<T>::value, T>::type * = nullptr>
+template <class T, typename std::enable_if<
+                       std::is_class<T>::value &&
+                           // `string_view` is handled separately below.
+                           !std::is_convertible<T, std::string_view>::value,
+                       T>::type * = nullptr>
 inline std::ostream &WriteType(std::ostream &strm, const T t) {
   t.Write(strm);
   return strm;
 }
 
 // Numeric (boolean, integral, floating-point) case.
-template <class T, typename std::enable_if<std::is_arithmetic<T>::value,
-                                           T>::type * = nullptr>
+template <class T,
+          typename std::enable_if_t<std::is_arithmetic_v<T>, T> * = nullptr>
 inline std::ostream &WriteType(std::ostream &strm, const T t) {
   return strm.write(reinterpret_cast<const char *>(&t), sizeof(T));
 }
 
-// String case.
-inline std::ostream &WriteType(std::ostream &strm, const std::string &s) {
-  int32 ns = s.size();
+inline std::ostream &WriteType(std::ostream &strm, std::string_view s) {
+  int32_t ns = s.size();
   WriteType(strm, ns);
   return strm.write(s.data(), ns);
 }
@@ -235,7 +266,7 @@ std::ostream &WriteSequence(std::ostream &strm, const C &c) {
 
 template <class C>
 std::ostream &WriteContainer(std::ostream &strm, const C &c) {
-  const int64 n = c.size();
+  const int64_t n = c.size();
   WriteType(strm, n);
   WriteSequence(strm, c);
   return strm;
@@ -277,15 +308,16 @@ std::ostream &WriteType(std::ostream &strm, const std::unordered_set<T...> &c) {
   return internal::WriteContainer(strm, c);
 }
 
-// Utilities for converting between int64 or Weight and string.
+// Utilities for converting between int64_t or Weight and string.
 
-// Parses a 64-bit signed integer out of an input string. Returns a value iff
-// the entirety of the string is consumed during integer parsing, otherwise
-// returning `std::nullopt`.
-std::optional<int64> ParseInt64(std::string_view s);
+// Parses a 64-bit signed integer in some base out of an input string. The
+// string should consist only of digits (no prefixes such as "0x") and an
+// optionally preceding minus. Returns a value iff the entirety of the string is
+// consumed during integer parsing, otherwise returns `std::nullopt`.
+std::optional<int64_t> ParseInt64(std::string_view s, int base = 10);
 
-int64 StrToInt64(std::string_view s, std::string_view source, size_t nline,
-                 bool allow_negative, bool *error = nullptr);
+int64_t StrToInt64(std::string_view s, std::string_view source, size_t nline,
+                   bool allow_negative, bool *error = nullptr);
 
 template <typename Weight>
 Weight StrToWeight(std::string_view s) {
@@ -300,20 +332,14 @@ Weight StrToWeight(std::string_view s) {
 }
 
 template <typename Weight>
-void WeightToStr(Weight w, std::string *s) {
+std::string WeightToStr(Weight w) {
   std::ostringstream strm;
   strm.precision(9);
   strm << w;
-  s->append(strm.str().data(), strm.str().size());
+  return strm.str();
 }
 
 // Utilities for reading/writing integer pairs (typically labels).
-
-// Splits `line` on any of the chars in `delim`, dropping empty spans if
-// `omit_empty_strings` is true.
-std::vector<std::string_view> SplitString(std::string_view line,
-                                           std::string_view delim,
-                                           bool omit_empty_strings);
 
 template <typename I>
 bool ReadIntPairs(const std::string &source,
@@ -330,7 +356,8 @@ bool ReadIntPairs(const std::string &source,
   pairs->clear();
   while (strm.getline(line, kLineLen)) {
     ++nline;
-    std::vector<std::string_view> col = SplitString(line, "\n\t ", true);
+    std::vector<std::string_view> col =
+        StrSplit(line, ByAnyChar("\n\t "), SkipEmpty());
     // empty line or comment?
     if (col.empty() || col[0].empty() || col[0][0] == '#') continue;
     if (col.size() != 2) {

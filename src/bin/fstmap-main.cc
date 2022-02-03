@@ -63,11 +63,12 @@ int fstmap_main(int argc, char **argv) {
     return 1;
   }
 
-  const auto weight_param = !FST_FLAGS_weight.empty()
-                                ? WeightClass(ifst->WeightType(), FST_FLAGS_weight)
-                                : (FST_FLAGS_map_type == "times"
-                                       ? WeightClass::One(ifst->WeightType())
-                                       : WeightClass::Zero(ifst->WeightType()));
+  const auto weight_param =
+      !FST_FLAGS_weight.empty()
+          ? WeightClass(ifst->WeightType(), FST_FLAGS_weight)
+          : (FST_FLAGS_map_type == "times"
+                 ? WeightClass::One(ifst->WeightType())
+                 : WeightClass::Zero(ifst->WeightType()));
 
   std::unique_ptr<FstClass> ofst(
       s::Map(*ifst, map_type, FST_FLAGS_delta,

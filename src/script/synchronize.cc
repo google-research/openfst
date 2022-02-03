@@ -27,11 +27,11 @@ void Synchronize(const FstClass &ifst, MutableFstClass *ofst) {
     ofst->SetProperties(kError, kError);
     return;
   }
-  SynchronizeArgs args(ifst, ofst);
-  Apply<Operation<SynchronizeArgs>>("Synchronize", ifst.ArcType(), &args);
+  FstSynchronizeArgs args{ifst, ofst};
+  Apply<Operation<FstSynchronizeArgs>>("Synchronize", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Synchronize, SynchronizeArgs);
+REGISTER_FST_OPERATION_3ARCS(Synchronize, FstSynchronizeArgs);
 
 }  // namespace script
 }  // namespace fst

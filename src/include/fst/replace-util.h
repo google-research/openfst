@@ -20,11 +20,11 @@
 #ifndef FST_REPLACE_UTIL_H_
 #define FST_REPLACE_UTIL_H_
 
+#include <cstdint>
 #include <map>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/connect.h>
@@ -55,23 +55,23 @@ enum ReplaceLabelType {
 // The call_label_type and return_label_type options specify how to manage
 // the labels of the call arc and the return arc of the replace FST
 struct ReplaceUtilOptions {
-  int64 root;                          // Root rule for expansion.
+  int64_t root;                        // Root rule for expansion.
   ReplaceLabelType call_label_type;    // How to label call arc.
   ReplaceLabelType return_label_type;  // How to label return arc.
-  int64 return_label;                  // Label to put on return arc.
+  int64_t return_label;                // Label to put on return arc.
 
   explicit ReplaceUtilOptions(
-      int64 root = kNoLabel,
+      int64_t root = kNoLabel,
       ReplaceLabelType call_label_type = REPLACE_LABEL_INPUT,
       ReplaceLabelType return_label_type = REPLACE_LABEL_NEITHER,
-      int64 return_label = 0)
+      int64_t return_label = 0)
       : root(root),
         call_label_type(call_label_type),
         return_label_type(return_label_type),
         return_label(return_label) {}
 
   // For backwards compatibility.
-  ReplaceUtilOptions(int64 root, bool epsilon_replace_arc)
+  ReplaceUtilOptions(int64_t root, bool epsilon_replace_arc)
       : ReplaceUtilOptions(root, epsilon_replace_arc ? REPLACE_LABEL_NEITHER
                                                      : REPLACE_LABEL_INPUT) {}
 };
@@ -79,14 +79,14 @@ struct ReplaceUtilOptions {
 // Every non-terminal on a path appears as the first label on that path in every
 // FST associated with a given SCC of the replace dependency graph. This would
 // be true if the SCC were formed from left-linear grammar rules.
-constexpr uint8 kReplaceSCCLeftLinear = 0x01;
+inline constexpr uint8_t kReplaceSCCLeftLinear = 0x01;
 // Every non-terminal on a path appears as the final label on that path in every
 // FST associated with a given SCC of the replace dependency graph. This would
 // be true if the SCC were formed from right-linear grammar rules.
-constexpr uint8 kReplaceSCCRightLinear = 0x02;
+inline constexpr uint8_t kReplaceSCCRightLinear = 0x02;
 // The SCC in the replace dependency graph has more than one state or a
 // self-loop.
-constexpr uint8 kReplaceSCCNonTrivial = 0x04;
+inline constexpr uint8_t kReplaceSCCNonTrivial = 0x04;
 
 // Defined in replace.h.
 template <class Arc>
@@ -149,7 +149,7 @@ class ReplaceUtil {
   // kReplaceSCCRightLinear, that SCC can be represented as finite-state despite
   // any cyclic dependencies, but not by the usual replacement operation (see
   // fst/extensions/pdt/replace.h).
-  uint8 SCCProperties(StateId scc_id) {
+  uint8_t SCCProperties(StateId scc_id) {
     GetSCCProperties();
     return depsccprops_[scc_id];
   }
@@ -158,7 +158,7 @@ class ReplaceUtil {
   // RTN.
   bool Connected() const {
     GetDependencies(false);
-    uint64 props = kAccessible | kCoAccessible;
+    uint64_t props = kAccessible | kCoAccessible;
     for (Label i = 0; i < fst_array_.size(); ++i) {
       if (!fst_array_[i]) continue;
       if (fst_array_[i]->Properties(props, true) != props || !depaccess_[i]) {
@@ -241,7 +241,7 @@ class ReplaceUtil {
   Label root_fst_;                                    // Root FST ID.
   ReplaceLabelType call_label_type_;                  // See Replace().
   ReplaceLabelType return_label_type_;                // See Replace().
-  int64 return_label_;                                // See Replace().
+  int64_t return_label_;                              // See Replace().
   std::vector<const Fst<Arc> *> fst_array_;           // FST per ID.
   std::vector<MutableFst<Arc> *> mutable_fst_array_;  // Mutable FST per ID.
   std::vector<Label> nonterminal_array_;              // FST ID to non-terminal.
@@ -249,10 +249,10 @@ class ReplaceUtil {
   mutable VectorFst<Arc> depfst_;                     // FST ID dependencies.
   mutable std::vector<StateId> depscc_;               // FST SCC ID.
   mutable std::vector<bool> depaccess_;               // FST ID accessibility.
-  mutable uint64 depprops_;                           // Dependency FST props.
+  mutable uint64_t depprops_;                         // Dependency FST props.
   mutable bool have_stats_;                  // Have dependency statistics?
   mutable std::vector<ReplaceStats> stats_;  // Per-FST statistics.
-  mutable std::vector<uint8> depsccprops_;   // SCC properties.
+  mutable std::vector<uint8_t> depsccprops_;  // SCC properties.
   ReplaceUtil(const ReplaceUtil &) = delete;
   ReplaceUtil &operator=(const ReplaceUtil &) = delete;
 };
@@ -613,7 +613,7 @@ void ReplaceUtil<Arc>::GetSCCProperties() const {
     }
     depscc_visited[depscc] = true;
     std::vector<StateId> fstscc;  // SCCs of the current FST.
-    uint64 fstprops;
+    uint64_t fstprops;
     SccVisitor<Arc> scc_visitor(&fstscc, nullptr, nullptr, &fstprops);
     DfsVisit(*fst, &scc_visitor);
     for (StateIterator<Fst<Arc>> siter(*fst); !siter.Done(); siter.Next()) {

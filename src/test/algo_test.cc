@@ -32,23 +32,8 @@ DEFINE_int32(repeat, 25, "number of test repetitions");
 
 namespace {
 
-using ::fst::AlgoTester;
-using ::fst::ArcTpl;
-using ::fst::GallicArc;
-using ::fst::GallicWeight;
-using ::fst::LexicographicArc;
-using ::fst::LexicographicWeight;
-using ::fst::LogArc;
-using ::fst::LogWeight;
-using ::fst::MinMaxArc;
-using ::fst::MinMaxWeight;
-using ::fst::PowerWeight;
-using ::fst::StdArc;
-using ::fst::STRING_LEFT;
-using ::fst::STRING_RIGHT;
-using ::fst::StringArc;
-using ::fst::TropicalWeight;
-using ::fst::WeightGenerate;
+using fst::AlgoTester;
+using fst::WeightGenerate;
 
 }  // namespace
 
@@ -70,77 +55,34 @@ int main(int argc, char **argv) {
   VLOG(1) << "default_cache_gc:" << FST_FLAGS_fst_default_cache_gc;
   VLOG(1) << "default_cache_gc_limit:"
           << FST_FLAGS_fst_default_cache_gc_limit;
-
-#ifdef TEST_TROPICAL
-  using TropicalWeightGenerate = WeightGenerate<TropicalWeight>;
-  TropicalWeightGenerate tropical_generator(FST_FLAGS_seed, false);
-  AlgoTester<StdArc, TropicalWeightGenerate> tropical_tester(tropical_generator,
-                                                             FST_FLAGS_seed);
-  tropical_tester.Test();
-#endif  // TEST_TROPICAL
-
-#ifdef TEST_LOG
-  using LogWeightGenerate = WeightGenerate<LogWeight>;
-  LogWeightGenerate log_generator(FST_FLAGS_seed, false);
-  AlgoTester<LogArc, LogWeightGenerate> log_tester(log_generator, FST_FLAGS_seed);
-  log_tester.Test();
-#endif  // TEST_LOG
-
-#ifdef TEST_MINMAX
-  using MinMaxWeightGenerate = WeightGenerate<MinMaxWeight>;
-  MinMaxWeightGenerate minmax_generator(FST_FLAGS_seed, false);
-  AlgoTester<MinMaxArc, MinMaxWeightGenerate> minmax_tester(minmax_generator,
-                                                            FST_FLAGS_seed);
-  minmax_tester.Test();
+#if defined(TEST_TROPICAL)
+  using Arc = fst::StdArc;
+#elif defined(TEST_LOG)
+  using Arc = fst::LogArc;
+#elif defined(TEST_MINMAX)
+  using Arc = fst::MinMaxArc;
+#elif defined(TEST_LEFT_STRING)
+  using Arc = fst::StringArc<fst::STRING_LEFT>;
+#elif defined(TEST_RIGHT_STRING)
+  using Arc = fst::StringArc<fst::STRING_RIGHT>;
+#elif defined(TEST_GALLIC)
+  using Arc = fst::GallicArc<fst::StdArc>;
+#elif defined(TEST_LEXICOGRAPHIC)
+  using fst::LexicographicArc;
+  using fst::TropicalWeight;
+  using Arc = LexicographicArc<TropicalWeight, TropicalWeight>;
+#elif defined(TEST_POWER)
+  using fst::ArcTpl;
+  using fst::PowerWeight;
+  using fst::TropicalWeight;
+  using Arc = ArcTpl<PowerWeight<TropicalWeight, 3>>;
+#else
+  #error "Must have one of the TEST_* macros defined."
 #endif
-
-#ifdef TEST_LEFT_STRING
-  using StringWeightGenerate = WeightGenerate<StringWeight<int, STRING_LEFT>>;
-  StringWeightGenerate left_string_generator(FST_FLAGS_seed, false);
-  AlgoTester<StringArc<>, StringWeightGenerate> left_string_tester(
-      left_string_generator, FST_FLAGS_seed);
-  left_string_tester.Test();
-#endif  // TEST_LEFT_STRING
-
-#ifdef TEST_RIGHT_STRING
-  using StringWeightGenerate = WeightGenerate<StringWeight<int, STRING_RIGHT>>;
-  StringWeightGenerate right_string_generator(FST_FLAGS_seed, false);
-  AlgoTester<StringArc<STRING_RIGHT>, StringWeightGenerate> right_string_tester(
-      right_string_generator, FST_FLAGS_seed);
-  right_string_tester.Test();
-#endif  // TEST_RIGHT_STRING
-
-#ifdef TEST_GALLIC
-  using StdGallicArc = GallicArc<StdArc>;
-  using TropicalGallicWeightGenerate =
-      WeightGenerate<GallicWeight<int, TropicalWeight>>;
-  TropicalGallicWeightGenerate tropical_gallic_generator(FST_FLAGS_seed, false);
-  AlgoTester<StdGallicArc, TropicalGallicWeightGenerate> gallic_tester(
-      tropical_gallic_generator, FST_FLAGS_seed);
-  gallic_tester.Test();
-#endif  // TEST_GALLIC
-
-#ifdef TEST_LEXICOGRAPHIC
-  using TropicalLexicographicArc =
-      LexicographicArc<TropicalWeight, TropicalWeight>;
-  using TropicalLexicographicWeightGenerate =
-      WeightGenerate<LexicographicWeight<TropicalWeight, TropicalWeight>>;
-  TropicalLexicographicWeightGenerate lexicographic_generator(
-      FST_FLAGS_seed, false);
-  AlgoTester<TropicalLexicographicArc, TropicalLexicographicWeightGenerate>
-      lexicographic_tester(lexicographic_generator, FST_FLAGS_seed);
-  lexicographic_tester.Test();
-#endif  // TEST_LEXICOGRAPHIC
-
-#ifdef TEST_POWER
-  using TropicalCubeWeight = PowerWeight<TropicalWeight, 3>;
-  using TropicalCubeArc = ArcTpl<TropicalCubeWeight>;
-  using TropicalCubeWeightGenerate = WeightGenerate<TropicalCubeWeight>;
-  TropicalCubeWeightGenerate tropical_cube_generator(FST_FLAGS_seed, false);
-  AlgoTester<TropicalCubeArc, TropicalCubeWeightGenerate> tropical_cube_tester(
-      tropical_cube_generator, FST_FLAGS_seed);
-  tropical_cube_tester.Test();
-#endif  // TEST_POWER
+  WeightGenerate<Arc::Weight> weight_generator(FST_FLAGS_seed,
+                                               /*allow_zero=*/false);
+  AlgoTester<Arc> arc_tester(weight_generator, FST_FLAGS_seed);
+  arc_tester.Test();
 
   return 0;
 }

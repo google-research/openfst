@@ -28,11 +28,11 @@ void ShortestPath(const FstClass &ifst, MutableFstClass *ofst,
     ofst->SetProperties(kError, kError);
     return;
   }
-  ShortestPathArgs args(ifst, ofst, opts);
-  Apply<Operation<ShortestPathArgs>>("ShortestPath", ifst.ArcType(), &args);
+  FstShortestPathArgs args{ifst, ofst, opts};
+  Apply<Operation<FstShortestPathArgs>>("ShortestPath", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(ShortestPath, ShortestPathArgs);
+REGISTER_FST_OPERATION_3ARCS(ShortestPath, FstShortestPathArgs);
 
 }  // namespace script
 }  // namespace fst

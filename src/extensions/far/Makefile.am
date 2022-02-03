@@ -9,21 +9,20 @@ lib_LTLIBRARIES = libfstfar.la
 endif
 
 libfstfar_la_SOURCES = sttable.cc stlist.cc
-libfstfar_la_LDFLAGS = -version-info 24:0:0
+libfstfar_la_LDFLAGS = -version-info 25:0:0
 libfstfar_la_LIBADD = ../../lib/libfst.la -lm $(DL_LIBS)
 
 if HAVE_SCRIPT
-libfstfarscript_la_SOURCES = far-class.cc farscript.cc getters.cc script-impl.cc \
-                             strings.cc sttable.cc stlist.cc
-libfstfarscript_la_LDFLAGS = -version-info 24:0:0
-libfstfarscript_la_LIBADD = \
-    libfstfar.la ../../script/libfstscript.la \
-        ../../lib/libfst.la -lm $(DL_LIBS)
+libfstfarscript_la_SOURCES = compile-strings.cc far-class.cc farscript.cc \
+							 getters.cc script-impl.cc sttable.cc stlist.cc
+libfstfarscript_la_LDFLAGS = -version-info 25:0:0
+libfstfarscript_la_LIBADD = libfstfar.la ../../script/libfstscript.la \
+        					../../lib/libfst.la -lm $(DL_LIBS)
 endif
 
 if HAVE_BIN
-bin_PROGRAMS = farcompilestrings farconvert farcreate farequal farextract \
-    farinfo farisomorphic farprintstrings
+bin_PROGRAMS = farcompilestrings farconvert farcreate farencode farequal \
+			   farextract farinfo farisomorphic farprintstrings
 
 LDADD = libfstfarscript.la ../../script/libfstscript.la \
         ../../lib/libfst.la -lm $(DL_LIBS)
@@ -35,6 +34,8 @@ farconvert_SOURCES = farconvert.cc farconvert-main.cc
 farcreate_SOURCES = farcreate.cc farcreate-main.cc
 
 farequal_SOURCES = farequal.cc farequal-main.cc
+
+farencode_SOURCES = farencode.cc farencode-main.cc
 
 farextract_SOURCES = farextract.cc farextract-main.cc
 

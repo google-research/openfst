@@ -17,6 +17,9 @@
 
 #include <fst/script/convert.h>
 
+#include <string>
+#include <utility>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
@@ -24,13 +27,13 @@ namespace script {
 
 std::unique_ptr<FstClass> Convert(const FstClass &ifst,
                                   const std::string &new_type) {
-  ConvertInnerArgs iargs(ifst, new_type);
-  ConvertArgs args(iargs);
-  Apply<Operation<ConvertArgs>>("Convert", ifst.ArcType(), &args);
+  FstConvertInnerArgs iargs{ifst, new_type};
+  FstConvertArgs args(iargs);
+  Apply<Operation<FstConvertArgs>>("Convert", ifst.ArcType(), &args);
   return std::move(args.retval);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Convert, ConvertArgs);
+REGISTER_FST_OPERATION_3ARCS(Convert, FstConvertArgs);
 
 }  // namespace script
 }  // namespace fst

@@ -18,10 +18,10 @@
 #ifndef FST_SCRIPT_MAP_H_
 #define FST_SCRIPT_MAP_H_
 
+#include <cstdint>
 #include <memory>
 #include <tuple>
 
-#include <fst/types.h>
 #include <fst/arc-map.h>
 #include <fst/state-map.h>
 #include <fst/script/arg-packs.h>
@@ -49,7 +49,7 @@ std::unique_ptr<Fst<typename M::ToArc>> StateMap(
   return ofst;
 }
 
-enum class MapType : uint8 {
+enum class MapType : uint8_t {
   ARC_SUM,
   ARC_UNIQUE,
   IDENTITY,
@@ -67,13 +67,13 @@ enum class MapType : uint8 {
   TO_STD
 };
 
-using MapInnerArgs =
+using FstMapInnerArgs =
     std::tuple<const FstClass &, MapType, float, double, const WeightClass &>;
 
-using MapArgs = WithReturnValue<std::unique_ptr<FstClass>, MapInnerArgs>;
+using FstMapArgs = WithReturnValue<std::unique_ptr<FstClass>, FstMapInnerArgs>;
 
 template <class Arc>
-void Map(MapArgs *args) {
+void Map(FstMapArgs *args) {
   using Weight = typename Arc::Weight;
   const Fst<Arc> &ifst = *std::get<0>(args->args).GetFst<Arc>();
   const auto map_type = std::get<1>(args->args);

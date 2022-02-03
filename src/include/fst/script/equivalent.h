@@ -27,13 +27,13 @@
 namespace fst {
 namespace script {
 
-using EquivalentInnerArgs =
+using FstEquivalentInnerArgs =
     std::tuple<const FstClass &, const FstClass &, float>;
 
-using EquivalentArgs = WithReturnValue<bool, EquivalentInnerArgs>;
+using FstEquivalentArgs = WithReturnValue<bool, FstEquivalentInnerArgs>;
 
 template <class Arc>
-void Equivalent(EquivalentArgs *args) {
+void Equivalent(FstEquivalentArgs *args) {
   const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
   args->retval = Equivalent(fst1, fst2, std::get<2>(args->args));

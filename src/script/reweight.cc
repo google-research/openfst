@@ -24,11 +24,11 @@ namespace script {
 
 void Reweight(MutableFstClass *fst, const std::vector<WeightClass> &potential,
               ReweightType reweight_type) {
-  ReweightArgs args(fst, potential, reweight_type);
-  Apply<Operation<ReweightArgs>>("Reweight", fst->ArcType(), &args);
+  FstReweightArgs args{fst, potential, reweight_type};
+  Apply<Operation<FstReweightArgs>>("Reweight", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Reweight, ReweightArgs);
+REGISTER_FST_OPERATION_3ARCS(Reweight, FstReweightArgs);
 
 }  // namespace script
 }  // namespace fst

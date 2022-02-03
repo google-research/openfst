@@ -23,11 +23,11 @@ namespace fst {
 namespace script {
 
 void ArcSort(MutableFstClass *fst, ArcSortType sort_type) {
-  ArcSortArgs args(fst, sort_type);
-  Apply<Operation<ArcSortArgs>>("ArcSort", fst->ArcType(), &args);
+  FstArcSortArgs args{fst, sort_type};
+  Apply<Operation<FstArcSortArgs>>("ArcSort", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(ArcSort, ArcSortArgs);
+REGISTER_FST_OPERATION_3ARCS(ArcSort, FstArcSortArgs);
 
 }  // namespace script
 }  // namespace fst

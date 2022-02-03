@@ -18,6 +18,7 @@
 #ifndef FST_SYMBOL_TABLE_OPS_H_
 #define FST_SYMBOL_TABLE_OPS_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -83,8 +84,8 @@ SymbolTable *FstReadSymbols(const std::string &source, bool input);
 // Adds a contiguous range of symbols to a symbol table using a simple prefix
 // for the string, returning false if the inserted symbol string clashes with
 // any currently present.
-bool AddAuxiliarySymbols(const std::string &prefix, int64 start_label,
-                         int64 nlabels, SymbolTable *syms);
+bool AddAuxiliarySymbols(const std::string &prefix, int64_t start_label,
+                         int64_t nlabels, SymbolTable *syms);
 
 }  // namespace fst
 

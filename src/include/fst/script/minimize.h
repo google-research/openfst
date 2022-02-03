@@ -26,11 +26,11 @@
 namespace fst {
 namespace script {
 
-using MinimizeArgs =
+using FstMinimizeArgs =
     std::tuple<MutableFstClass *, MutableFstClass *, float, bool>;
 
 template <class Arc>
-void Minimize(MinimizeArgs *args) {
+void Minimize(FstMinimizeArgs *args) {
   MutableFst<Arc> *ofst1 = std::get<0>(*args)->GetMutableFst<Arc>();
   MutableFst<Arc> *ofst2 =
       std::get<1>(*args) ? std::get<1>(*args)->GetMutableFst<Arc>() : nullptr;

@@ -37,15 +37,15 @@ namespace fst {
 namespace internal {
 
 // Orders weights for equality checking; delta is ignored.
-template <class Weight, typename std::enable_if<
-                            IsIdempotent<Weight>::value>::type * = nullptr>
+template <class Weight,
+          typename std::enable_if_t<IsIdempotent<Weight>::value> * = nullptr>
 bool WeightCompare(const Weight &w1, const Weight &w2, float, bool *) {
   static const NaturalLess<Weight> less;
   return less(w1, w2);
 }
 
-template <class Weight, typename std::enable_if<
-                            !IsIdempotent<Weight>::value>::type * = nullptr>
+template <class Weight,
+          typename std::enable_if_t<!IsIdempotent<Weight>::value> * = nullptr>
 bool WeightCompare(const Weight &w1, const Weight &w2, float delta,
                    bool *error) {
   // No natural order; use hash.
@@ -85,11 +85,11 @@ class Isomorphism {
     }
     PairState(fst1_->Start(), fst2_->Start());
     while (!queue_.empty()) {
-      const auto &pr = queue_.front();
-      if (!IsIsomorphicState(pr.first, pr.second)) {
+      const auto &[state1, state2] = queue_.front();
+      if (!IsIsomorphicState(state1, state2)) {
         if (nondet_) {
           VLOG(1) << "Isomorphic: Non-determinism as an unweighted automaton. "
-                  << "state1: " << pr.first << " state2: " << pr.second;
+                  << "state1: " << state1 << " state2: " << state2;
           error_ = true;
         }
         return false;

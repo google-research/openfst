@@ -30,10 +30,6 @@ DEFINE_string(sigma_fst_rewrite_mode, "auto",
 
 namespace fst {
 
-const char sigma_fst_type[] = "sigma";
-const char input_sigma_fst_type[] = "input_sigma";
-const char output_sigma_fst_type[] = "output_sigma";
-
 REGISTER_FST(SigmaFst, StdArc);
 REGISTER_FST(SigmaFst, LogArc);
 REGISTER_FST(SigmaFst, Log64Arc);

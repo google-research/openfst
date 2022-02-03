@@ -28,7 +28,7 @@
 
 namespace fst {
 
-const int kNoTrieNodeId = -1;
+inline constexpr int kNoTrieNodeId = -1;
 
 // Forward declarations of all available trie topologies.
 template <class L, class H>

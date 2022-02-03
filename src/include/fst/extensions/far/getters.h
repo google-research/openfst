@@ -21,16 +21,19 @@
 #ifndef FST_EXTENSIONS_FAR_GETTERS_H_
 #define FST_EXTENSIONS_FAR_GETTERS_H_
 
+#include <string>
+
 #include <fst/flags.h>
 #include <fst/extensions/far/far.h>
 #include <fst/string.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool GetFarType(const std::string &str, FarType *far_type);
+bool GetFarType(std::string_view str, FarType *far_type);
 
-bool GetFarEntryType(const std::string &str, FarEntryType *entry_type);
+bool GetFarEntryType(std::string_view str, FarEntryType *entry_type);
 
 void ExpandArgs(int argc, char **argv, int *argcp, char ***argvp);
 

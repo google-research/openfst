@@ -27,10 +27,11 @@
 #include <fst/script/reweight.h>
 #include <fst/script/text-io.h>
 
-DECLARE_bool(to_final);
+DECLARE_string(reweight_type);
 
 int fstreweight_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::ReweightType;
   using fst::script::MutableFstClass;
   using fst::script::WeightClass;
 
@@ -57,8 +58,14 @@ int fstreweight_main(int argc, char **argv) {
     return 1;
   }
 
-  s::Reweight(fst.get(), potential,
-              s::GetReweightType(FST_FLAGS_to_final));
+  ReweightType reweight_type;
+  if (!s::GetReweightType(FST_FLAGS_reweight_type, &reweight_type)) {
+    LOG(ERROR) << argv[0] << ": Unknown or unsupported reweight type: "
+               << FST_FLAGS_reweight_type;
+    return 1;
+  }
+
+  s::Reweight(fst.get(), potential, reweight_type);
 
   return !fst->Write(out_name);
 }

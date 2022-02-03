@@ -27,8 +27,8 @@ void Concat(MutableFstClass *fst1, const FstClass &fst2) {
     fst1->SetProperties(kError, kError);
     return;
   }
-  ConcatArgs1 args(fst1, fst2);
-  Apply<Operation<ConcatArgs1>>("Concat", fst1->ArcType(), &args);
+  FstConcatArgs1 args{fst1, fst2};
+  Apply<Operation<FstConcatArgs1>>("Concat", fst1->ArcType(), &args);
 }
 
 void Concat(const FstClass &fst1, MutableFstClass *fst2) {
@@ -36,8 +36,8 @@ void Concat(const FstClass &fst1, MutableFstClass *fst2) {
     fst2->SetProperties(kError, kError);
     return;
   }
-  ConcatArgs2 args(fst1, fst2);
-  Apply<Operation<ConcatArgs2>>("Concat", fst2->ArcType(), &args);
+  FstConcatArgs2 args{fst1, fst2};
+  Apply<Operation<FstConcatArgs2>>("Concat", fst2->ArcType(), &args);
 }
 
 void Concat(const std::vector<FstClass *> &fsts1, MutableFstClass *fst2) {
@@ -47,12 +47,13 @@ void Concat(const std::vector<FstClass *> &fsts1, MutableFstClass *fst2) {
       return;
     }
   }
-  ConcatArgs3 args(fsts1, fst2);
-  Apply<Operation<ConcatArgs3>>("Concat", fst2->ArcType(), &args);
+  FstConcatArgs3 args{fsts1, fst2};
+  Apply<Operation<FstConcatArgs3>>("Concat", fst2->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Concat, ConcatArgs1);
-REGISTER_FST_OPERATION_3ARCS(Concat, ConcatArgs2);
+REGISTER_FST_OPERATION_3ARCS(Concat, FstConcatArgs1);
+REGISTER_FST_OPERATION_3ARCS(Concat, FstConcatArgs2);
+REGISTER_FST_OPERATION_3ARCS(Concat, FstConcatArgs3);
 
 }  // namespace script
 }  // namespace fst

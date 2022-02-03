@@ -20,6 +20,7 @@
 #ifndef FST_EXTENSIONS_FAR_EXTRACT_H_
 #define FST_EXTENSIONS_FAR_EXTRACT_H_
 
+#include <cstdint>
 #include <iomanip>
 #include <memory>
 #include <string>
@@ -33,7 +34,7 @@ namespace fst {
 
 template <class Arc>
 inline void FarWriteFst(const Fst<Arc> *fst, std::string_view key,
-                        std::string *okey, int *nrep, int32 generate_sources,
+                        std::string *okey, int *nrep, int32_t generate_sources,
                         int i, std::string_view source_prefix,
                         std::string_view source_suffix) {
   DCHECK_NE(fst, nullptr);
@@ -58,63 +59,60 @@ inline void FarWriteFst(const Fst<Arc> *fst, std::string_view key,
 }
 
 template <class Arc>
-void FarExtract(const std::vector<std::string> &isources,
-                int32 generate_sources, const std::string &keys,
-                const std::string &key_separator,
-                const std::string &range_delimiter,
-                const std::string &source_prefix,
-                const std::string &source_suffix) {
-  std::unique_ptr<FarReader<Arc>> far_reader(FarReader<Arc>::Open(isources));
-  if (!far_reader) return;
+void Extract(FarReader<Arc> &reader, int32_t generate_sources,
+             const std::string &keys, const std::string &key_separator,
+             const std::string &range_delimiter,
+             const std::string &source_prefix,
+             const std::string &source_suffix) {
   std::string okey;
   int nrep = 0;
   // User has specified a set of FSTs to extract, where some of these may in
   // fact be ranges.
   if (!keys.empty()) {
     std::vector<std::string_view> key_vector =
-        SplitString(keys, key_separator, true);
+        StrSplit(keys, ByAnyChar(key_separator), SkipEmpty());
     int i = 0;
     for (size_t k = 0; k < key_vector.size(); ++k, ++i) {
       std::string_view key = key_vector[k];
       std::vector<std::string_view> range_vector =
-          SplitString(key, range_delimiter, false);
+          StrSplit(key, ByAnyChar(range_delimiter));
       if (range_vector.size() == 1) {  // Not a range
-        if (!far_reader->Find(key)) {
-          LOG(ERROR) << "FarExtract: Cannot find key " << key;
+        if (!reader.Find(key)) {
+          LOG(ERROR) << "Extract: Cannot find key " << key;
           return;
         }
-        const auto *fst = far_reader->GetFst();
+        const auto *fst = reader.GetFst();
         FarWriteFst(fst, key, &okey, &nrep, generate_sources, i, source_prefix,
                     source_suffix);
       } else if (range_vector.size() == 2) {  // A legal range
         std::string_view begin_key = range_vector[0];
         std::string_view end_key = range_vector[1];
         if (begin_key.empty() || end_key.empty()) {
-          LOG(ERROR) << "FarExtract: Illegal range specification " << key;
+          LOG(ERROR) << "Extract: Illegal range specification " << key;
           return;
         }
-        if (!far_reader->Find(begin_key)) {
-          LOG(ERROR) << "FarExtract: Cannot find key " << begin_key;
+        if (!reader.Find(begin_key)) {
+          LOG(ERROR) << "Extract: Cannot find key " << begin_key;
           return;
         }
-        for (; !far_reader->Done(); far_reader->Next(), ++i) {
-          const auto &ikey = far_reader->GetKey();
+        for (; !reader.Done(); reader.Next(), ++i) {
+          const auto &ikey = reader.GetKey();
           if (end_key < ikey) break;
-          const auto *fst = far_reader->GetFst();
+          const auto *fst = reader.GetFst();
           FarWriteFst(fst, ikey, &okey, &nrep, generate_sources, i,
                       source_prefix, source_suffix);
         }
       } else {
-        LOG(ERROR) << "FarExtract: Illegal range specification " << key;
+        LOG(ERROR) << "Extract: Illegal range specification " << key;
         return;
       }
     }
     return;
   }
   // Nothing specified, so just extracts everything.
-  for (size_t i = 1; !far_reader->Done(); far_reader->Next(), ++i) {
-    const auto &key = far_reader->GetKey();
-    const auto *fst = far_reader->GetFst();
+  for (size_t i = 1; !reader.Done(); reader.Next(), ++i) {
+    const auto &key = reader.GetKey();
+    const auto *fst = reader.GetFst();
     FarWriteFst(fst, key, &okey, &nrep, generate_sources, i, source_prefix,
                 source_suffix);
   }

@@ -21,7 +21,6 @@
 #ifndef FST_UNION_FIND_H_
 #define FST_UNION_FIND_H_
 
-#include <stack>
 #include <vector>
 
 namespace fst {
@@ -41,10 +40,16 @@ class UnionFind {
     if (item >= parent_.size() || item == fail_ || parent_[item] == fail_) {
       return fail_;
     }
-    auto *p = &parent_[item];
-    for (; *p != item; item = *p, p = &parent_[item]) exec_stack_.push(p);
-    for (; !exec_stack_.empty(); exec_stack_.pop()) *exec_stack_.top() = *p;
-    return *p;
+    T root = item;
+    while (root != parent_[root]) {
+      root = parent_[root];
+    }
+    while (item != parent_[item]) {
+      T parent = parent_[item];
+      parent_[item] = root;
+      item = parent;
+    }
+    return root;
   }
 
   // Creates the (destructive) union of the sets x and y belong to.
@@ -69,6 +74,9 @@ class UnionFind {
     for (T item = 0; item < max; ++item) parent_[item] = item;
   }
 
+  // For testing only.
+  const T &Parent(const T &x) const { return parent_[x]; }
+
  private:
   // Links trees rooted in 'x' and 'y'.
   void Link(T x, T y) {
@@ -87,10 +95,9 @@ class UnionFind {
 
   UnionFind &operator=(const UnionFind &) = delete;
 
-  std::vector<T> parent_;       // Parent nodes.
-  std::vector<int> rank_;       // Rank of an element = min. depth in tree.
-  T fail_;                      // Value indicating lookup failure.
-  std::stack<T *> exec_stack_;  // Used for path compression.
+  std::vector<T> parent_;  // Parent nodes.
+  std::vector<int> rank_;  // Rank of an element = min. depth in tree.
+  T fail_;                 // Value indicating lookup failure.
 };
 
 }  // namespace fst

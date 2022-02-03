@@ -17,19 +17,20 @@
 
 #include <fst/script/info.h>
 
+#include <string>
+
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
-void Info(const FstClass &fst, bool test_properties,
-          const std::string &arc_filter, const std::string &info_type,
-          bool verify) {
-  InfoArgs args(fst, test_properties, arc_filter, info_type, verify);
-  Apply<Operation<InfoArgs>>("Info", fst.ArcType(), &args);
+void Info(const FstClass &fst, bool test_properties, ArcFilterType arc_filter,
+          const std::string &info_type, bool verify) {
+  FstInfoArgs args{fst, test_properties, arc_filter, info_type, verify};
+  Apply<Operation<FstInfoArgs>>("Info", fst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Info, InfoArgs);
+REGISTER_FST_OPERATION_3ARCS(Info, FstInfoArgs);
 
 }  // namespace script
 }  // namespace fst

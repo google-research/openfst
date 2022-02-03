@@ -17,6 +17,7 @@
 //
 // Tests if two Far files contains isomorphic (key,fst) pairs.
 
+#include <memory>
 #include <string>
 
 #include <fst/flags.h>
@@ -29,6 +30,7 @@ DECLARE_double(delta);
 
 int farisomorphic_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FarReaderClass;
 
   std::string usage = "Compares the FSTs in two FST archives for isomorphism.";
   usage += "\n\n  Usage:";
@@ -45,14 +47,26 @@ int farisomorphic_main(int argc, char **argv) {
     return 1;
   }
 
-  const auto arc_type = s::LoadArcTypeFromFar(argv[1]);
-  if (arc_type.empty()) return 1;
+  std::unique_ptr<FarReaderClass> reader1(FarReaderClass::Open(argv[1]));
+  if (!reader1) return 1;
 
-  bool result = s::FarIsomorphic(
-      argv[1], argv[2], arc_type, FST_FLAGS_delta,
+  std::unique_ptr<FarReaderClass> reader2(FarReaderClass::Open(argv[2]));
+  if (!reader2) return 1;
+
+  const bool result = s::Isomorphic(
+      *reader1, *reader2, FST_FLAGS_delta,
       FST_FLAGS_begin_key, FST_FLAGS_end_key);
 
-  if (!result) VLOG(1) << "FARs are not isomorphic.";
+  if (reader1->Error()) {
+    FSTERROR() << "Error reading FAR: " << argv[1];
+    return 1;
+  }
+  if (reader2->Error()) {
+    FSTERROR() << "Error reading FAR: " << argv[2];
+    return 1;
+  }
+
+  if (!result) VLOG(1) << "FARs are not isomorphic";
 
   return result ? 0 : 2;
 }

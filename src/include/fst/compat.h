@@ -1,11 +1,13 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Copyright 2005-2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
+// distributed under the License is distributed on an 'AS IS' BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -13,15 +15,19 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
-#ifndef FST_LIB_COMPAT_H_
-#define FST_LIB_COMPAT_H_
+#ifndef FST_COMPAT_H_
+#define FST_COMPAT_H_
 
+#include <algorithm>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -29,17 +35,10 @@
 #if defined(__GNUC__) || defined(__clang__)
 #define OPENFST_DEPRECATED(message) __attribute__((deprecated(message)))
 #elif defined(_MSC_VER)
-#define OPENFST_DEPRECATED(message) __declspec(deprecated(message))
+#define OPENFST_DEPRECATED(message) [[deprecated(message)]]
 #else
 #define OPENFST_DEPRECATED(message)
 #endif
-
-#include <fst/config.h>
-#include <fst/types.h>
-#include <fst/lock.h>
-#include <fst/flags.h>
-#include <fst/log.h>
-#include <fst/icu.h>
 
 void FailedNewHandler();
 
@@ -69,18 +68,19 @@ inline Dest bit_cast(const Source &source) {
 
 namespace internal {
 
+// TODO(kbg): Remove this once we migrate to C++20.
 template <typename T>
-struct identity {
-  typedef T type;
+struct type_identity {
+  using type = T;
 };
 
 template <typename T>
-using identity_t = typename identity<T>::type;
+using type_identity_t = typename type_identity<T>::type;
 
 }  // namespace internal
 
 template <typename To>
-constexpr To implicit_cast(typename internal::identity_t<To> to) {
+constexpr To implicit_cast(typename internal::type_identity_t<To> to) {
   return to;
 }
 
@@ -91,14 +91,12 @@ class CheckSummer {
 
   void Reset();
 
-  void Update(void const *data, int size);
-
-  void Update(std::string const &data);
+  void Update(std::string_view data);
 
   std::string Digest() { return check_sum_; }
 
  private:
-  constexpr static int kCheckSumLength = 32;
+  static constexpr int kCheckSumLength = 32;
   int count_;
   std::string check_sum_;
 
@@ -107,7 +105,10 @@ class CheckSummer {
 };
 
 // Defines make_unique_for_overwrite using a standard definition that should be
-// compatible with the C++20 definition.
+// compatible with the C++20 definition. That is, all compiling uses of
+// `std::make_unique_for_overwrite` should have the same result with
+// `fst::make_unique_for_overwrite`. Note that the reverse doesn't
+// necessarily hold.
 // TODO(kbg): Remove these once we migrate to C++20.
 
 template <typename T>
@@ -116,8 +117,8 @@ std::unique_ptr<T> make_unique_for_overwrite() {
 }
 
 template <typename T>
-std::unique_ptr<T[]> make_unique_for_overwrite(size_t n) {
-  return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]);
+std::unique_ptr<T> make_unique_for_overwrite(size_t n) {
+  return std::unique_ptr<T>(new std::remove_extent_t<T>[n]);
 }
 
 template <typename T>
@@ -161,36 +162,110 @@ iterator_range<T> make_range(T x, T y) {
 
 // String munging.
 
-std::string StringJoin(const std::vector<std::string> &elements,
-                       const std::string &delim);
+namespace internal {
 
-std::string StringJoin(const std::vector<std::string> &elements,
-                       const char *delim);
+// Computes size of joined string.
+template <class S>
+size_t GetResultSize(const std::vector<S> &elements, size_t s_size) {
+  const auto lambda = [](size_t partial, const S &right) {
+    return partial + right.size();
+  };
+  return std::accumulate(elements.begin(), elements.end(), 0, lambda) +
+         elements.size() * s_size - s_size;
+}
 
-std::string StringJoin(const std::vector<std::string> &elements, char delim);
+}  // namespace internal
 
-std::vector<std::string> StringSplit(const std::string &full,
-                                     const std::string &delim);
+template <class S>
+std::string StringJoin(const std::vector<S> &elements, std::string_view delim) {
+  std::string result;
+  if (elements.empty()) return result;
+  const size_t s_size = delim.size();
+  result.reserve(internal::GetResultSize(elements, s_size));
+  auto it = elements.begin();
+  result.append(it->data(), it->size());
+  for (++it; it != elements.end(); ++it) {
+    result.append(delim.data(), s_size);
+    result.append(it->data(), it->size());
+  }
+  return result;
+}
 
-std::vector<std::string> StringSplit(const std::string &full,
-                                     const char *delim);
+template <class S>
+std::string StringJoin(const std::vector<S> &elements, char delim) {
+  const std::string_view view_delim(&delim, 1);
+  return StringJoin(elements, view_delim);
+}
 
-std::vector<std::string> StringSplit(const std::string &full, char delim);
+struct SkipEmpty {};
+
+struct ByAnyChar {
+ public:
+  explicit ByAnyChar(std::string_view sp) : delimiters(sp) {}
+
+  std::string delimiters;
+};
+
+namespace internal {
+
+class StringSplitter {
+ public:
+  using const_iterator = std::vector<std::string_view>::const_iterator;
+  using value_type = std::string_view;
+
+  StringSplitter(std::string_view string, std::string delim,
+                 bool skip_empty = false)
+      : string_(std::move(string)),
+        delim_(std::move(delim)),
+        skip_empty_(skip_empty),
+        vec_(SplitToSv()) {}
+
+  inline operator  // NOLINT(google-explicit-constructor)
+      std::vector<std::string_view>() && {
+    return std::move(vec_);
+  }
+
+  inline operator  // NOLINT(google-explicit-constructor)
+      std::vector<std::string>() {
+    std::vector<std::string> str_vec(vec_.begin(), vec_.end());
+    return str_vec;
+  }
+
+  const_iterator begin() const { return vec_.begin(); }
+  const_iterator end() const { return vec_.end(); }
+
+ private:
+  std::vector<std::string_view> SplitToSv();
+
+  std::string_view string_;
+  std::string delim_;
+  bool skip_empty_;
+  std::vector<std::string_view> vec_;
+};
+
+}  // namespace internal
+
+// `StrSplit` replacements. Only support splitting on `char` or
+// `ByAnyChar` (notable not on a multi-char string delimiter), and with or
+// without `SkipEmpty`.
+internal::StringSplitter StrSplit(std::string_view full, ByAnyChar delim);
+internal::StringSplitter StrSplit(std::string_view full, char delim);
+internal::StringSplitter StrSplit(std::string_view full, ByAnyChar delim,
+                                  SkipEmpty);
+internal::StringSplitter StrSplit(std::string_view full, char delim, SkipEmpty);
 
 void StripTrailingAsciiWhitespace(std::string *full);
 
-std::string StripTrailingAsciiWhitespace(const std::string &full);
+std::string_view StripTrailingAsciiWhitespace(std::string_view full);
 
 class StringOrInt {
  public:
-  StringOrInt(const std::string &s) : str_(s) {}  // NOLINT
-
-  StringOrInt(const char *s) : str_(std::string(s)) {}  // NOLINT
+  template <typename T, typename = std::enable_if_t<
+                            std::is_convertible_v<T, std::string_view>>>
+  StringOrInt(T s) : str_(std::string(s)) {}  // NOLINT
 
   StringOrInt(int i) {  // NOLINT
-    char buf[1024];
-    sprintf(buf, "%d", i);
-    str_ = std::string(buf);
+    str_ = std::to_string(i);
   }
 
   const std::string &Get() const { return str_; }
@@ -221,6 +296,20 @@ inline std::string StrCat(const StringOrInt &s1, const StringOrInt &s2,
   return s1.Get() + StrCat(s2, s3, s4, s5);
 }
 
+// TODO(agutkin): Remove this once we migrate to C++20, where `starts_with`
+// is available.
+inline bool StartsWith(std::string_view text, std::string_view prefix) {
+  return prefix.empty() ||
+         (text.size() >= prefix.size() &&
+          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
+}
+
+inline bool ConsumePrefix(std::string_view *s, std::string_view expected) {
+  if (!StartsWith(*s, expected)) return false;
+  s->remove_prefix(expected.size());
+  return true;
+}
+
 }  // namespace fst
 
-#endif  // FST_LIB_COMPAT_H_
+#endif  // FST_COMPAT_H_

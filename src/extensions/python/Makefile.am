@@ -15,5 +15,4 @@ pywrapfst_la_LIBADD = ../far/libfstfarscript.la ../far/libfstfar.la \
                       -lm $(DL_LIBS) $(PYTHON_LIBS)
 
 # Exports the *.pxd/*.pxd source files.
-EXTRA_DIST = cintegral_types.pxd cios.pxd cpywrapfst.pxd \
-             cutility.pxd pywrapfst.pxd pywrapfst.pyx
+EXTRA_DIST = cios.pxd cmemory.pxd cpywrapfst.pxd pywrapfst.pxd pywrapfst.pyx

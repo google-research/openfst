@@ -18,9 +18,9 @@
 #ifndef FST_SCRIPT_RANDEQUIVALENT_H_
 #define FST_SCRIPT_RANDEQUIVALENT_H_
 
+#include <cstdint>
 #include <tuple>
 
-#include <fst/types.h>
 #include <fst/randequivalent.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
@@ -29,20 +29,20 @@
 namespace fst {
 namespace script {
 
-using RandEquivalentInnerArgs =
-    std::tuple<const FstClass &, const FstClass &, int32,
-               const RandGenOptions<RandArcSelection> &, float, uint64>;
+using FstRandEquivalentInnerArgs =
+    std::tuple<const FstClass &, const FstClass &, int32_t,
+               const RandGenOptions<RandArcSelection> &, float, uint64_t>;
 
-using RandEquivalentArgs = WithReturnValue<bool, RandEquivalentInnerArgs>;
+using FstRandEquivalentArgs = WithReturnValue<bool, FstRandEquivalentInnerArgs>;
 
 template <class Arc>
-void RandEquivalent(RandEquivalentArgs *args) {
+void RandEquivalent(FstRandEquivalentArgs *args) {
   const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
-  const int32 npath = std::get<2>(args->args);
+  const int32_t npath = std::get<2>(args->args);
   const auto &opts = std::get<3>(args->args);
   const float delta = std::get<4>(args->args);
-  const uint64 seed = std::get<5>(args->args);
+  const uint64_t seed = std::get<5>(args->args);
   switch (opts.selector) {
     case RandArcSelection::UNIFORM: {
       const UniformArcSelector<Arc> selector(seed);
@@ -69,10 +69,10 @@ void RandEquivalent(RandEquivalentArgs *args) {
 }
 
 bool RandEquivalent(
-    const FstClass &fst1, const FstClass &fst2, int32 npath = 1,
+    const FstClass &fst1, const FstClass &fst2, int32_t npath = 1,
     const RandGenOptions<RandArcSelection> &opts =
         RandGenOptions<RandArcSelection>(RandArcSelection::UNIFORM),
-    float delta = kDelta, uint64 seed = std::random_device()());
+    float delta = kDelta, uint64_t seed = std::random_device()());
 
 }  // namespace script
 }  // namespace fst

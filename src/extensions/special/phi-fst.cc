@@ -32,10 +32,6 @@ DEFINE_string(phi_fst_rewrite_mode, "auto",
 
 namespace fst {
 
-const char phi_fst_type[] = "phi";
-const char input_phi_fst_type[] = "input_phi";
-const char output_phi_fst_type[] = "output_phi";
-
 REGISTER_FST(PhiFst, StdArc);
 REGISTER_FST(PhiFst, LogArc);
 REGISTER_FST(PhiFst, Log64Arc);

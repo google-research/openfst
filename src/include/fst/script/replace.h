@@ -18,11 +18,11 @@
 #ifndef FST_SCRIPT_REPLACE_H_
 #define FST_SCRIPT_REPLACE_H_
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/replace.h>
 #include <fst/script/fst-class.h>
 
@@ -30,27 +30,27 @@ namespace fst {
 namespace script {
 
 struct ReplaceOptions {
-  const int64 root;                          // Root rule for expansion.
+  const int64_t root;                        // Root rule for expansion.
   const ReplaceLabelType call_label_type;    // How to label call arc.
   const ReplaceLabelType return_label_type;  // How to label return arc.
-  const int64 return_label;                  // Specifies return arc label.
+  const int64_t return_label;                // Specifies return arc label.
 
   explicit ReplaceOptions(
-      int64 root, ReplaceLabelType call_label_type = REPLACE_LABEL_INPUT,
+      int64_t root, ReplaceLabelType call_label_type = REPLACE_LABEL_INPUT,
       ReplaceLabelType return_label_type = REPLACE_LABEL_NEITHER,
-      int64 return_label = 0)
+      int64_t return_label = 0)
       : root(root),
         call_label_type(call_label_type),
         return_label_type(return_label_type),
         return_label(return_label) {}
 };
 
-using ReplaceArgs =
-    std::tuple<const std::vector<std::pair<int64, const FstClass *>> &,
+using FstReplaceArgs =
+    std::tuple<const std::vector<std::pair<int64_t, const FstClass *>> &,
                MutableFstClass *, const ReplaceOptions &>;
 
 template <class Arc>
-void Replace(ReplaceArgs *args) {
+void Replace(FstReplaceArgs *args) {
   // Now that we know the arc type, we construct a vector of
   // std::pair<real label, real fst> that the real Replace will use.
   const auto &untyped_pairs = std::get<0>(*args);
@@ -76,7 +76,7 @@ void Replace(ReplaceArgs *args) {
   *ofst = rfst;
 }
 
-void Replace(const std::vector<std::pair<int64, const FstClass *>> &pairs,
+void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
              MutableFstClass *ofst, const ReplaceOptions &opts);
 
 }  // namespace script

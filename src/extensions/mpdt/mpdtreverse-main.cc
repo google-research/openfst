@@ -17,6 +17,7 @@
 //
 // Reverses an MPDT.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -24,7 +25,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
 #include <fst/extensions/mpdt/read_write_utils.h>
@@ -69,8 +69,8 @@ int mpdtreverse_main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
-  std::vector<int64> assignments;
+  std::vector<std::pair<int64_t, int64_t>> parens;
+  std::vector<int64_t> assignments;
   if (!ReadLabelTriples(FST_FLAGS_mpdt_parentheses, &parens,
                         &assignments, false)) {
     return 1;
@@ -78,7 +78,7 @@ int mpdtreverse_main(int argc, char **argv) {
 
   VectorFstClass ofst(ifst->ArcType());
 
-  s::MPdtReverse(*ifst, parens, &assignments, &ofst);
+  s::Reverse(*ifst, parens, &assignments, &ofst);
 
   if (!ofst.Write(out_name)) return 1;
 

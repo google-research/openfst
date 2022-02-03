@@ -20,7 +20,7 @@
 namespace fst {
 namespace script {
 
-bool GetPdtComposeFilter(const std::string &str, PdtComposeFilter *cf) {
+bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter *cf) {
   if (str == "expand") {
     *cf = PdtComposeFilter::EXPAND;
   } else if (str == "expand_paren") {
@@ -33,7 +33,7 @@ bool GetPdtComposeFilter(const std::string &str, PdtComposeFilter *cf) {
   return true;
 }
 
-bool GetPdtParserType(const std::string &str, PdtParserType *pt) {
+bool GetPdtParserType(std::string_view str, PdtParserType *pt) {
   if (str == "left") {
     *pt = PdtParserType::LEFT;
   } else if (str == "left_sr") {

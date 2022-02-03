@@ -19,28 +19,21 @@
 
 #include <fst/encode.h>
 
+#include <cstdint>
+
 namespace fst {
 
 bool EncodeTableHeader::Read(std::istream &strm, const std::string &source) {
-  int32 magic_number;
+  int32_t magic_number;
   ReadType(strm, &magic_number);
-  if (magic_number == internal::kEncodeMagicNumber) {
-    ReadType(strm, &arctype_);
-    ReadType(strm, &flags_);
-    ReadType(strm, &size_);
-  } else if (magic_number == internal::kEncodeDeprecatedMagicNumber) {
-    // TODO(b/141172858): deprecated, remove by 2020-01-01.
-    uint32 flags;
-    ReadType(strm, &flags);
-    flags_ = flags;
-    int64 size;
-    ReadType(strm, &size);
-    size_ = size;
-  } else {
-    LOG(ERROR) << "EncodeTableHeader::Read: Bad encode table header: "
-               << source;
+  if (magic_number != internal::kEncodeMagicNumber) {
+    LOG(ERROR) << "EncodeTableHeader::Read: Bad encode table header: " << source
+               << ". Magic number not matched. Got: " << magic_number;
     return false;
   }
+  ReadType(strm, &arctype_);
+  ReadType(strm, &flags_);
+  ReadType(strm, &size_);
   if (!strm) {
     LOG(ERROR) << "EncodeTableHeader::Read: Read failed: " << source;
     return false;

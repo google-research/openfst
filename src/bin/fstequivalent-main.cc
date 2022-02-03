@@ -67,7 +67,8 @@ int fstequivalent_main(int argc, char **argv) {
   if (!ifst2) return 1;
 
   if (!FST_FLAGS_random) {
-    bool result = s::Equivalent(*ifst1, *ifst2, FST_FLAGS_delta);
+    const bool result =
+        s::Equivalent(*ifst1, *ifst2, FST_FLAGS_delta);
     if (!result) VLOG(1) << "FSTs are not equivalent";
     return result ? 0 : 2;
   } else {
@@ -79,9 +80,9 @@ int fstequivalent_main(int argc, char **argv) {
     }
     const RandGenOptions<s::RandArcSelection> opts(
         ras, FST_FLAGS_max_length);
-    bool result = s::RandEquivalent(*ifst1, *ifst2, FST_FLAGS_npath,
-                                    opts, FST_FLAGS_delta,
-                                    FST_FLAGS_seed);
+    const bool result = s::RandEquivalent(
+        *ifst1, *ifst2, FST_FLAGS_npath, opts,
+        FST_FLAGS_delta, FST_FLAGS_seed);
     if (!result) VLOG(1) << "FSTs are not equivalent";
     return result ? 0 : 2;
   }

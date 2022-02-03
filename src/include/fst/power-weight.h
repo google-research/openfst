@@ -20,10 +20,10 @@
 #ifndef FST_POWER_WEIGHT_H_
 #define FST_POWER_WEIGHT_H_
 
+#include <cstdint>
 #include <random>
 #include <string>
 
-#include <fst/types.h>
 
 #include <fst/tuple-weight.h>
 #include <fst/weight.h>
@@ -80,7 +80,7 @@ class PowerWeight : public TupleWeight<W, n> {
     return *type;
   }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return W::Properties() &
            (kLeftSemiring | kRightSemiring | kCommutative | kIdempotent);
   }
@@ -168,7 +168,7 @@ class WeightGenerate<PowerWeight<W, n>> {
   using Weight = PowerWeight<W, n>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true)
       : generate_(seed, allow_zero) {}
 

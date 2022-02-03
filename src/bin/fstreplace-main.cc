@@ -18,6 +18,7 @@
 // Performs the dynamic replacement of arcs in one FST with another FST,
 // allowing for the definition of FSTs analogous to RTNs.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -25,7 +26,6 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/script/getters.h>
 #include <fst/script/replace.h>
 
@@ -55,7 +55,7 @@ int fstreplace_main(int argc, char **argv) {
 
   const std::string out_name = argc % 2 == 0 ? argv[argc - 1] : "";
 
-  std::vector<std::pair<int64, std::unique_ptr<const FstClass>>> pairs;
+  std::vector<std::pair<int64_t, std::unique_ptr<const FstClass>>> pairs;
   for (auto i = 1; i < argc - 1; i += 2) {
     std::unique_ptr<const FstClass> ifst(FstClass::Read(argv[i]));
     if (!ifst) return 1;

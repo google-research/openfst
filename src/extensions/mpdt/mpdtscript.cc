@@ -23,11 +23,11 @@
 
 #include <fst/extensions/mpdt/mpdtscript.h>
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/extensions/mpdt/compose.h>
 #include <fst/extensions/mpdt/expand.h>
 #include <fst/extensions/mpdt/reverse.h>
@@ -36,54 +36,54 @@
 namespace fst {
 namespace script {
 
-void MPdtCompose(const FstClass &ifst1, const FstClass &ifst2,
-                 const std::vector<std::pair<int64, int64>> &parens,
-                 const std::vector<int64> &assignments, MutableFstClass *ofst,
-                 const MPdtComposeOptions &copts, bool left_pdt) {
-  if (!internal::ArcTypesMatch(ifst1, ifst2, "MPdtCompose") ||
-      !internal::ArcTypesMatch(ifst1, *ofst, "MPdtCompose"))
+void Compose(const FstClass &ifst1, const FstClass &ifst2,
+             const std::vector<std::pair<int64_t, int64_t>> &parens,
+             const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+             const MPdtComposeOptions &copts, bool left_pdt) {
+  if (!internal::ArcTypesMatch(ifst1, ifst2, "Compose") ||
+      !internal::ArcTypesMatch(ifst1, *ofst, "Compose"))
     return;
-  MPdtComposeArgs args(ifst1, ifst2, parens, assignments, ofst, copts,
-                       left_pdt);
-  Apply<Operation<MPdtComposeArgs>>("MPdtCompose", ifst1.ArcType(), &args);
+  MPdtComposeArgs args{ifst1, ifst2, parens,  assignments,
+                       ofst,  copts, left_pdt};
+  Apply<Operation<MPdtComposeArgs>>("Compose", ifst1.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(MPdtCompose, MPdtComposeArgs);
+REGISTER_FST_OPERATION_3ARCS(Compose, MPdtComposeArgs);
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<std::pair<int64, int64>> &parens,
-                const std::vector<int64> &assignments, MutableFstClass *ofst,
-                const MPdtExpandOptions &opts) {
-  MPdtExpandArgs args(ifst, parens, assignments, ofst, opts);
-  Apply<Operation<MPdtExpandArgs>>("MPdtExpand", ifst.ArcType(), &args);
+void Expand(const FstClass &ifst,
+            const std::vector<std::pair<int64_t, int64_t>> &parens,
+            const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+            const MPdtExpandOptions &opts) {
+  MPdtExpandArgs args{ifst, parens, assignments, ofst, opts};
+  Apply<Operation<MPdtExpandArgs>>("Expand", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(MPdtExpand, MPdtExpandArgs);
+REGISTER_FST_OPERATION_3ARCS(Expand, MPdtExpandArgs);
 
-void MPdtExpand(const FstClass &ifst,
-                const std::vector<std::pair<int64, int64>> &parens,
-                const std::vector<int64> &assignments, MutableFstClass *ofst,
-                bool connect) {
-  MPdtExpand(ifst, parens, assignments, ofst, MPdtExpandOptions(connect));
+void Expand(const FstClass &ifst,
+            const std::vector<std::pair<int64_t, int64_t>> &parens,
+            const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+            bool connect) {
+  Expand(ifst, parens, assignments, ofst, MPdtExpandOptions(connect));
 }
 
-void MPdtReverse(const FstClass &ifst,
-                 const std::vector<std::pair<int64, int64>> &parens,
-                 std::vector<int64> *assignments, MutableFstClass *ofst) {
-  MPdtReverseArgs args(ifst, parens, assignments, ofst);
-  Apply<Operation<MPdtReverseArgs>>("MPdtReverse", ifst.ArcType(), &args);
+void Reverse(const FstClass &ifst,
+             const std::vector<std::pair<int64_t, int64_t>> &parens,
+             std::vector<int64_t> *assignments, MutableFstClass *ofst) {
+  MPdtReverseArgs args{ifst, parens, assignments, ofst};
+  Apply<Operation<MPdtReverseArgs>>("Reverse", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(MPdtReverse, MPdtReverseArgs);
+REGISTER_FST_OPERATION_3ARCS(Reverse, MPdtReverseArgs);
 
-void PrintMPdtInfo(const FstClass &ifst,
-                   const std::vector<std::pair<int64, int64>> &parens,
-                   const std::vector<int64> &assignments) {
-  PrintMPdtInfoArgs args(ifst, parens, assignments);
-  Apply<Operation<PrintMPdtInfoArgs>>("PrintMPdtInfo", ifst.ArcType(), &args);
+void Info(const FstClass &ifst,
+          const std::vector<std::pair<int64_t, int64_t>> &parens,
+          const std::vector<int64_t> &assignments) {
+  MPdtInfoArgs args{ifst, parens, assignments};
+  Apply<Operation<MPdtInfoArgs>>("Info", ifst.ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(PrintMPdtInfo, PrintMPdtInfoArgs);
+REGISTER_FST_OPERATION_3ARCS(Info, MPdtInfoArgs);
 
 }  // namespace script
 }  // namespace fst

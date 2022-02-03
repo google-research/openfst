@@ -21,8 +21,10 @@
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <fst/compat.h>
@@ -168,8 +170,8 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   }
 
  private:
-  static const int kMinFileVersion;
-  static const int kFileVersion;
+  static constexpr int kMinFileVersion = 1;
+  static constexpr int kFileVersion = 1;
 
   // A collection of functions to access parts of the state tuple. A
   // state tuple is a vector of `Label`s with two parts:
@@ -292,12 +294,6 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
 
   LinearTaggerFstImpl &operator=(const LinearTaggerFstImpl &) = delete;
 };
-
-template <class A>
-const int LinearTaggerFstImpl<A>::kMinFileVersion = 1;
-
-template <class A>
-const int LinearTaggerFstImpl<A>::kFileVersion = 1;
 
 template <class A>
 inline typename A::Label LinearTaggerFstImpl<A>::ShiftBuffer(
@@ -710,8 +706,8 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   }
 
  private:
-  static const int kMinFileVersion;
-  static const int kFileVersion;
+  static constexpr int kMinFileVersion = 0;
+  static constexpr int kFileVersion = 0;
 
   // A collection of functions to access parts of the state tuple. A
   // state tuple is a vector of `Label`s with two parts:
@@ -811,12 +807,6 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   void operator=(const LinearClassifierFstImpl<A> &) = delete;
 };
-
-template <class A>
-const int LinearClassifierFstImpl<A>::kMinFileVersion = 0;
-
-template <class A>
-const int LinearClassifierFstImpl<A>::kFileVersion = 0;
 
 template <class A>
 void LinearClassifierFstImpl<A>::Expand(StateId s) {
@@ -1162,12 +1152,12 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
 
   const FST &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 props) const override {
+  uint64_t Properties(uint64_t props) const override {
     if (error_) props |= kError;
     return props;
   }
 
-  uint32 Flags() const override { return kRequireMatch; }
+  uint32_t Flags() const override { return kRequireMatch; }
 
  private:
   std::unique_ptr<const FST> owned_fst_;

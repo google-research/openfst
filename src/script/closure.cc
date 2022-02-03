@@ -23,11 +23,11 @@ namespace fst {
 namespace script {
 
 void Closure(MutableFstClass *fst, ClosureType closure_type) {
-  ClosureArgs args(fst, closure_type);
-  Apply<Operation<ClosureArgs>>("Closure", fst->ArcType(), &args);
+  FstClosureArgs args{fst, closure_type};
+  Apply<Operation<FstClosureArgs>>("Closure", fst->ArcType(), &args);
 }
 
-REGISTER_FST_OPERATION_3ARCS(Closure, ClosureArgs);
+REGISTER_FST_OPERATION_3ARCS(Closure, FstClosureArgs);
 
 }  // namespace script
 }  // namespace fst

@@ -22,15 +22,14 @@
 #include <string>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/script/decode.h>
 #include <fst/script/encode.h>
 #include <fst/script/getters.h>
 
+DECLARE_bool(decode);
 DECLARE_bool(encode_labels);
 DECLARE_bool(encode_weights);
 DECLARE_bool(encode_reuse);
-DECLARE_bool(decode);
 
 int fstencode_main(int argc, char **argv) {
   namespace s = fst::script;
@@ -59,6 +58,7 @@ int fstencode_main(int argc, char **argv) {
   if (FST_FLAGS_decode) {
     std::unique_ptr<EncodeMapperClass> mapper(
         EncodeMapperClass::Read(mapper_name));
+    if (!mapper) return 1;
     s::Decode(fst.get(), *mapper);
   } else if (FST_FLAGS_encode_reuse) {
     std::unique_ptr<EncodeMapperClass> mapper(

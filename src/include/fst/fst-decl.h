@@ -22,9 +22,9 @@
 
 #include <sys/types.h>
 
+#include <cstdint>
 #include <memory>  // for allocator<>
 
-#include <fst/types.h>
 #include <fst/windows_defs.inc>
 
 namespace fst {
@@ -85,7 +85,7 @@ template <class Arc, class Compactor, class CacheStore = DefaultCacheStore<Arc>>
 class CompactFst;
 
 // The Unsigned type is used to represent indices into the compact arc array.
-template <class Arc, class ArcCompactor, class Unsigned = uint32,
+template <class Arc, class ArcCompactor, class Unsigned = uint32_t,
           class CompactStore =
               CompactArcStore<typename ArcCompactor::Element, Unsigned>,
           class CacheStore = DefaultCacheStore<Arc>>
@@ -93,7 +93,7 @@ using CompactArcFst =
     CompactFst<Arc, CompactArcCompactor<ArcCompactor, Unsigned, CompactStore>,
                CacheStore>;
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 class ConstFst;
 
 template <class Arc, class Weight, class Matcher>
@@ -189,20 +189,20 @@ class WeightedStringCompactor;
 
 // Compact Arc FSTs.
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 using CompactStringFst = CompactArcFst<Arc, StringCompactor<Arc>, U>;
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 using CompactWeightedStringFst =
     CompactArcFst<Arc, WeightedStringCompactor<Arc>, U>;
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 using CompactAcceptorFst = CompactArcFst<Arc, AcceptorCompactor<Arc>, U>;
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 using CompactUnweightedFst = CompactArcFst<Arc, UnweightedCompactor<Arc>, U>;
 
-template <class Arc, class U = uint32>
+template <class Arc, class U = uint32_t>
 using CompactUnweightedAcceptorFst =
     CompactArcFst<Arc, UnweightedAcceptorCompactor<Arc>, U>;
 

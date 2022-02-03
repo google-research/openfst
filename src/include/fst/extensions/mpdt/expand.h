@@ -20,9 +20,9 @@
 #ifndef FST_EXTENSIONS_MPDT_EXPAND_H_
 #define FST_EXTENSIONS_MPDT_EXPAND_H_
 
+#include <cstdint>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/extensions/mpdt/mpdt.h>
 #include <fst/extensions/pdt/paren.h>
 #include <fst/cache.h>
@@ -48,7 +48,7 @@ struct MPdtExpandFstOptions : public CacheOptions {
 };
 
 // Properties for an expanded PDT.
-inline uint64 MPdtExpandProperties(uint64 inprops) {
+inline uint64_t MPdtExpandProperties(uint64_t inprops) {
   return inprops & (kAcceptor | kAcyclic | kInitialAcyclic | kUnweighted);
 }
 

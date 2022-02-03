@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 
 #include <fst/bi-table.h>

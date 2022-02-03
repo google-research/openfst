@@ -31,7 +31,7 @@ namespace fst {
 // This class tests a variety of identities and properties that must
 // hold for the Weight class to be well-defined. It calls function object
 // WEIGHT_GENERATOR to select weights that are used in the tests.
-template <class Weight, class WeightGenerator>
+template <class Weight, class WeightGenerator = WeightGenerate<Weight>>
 class WeightTester {
  public:
   explicit WeightTester(WeightGenerator generator)

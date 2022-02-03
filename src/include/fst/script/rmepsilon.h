@@ -18,12 +18,13 @@
 #ifndef FST_SCRIPT_RMEPSILON_H_
 #define FST_SCRIPT_RMEPSILON_H_
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/queue.h>
 #include <fst/rmepsilon.h>
+#include <fst/script/arcfilter-impl.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/shortest-distance.h>
 #include <fst/script/weight-class.h>
@@ -34,11 +35,11 @@ namespace script {
 struct RmEpsilonOptions : public ShortestDistanceOptions {
   const bool connect;
   const WeightClass &weight_threshold;
-  const int64 state_threshold;
+  const int64_t state_threshold;
 
   RmEpsilonOptions(QueueType queue_type, bool connect,
                    const WeightClass &weight_threshold,
-                   int64 state_threshold = kNoStateId, float delta = kDelta)
+                   int64_t state_threshold = kNoStateId, float delta = kDelta)
       : ShortestDistanceOptions(queue_type, ArcFilterType::EPSILON, kNoStateId,
                                 delta),
         connect(connect),
@@ -113,10 +114,10 @@ void RmEpsilon(MutableFst<Arc> *fst, const RmEpsilonOptions &opts) {
 
 }  // namespace internal
 
-using RmEpsilonArgs = std::pair<MutableFstClass *, const RmEpsilonOptions &>;
+using FstRmEpsilonArgs = std::pair<MutableFstClass *, const RmEpsilonOptions &>;
 
 template <class Arc>
-void RmEpsilon(RmEpsilonArgs *args) {
+void RmEpsilon(FstRmEpsilonArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   const auto &opts = std::get<1>(*args);
   internal::RmEpsilon(fst, opts);

@@ -15,6 +15,8 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst.h>

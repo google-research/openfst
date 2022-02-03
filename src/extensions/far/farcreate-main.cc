@@ -34,6 +34,7 @@ DECLARE_bool(file_list_input);
 
 int farcreate_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::script::FarWriterClass;
 
   std::string usage =
       "Creates a finite-state archive from input FSTs.\n\n Usage:";
@@ -44,33 +45,26 @@ int farcreate_main(int argc, char **argv) {
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 
-  std::vector<std::string> in_sources;
+  std::vector<std::string> sources;
   if (FST_FLAGS_file_list_input) {
     for (int i = 1; i < argc - 1; ++i) {
       std::ifstream istrm(argv[i]);
       std::string str;
-      while (std::getline(istrm, str)) in_sources.push_back(str);
+      while (std::getline(istrm, str)) sources.push_back(str);
     }
   } else {
     for (int i = 1; i < argc - 1; ++i)
-      in_sources.push_back(strcmp(argv[i], "-") != 0 ? argv[i] : "");
-    if (in_sources.empty()) {
+      sources.push_back(strcmp(argv[i], "-") != 0 ? argv[i] : "");
+    if (sources.empty()) {
       // argc == 1 || argc == 2. This cleverly handles both the no-file case
       // and the one (input) file case together.
-      in_sources.push_back(argc == 2 && strcmp(argv[1], "-") != 0 ? argv[1]
-                                                                  : "");
+      sources.push_back(argc == 2 && strcmp(argv[1], "-") != 0 ? argv[1] : "");
     }
   }
 
   // argc <= 2 means the file (if any) is an input file, so write to stdout.
-  const std::string out_source =
+  const std::string out_far =
       argc > 2 && strcmp(argv[argc - 1], "-") != 0 ? argv[argc - 1] : "";
-
-  std::string arc_type = fst::ErrorArc::Type();
-  if (!in_sources.empty()) {
-    arc_type = s::LoadArcTypeFromFst(in_sources[0]);
-    if (arc_type.empty()) return 1;
-  }
 
   fst::FarType far_type;
   if (!s::GetFarType(FST_FLAGS_far_type, &far_type)) {
@@ -79,10 +73,23 @@ int farcreate_main(int argc, char **argv) {
     return 1;
   }
 
-  s::FarCreate(in_sources, out_source, arc_type,
-               FST_FLAGS_generate_keys, far_type,
-               FST_FLAGS_key_prefix,
-               FST_FLAGS_key_suffix);
+  std::string arc_type = fst::ErrorArc::Type();
+  if (!sources.empty()) {
+    arc_type = s::LoadArcTypeFromFst(sources[0]);
+    if (arc_type.empty()) return 1;
+  }
+
+  std::unique_ptr<FarWriterClass> writer(
+      FarWriterClass::Create(out_far, arc_type, far_type));
+  if (!writer) return 1;
+
+  s::Create(sources, *writer, FST_FLAGS_generate_keys,
+            FST_FLAGS_key_prefix, FST_FLAGS_key_suffix);
+
+  if (writer->Error()) {
+    FSTERROR() << "Error writing FAR: " << out_far;
+    return 1;
+  }
 
   return 0;
 }

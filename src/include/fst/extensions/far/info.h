@@ -62,9 +62,9 @@ struct FarInfoData {
 };
 
 template <class Arc>
-void GetFarInfo(const std::vector<std::string> &sources,
-                const std::string &begin_key, const std::string &end_key,
-                const bool list_fsts, FarInfoData *far_info) {
+void GetInfo(const std::vector<std::string> &sources,
+             const std::string &begin_key, const std::string &end_key,
+             const bool list_fsts, FarInfoData *far_info) {
   *far_info = FarInfoData();
   std::unique_ptr<FarReader<Arc>> reader(FarReader<Arc>::Open(sources));
   if (!reader) {
@@ -98,11 +98,10 @@ void GetFarInfo(const std::vector<std::string> &sources,
 }
 
 template <class Arc>
-void FarInfo(const std::vector<std::string> &sources,
-             const std::string &begin_key, const std::string &end_key,
-             const bool list_fsts) {
+void Info(const std::vector<std::string> &sources, const std::string &begin_key,
+          const std::string &end_key, const bool list_fsts) {
   FarInfoData info;
-  GetFarInfo<Arc>(sources, begin_key, end_key, list_fsts, &info);
+  GetInfo<Arc>(sources, begin_key, end_key, list_fsts, &info);
   if (!list_fsts) {
     std::cout << std::left << std::setw(50) << "far type" << info.far_type
               << std::endl;

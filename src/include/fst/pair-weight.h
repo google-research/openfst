@@ -21,6 +21,7 @@
 #ifndef FST_PAIR_WEIGHT_H_
 #define FST_PAIR_WEIGHT_H_
 
+#include <cstdint>
 #include <random>
 #include <stack>
 #include <string>
@@ -154,7 +155,7 @@ class WeightGenerate<PairWeight<W1, W2>> {
   using Generate1 = WeightGenerate<W1>;
   using Generate2 = WeightGenerate<W2>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true)
       : generate1_(seed, allow_zero), generate2_(seed, allow_zero) {}
 
