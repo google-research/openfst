@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,15 @@
 #ifndef FST_EXTENSIONS_MPDT_READ_WRITE_UTILS_H_
 #define FST_EXTENSIONS_MPDT_READ_WRITE_UTILS_H_
 
+#include <cstddef>
+#include <istream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <fst/log.h>
 #include <fstream>
-#include <fst/test-properties.h>
+#include <fst/util.h>
 #include <string_view>
 
 namespace fst {
@@ -35,8 +38,7 @@ namespace fst {
 template <typename Label>
 bool ReadLabelTriples(const std::string &source,
                       std::vector<std::pair<Label, Label>> *pairs,
-                      std::vector<Label> *assignments,
-                      bool allow_negative = false) {
+                      std::vector<Label> *assignments) {
   std::ifstream fstrm(source);
   if (!fstrm) {
     LOG(ERROR) << "ReadIntTriples: Can't open file: " << source;
@@ -58,12 +60,12 @@ bool ReadLabelTriples(const std::string &source,
       return false;
     }
     bool err;
-    const Label i1 = StrToInt64(col[0], source, nline, allow_negative, &err);
+    const Label i1 = StrToInt64(col[0], source, nline, &err);
     if (err) return false;
-    const Label i2 = StrToInt64(col[1], source, nline, allow_negative, &err);
+    const Label i2 = StrToInt64(col[1], source, nline, &err);
     if (err) return false;
     using Level = Label;
-    const Level i3 = StrToInt64(col[2], source, nline, allow_negative, &err);
+    const Level i3 = StrToInt64(col[2], source, nline, &err);
     if (err) return false;
     pairs->push_back(std::make_pair(i1, i2));
     assignments->push_back(i3);

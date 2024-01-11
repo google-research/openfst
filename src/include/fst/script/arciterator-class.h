@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,16 @@
 #ifndef FST_SCRIPT_ARCITERATOR_CLASS_H_
 #define FST_SCRIPT_ARCITERATOR_CLASS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <tuple>
 #include <utility>
 
+#include <fst/fst.h>
 #include <fst/fstlib.h>
+#include <fst/mutable-fst.h>
+#include <fst/script/arc-class.h>
 #include <fst/script/fst-class.h>
 
 // Scripting API support for ArcIterator.
@@ -46,7 +51,7 @@ class ArcIteratorImplBase {
   virtual void Seek(size_t a) = 0;
   virtual void SetFlags(uint8_t flags, uint8_t mask) = 0;
   virtual ArcClass Value() const = 0;
-  virtual ~ArcIteratorImplBase() {}
+  virtual ~ArcIteratorImplBase() = default;
 };
 
 // Templated implementation.
@@ -76,7 +81,7 @@ class ArcIteratorClassImpl : public ArcIteratorImplBase {
   // is likely to participate in return-value optimization.
   ArcClass Value() const final { return ArcClass(aiter_.Value()); }
 
-  ~ArcIteratorClassImpl() override {}
+  ~ArcIteratorClassImpl() override = default;
 
  private:
   ArcIterator<Fst<Arc>> aiter_;
@@ -133,7 +138,7 @@ class MutableArcIteratorImplBase : public ArcIteratorImplBase {
  public:
   virtual void SetValue(const ArcClass &) = 0;
 
-  ~MutableArcIteratorImplBase() override {}
+  ~MutableArcIteratorImplBase() override = default;
 };
 
 // Templated implementation.
@@ -165,7 +170,7 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
   // is likely to participate in return-value optimization.
   ArcClass Value() const final { return ArcClass(aiter_.Value()); }
 
-  ~MutableArcIteratorClassImpl() override {}
+  ~MutableArcIteratorClassImpl() override = default;
 
  private:
   void SetValue(const Arc &arc) { aiter_.SetValue(arc); }
@@ -218,7 +223,7 @@ void InitMutableArcIteratorClass(InitMutableArcIteratorClassArgs *args) {
   MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
   std::get<2>(*args)->impl_ =
       std::make_unique<MutableArcIteratorClassImpl<Arc>>(fst,
-                                                          std::get<1>(*args));
+                                                         std::get<1>(*args));
 }
 
 }  // namespace script

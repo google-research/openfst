@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@
 #include <fst/compat.h>
 
 #include <algorithm>
-#include <iostream>
-#include <ostream>
+#include <cctype>
+#include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
-
-void FailedNewHandler() {
-  std::cerr << "Memory allocation failed" << std::endl;
-  std::exit(1);
-}
 
 namespace fst {
 

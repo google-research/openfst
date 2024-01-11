@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,21 @@
 
 #include <fst/script/getters.h>
 
+#include <string>
+
+#include <fst/compose.h>
+#include <fst/determinize.h>
+#include <fst/epsnormalize.h>
+#include <fst/project.h>
+#include <fst/queue.h>
+#include <fst/rational.h>
+#include <fst/replace-util.h>
+#include <fst/reweight.h>
+#include <fst/string.h>
+#include <fst/script/arcfilter-impl.h>
+#include <fst/script/arcsort.h>
+#include <fst/script/map.h>
+#include <fst/script/script-impl.h>
 #include <string_view>
 
 namespace fst {
@@ -210,6 +225,10 @@ bool GetReweightType(std::string_view str, ReweightType *reweight_type) {
     return false;
   }
   return true;
+}
+
+uint64_t GetSeed(uint64_t seed) {
+  return seed == kDefaultSeed ? time(nullptr) : seed;
 }
 
 bool GetTokenType(std::string_view str, TokenType *token_type) {

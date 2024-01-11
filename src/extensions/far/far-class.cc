@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,18 @@
 
 #include <fst/extensions/far/far-class.h>
 
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include <fst/log.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/script-impl.h>
 #include <fst/arc.h>
+#include <fst/error-weight.h>
 #include <fst/script/script-impl.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -30,8 +36,8 @@ namespace script {
 // FarReaderClass.
 
 std::unique_ptr<FarReaderClass> FarReaderClass::Open(
-    const std::string &source) {
-  const std::vector<std::string> sources{source};
+    std::string_view source) {
+  const std::vector<std::string> sources{std::string(source)};
   return FarReaderClass::Open(sources);
 }
 

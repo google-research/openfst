@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 #ifndef FST_QUEUE_H_
 #define FST_QUEUE_H_
 
+#include <sys/types.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <queue>
@@ -28,11 +31,14 @@
 #include <vector>
 
 #include <fst/log.h>
-
 #include <fst/arcfilter.h>
-#include <fst/connect.h>
+#include <fst/cc-visitors.h>
+#include <fst/dfs-visit.h>
+#include <fst/fst.h>
 #include <fst/heap.h>
+#include <fst/properties.h>
 #include <fst/topsort.h>
+#include <fst/util.h>
 #include <fst/weight.h>
 
 namespace fst {
@@ -86,7 +92,7 @@ class QueueBase {
  public:
   using StateId = S;
 
-  virtual ~QueueBase() {}
+  virtual ~QueueBase() = default;
 
   // Concrete implementation.
 
@@ -702,8 +708,9 @@ class AutoQueue : public QueueBase<S> {
             // The IsPath test is not needed for correctness. It just saves
             // instantiating a ShortestFirstQueue that can never be called.
             if constexpr (IsPath<Weight>::value) {
-              queues_[i] = std::make_unique<
-                  ShortestFirstQueue<StateId, Compare, false>>(*comp);
+              queues_[i] =
+                  std::make_unique<ShortestFirstQueue<StateId, Compare, false>>(
+                      *comp);
               VLOG(3) << "AutoQueue: SCC #" << i
                       << ": using shortest-first discipline";
             } else {

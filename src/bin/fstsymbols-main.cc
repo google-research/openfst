@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/verify.h>
@@ -38,14 +40,12 @@ DECLARE_string(relabel_ipairs);
 DECLARE_string(relabel_opairs);
 DECLARE_string(save_isymbols);
 DECLARE_string(save_osymbols);
-DECLARE_bool(allow_negative_labels);
 DECLARE_bool(verify);
 
 int fstsymbols_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
   using fst::SymbolTable;
-  using fst::SymbolTableTextOptions;
   using fst::script::MutableFstClass;
 
   std::string usage =
@@ -54,7 +54,6 @@ int fstsymbols_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -89,18 +88,20 @@ int fstsymbols_main(int argc, char **argv) {
     }
   }
 
-  const SymbolTableTextOptions opts(FST_FLAGS_allow_negative_labels);
-
   std::unique_ptr<SymbolTable> isyms;
   if (!FST_FLAGS_isymbols.empty()) {
-    isyms.reset(SymbolTable::ReadText(FST_FLAGS_isymbols, opts));
+    isyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_isymbols,
+                              FST_FLAGS_fst_field_separator));
     fst->SetInputSymbols(isyms.get());
   } else if (FST_FLAGS_clear_isymbols) {
     fst->SetInputSymbols(nullptr);
   }
   std::unique_ptr<SymbolTable> osyms;
   if (!FST_FLAGS_osymbols.empty()) {
-    osyms.reset(SymbolTable::ReadText(FST_FLAGS_osymbols, opts));
+    osyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_osymbols,
+                              FST_FLAGS_fst_field_separator));
     fst->SetOutputSymbols(osyms.get());
   } else if (FST_FLAGS_clear_osymbols) {
     fst->SetOutputSymbols(nullptr);
@@ -109,16 +110,14 @@ int fstsymbols_main(int argc, char **argv) {
   using Label = int64_t;
   if (!FST_FLAGS_relabel_ipairs.empty()) {
     std::vector<std::pair<Label, Label>> ipairs;
-    ReadLabelPairs(FST_FLAGS_relabel_ipairs, &ipairs,
-                   FST_FLAGS_allow_negative_labels);
+    ReadLabelPairs(FST_FLAGS_relabel_ipairs, &ipairs);
     std::unique_ptr<SymbolTable> isyms_relabel(
         RelabelSymbolTable(fst->InputSymbols(), ipairs));
     fst->SetInputSymbols(isyms_relabel.get());
   }
   if (!FST_FLAGS_relabel_opairs.empty()) {
     std::vector<std::pair<Label, Label>> opairs;
-    ReadLabelPairs(FST_FLAGS_relabel_opairs, &opairs,
-                   FST_FLAGS_allow_negative_labels);
+    ReadLabelPairs(FST_FLAGS_relabel_opairs, &opairs);
     std::unique_ptr<SymbolTable> osyms_relabel(
         RelabelSymbolTable(fst->OutputSymbols(), opairs));
     fst->SetOutputSymbols(osyms_relabel.get());

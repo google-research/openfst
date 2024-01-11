@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,23 +20,35 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
+#include <fst/extensions/linear/trie.h>
 #include <fst/extensions/pdt/collection.h>
 #include <fst/bi-table.h>
 #include <fst/cache.h>
 #include <fstream>
 #include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/matcher.h>
+#include <fst/properties.h>
 #include <fst/symbol-table.h>
+#include <fst/util.h>
 
 namespace fst {
 
@@ -1029,8 +1041,7 @@ class ArcIterator<LinearClassifierFst<Arc>>
 template <class Arc>
 inline void LinearClassifierFst<Arc>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base =
-      std::make_unique<StateIterator<LinearClassifierFst<Arc>>>(*this);
+  data->base = std::make_unique<StateIterator<LinearClassifierFst<Arc>>>(*this);
 }
 
 // Specialized Matcher for LinearFsts. This matcher only supports

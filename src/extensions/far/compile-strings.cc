@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,16 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <fst/extensions/far/compile-strings.h>
+
 #include <cmath>
+#include <ios>
+#include <istream>
 #include <string>
 
 #include <fst/flags.h>
-#include <fst/extensions/far/compile-strings.h>
 #include <fstream>
+#include <string_view>
 
 DEFINE_string(far_field_separator, "\t",
               "Set of characters used as a separator between printed fields");
@@ -31,8 +35,8 @@ namespace internal {
 // Computes the minimal length required to encode each line number as a decimal
 // number, or zero if the number of lines could not be determined because the
 // file was not seekable.
-int KeySize(const std::string &source) {
-  std::ifstream istrm(source);
+int KeySize(std::string_view source) {
+  std::ifstream istrm(std::string{source});
   istrm.seekg(0);
   // TODO(jrosenstock): Change this to is_regular_file when <filesystem> is
   // no longer banned.

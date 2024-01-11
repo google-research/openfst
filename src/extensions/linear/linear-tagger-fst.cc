@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 // finite-state transducer library.
 
 #include <fst/extensions/linear/linear-fst.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
 #include <fst/register.h>
 
 using fst::LinearTaggerFst;

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,12 +22,18 @@
 #ifndef FST_EXTENSIONS_NGRAM_NGRAM_FST_H_
 #define FST_EXTENSIONS_NGRAM_NGRAM_FST_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -35,14 +41,20 @@
 #include <fst/compat.h>
 #include <fst/log.h>
 #include <fst/extensions/ngram/bitmap-index.h>
+#include <fst/arcsort.h>
+#include <fst/expanded-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/fstlib.h>
 #include <fst/mapped-file.h>
+#include <fst/matcher.h>
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
 
 namespace fst {
 template <class A>
 class NGramFst;
-
 template <class A>
 class NGramFstMatcher;
 
@@ -220,8 +232,10 @@ class NGramFstImpl : public FstImpl<A> {
       inst->context_.clear();
       size_t node = inst->node_;
       while (node != 0) {
-        inst->context_.push_back(context_words_[context_index_.Rank1(node)]);
-        node = context_index_.Select1(context_index_.Rank0(node) - 1);
+        const size_t rank1 = context_index_.Rank1(node);
+        const size_t rank0 = node - rank1;
+        inst->context_.push_back(context_words_[rank1]);
+        node = context_index_.Select1(rank0 - 1);
       }
     }
   }
@@ -300,9 +314,9 @@ inline void NGramFstImpl<A>::GetStates(
   const Label *loc = std::lower_bound(children, children + num_children, *cit);
   if (loc == children + num_children || *loc != *cit) return;
   size_t node = 2 + loc - children;
-  states->push_back(context_index_.Rank1(node));
-  if (context.size() == 1) return;
   size_t node_rank = context_index_.Rank1(node);
+  states->push_back(node_rank);
+  if (context.size() == 1) return;
   std::pair<size_t, size_t> zeros =
       node_rank == 0 ? select_root_ : context_index_.Select0s(node_rank);
   size_t first_child = zeros.first + 1;
@@ -318,8 +332,8 @@ inline void NGramFstImpl<A>::GetStates(
       }
       ++cit;
       node = first_child + loc - children;
-      states->push_back(context_index_.Rank1(node));
       node_rank = context_index_.Rank1(node);
+      states->push_back(node_rank);
       zeros =
           node_rank == 0 ? select_root_ : context_index_.Select0s(node_rank);
       first_child = zeros.first + 1;
@@ -774,7 +788,7 @@ inline typename A::StateId NGramFstImpl<A>::Transition(
       (node_rank == 0) ? select_root_ : context_index_.Select0s(node_rank);
   size_t first_child = zeros.first + 1;
   if (context_index_.Get(first_child) == false) {
-    return context_index_.Rank1(node);
+    return node_rank;
   }
   size_t last_child = zeros.second - 1;
   for (int word = context.size() - 1; word >= 0; --word) {
@@ -793,7 +807,7 @@ inline typename A::StateId NGramFstImpl<A>::Transition(
     if (context_index_.Get(first_child) == false) break;
     last_child = zeros.second - 1;
   }
-  return context_index_.Rank1(node);
+  return node_rank;
 }
 
 }  // namespace internal
@@ -934,7 +948,10 @@ class StateIterator<NGramFst<A>> : public StateIteratorBase<A> {
 
   bool Done() const final { return s_ >= num_states_; }
 
-  StateId Value() const final { return s_; }
+  StateId Value() const final {
+    DCHECK(!Done());
+    return s_;
+  }
 
   void Next() final { ++s_; }
 
@@ -967,6 +984,7 @@ class ArcIterator<NGramFst<A>> : public ArcIteratorBase<A> {
   }
 
   const Arc &Value() const final {
+    DCHECK(!Done());
     bool eps = (inst_.node_ != 0 && i_ == 0);
     StateId state = (inst_.node_ == 0) ? i_ : i_ - 1;
     if (flags_ & lazy_ & (kArcILabelValue | kArcOLabelValue)) {

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,20 @@
 #ifndef FST_TEST_FST_TEST_H_
 #define FST_TEST_FST_TEST_H_
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
+#include <fst/log.h>
 #include <fst/equal.h>
+#include <fst/expanded-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/matcher.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/vector-fst.h>
 #include <fst/verify.h>
-
-DECLARE_string(tmpdir);
 
 namespace fst {
 

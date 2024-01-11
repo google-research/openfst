@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,11 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/randgen.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/randgen.h>
+#include <fst/script/script-impl.h>
 
 DECLARE_int32(max_length);
 DECLARE_int32(npath);
@@ -43,14 +46,11 @@ int fstrandgen_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
     return 1;
   }
-
-  VLOG(1) << argv[0] << ": Seed = " << FST_FLAGS_seed;
 
   const std::string in_name =
       (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
@@ -69,12 +69,15 @@ int fstrandgen_main(int argc, char **argv) {
     return 1;
   }
 
+  const auto seed = s::GetSeed(FST_FLAGS_seed);
+  VLOG(1) << argv[0] << ": Seed = " << seed;
+
   s::RandGen(*ifst, &ofst,
              RandGenOptions<s::RandArcSelection>(
                  ras, FST_FLAGS_max_length,
                  FST_FLAGS_npath, FST_FLAGS_weighted,
                  FST_FLAGS_remove_total_weight),
-             FST_FLAGS_seed);
+             seed);
 
   return !ofst.Write(out_name);
 }

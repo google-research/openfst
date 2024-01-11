@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -39,8 +41,6 @@
 #else
 #define OPENFST_DEPRECATED(message)
 #endif
-
-void FailedNewHandler();
 
 namespace fst {
 
@@ -64,6 +64,13 @@ inline Dest bit_cast(const Source &source) {
   Dest dest;
   memcpy(&dest, &source, sizeof(dest));
   return dest;
+}
+
+template <typename T>
+T UnalignedLoad(const void *p) {
+  T t;
+  memcpy(&t, p, sizeof t);
+  return t;
 }
 
 namespace internal {

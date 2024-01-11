@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,20 @@
 #define FST_SYNCHRONIZE_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <fst/cache.h>
-#include <fst/test-properties.h>
-
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -63,11 +67,16 @@ class SynchronizeFstImpl : public CacheImpl<Arc> {
   using CacheBaseImpl<CacheState<Arc>>::SetFinal;
   using CacheBaseImpl<CacheState<Arc>>::SetStart;
 
-  using String = std::basic_string<Label>;
-  using StringView = std::basic_string_view<Label>;
+  // To avoid using `std::char_traits<Label>`, which is not guaranteed to exist,
+  // use `char32_t` for the backing strings instead of `Label`.  We should
+  // probably use our own traits type instead.
+  static_assert(sizeof(Label) <= sizeof(char32_t),
+                "Label must fit in 32 bits.  This is a hack.");
+  using String = std::basic_string<char32_t>;
+  using StringView = std::basic_string_view<char32_t>;
 
   struct Element {
-    Element() {}
+    Element() = default;
 
     Element(StateId state_, StringView i, StringView o)
         : state(state_), istring(i), ostring(o) {}

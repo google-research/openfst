@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,12 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
 
 DECLARE_string(begin_key);
 DECLARE_string(end_key);
@@ -33,12 +36,10 @@ int farequal_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
 
-  std::string usage = "Compares the FSTs in two FST archives for equality.";
-  usage += "\n\n  Usage:";
+  std::string usage = "Compares two FST archives for equality.\n\n  Usage: ";
   usage += argv[0];
   usage += " in1.far in2.far";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
   if (argc != 3) {

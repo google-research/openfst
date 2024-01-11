@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,21 +20,31 @@
 #ifndef FST_COMPOSE_H_
 #define FST_COMPOSE_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/cache.h>
 #include <fst/compose-filter.h>
+#include <fst/connect.h>
+#include <fst/float-weight.h>
 #include <fst/fst-decl.h>  // For optional argument declarations
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/lookahead-filter.h>
 #include <fst/matcher.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/state-table.h>
-#include <fst/test-properties.h>
-
+#include <fst/symbol-table.h>
+#include <fst/util.h>
+#include <fst/weight.h>
 
 namespace fst {
 
@@ -172,7 +182,7 @@ class ComposeFstImplBase
 
   virtual ComposeFstImplBase *Copy() const = 0;
 
-  ~ComposeFstImplBase() override {}
+  ~ComposeFstImplBase() override = default;
 
   StateId Start() {
     if (!HasStart()) {
@@ -586,7 +596,7 @@ class ComposeFst
 
   // Compose specifying one shared matcher type M. Requires that the input FSTs
   // and matcher FST types be Fst<Arc>. Recommended for best code-sharing and
-  // matcher compatiblity.
+  // matcher compatibility.
   template <class Matcher, class Filter, class StateTuple>
   ComposeFst(const Fst<Arc> &fst1, const Fst<Arc> &fst2,
              const ComposeFstOptions<Arc, Matcher, Filter, StateTuple> &opts)
@@ -915,9 +925,9 @@ class ComposeFstMatcher : public MatcherBase<typename CacheStore::Arc> {
         // (hence resulting in an arc x, z'); otherwise consider next match
         // for y' on 'matcherb'.
         if (match_type_ == MATCH_INPUT) {
-          return MatchArc(s_, &arca, &arcb);
+          if (MatchArc(s_, &arca, &arcb)) return true;
         } else {
-          return MatchArc(s_, &arcb, &arca);
+          if (MatchArc(s_, &arcb, &arca)) return true;
         }
       }
     }

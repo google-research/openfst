@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ DECLARE_string(save_osymbols);
 
 int fstlinear_main(int argc, char **argv) {
   // TODO(wuke): more detailed usage
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(argv[0], &argc, &argv, true);
   fst::script::ValidateDelimiter();
   fst::script::ValidateEmptySymbol();

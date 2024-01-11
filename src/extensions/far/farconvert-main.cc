@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,12 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/extensions/far/far-class.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
 
 DECLARE_string(far_type);
 DECLARE_string(fst_type);
@@ -34,11 +38,10 @@ int farconvert_main(int argc, char **argv) {
   using fst::script::FarReaderClass;
   using fst::script::FarWriterClass;
 
-  std::string usage = "Converts FST and container types.\n\n Usage:";
+  std::string usage = "Converts FST and container types.\n\n  Usage: ";
   usage += argv[0];
   usage += " [in.far [out.far]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 

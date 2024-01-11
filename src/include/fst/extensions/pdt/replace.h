@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@
 #ifndef FST_EXTENSIONS_PDT_REPLACE_H_
 #define FST_EXTENSIONS_PDT_REPLACE_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
@@ -29,9 +31,16 @@
 #include <utility>
 #include <vector>
 
+#include <fst/log.h>
+#include <fst/connect.h>
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/replace-util.h>
 #include <fst/replace.h>
 #include <fst/symbol-table-ops.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <unordered_map>
 
 namespace fst {

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,16 @@
 
 #include <cstdint>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 
 #include <fst/encode.h>
 #include <fst/generic-register.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <fst/script/arc-class.h>
 #include <fst/script/fst-class.h>
 #include <string_view>
@@ -52,7 +56,7 @@ class EncodeMapperImplBase {
   virtual const SymbolTable *OutputSymbols() const = 0;
   virtual void SetInputSymbols(const SymbolTable *) = 0;
   virtual void SetOutputSymbols(const SymbolTable *) = 0;
-  virtual ~EncodeMapperImplBase() {}
+  virtual ~EncodeMapperImplBase() = default;
 };
 
 // Templated implementation.
@@ -104,7 +108,7 @@ class EncodeMapperClassImpl : public EncodeMapperImplBase {
     mapper_.SetOutputSymbols(syms);
   }
 
-  ~EncodeMapperClassImpl() override {}
+  ~EncodeMapperClassImpl() override = default;
 
   const EncodeMapper<Arc> *GetImpl() const { return &mapper_; }
 
@@ -152,10 +156,11 @@ class EncodeMapperClass {
 
   EncodeType Type() const { return impl_->Type(); }
 
-  static std::unique_ptr<EncodeMapperClass> Read(const std::string &source);
+  static std::unique_ptr<EncodeMapperClass> Read(
+      const std::string &source);
 
-  static std::unique_ptr<EncodeMapperClass> Read(std::istream &strm,
-                                                 const std::string &source);
+  static std::unique_ptr<EncodeMapperClass> Read(
+      std::istream &strm, const std::string &source);
 
   bool Write(const std::string &source) const { return impl_->Write(source); }
 
@@ -201,7 +206,7 @@ class EncodeMapperClass {
 
   template <class Arc>
   static std::unique_ptr<EncodeMapperClass> Read(std::istream &strm,
-                                                 const std::string &source) {
+                                                 std::string_view source) {
     std::unique_ptr<EncodeMapper<Arc>> mapper(
         EncodeMapper<Arc>::Read(strm, source));
     return mapper ? std::make_unique<EncodeMapperClass>(*mapper) : nullptr;
@@ -267,7 +272,7 @@ class EncodeMapperClassIORegister
 // Struct containing everything needed to register a particular type
 struct EncodeMapperClassIORegistration {
   using Reader = std::unique_ptr<EncodeMapperClass> (*)(
-      std::istream &stream, const std::string &source);
+      std::istream &stream, std::string_view source);
 
   using Creator = std::unique_ptr<EncodeMapperImplBase> (*)(uint8_t flags,
                                                             EncodeType type);

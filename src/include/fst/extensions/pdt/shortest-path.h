@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,11 @@
 #ifndef FST_EXTENSIONS_PDT_SHORTEST_PATH_H_
 #define FST_EXTENSIONS_PDT_SHORTEST_PATH_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -29,7 +33,16 @@
 #include <fst/log.h>
 #include <fst/extensions/pdt/paren.h>
 #include <fst/extensions/pdt/pdt.h>
+#include <fst/arc.h>
+#include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/queue.h>
 #include <fst/shortest-path.h>
+#include <fst/util.h>
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {

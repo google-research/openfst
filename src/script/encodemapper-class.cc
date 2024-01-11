@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,17 @@
 #include <fst/script/encodemapper-class.h>
 
 #include <cstdint>
+#include <ios>
+#include <iostream>
+#include <istream>
 #include <memory>
 #include <string>
 
-#include <fst/script/script-impl.h>
+#include <fst/log.h>
+#include <fst/arc.h>
+#include <fst/encode.h>
+#include <fstream>
+#include <fst/util.h>
 #include <string_view>
 
 namespace fst {
@@ -30,8 +37,8 @@ namespace {
 
 // Helper methods.
 
-std::unique_ptr<EncodeMapperClass> ReadEncodeMapper(std::istream &istrm,
-                                                    const std::string &source) {
+std::unique_ptr<EncodeMapperClass> ReadEncodeMapper(
+    std::istream &istrm, const std::string &source) {
   if (!istrm) {
     LOG(ERROR) << "ReadEncodeMapperClass: Can't open file: " << source;
     return nullptr;

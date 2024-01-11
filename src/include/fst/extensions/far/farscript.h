@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <fst/extensions/far/compile-strings.h>
@@ -37,7 +38,12 @@
 #include <fst/extensions/far/isomorphic.h>
 #include <fst/extensions/far/print-strings.h>
 #include <fst/extensions/far/script-impl.h>
+#include <fst/encode.h>
+#include <fst/string.h>
+#include <fst/weight.h>
 #include <fst/script/arg-packs.h>
+#include <fst/script/encodemapper-class.h>
+#include <fst/script/script-impl.h>
 #include <string_view>
 
 namespace fst {
@@ -57,7 +63,6 @@ struct FarCompileStringsArgs {
   const std::string &unknown_symbol;
   const bool keep_symbols;
   const bool initial_symbols;
-  const bool allow_negative_labels;
   const std::string &key_prefix;
   const std::string &key_suffix;
 };
@@ -68,8 +73,7 @@ void CompileStrings(FarCompileStringsArgs *args) {
   ::fst::CompileStrings<Arc>(
       args->sources, writer, args->fst_type, args->generate_keys, args->fet,
       args->tt, args->symbols_source, args->unknown_symbol, args->keep_symbols,
-      args->initial_symbols, args->allow_negative_labels, args->key_prefix,
-      args->key_suffix);
+      args->initial_symbols, args->key_prefix, args->key_suffix);
 }
 
 void CompileStrings(const std::vector<std::string> &sources,
@@ -77,8 +81,7 @@ void CompileStrings(const std::vector<std::string> &sources,
                     int32_t generate_keys, FarEntryType fet, TokenType tt,
                     const std::string &symbols_source,
                     const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, bool allow_negative_labels,
-                    const std::string &key_prefix,
+                    bool initial_symbols, const std::string &key_prefix,
                     const std::string &key_suffix);
 
 using FarConvertArgs =

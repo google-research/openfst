@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/compose.h>
+#include <fst/intersect.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/intersect.h>
 
@@ -41,7 +44,6 @@ int fstintersect_main(int argc, char **argv) {
   usage += " in1.fst in2.fst [out.fst]\n";
   usage += "  Flags: connect\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc < 3 || argc > 4) {
     ShowUsage();

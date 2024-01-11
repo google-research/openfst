@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #ifndef FST_EXTENSIONS_NGRAM_BITMAP_INDEX_H_
 #define FST_EXTENSIONS_NGRAM_BITMAP_INDEX_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -144,30 +145,9 @@ class BitmapIndex {
   // REQUIRES: limit <= Bits()
   size_t Rank1(size_t end) const;
 
-  // Returns the number of one bits in the range start to end - 1.
-  // REQUIRES: limit <= Bits()
-  size_t GetOnesCountInRange(size_t start, size_t end) const {
-    return Rank1(end) - Rank1(start);
-  }
-
   // Returns the number of zero bits in positions 0 to limit - 1.
   // REQUIRES: limit <= Bits()
   size_t Rank0(size_t end) const { return end - Rank1(end); }
-
-  // Returns the number of zero bits in the range start to end - 1.
-  // REQUIRES: start <= limit <= Bits()
-  size_t GetZeroesCountInRange(size_t start, size_t end) const {
-    return end - start - GetOnesCountInRange(start, end);
-  }
-
-  // Return true if any bit between begin inclusive and end exclusive
-  // is set. 0 <= begin <= end <= Bits() is required.
-  //
-  bool TestRange(size_t start, size_t end) const {
-    // Rank1 will DCHECK the other requirements.
-    DCHECK_LE(start, end);
-    return Rank1(end) > Rank1(start);
-  }
 
   // Returns the offset to the nth set bit (zero based)
   // or Bits() if index >= number of ones
@@ -223,80 +203,120 @@ class BitmapIndex {
   // See also documentation at the top of the file.
   class RankIndexEntry {
    public:
-    RankIndexEntry()
-        : absolute_ones_count_(0),
-          relative_ones_count_1_(0),
-          relative_ones_count_2_(0),
-          relative_ones_count_3_(0),
-          relative_ones_count_4_(0),
-          relative_ones_count_5_(0),
-          relative_ones_count_6_(0),
-          relative_ones_count_7_(0) {}
+    RankIndexEntry() = default;
 
     uint32_t absolute_ones_count() const { return absolute_ones_count_; }
-    uint32_t relative_ones_count_1() const { return relative_ones_count_1_; }
-    uint32_t relative_ones_count_2() const { return relative_ones_count_2_; }
-    uint32_t relative_ones_count_3() const { return relative_ones_count_3_; }
+
+    // Returns the popcounts of words *before* word `k` in the block.
+    uint32_t relative_ones_count(size_t k) const {
+      assert(k < 8);
+      // TODO(jrosenstock): Try a multiply here instead.
+      const uint32_t c = k < 4 ? 0 : relative_ones_count_4_;
+      // Load starting one byte before the three relative counts we want.
+      // This load is unaligned for `k < 4` and aligned otherwise.  The
+      // address is always within `RankIndexEntry`.
+      uint32_t relative_ones_counts_8x4 =
+          UnalignedLoad<uint32_t>(&relative_ones_counts_[k >> 2][0] - 1);
+#if ((defined __ORDER_LITTLE_ENDIAN__) || (defined _WIN32))
+      // Clear out the garbage byte.
+      relative_ones_counts_8x4 &= ~0xFF;
+      return c + ((relative_ones_counts_8x4 >> (8 * (k & 3))) & 0xFF);
+#else
+#error "Big-endian currently unsupported."
+#endif
+    }
+
+    uint32_t relative_ones_count_1() const {
+      return relative_ones_counts_[0][0];
+    }
+    uint32_t relative_ones_count_2() const {
+      return relative_ones_counts_[0][1];
+    }
+    uint32_t relative_ones_count_3() const {
+      return relative_ones_counts_[0][2];
+    }
     uint32_t relative_ones_count_4() const { return relative_ones_count_4_; }
-    uint32_t relative_ones_count_5() const { return relative_ones_count_5_; }
-    uint32_t relative_ones_count_6() const { return relative_ones_count_6_; }
-    uint32_t relative_ones_count_7() const { return relative_ones_count_7_; }
+    uint32_t relative_ones_count_5() const {
+      return relative_ones_count_4() + relative_ones_counts_[1][0];
+    }
+    uint32_t relative_ones_count_6() const {
+      return relative_ones_count_4() + relative_ones_counts_[1][1];
+    }
+    uint32_t relative_ones_count_7() const {
+      return relative_ones_count_4() + relative_ones_counts_[1][2];
+    }
 
     void set_absolute_ones_count(uint32_t v) { absolute_ones_count_ = v; }
     void set_relative_ones_count_1(uint32_t v) {
       DCHECK_LE(v, kStorageBitSize);
-      relative_ones_count_1_ = v;
+      relative_ones_counts_[0][0] = v;
     }
     void set_relative_ones_count_2(uint32_t v) {
       DCHECK_LE(v, 2 * kStorageBitSize);
-      relative_ones_count_2_ = v;
+      relative_ones_counts_[0][1] = v;
     }
     void set_relative_ones_count_3(uint32_t v) {
       DCHECK_LE(v, 3 * kStorageBitSize);
-      relative_ones_count_3_ = v;
+      relative_ones_counts_[0][2] = v;
     }
     void set_relative_ones_count_4(uint32_t v) {
       DCHECK_LE(v, 4 * kStorageBitSize);
+      DCHECK_EQ(relative_ones_counts_[1][0], 0);
+      DCHECK_EQ(relative_ones_counts_[1][1], 0);
+      DCHECK_EQ(relative_ones_counts_[1][2], 0);
       relative_ones_count_4_ = v;
     }
     void set_relative_ones_count_5(uint32_t v) {
       DCHECK_LE(v, 5 * kStorageBitSize);
-      relative_ones_count_5_ = v;
+      relative_ones_counts_[1][0] = v - relative_ones_count_4();
     }
     void set_relative_ones_count_6(uint32_t v) {
       DCHECK_LE(v, 6 * kStorageBitSize);
-      relative_ones_count_6_ = v;
+      relative_ones_counts_[1][1] = v - relative_ones_count_4();
     }
     void set_relative_ones_count_7(uint32_t v) {
       DCHECK_LE(v, 7 * kStorageBitSize);
-      relative_ones_count_7_ = v;
+      relative_ones_counts_[1][2] = v - relative_ones_count_4();
     }
 
    private:
     // Popcount of 1s before this block.
     // rank_index_[i].absolute_ones_count() == Rank1(512 * i).
-    uint32_t absolute_ones_count_;
+    uint32_t absolute_ones_count_ = 0;
 
     // Popcount of 1s since the beginning of the block.
+    // rank_index_[i].relative_ones_count(k) ==
     // rank_index_[i].relative_ones_count_k() ==
     //     Rank1(512 * i + 64 * k) - Rank1(512 * i).
     //
-    // Bitfield widths are set based on the maximum value these relative
-    // counts can have: relative_ones_count_1 stores values up to 64,
-    // so must be 7 bits; relative_ones_count_7 stores values up to
-    // 7 * 64 == 448, so needs 9 bits.
+    // Three consecutive uint64s may have a total of at most 3 * 64 = 192 < 256
+    // ones set. Thus we store `relative_ones_count_1(), ...
+    // relative_ones_count_3()` directly in the one-byte integers
+    // `relative_ones_counts_[0][0], ..., relative_ones_counts_[0][2]`. We use
+    // 16 bits for relative_ones_count_4_. In `relative_ones_counts_[1][0], ...
+    // relative_ones_counts_[1][2]`, we store the difference between
+    // `relative_ones_counts_5(), ... `relative_ones_counts_7()` and
+    // `relative_ones_count_4_`.  We put `relative_ones_count_4_` in a 16-bit
+    // integer because it's often used as the first split point for binary
+    // search, so we save an addition there.
     //
-    // All fields could just be 9 bits and still fit
-    // in an int64_t, but by using these values (which are also the minimum
-    // required width), no field spans 2 int32s, which may be helpful on
-    // 32-bit architectures.
-    unsigned int relative_ones_count_1_ : 7;
-    unsigned int relative_ones_count_2_ : 8;
-    unsigned int relative_ones_count_3_ : 8;
-    unsigned int relative_ones_count_4_ : 9;
-    unsigned int relative_ones_count_5_ : 9;
-    unsigned int relative_ones_count_6_ : 9;
-    unsigned int relative_ones_count_7_ : 9;
+    // More explicitly:
+    // ```
+    // relative_ones_counts_[0][0] = relative_ones_count_1()
+    // relative_ones_counts_[0][1] = relative_ones_count_2()
+    // relative_ones_counts_[0][2] = relative_ones_count_3()
+    // relative_ones_counts_[1][0] =
+    //     relative_ones_count_5() - relative_ones_count_4()
+    // relative_ones_counts_[1][1] =
+    //     relative_ones_count_6() - relative_ones_count_4()
+    // relative_ones_counts_[1][2] =
+    //     relative_ones_count_7() - relative_ones_count_4()
+    // ```
+    //
+    // (As a consequence, it is an error to call set_relative_ones_count_4()
+    // after calling set_relative_ones_count_N() for N in {5, 6, 7}.)
+    uint16_t relative_ones_count_4_ = 0;
+    uint8_t relative_ones_counts_[2][3] = {{0, 0, 0}, {0, 0, 0}};
   };
   static_assert(sizeof(RankIndexEntry) == 4 + 8,
                 "RankIndexEntry should be 12 bytes.");

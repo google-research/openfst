@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #ifndef FST_SCRIPT_WEIGHT_CLASS_H_
 #define FST_SCRIPT_WEIGHT_CLASS_H_
 
+#include <cstddef>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -47,7 +48,7 @@ class WeightImplBase {
   virtual WeightImplBase &TimesEq(const WeightImplBase &other) = 0;
   virtual WeightImplBase &DivideEq(const WeightImplBase &other) = 0;
   virtual WeightImplBase &PowerEq(size_t n) = 0;
-  virtual ~WeightImplBase() {}
+  virtual ~WeightImplBase() = default;
 };
 
 template <class W>

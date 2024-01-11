@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,22 @@
 #define FST_MATCHER_FST_H_
 
 #include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 
-
+#include <fst/accumulator.h>
 #include <fst/add-on.h>
+#include <fst/arc.h>
 #include <fst/const-fst.h>
+#include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/lookahead-matcher.h>
-
+#include <fst/matcher.h>
+#include <string_view>
 
 namespace fst {
 
@@ -132,7 +140,7 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
 
   // Read a MatcherFst from a file; return nullptr on error
   // Empty source reads from standard input
-  static MatcherFst *Read(const std::string &source) {
+  static MatcherFst *Read(std::string_view source) {
     auto *impl = ImplToExpandedFst<Impl>::Read(source);
     return impl ? new MatcherFst(std::shared_ptr<Impl>(impl)) : nullptr;
   }
@@ -181,7 +189,7 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
 
   // Makes a thread-safe copy of fst.
   static std::shared_ptr<Impl> CreateDataAndImpl(const FST &fst,
-                                                 const std::string &name) {
+                                                 std::string_view name) {
     FstMatcher imatcher(fst, MATCH_INPUT);
     FstMatcher omatcher(fst, MATCH_OUTPUT);
     return CreateImpl(fst, name,
@@ -191,14 +199,14 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
 
   // Makes a deep copy of fst.
   static std::shared_ptr<Impl> CreateDataAndImpl(const Fst<Arc> &fst,
-                                                 const std::string &name) {
+                                                 std::string_view name) {
     FST result(fst);
     return CreateDataAndImpl(result, name);
   }
 
   // Makes a thread-safe copy of fst.
   static std::shared_ptr<Impl> CreateImpl(const FST &fst,
-                                          const std::string &name,
+                                          std::string_view name,
                                           std::shared_ptr<Data> data) {
     auto impl = std::make_shared<Impl>(fst, name);
     impl->SetAddOn(data);
@@ -208,7 +216,7 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
 
   // Makes a deep copy of fst.
   static std::shared_ptr<Impl> CreateImpl(const Fst<Arc> &fst,
-                                          const std::string &name,
+                                          std::string_view name,
                                           std::shared_ptr<Data> data) {
     auto impl = std::make_shared<Impl>(fst, name);
     impl->SetAddOn(data);

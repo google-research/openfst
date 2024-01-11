@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,15 @@
 #define FST_EXTENSIONS_FAR_STTABLE_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <ios>
 #include <istream>
 #include <memory>
 #include <string>
+#include <vector>
 
+#include <fst/log.h>
 #include <fstream>
 #include <fst/util.h>
 #include <string_view>
@@ -48,8 +52,9 @@ inline constexpr int32_t kSTTableFileVersion = 1;
 template <class T, class Writer>
 class STTableWriter {
  public:
-  explicit STTableWriter(const std::string &source)
-      : stream_(source, std::ios_base::out | std::ios_base::binary),
+  explicit STTableWriter(std::string_view source)
+      : stream_(std::string(source),
+                std::ios_base::out | std::ios_base::binary),
         error_(false) {
     WriteType(stream_, kSTTableMagicNumber);
     WriteType(stream_, kSTTableFileVersion);
@@ -60,7 +65,7 @@ class STTableWriter {
     }
   }
 
-  static STTableWriter<T, Writer> *Create(const std::string &source) {
+  static STTableWriter<T, Writer> *Create(std::string_view source) {
     if (source.empty()) {
       LOG(ERROR) << "STTableWriter: Writing to standard out unsupported.";
       return nullptr;
@@ -170,13 +175,13 @@ class STTableReader {
     for (auto &stream : streams_) delete stream;
   }
 
-  static STTableReader<T, Reader> *Open(const std::string &source) {
+  static STTableReader<T, Reader> *Open(std::string_view source) {
     if (source.empty()) {
       LOG(ERROR) << "STTableReader: Operation not supported on standard input";
       return nullptr;
     }
     std::vector<std::string> sources;
-    sources.push_back(source);
+    sources.push_back(std::string(source));
     return new STTableReader<T, Reader>(sources);
   }
 
@@ -373,7 +378,7 @@ bool ReadSTTableHeader(const std::string &source, Header *header) {
   return true;
 }
 
-bool IsSTTable(const std::string &source);
+bool IsSTTable(std::string_view source);
 
 }  // namespace fst
 

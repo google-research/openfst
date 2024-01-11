@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,13 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fstream>
+#include <fst/fst.h>
 #include <fst/script/arcfilter-impl.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
+#include <fst/script/info-impl.h>
 #include <fst/script/info.h>
 
 DECLARE_string(arc_filter);
@@ -74,7 +79,6 @@ int fstinfo_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 2) {
     ShowUsage();

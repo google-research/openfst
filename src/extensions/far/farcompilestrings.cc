@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ DEFINE_int32(generate_keys, 0,
 DEFINE_string(far_type, "default",
               "FAR file format type: one of: \"default\", \"fst\", "
               "\"stlist\", \"sttable\"");
-DEFINE_bool(allow_negative_labels, false,
-            "Allow negative labels (not recommended; may cause conflicts)");
 DEFINE_string(arc_type, "standard", "Output arc type");
 DEFINE_string(entry_type, "line",
               "Entry type: one of : "

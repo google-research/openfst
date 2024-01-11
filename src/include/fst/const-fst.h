@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,27 @@
 #define FST_CONST_FST_H_
 
 #include <climits>
+#include <cstddef>
 #include <cstdint>
+#include <ios>
+#include <istream>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
 #include <fst/fst-decl.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mapped-file.h>
+#include <fst/properties.h>
 #include <fst/test-properties.h>
 #include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
@@ -266,7 +276,7 @@ class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
 
   // Read a ConstFst from a file; return nullptr on error; empty source reads
   // from standard input.
-  static ConstFst *Read(const std::string &source) {
+  static ConstFst *Read(std::string_view source) {
     auto *impl = ImplToExpandedFst<Impl>::Read(source);
     return impl ? new ConstFst(std::shared_ptr<Impl>(impl)) : nullptr;
   }

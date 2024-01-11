@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,14 @@
 #ifndef FST_EXTENSIONS_PDT_EXPAND_H_
 #define FST_EXTENSIONS_PDT_EXPAND_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <cstdint>
 #include <forward_list>
+#include <memory>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fst/log.h>
@@ -30,10 +36,16 @@
 #include <fst/extensions/pdt/reverse.h>
 #include <fst/extensions/pdt/shortest-path.h>
 #include <fst/cache.h>
+#include <fst/connect.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/state-table.h>
-#include <fst/test-properties.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {
@@ -381,7 +393,8 @@ class PdtPrunedExpand {
           stack_(stack),
           stack_length_(stack_length),
           distance_(distance),
-          fdistance_(fdistance) {}
+          fdistance_(fdistance),
+          less_() {}
 
     bool operator()(StateId s1, StateId s2) const {
       auto si1 = state_table_.Tuple(s1).stack_id;

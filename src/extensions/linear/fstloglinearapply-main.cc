@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,16 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <cstring>
 #include <string>
 
 #include <fst/flags.h>
 #include <fst/log.h>
-#include <fst/extensions/linear/linear-fst.h>
 #include <fst/extensions/linear/loglinear-apply.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/fst.h>
+#include <fst/pair-weight.h>
 #include <fst/vector-fst.h>
 
 DECLARE_bool(normalize);
@@ -33,7 +37,6 @@ int fstloglinearapply_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in.fst linear.fst [out.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc < 3 || argc > 4) {
     ShowUsage();

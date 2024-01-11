@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@ DEFINE_string(unknown_isymbol, "",
 DEFINE_string(
     unknown_osymbol, "",
     "Output symbol to use to relabel OOVs (default: OOVs are errors)");
-DEFINE_bool(allow_negative_labels, false,
-            "Allow negative labels (not recommended; may cause conflicts)");
 
 int fstrelabel_main(int argc, char **argv);
 

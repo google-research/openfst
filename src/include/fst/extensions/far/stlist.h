@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -24,15 +24,20 @@
 #define FST_EXTENSIONS_FAR_STLIST_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <fst/log.h>
 #include <fstream>
 #include <fst/util.h>
 #include <string_view>
@@ -51,11 +56,12 @@ inline constexpr int32_t kSTListFileVersion = 1;
 template <class T, class Writer>
 class STListWriter {
  public:
-  explicit STListWriter(const std::string &source)
+  explicit STListWriter(std::string_view source)
       : stream_(source.empty()
                     ? &std::cout
                     : new std::ofstream(
-                          source, std::ios_base::out | std::ios_base::binary)),
+                          std::string(source),
+                          std::ios_base::out | std::ios_base::binary)),
         error_(false) {
     WriteType(*stream_, kSTListMagicNumber);
     WriteType(*stream_, kSTListFileVersion);
@@ -66,7 +72,7 @@ class STListWriter {
     }
   }
 
-  static STListWriter<T, Writer> *Create(const std::string &source) {
+  static STListWriter<T, Writer> *Create(std::string_view source) {
     return new STListWriter<T, Writer>(source);
   }
 
@@ -178,9 +184,9 @@ class STListReader {
     }
   }
 
-  static STListReader<T, Reader> *Open(const std::string &source) {
+  static STListReader<T, Reader> *Open(std::string_view source) {
     std::vector<std::string> sources;
-    sources.push_back(source);
+    sources.push_back(std::string(source));
     return new STListReader<T, Reader>(sources);
   }
 
@@ -294,7 +300,7 @@ bool ReadSTListHeader(const std::string &source, Header *header) {
   return true;
 }
 
-bool IsSTList(const std::string &source);
+bool IsSTList(std::string_view source);
 
 }  // namespace fst
 

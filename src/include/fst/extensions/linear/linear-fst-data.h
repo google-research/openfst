@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,23 +20,29 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_H_
 
+#include <cstddef>
+#include <istream>
 #include <memory>
 #include <numeric>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/log.h>
 #include <fst/extensions/linear/trie.h>
 #include <fst/fst.h>
+#include <fst/util.h>
 
 namespace fst {
 
+template <class A>
+class FeatureGroup;
 // Forward declarations
 template <class A>
 class LinearFstDataBuilder;
-template <class A>
-class FeatureGroup;
 
 // Immutable data storage of the feature weights in a linear
 // model. Produces state tuples that represent internal states of a
@@ -482,7 +488,7 @@ inline std::string FeatureGroup<A>::Stats() const {
 template <class A>
 class LinearFstData<A>::GroupFeatureMap {
  public:
-  GroupFeatureMap() {}
+  GroupFeatureMap() = default;
 
   void Init(size_t num_groups, size_t num_words) {
     num_groups_ = num_groups;

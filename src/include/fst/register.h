@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,24 +20,25 @@
 #ifndef FST_REGISTER_H_
 #define FST_REGISTER_H_
 
+#include <istream>
 #include <string>
 #include <type_traits>
 
-
 #include <fst/compat.h>
+#include <fst/log.h>
 #include <fst/generic-register.h>
 #include <fst/util.h>
-
-
-#include <fst/log.h>
 #include <string_view>
 
 namespace fst {
 
+template <class FST>
+class FstRegisterer;
+struct FstReadOptions;
 template <class Arc>
 class Fst;
-
-struct FstReadOptions;
+template <class FST>
+class FstRegisterer;
 
 // This class represents a single entry in a FstRegister
 template <class Arc>

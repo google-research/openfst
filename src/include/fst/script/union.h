@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@
 #ifndef FST_SCRIPT_UNION_H_
 #define FST_SCRIPT_UNION_H_
 
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
 #include <fst/union.h>
 #include <fst/script/fst-class.h>
 

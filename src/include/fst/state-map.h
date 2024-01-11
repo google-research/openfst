@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,26 @@
 #ifndef FST_STATE_MAP_H_
 #define FST_STATE_MAP_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fst/log.h>
-
 #include <fst/arc-map.h>
+#include <fst/arc.h>
 #include <fst/cache.h>
+#include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 
 namespace fst {
 
@@ -141,7 +150,9 @@ void StateMap(const Fst<A> &ifst, MutableFst<B> *ofst, C *mapper) {
     return;
   }
   // Adds all states.
-  if (ifst.Properties(kExpanded, false)) ofst->ReserveStates(CountStates(ifst));
+  if (std::optional<typename A::StateId> num_states = ifst.NumStatesIfKnown()) {
+    ofst->ReserveStates(*num_states);
+  }
   for (StateIterator<Fst<A>> siter(ifst); !siter.Done(); siter.Next()) {
     ofst->AddState();
   }

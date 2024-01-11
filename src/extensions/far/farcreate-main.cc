@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,22 @@
 //
 // Creates a finite-state archive from input FSTs.
 
+#include <cstring>
+#include <istream>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/extensions/far/far-class.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/extensions/far/script-impl.h>
 #include <fst/arc.h>
 #include <fstream>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
 
 DECLARE_string(key_prefix);
 DECLARE_string(key_suffix);
@@ -36,12 +44,10 @@ int farcreate_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FarWriterClass;
 
-  std::string usage =
-      "Creates a finite-state archive from input FSTs.\n\n Usage:";
+  std::string usage = "Creates an archive from FSTs.\n\n  Usage: ";
   usage += argv[0];
   usage += " [in1.fst [[in2.fst ...] out.far]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 

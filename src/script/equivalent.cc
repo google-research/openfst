@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@
 
 #include <fst/script/equivalent.h>
 
+#include <fst/script/fst-class.h>
 #include <fst/script/script-impl.h>
 
 namespace fst {
 namespace script {
 
-bool Equivalent(const FstClass &fst1, const FstClass &fst2, float delta) {
+bool Equivalent(const FstClass &fst1, const FstClass &fst2, float delta,
+                bool *error) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Equivalent")) return false;
-  FstEquivalentInnerArgs iargs{fst1, fst2, delta};
+  FstEquivalentInnerArgs iargs{fst1, fst2, delta, error};
   FstEquivalentArgs args(iargs);
   Apply<Operation<FstEquivalentArgs>>("Equivalent", fst1.ArcType(), &args);
   return args.retval;

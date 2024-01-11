@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
-#include <fst/flags.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/extensions/far/script-impl.h>
 
 DECLARE_string(begin_key);
 DECLARE_string(end_key);
@@ -31,13 +31,11 @@ DECLARE_bool(list_fsts);
 int farinfo_main(int argc, char **argv) {
   namespace s = fst::script;
 
-  std::string usage = "Prints some basic information about the FSTs in an FST ";
-  usage += "archive.\n\n  Usage:";
+  std::string usage = "Prints information about an FST archive.\n\n  Usage:";
   usage += argv[0];
   usage += " [in1.far in2.far...]\n";
   usage += "  Flags: begin_key end_key list_fsts";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 

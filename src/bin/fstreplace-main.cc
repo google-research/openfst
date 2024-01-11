@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@
 // allowing for the definition of FSTs analogous to RTNs.
 
 #include <cstdint>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/replace-util.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/replace.h>
+#include <fst/script/script-impl.h>
 
 DECLARE_string(call_arc_labeling);
 DECLARE_string(return_arc_labeling);
@@ -46,7 +49,6 @@ int fstreplace_main(int argc, char **argv) {
   usage += argv[0];
   usage += " root.fst rootlabel [rule1.fst label1 ...] [out.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc < 4) {
     ShowUsage();

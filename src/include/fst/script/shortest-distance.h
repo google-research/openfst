@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,18 @@
 #define FST_SCRIPT_SHORTEST_DISTANCE_H_
 
 #include <cstdint>
+#include <memory>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
+#include <fst/log.h>
+#include <fst/arcfilter.h>
+#include <fst/fst.h>
 #include <fst/queue.h>
 #include <fst/shortest-distance.h>
+#include <fst/util.h>
+#include <fst/weight.h>
 #include <fst/script/arcfilter-impl.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>

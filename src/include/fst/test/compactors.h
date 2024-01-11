@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,21 @@
 //
 // Compactors for use in tests.  See compact-fst.h.
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <istream>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <type_traits>
 
 #include <fst/arc.h>
+#include <fst/expanded-fst.h>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
 #include <fst/vector-fst.h>
 
 namespace fst {

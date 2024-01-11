@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -33,6 +34,8 @@
 #include <fst/extensions/mpdt/reverse.h>
 #include <fst/extensions/pdt/pdtscript.h>  // For LabelClassPair,
 #include <fst/compose.h>               // for ComposeOptions
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
 #include <fst/util.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,13 @@
 #include <cstdint>
 #include <memory>
 #include <tuple>
+#include <utility>
 
 #include <fst/arc-map.h>
+#include <fst/arc.h>
+#include <fst/fst.h>
 #include <fst/state-map.h>
+#include <fst/vector-fst.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/weight-class.h>
@@ -160,9 +164,10 @@ void Map(FstMapArgs *args) {
   }
 }
 
-std::unique_ptr<FstClass> Map(const FstClass &ifst, MapType map_type,
-                              float delta, double power,
-                              const WeightClass &weight);
+std::unique_ptr<FstClass> Map(const FstClass &ifst,
+                                              MapType map_type, float delta,
+                                              double power,
+                                              const WeightClass &weight);
 
 }  // namespace script
 }  // namespace fst

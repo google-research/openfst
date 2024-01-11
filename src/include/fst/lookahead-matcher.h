@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,19 +21,27 @@
 #ifndef FST_LOOKAHEAD_MATCHER_H_
 #define FST_LOOKAHEAD_MATCHER_H_
 
+#include <sys/types.h>
+
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/flags.h>
 #include <fst/log.h>
-
+#include <fst/accumulator.h>
 #include <fst/add-on.h>
 #include <fst/const-fst.h>
 #include <fst/fst.h>
 #include <fst/label-reachable.h>
 #include <fst/matcher.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <string_view>
 
 DECLARE_string(save_relabel_ipairs);
 DECLARE_string(save_relabel_opairs);
@@ -600,7 +608,7 @@ class LabelLookAheadMatcher
                (!reach_input && (kFlags & kOutputLookAheadMatcher))) {
       label_reachable_ =
           std::make_unique<Reachable>(fst, reach_input, std::move(accumulator),
-                                       kFlags & kLookAheadKeepRelabelData);
+                                      kFlags & kLookAheadKeepRelabelData);
     }
   }
 
@@ -625,7 +633,7 @@ inline bool LabelLookAheadMatcher<M, flags, Accumulator,
   label_reachable_->SetState(state_, s);
   reach_set_state_ = true;
   bool compute_weight = kFlags & kLookAheadWeight;
-  bool compute_prefix = kFlags & kLookAheadPrefix;
+  constexpr bool kComputePrefix = kFlags & kLookAheadPrefix;
   ArcIterator<LFST> aiter(fst, s);
   aiter.SetFlags(kArcNoCache, kArcNoCache);  // Makes caching optional.
   const bool reach_arc = label_reachable_->Reach(
@@ -636,7 +644,7 @@ inline bool LabelLookAheadMatcher<M, flags, Accumulator,
   if (reach_arc) {
     const auto begin = label_reachable_->ReachBegin();
     const auto end = label_reachable_->ReachEnd();
-    if (compute_prefix && end - begin == 1 && !reach_final) {
+    if (kComputePrefix && end - begin == 1 && !reach_final) {
       aiter.Seek(begin);
       SetLookAheadPrefix(aiter.Value());
       compute_weight = false;
@@ -656,8 +664,8 @@ inline bool LabelLookAheadMatcher<M, flags, Accumulator,
 // if save_relabel_ipairs/opairs is non-empty.
 template <class Reachable, class FST, class Data>
 void RelabelForReachable(FST *fst, const Data &data,
-                         const std::string &save_relabel_ipairs,
-                         const std::string &save_relabel_opairs) {
+                         std::string_view save_relabel_ipairs,
+                         std::string_view save_relabel_opairs) {
   using Label = typename FST::Arc::Label;
   if (data.First() != nullptr) {  // reach_input.
     Reachable reachable(data.SharedFirst());

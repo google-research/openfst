@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,19 @@
 #define FST_COMPLEMENT_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
+#include <fst/float-weight.h>
 #include <fst/fst.h>
-#include <fst/test-properties.h>
+#include <fst/impl-to-fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
 
 namespace fst {
 

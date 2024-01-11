@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 #ifndef FST_EXTENSIONS_FAR_MAP_REDUCE_H_
 #define FST_EXTENSIONS_FAR_MAP_REDUCE_H_
 
+#include <string>
+
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
 #include <fst/arc.h>
 #include <fst/fst.h>

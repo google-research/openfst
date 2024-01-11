@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
+#include <fst/symbol-table.h>
 #include <fst/script/compile.h>
 
 DECLARE_bool(acceptor);
@@ -37,19 +38,16 @@ DECLARE_string(ssymbols);
 DECLARE_bool(keep_isymbols);
 DECLARE_bool(keep_osymbols);
 DECLARE_bool(keep_state_numbering);
-DECLARE_bool(allow_negative_labels);
 
 int fstcompile_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
-  using fst::SymbolTableTextOptions;
 
   std::string usage =
       "Creates binary FSTs from simple text format.\n\n  Usage: ";
   usage += argv[0];
   usage += " [text.fst [binary.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -68,23 +66,27 @@ int fstcompile_main(int argc, char **argv) {
   }
   std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
 
-  const SymbolTableTextOptions opts(FST_FLAGS_allow_negative_labels);
-
   std::unique_ptr<const SymbolTable> isyms;
   if (!FST_FLAGS_isymbols.empty()) {
-    isyms.reset(SymbolTable::ReadText(FST_FLAGS_isymbols, opts));
+    isyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_isymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!isyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> osyms;
   if (!FST_FLAGS_osymbols.empty()) {
-    osyms.reset(SymbolTable::ReadText(FST_FLAGS_osymbols, opts));
+    osyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_osymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!osyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> ssyms;
   if (!FST_FLAGS_ssymbols.empty()) {
-    ssyms.reset(SymbolTable::ReadText(FST_FLAGS_ssymbols));
+    ssyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_ssymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!ssyms) return 1;
   }
 
@@ -95,8 +97,7 @@ int fstcompile_main(int argc, char **argv) {
              ssyms.get(), FST_FLAGS_acceptor,
              FST_FLAGS_keep_isymbols,
              FST_FLAGS_keep_osymbols,
-             FST_FLAGS_keep_state_numbering,
-             FST_FLAGS_allow_negative_labels);
+             FST_FLAGS_keep_state_numbering);
 
   return 0;
 }

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@
 #define FST_EXTENSIONS_PDT_PDTSCRIPT_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -35,10 +37,16 @@
 #include <fst/extensions/pdt/reverse.h>
 #include <fst/extensions/pdt/shortest-path.h>
 #include <fst/compose.h>  // for ComposeOptions
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/queue.h>
 #include <fst/util.h>
 #include <fst/script/arg-packs.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/fstscript.h>
+#include <fst/script/script-impl.h>
 #include <fst/script/shortest-path.h>
+#include <fst/script/weight-class.h>
 
 namespace fst {
 namespace script {
@@ -204,6 +212,7 @@ void ShortestPath(PdtShortestPathArgs *args) {
   switch (opts.queue_type) {
     default:
       FSTERROR() << "Unknown queue type: " << opts.queue_type;
+      [[fallthrough]];
     case FIFO_QUEUE: {
       using Queue = FifoQueue<typename Arc::StateId>;
       fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,

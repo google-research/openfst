@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,13 @@
 #include <tuple>
 #include <utility>
 
+#include <fst/log.h>
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/prune.h>
+#include <fst/util.h>
+#include <fst/weight.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/weight-class.h>
 

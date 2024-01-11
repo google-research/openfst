@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,18 @@
 #ifndef FST_EXTENSIONS_MPDT_INFO_H_
 #define FST_EXTENSIONS_MPDT_INFO_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <ios>
+#include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/mpdt/mpdt.h>
 #include <fst/fst.h>
+#include <fst/util.h>
 #include <unordered_map>
 #include <unordered_set>
 

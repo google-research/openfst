@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,13 @@
 #ifndef FST_EXTENSIONS_PDT_PAREN_H_
 #define FST_EXTENSIONS_PDT_PAREN_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include <fst/log.h>
@@ -30,6 +34,7 @@
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
+#include <fst/util.h>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -353,7 +358,7 @@ class PdtBalanceData {
 
   using SetIterator = typename Collection<ssize_t, StateId>::SetIterator;
 
-  PdtBalanceData() {}
+  PdtBalanceData() = default;
 
   void Clear() {
     open_paren_map_.clear();
@@ -442,7 +447,7 @@ class PdtBalanceData {
 template <class Arc>
 PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
     StateId num_states, StateId num_split, StateId state_id_shift) const {
-  auto *bd = new PdtBalanceData<Arc>;
+  auto bd = fst::make_unique_for_overwrite<PdtBalanceData<Arc>>();
   std::unordered_set<StateId> close_sources;
   const auto split_size = num_states / num_split;
   for (StateId i = 0; i < num_states; i += split_size) {
@@ -466,7 +471,7 @@ PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
       bd->FinishInsert(*it);
     }
   }
-  return bd;
+  return bd.release();
 }
 
 }  // namespace internal

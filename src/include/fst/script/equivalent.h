@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <tuple>
 
 #include <fst/equivalent.h>
+#include <fst/fst.h>
+#include <fst/weight.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
 
@@ -28,7 +30,7 @@ namespace fst {
 namespace script {
 
 using FstEquivalentInnerArgs =
-    std::tuple<const FstClass &, const FstClass &, float>;
+    std::tuple<const FstClass &, const FstClass &, float, bool *>;
 
 using FstEquivalentArgs = WithReturnValue<bool, FstEquivalentInnerArgs>;
 
@@ -36,11 +38,12 @@ template <class Arc>
 void Equivalent(FstEquivalentArgs *args) {
   const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
   const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
-  args->retval = Equivalent(fst1, fst2, std::get<2>(args->args));
+  args->retval =
+      Equivalent(fst1, fst2, std::get<2>(args->args), std::get<3>(args->args));
 }
 
 bool Equivalent(const FstClass &fst1, const FstClass &fst2,
-                float delta = kDelta);
+                float delta = kDelta, bool *error = nullptr);
 
 }  // namespace script
 }  // namespace fst

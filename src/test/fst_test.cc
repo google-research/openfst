@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,29 @@
 //
 // Regression test for FST classes.
 
-#include <fst/test/fst_test.h>
+#include <fst/fst.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <ostream>
 #include <string>
 
-#include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
 #include <fst/edit-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst-decl.h>
 #include <fst/matcher-fst.h>
+#include <fst/pair-weight.h>
+#include <fst/product-weight.h>
+#include <fst/register.h>
+#include <fst/vector-fst.h>
 #include <fst/test/compactors.h>
+#include <fst/test/fst_test.h>
 
 namespace fst {
 namespace {
@@ -41,7 +52,7 @@ struct CustomArc {
 
   CustomArc(Label i, Label o, Weight w, StateId s)
       : ilabel(i), olabel(o), weight(w), nextstate(s) {}
-  CustomArc() {}
+  CustomArc() = default;
 
   static const std::string &Type() {  // Arc type name
     static const std::string *const type = new std::string("my");
@@ -90,7 +101,6 @@ using fst::VectorFst;
 
 int main(int argc, char **argv) {
   SetFlag(&FST_FLAGS_fst_verify_properties, true);
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(argv[0], &argc, &argv, true);
 
   LOG(INFO) << "Testing VectorFst<StdArc>.";

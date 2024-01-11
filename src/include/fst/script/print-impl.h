@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,13 @@
 #include <sstream>
 #include <string>
 
+#include <fst/log.h>
+#include <fst/fst.h>
 #include <fst/fstlib.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
@@ -43,8 +48,8 @@ class FstPrinter {
   explicit FstPrinter(const Fst<Arc> &fst, const SymbolTable *isyms,
                       const SymbolTable *osyms, const SymbolTable *ssyms,
                       bool accept, bool show_weight_one,
-                      const std::string &field_separator,
-                      const std::string &missing_symbol = "")
+                      std::string_view field_separator,
+                      std::string_view missing_symbol = "")
       : fst_(fst),
         isyms_(isyms),
         osyms_(osyms),
@@ -55,8 +60,8 @@ class FstPrinter {
         missing_symbol_(missing_symbol) {}
 
   // Prints FST to an output stream.
-  void Print(std::ostream &ostrm, const std::string &dest) {
-    dest_ = dest;
+  void Print(std::ostream &ostrm, std::string_view dest) {
+    dest_ = std::string(dest);
     const auto start = fst_.Start();
     if (start == kNoStateId) return;
     // Initial state first.

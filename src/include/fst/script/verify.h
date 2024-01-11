@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #ifndef FST_SCRIPT_VERIFY_H_
 #define FST_SCRIPT_VERIFY_H_
 
+#include <fst/fst.h>
 #include <fst/verify.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>

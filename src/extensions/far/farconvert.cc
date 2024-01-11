@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@
 
 #include <fst/flags.h>
 
-DEFINE_string(fst_type, "",
-              "FST type to convert to. "
-              "If empty, each FST's type is unchanged");
+DEFINE_string(fst_type, "", "Output FST type");
 DEFINE_string(far_type, "default",
               "FAR file format type: one of: \"default\", \"fst\", "
               "\"stlist\", \"sttable\"; "
-              "\"default\" means use type of input FAR");
+              "the input FAR type is used if \"default\"");
 
 int farconvert_main(int argc, char **argv);
 

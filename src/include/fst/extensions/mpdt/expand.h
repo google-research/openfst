@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,23 @@
 #ifndef FST_EXTENSIONS_MPDT_EXPAND_H_
 #define FST_EXTENSIONS_MPDT_EXPAND_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <fst/extensions/mpdt/mpdt.h>
 #include <fst/extensions/pdt/paren.h>
+#include <fst/extensions/pdt/pdt.h>
 #include <fst/cache.h>
+#include <fst/connect.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/state-table.h>
-#include <fst/test-properties.h>
 
 namespace fst {
 

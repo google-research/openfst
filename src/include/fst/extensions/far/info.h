@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,15 +18,23 @@
 #ifndef FST_EXTENSIONS_FAR_INFO_H_
 #define FST_EXTENSIONS_FAR_INFO_H_
 
+#include <cmath>
+#include <cstddef>
 #include <iomanip>
+#include <ios>
+#include <iostream>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/fst.h>
+#include <string_view>
 
 namespace fst {
 
@@ -63,7 +71,7 @@ struct FarInfoData {
 
 template <class Arc>
 void GetInfo(const std::vector<std::string> &sources,
-             const std::string &begin_key, const std::string &end_key,
+             std::string_view begin_key, std::string_view end_key,
              const bool list_fsts, FarInfoData *far_info) {
   *far_info = FarInfoData();
   std::unique_ptr<FarReader<Arc>> reader(FarReader<Arc>::Open(sources));
@@ -98,13 +106,13 @@ void GetInfo(const std::vector<std::string> &sources,
 }
 
 template <class Arc>
-void Info(const std::vector<std::string> &sources, const std::string &begin_key,
-          const std::string &end_key, const bool list_fsts) {
+void Info(const std::vector<std::string> &sources, std::string_view begin_key,
+          std::string_view end_key, const bool list_fsts) {
   FarInfoData info;
   GetInfo<Arc>(sources, begin_key, end_key, list_fsts, &info);
   if (!list_fsts) {
     std::cout << std::left << std::setw(50) << "far type" << info.far_type
-              << std::endl;
+              << '\n';
     std::cout << std::left << std::setw(50) << "arc type" << Arc::Type()
               << std::endl;
     std::cout << std::left << std::setw(50) << "fst type";
@@ -113,15 +121,14 @@ void Info(const std::vector<std::string> &sources, const std::string &begin_key,
       if (iter != info.fst_types.begin()) std::cout << ",";
       std::cout << *iter;
     }
-    std::cout << std::endl;
-    std::cout << std::left << std::setw(50) << "# of FSTs" << info.nfst
-              << std::endl;
+    std::cout << '\n';
+    std::cout << std::left << std::setw(50) << "# of FSTs" << info.nfst << '\n';
     std::cout << std::left << std::setw(50) << "total # of states"
-              << info.nstate << std::endl;
+              << info.nstate << '\n';
     std::cout << std::left << std::setw(50) << "total # of arcs" << info.narc
-              << std::endl;
+              << '\n';
     std::cout << std::left << std::setw(50) << "total # of final states"
-              << info.nfinal << std::endl;
+              << info.nfinal << '\n';
   } else {
     // FIXME(kbg): Grok, then document this.
     int wkey = 10;
@@ -145,13 +152,13 @@ void Info(const std::vector<std::string> &sources, const std::string &begin_key,
     std::cout << std::left << std::setw(wkey) << "key" << std::setw(wtype)
               << "type" << std::right << std::setw(wnstate) << "# of states"
               << std::setw(wnarc) << "# of arcs" << std::setw(wnfinal)
-              << "# of final states" << std::endl;
+              << "# of final states" << '\n';
     for (const auto &key_info : info.key_infos) {
       std::cout << std::left << std::setw(wkey) << key_info.key
                 << std::setw(wtype) << key_info.type << std::right
                 << std::setw(wnstate) << key_info.nstate << std::setw(wnarc)
                 << key_info.narc << std::setw(wnfinal) << key_info.nfinal
-                << std::endl;
+                << '\n';
     }
   }
 }

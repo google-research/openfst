@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,11 +22,15 @@
 #define FST_SCRIPT_DRAW_IMPL_H_
 
 #include <iomanip>
+#include <ios>
 #include <ostream>
 #include <sstream>
 #include <string>
 
+#include <fst/log.h>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
 #include <string_view>
@@ -106,7 +110,7 @@ class FstDrawer {
 
   // Escapes backslash and double quote if these occur in the string. Dot
   // will not deal gracefully with these if they are not escaped.
-  static std::string Escape(const std::string &str) {
+  static std::string Escape(std::string_view str) {
     std::string ns;
     for (char c : str) {
       if (c == '\\' || c == '"') ns.push_back('\\');

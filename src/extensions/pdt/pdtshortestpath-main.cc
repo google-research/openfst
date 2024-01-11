@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,10 @@
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
+#include <fst/queue.h>
 #include <fst/util.h>
+#include <fst/script/arg-packs.h>
+#include <fst/script/fst-class.h>
 
 DECLARE_bool(keep_parentheses);
 DECLARE_string(queue_type);
@@ -45,7 +48,6 @@ int pdtshortestpath_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in.pdt [out.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -66,8 +68,7 @@ int pdtshortestpath_main(int argc, char **argv) {
   }
 
   std::vector<std::pair<int64_t, int64_t>> parens;
-  if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens, false))
-    return 1;
+  if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens)) return 1;
 
   VectorFstClass ofst(ifst->ArcType());
 

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 #ifndef FST_EXTENSIONS_PDT_COLLECTION_H_
 #define FST_EXTENSIONS_PDT_COLLECTION_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <functional>
 #include <vector>
 
@@ -77,7 +80,7 @@ class Collection {
     NodeTable *node_table_;
   };
 
-  Collection() {}
+  Collection() = default;
 
   // Looks up integer ID from ordered multi-se, and if it doesn't exist and
   // insert is true, then adds it. Otherwise returns -1.

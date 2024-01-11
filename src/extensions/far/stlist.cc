@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,11 +22,14 @@
 #include <string>
 
 #include <fstream>
+#include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
-bool IsSTList(const std::string &source) {
-  std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
+bool IsSTList(std::string_view source) {
+  std::ifstream strm(std::string(source),
+                          std::ios_base::in | std::ios_base::binary);
   if (!strm) return false;
   int32_t magic_number = 0;
   ReadType(strm, &magic_number);

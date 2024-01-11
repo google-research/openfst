@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,11 +22,16 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
+#include <fst/util.h>
 #include <fst/script/arg-packs.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/fstscript.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -46,14 +51,14 @@ class FarReaderImplBase {
   virtual void Next() = 0;
   virtual void Reset() = 0;
   virtual FarType Type() const = 0;
-  virtual ~FarReaderImplBase() {}
+  virtual ~FarReaderImplBase() = default;
 };
 
 // Templated implementation.
 template <class Arc>
 class FarReaderClassImpl : public FarReaderImplBase {
  public:
-  explicit FarReaderClassImpl(const std::string &source)
+  explicit FarReaderClassImpl(std::string_view source)
       : reader_(FarReader<Arc>::Open(source)) {}
 
   explicit FarReaderClassImpl(const std::vector<std::string> &sources)
@@ -139,7 +144,8 @@ class FarReaderClass {
 
   // Defined in the CC.
 
-  static std::unique_ptr<FarReaderClass> Open(const std::string &source);
+  static std::unique_ptr<FarReaderClass> Open(
+      std::string_view source);
 
   static std::unique_ptr<FarReaderClass> Open(
       const std::vector<std::string> &sources);
@@ -177,14 +183,14 @@ class FarWriterImplBase {
   virtual const std::string &ArcType() const = 0;
   virtual bool Error() const = 0;
   virtual FarType Type() const = 0;
-  virtual ~FarWriterImplBase() {}
+  virtual ~FarWriterImplBase() = default;
 };
 
 // Templated implementation.
 template <class Arc>
 class FarWriterClassImpl : public FarWriterImplBase {
  public:
-  explicit FarWriterClassImpl(const std::string &source,
+  explicit FarWriterClassImpl(std::string_view source,
                               FarType type = FarType::DEFAULT)
       : writer_(FarWriter<Arc>::Create(source, type)) {}
 

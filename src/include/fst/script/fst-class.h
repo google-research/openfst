@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -19,18 +19,25 @@
 #define FST_SCRIPT_FST_CLASS_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <istream>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
+#include <fst/log.h>
 #include <fst/expanded-fst.h>
 #include <fst/fst.h>
 #include <fst/generic-register.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <fst/vector-fst.h>
 #include <fst/script/arc-class.h>
 #include <fst/script/weight-class.h>
@@ -50,7 +57,6 @@ namespace script {
 // hierarchy bifurcates; FstClassImplBase serves as the base class for all
 // implementations (of which FstClassImpl is currently the only one) and
 // FstClass serves as the base class for all interfaces.
-
 class FstClassBase {
  public:
   virtual const std::string &ArcType() const = 0;
@@ -67,7 +73,7 @@ class FstClassBase {
   virtual bool ValidStateId(int64_t) const = 0;
   virtual bool Write(const std::string &) const = 0;
   virtual bool Write(std::ostream &, const std::string &) const = 0;
-  virtual ~FstClassBase() {}
+  virtual ~FstClassBase() = default;
 };
 
 // Adds all the MutableFst methods.
@@ -91,7 +97,7 @@ class FstClassImplBase : public FstClassBase {
   virtual void SetOutputSymbols(const SymbolTable *) = 0;
   virtual void SetProperties(uint64_t, uint64_t) = 0;
   virtual bool SetStart(int64_t) = 0;
-  ~FstClassImplBase() override {}
+  ~FstClassImplBase() override = default;
 };
 
 // Containiner class wrapping an Fst<Arc>, hiding its arc type. Whether this
@@ -263,12 +269,12 @@ class FstClassImpl : public FstClassImplBase {
 
   bool ValidStateId(int64_t s) const final {
     // This cowardly refuses to count states if the FST is not yet expanded.
-    if (!Properties(kExpanded, true)) {
+    const auto num_states = impl_->NumStatesIfKnown();
+    if (!num_states.has_value()) {
       FSTERROR() << "Cannot get number of states for unexpanded FST";
       return false;
     }
-    // If the FST is already expanded, CountStates calls NumStates.
-    if (s < 0 || s >= CountStates(*impl_)) {
+    if (s < 0 || s >= *num_states) {
       FSTERROR() << "State ID " << s << " not valid";
       return false;
     }
@@ -286,7 +292,7 @@ class FstClassImpl : public FstClassImplBase {
     return impl_->Write(ostr, opts);
   }
 
-  ~FstClassImpl() override {}
+  ~FstClassImpl() override = default;
 
   Fst<Arc> *GetImpl() const { return impl_.get(); }
 
@@ -348,10 +354,11 @@ class FstClass : public FstClassBase {
     return impl_->Properties(mask, test);
   }
 
-  static std::unique_ptr<FstClass> Read(const std::string &source);
+  static std::unique_ptr<FstClass> Read(
+      const std::string &source);
 
-  static std::unique_ptr<FstClass> Read(std::istream &istrm,
-                                        const std::string &source);
+  static std::unique_ptr<FstClass> Read(
+      std::istream &istrm, const std::string &source);
 
   int64_t Start() const final { return impl_->Start(); }
 
@@ -373,7 +380,7 @@ class FstClass : public FstClassBase {
     return impl_->Write(ostr, source);
   }
 
-  ~FstClass() override {}
+  ~FstClass() override = default;
 
   // These methods are required by IO registration.
 
@@ -475,8 +482,8 @@ class MutableFstClass : public FstClass {
 
   void ReserveStates(int64_t n) { GetImpl()->ReserveStates(n); }
 
-  static std::unique_ptr<MutableFstClass> Read(const std::string &source,
-                                               bool convert = false);
+  static std::unique_ptr<MutableFstClass> Read(
+      const std::string &source, bool convert = false);
 
   void SetInputSymbols(const SymbolTable *isyms) {
     GetImpl()->SetInputSymbols(isyms);
@@ -551,7 +558,8 @@ class VectorFstClass : public MutableFstClass {
 
   explicit VectorFstClass(std::string_view arc_type);
 
-  static std::unique_ptr<VectorFstClass> Read(const std::string &source);
+  static std::unique_ptr<VectorFstClass> Read(
+      const std::string &source);
 
   template <class Arc>
   static std::unique_ptr<VectorFstClass> Read(std::istream &stream,

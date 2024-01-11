@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -31,18 +31,26 @@
 #include <ostream>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
 #include <fst/log.h>
 #include <fst/extensions/compress/elias.h>
+#include <fst/arc-map.h>
+#include <fst/arcfilter.h>
 #include <fst/encode.h>
+#include <fst/expanded-fst.h>
 #include <fstream>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/statesort.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
 #include <fst/visit.h>
+#include <string_view>
 
 namespace fst {
 
@@ -54,8 +62,8 @@ namespace internal {
 // Expands a Lempel Ziv code and returns the set of code words where
 // expanded_code[i] is the i^th Lempel Ziv codeword.
 template <class Var, class Edge>
-bool ExpandLZCode(const std::vector<std::pair<Var, Edge>> &code,
-                  std::vector<std::vector<Edge>> *expanded_code) {
+[[nodiscard]] bool ExpandLZCode(const std::vector<std::pair<Var, Edge>> &code,
+                                std::vector<std::vector<Edge>> *expanded_code) {
   expanded_code->resize(code.size());
   for (int i = 0; i < code.size(); ++i) {
     if (code[i].first > i) {
@@ -95,12 +103,12 @@ class LempelZiv {
 
   // Decodes codedvector to output, returning false if the index exceeds the
   // size.
-  bool BatchDecode(const std::vector<std::pair<Var, Edge>> &input,
-                   std::vector<Edge> *output);
+  [[nodiscard]] bool BatchDecode(const std::vector<std::pair<Var, Edge>> &input,
+                                 std::vector<Edge> *output);
 
   // Decodes a single dictionary element, returning false if the index exceeds
   // the size.
-  bool SingleDecode(const Var &index, Edge *output) {
+  [[nodiscard]] bool SingleDecode(const Var &index, Edge *output) {
     if (index >= decode_vector_.size()) {
       LOG(ERROR) << "LempelZiv::SingleDecode: "
                  << "Index exceeded the dictionary size";
@@ -152,7 +160,7 @@ void LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchEncode(
 }
 
 template <class Var, class Edge, class EdgeLessThan, class EdgeEquals>
-bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
+[[nodiscard]] bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
     const std::vector<std::pair<Var, Edge>> &input, std::vector<Edge> *output) {
   for (const auto &[var, edge] : input) {
     std::vector<Edge> temp_output;
@@ -187,11 +195,11 @@ class Compressor {
   Compressor() = default;
 
   // Compresses an FST into a boolean vector code, returning true on success.
-  bool Compress(const Fst<Arc> &fst, std::ostream &strm);
+  [[nodiscard]] bool Compress(const Fst<Arc> &fst, std::ostream &strm);
 
   // Decompresses the boolean vector into an FST, returning true on success.
-  bool Decompress(std::istream &strm, const std::string &source,
-                  MutableFst<Arc> *fst);
+  [[nodiscard]] bool Decompress(std::istream &strm, std::string_view source,
+                                MutableFst<Arc> *fst);
 
   // Computes the BFS order of a FST.
   void BfsOrder(const ExpandedFst<Arc> &fst, std::vector<StateId> *order);
@@ -513,7 +521,11 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId> &input,
       temp_new_dict_element.second = temp_label;
       current_new_input.push_back(temp_new_dict_element);
     }
-    dict_new.BatchDecode(current_new_input, &current_new_output);
+    if (!dict_new.BatchDecode(current_new_input, &current_new_output)) {
+      FSTERROR() << "Compressor::Decode: failed";
+      fst->SetProperties(kError, kError);
+      return;
+    }
     for (const auto &label : current_new_output) {
       if (!unweighted) {
         fst->AddArc(current_state,
@@ -656,8 +668,9 @@ void Compressor<Arc>::ReadWeight(std::istream &strm,
 }
 
 template <class Arc>
-bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
-                                 MutableFst<Arc> *fst) {
+[[nodiscard]] bool Compressor<Arc>::Decompress(std::istream &strm,
+                                               std::string_view source,
+                                               MutableFst<Arc> *fst) {
   fst->DeleteStates();
   int32_t magic_number = 0;
   ReadType(strm, &magic_number);
@@ -667,6 +680,7 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
   }
   std::unique_ptr<EncodeMapper<Arc>> encoder(
       EncodeMapper<Arc>::Read(strm, "Decoding", DECODE));
+  if (encoder == nullptr) return false;
   std::vector<bool> bool_code;
   uint8_t block;
   uint8_t msb = 128;
@@ -725,7 +739,8 @@ void Compressor<Arc>::WriteToStream(std::ostream &strm) {
 }
 
 template <class Arc>
-bool Compressor<Arc>::Compress(const Fst<Arc> &fst, std::ostream &strm) {
+[[nodiscard]] bool Compressor<Arc>::Compress(const Fst<Arc> &fst,
+                                             std::ostream &strm) {
   VectorFst<Arc> processedfst;
   EncodeMapper<Arc> encoder(kEncodeLabels, ENCODE);
   Preprocess(fst, &processedfst, &encoder);
@@ -738,13 +753,13 @@ bool Compressor<Arc>::Compress(const Fst<Arc> &fst, std::ostream &strm) {
 // Convenience functions that call the compressor and decompressor.
 
 template <class Arc>
-void Compress(const Fst<Arc> &fst, std::ostream &strm) {
+[[nodiscard]] bool Compress(const Fst<Arc> &fst, std::ostream &strm) {
   Compressor<Arc> comp;
-  comp.Compress(fst, strm);
+  return comp.Compress(fst, strm);
 }
 
 template <class Arc>
-bool Compress(const Fst<Arc> &fst, const std::string &source) {
+[[nodiscard]] bool Compress(const Fst<Arc> &fst, const std::string &source) {
   std::ofstream fstrm;
   if (!source.empty()) {
     fstrm.open(source, std::ios_base::out | std::ios_base::binary);
@@ -754,31 +769,32 @@ bool Compress(const Fst<Arc> &fst, const std::string &source) {
     }
   }
   std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
-  Compress(fst, ostrm);
+  if (!Compress(fst, ostrm)) return false;
   return !!ostrm;
 }
 
 template <class Arc>
-bool Decompress(std::istream &strm, const std::string &source,
-                MutableFst<Arc> *fst) {
+[[nodiscard]] bool Decompress(std::istream &strm, std::string_view source,
+                              MutableFst<Arc> *fst) {
   Compressor<Arc> comp;
-  comp.Decompress(strm, source, fst);
-  return true;
+  return comp.Decompress(strm, source, fst);
 }
 
 // Returns true on success.
 template <class Arc>
-bool Decompress(const std::string &source, MutableFst<Arc> *fst) {
+[[nodiscard]] bool Decompress(std::string_view source, MutableFst<Arc> *fst) {
   std::ifstream fstrm;
   if (!source.empty()) {
-    fstrm.open(source, std::ios_base::in | std::ios_base::binary);
+    fstrm.open(std::string(source), std::ios_base::in | std::ios_base::binary);
     if (!fstrm) {
       LOG(ERROR) << "Decompress: Can't open file: " << source;
       return false;
     }
   }
   std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
-  Decompress(istrm, source.empty() ? "standard input" : source, fst);
+  if (!Decompress(istrm, source.empty() ? "standard input" : source, fst)) {
+    return false;
+  }
   return !!istrm;
 }
 

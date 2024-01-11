@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,11 @@
 #include <cstdint>
 #include <tuple>
 
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
 #include <fst/push.h>
+#include <fst/reweight.h>
+#include <fst/shortest-distance.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ DEFINE_string(relabel_ipairs, "", "Input relabel pairs (numeric)");
 DEFINE_string(relabel_opairs, "", "Output relabel pairs (numeric)");
 DEFINE_string(save_isymbols, "", "Save fst file's input symbol table to file");
 DEFINE_string(save_osymbols, "", "Save fst file's output symbol table to file");
-DEFINE_bool(allow_negative_labels, false,
-            "Allow negative labels (not recommended; may cause conflicts)");
 DEFINE_bool(verify, false, "Verify fst properities before saving");
 
 int fstsymbols_main(int argc, char **argv);

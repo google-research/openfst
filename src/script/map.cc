@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,20 @@
 
 #include <fst/script/map.h>
 
+#include <memory>
 #include <utility>
 
+#include <fst/script/fst-class.h>
 #include <fst/script/script-impl.h>
+#include <fst/script/weight-class.h>
 
 namespace fst {
 namespace script {
 
-std::unique_ptr<FstClass> Map(const FstClass &ifst, MapType map_type,
-                              float delta, double power,
-                              const WeightClass &weight) {
+std::unique_ptr<FstClass> Map(const FstClass &ifst,
+                                              MapType map_type, float delta,
+                                              double power,
+                                              const WeightClass &weight) {
   if (!ifst.WeightTypesMatch(weight, "Map")) return nullptr;
   FstMapInnerArgs iargs{ifst, map_type, delta, power, weight};
   FstMapArgs args(iargs);

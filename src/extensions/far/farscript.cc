@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,19 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
+#include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
+#include <fst/extensions/far/info.h>
 #include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/error-weight.h>
+#include <fst/float-weight.h>
+#include <fst/string.h>
+#include <fst/script/encodemapper-class.h>
 #include <fst/script/script-impl.h>
+#include <string_view>
 
 #define REGISTER_FST_OPERATION_4ARCS(Op, ArgPack) \
   REGISTER_FST_OPERATION_3ARCS(Op, ArgPack);      \
@@ -39,8 +48,7 @@ void CompileStrings(const std::vector<std::string> &sources,
                     int32_t generate_keys, FarEntryType fet, TokenType tt,
                     const std::string &symbols_source,
                     const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, bool allow_negative_labels,
-                    const std::string &key_prefix,
+                    bool initial_symbols, const std::string &key_prefix,
                     const std::string &key_suffix) {
   FarCompileStringsArgs args{sources,
                              writer,
@@ -52,7 +60,6 @@ void CompileStrings(const std::vector<std::string> &sources,
                              unknown_symbol,
                              keep_symbols,
                              initial_symbols,
-                             allow_negative_labels,
                              key_prefix,
                              key_suffix};
   Apply<Operation<FarCompileStringsArgs>>("CompileStrings", writer.ArcType(),

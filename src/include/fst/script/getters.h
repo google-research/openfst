@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,20 @@
 #define FST_SCRIPT_GETTERS_H_
 
 #include <cstdint>
+#include <limits>
 #include <string>
 
 #include <fst/log.h>
-#include <fst/compose.h>            // For ComposeFilter.
-#include <fst/determinize.h>        // For DeterminizeType.
-#include <fst/encode.h>             // For kEncodeLabels (etc.).
-#include <fst/epsnormalize.h>       // For EpsNormalizeType.
-#include <fst/project.h>            // For ProjectType.
-#include <fst/push.h>               // For kPushWeights (etc.).
-#include <fst/queue.h>              // For QueueType.
-#include <fst/rational.h>           // For ClosureType.
+#include <fst/compose.h>       // For ComposeFilter.
+#include <fst/determinize.h>   // For DeterminizeType.
+#include <fst/encode.h>        // For kEncodeLabels (etc.).
+#include <fst/epsnormalize.h>  // For EpsNormalizeType.
+#include <fst/project.h>       // For ProjectType.
+#include <fst/push.h>          // For kPushWeights (etc.).
+#include <fst/queue.h>         // For QueueType.
+#include <fst/rational.h>      // For ClosureType.
+#include <fst/replace-util.h>
+#include <fst/reweight.h>
 #include <fst/string.h>             // For TokenType.
 #include <fst/script/arcfilter-impl.h>  // For ArcFilterType.
 #include <fst/script/arcsort.h>         // For ArcSortType.
@@ -42,6 +45,8 @@
 
 namespace fst {
 namespace script {
+
+inline constexpr uint64_t kDefaultSeed = std::numeric_limits<uint64_t>::max();
 
 bool GetArcFilterType(std::string_view str, ArcFilterType *arc_filter_type);
 
@@ -81,6 +86,8 @@ bool GetReplaceLabelType(std::string_view str, bool epsilon_on_replace,
                          ReplaceLabelType *rlt);
 
 bool GetReweightType(std::string_view str, ReweightType *reweight_type);
+
+uint64_t GetSeed(uint64_t seed);
 
 bool GetTokenType(std::string_view str, TokenType *token_type);
 

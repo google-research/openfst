@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/randgen.h>
 #include <fst/script/equivalent.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/randequivalent.h>
+#include <fst/script/script-impl.h>
 
 DECLARE_double(delta);
 DECLARE_bool(random);
@@ -45,7 +48,6 @@ int fstequivalent_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in1.fst in2.fst\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc != 3) {
     ShowUsage();
@@ -66,12 +68,8 @@ int fstequivalent_main(int argc, char **argv) {
   std::unique_ptr<FstClass> ifst2(FstClass::Read(in2_name));
   if (!ifst2) return 1;
 
-  if (!FST_FLAGS_random) {
-    const bool result =
-        s::Equivalent(*ifst1, *ifst2, FST_FLAGS_delta);
-    if (!result) VLOG(1) << "FSTs are not equivalent";
-    return result ? 0 : 2;
-  } else {
+  bool result;
+  if (FST_FLAGS_random) {
     s::RandArcSelection ras;
     if (!s::GetRandArcSelection(FST_FLAGS_select, &ras)) {
       LOG(ERROR) << argv[0] << ": Unknown or unsupported select type "
@@ -80,10 +78,15 @@ int fstequivalent_main(int argc, char **argv) {
     }
     const RandGenOptions<s::RandArcSelection> opts(
         ras, FST_FLAGS_max_length);
-    const bool result = s::RandEquivalent(
-        *ifst1, *ifst2, FST_FLAGS_npath, opts,
-        FST_FLAGS_delta, FST_FLAGS_seed);
-    if (!result) VLOG(1) << "FSTs are not equivalent";
-    return result ? 0 : 2;
+    const auto seed = s::GetSeed(FST_FLAGS_seed);
+    VLOG(1) << argv[0] << ": Seed = " << seed;
+    result = s::RandEquivalent(*ifst1, *ifst2, FST_FLAGS_npath, opts,
+                               FST_FLAGS_delta, seed);
+  } else {
+    result = s::Equivalent(*ifst1, *ifst2, FST_FLAGS_delta);
   }
+
+  if (!result) VLOG(1) << "FSTs are not equivalent";
+
+  return result ? 0 : 2;
 }

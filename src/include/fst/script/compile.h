@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,13 @@
 #include <istream>
 #include <memory>
 #include <string>
+#include <utility>
 
+#include <fst/log.h>
+#include <fst/fst.h>
+#include <fst/register.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/compile-impl.h>
 #include <fst/script/fst-class.h>
@@ -49,7 +55,6 @@ struct FstCompileInnerArgs {
   const bool ikeep;
   const bool okeep;
   const bool nkeep;
-  const bool allow_negative_labels;
 };
 
 using FstCompileArgs =
@@ -63,7 +68,7 @@ void CompileInternal(FstCompileArgs *args) {
   FstCompiler<Arc> fstcompiler(
       args->args.istrm, args->args.source, args->args.isyms, args->args.osyms,
       args->args.ssyms, args->args.accep, args->args.ikeep, args->args.okeep,
-      args->args.nkeep, args->args.allow_negative_labels);
+      args->args.nkeep);
   std::unique_ptr<Fst<Arc>> fst;
   if (args->args.fst_type != "vector") {
     std::unique_ptr<Fst<Arc>> tmp_fst(
@@ -83,13 +88,13 @@ void Compile(std::istream &istrm, const std::string &source,
              const std::string &dest, const std::string &fst_type,
              const std::string &arc_type, const SymbolTable *isyms,
              const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
-             bool ikeep, bool okeep, bool nkeep, bool allow_negative_labels);
+             bool ikeep, bool okeep, bool nkeep);
 
 std::unique_ptr<FstClass> CompileInternal(
     std::istream &istrm, const std::string &source, const std::string &fst_type,
     const std::string &arc_type, const SymbolTable *isyms,
     const SymbolTable *osyms, const SymbolTable *ssyms, bool accep, bool ikeep,
-    bool okeep, bool nkeep, bool allow_negative_labels);
+    bool okeep, bool nkeep);
 
 }  // namespace script
 }  // namespace fst

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,18 +18,22 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_BUILDER_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_BUILDER_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <queue>
 #include <set>
 #include <sstream>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
+#include <fst/extensions/linear/trie.h>
 #include <fst/fst.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,14 @@
 #include <string>
 #include <vector>
 
-#include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/extensions/far/far-class.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
+#include <fst/extensions/far/getters.h>
+#include <fst/string.h>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
 #include <fst/script/getters.h>
 
 DECLARE_string(filename_prefix);
@@ -41,12 +47,10 @@ int farprintstrings_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
 
-  std::string usage =
-      "Print as std::string the std::string FSTs in an archive.\n\n  Usage:";
+  std::string usage = "Prints strings in an FST archive.\n\n  Usage: ";
   usage += argv[0];
   usage += " [in1.far in2.far ...]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 

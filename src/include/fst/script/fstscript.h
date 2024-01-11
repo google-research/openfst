@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -33,17 +33,6 @@
 
 // Major classes
 #include <fst/script/arciterator-class.h>
-#include <fst/script/encodemapper-class.h>
-#include <fst/script/fst-class.h>
-#include <fst/script/stateiterator-class.h>
-#include <fst/script/text-io.h>
-#include <fst/script/weight-class.h>
-
-// Flag-to-enum parsers.
-#include <fst/script/getters.h>
-// Templates like Operation<> and Apply<>.
-#include <fst/script/script-impl.h>
-
 // Operations.
 #include <fst/script/arcsort.h>
 #include <fst/script/closure.h>
@@ -58,9 +47,13 @@
 #include <fst/script/disambiguate.h>
 #include <fst/script/draw.h>
 #include <fst/script/encode.h>
+#include <fst/script/encodemapper-class.h>
 #include <fst/script/epsnormalize.h>
 #include <fst/script/equal.h>
 #include <fst/script/equivalent.h>
+#include <fst/script/fst-class.h>
+// Flag-to-enum parsers.
+#include <fst/script/getters.h>
 #include <fst/script/info.h>
 #include <fst/script/intersect.h>
 #include <fst/script/invert.h>
@@ -78,12 +71,17 @@
 #include <fst/script/reverse.h>
 #include <fst/script/reweight.h>
 #include <fst/script/rmepsilon.h>
+// Templates like Operation<> and Apply<>.
+#include <fst/script/script-impl.h>
 #include <fst/script/shortest-distance.h>
 #include <fst/script/shortest-path.h>
+#include <fst/script/stateiterator-class.h>
 #include <fst/script/synchronize.h>
+#include <fst/script/text-io.h>
 #include <fst/script/topsort.h>
 #include <fst/script/union.h>
 #include <fst/script/verify.h>
+#include <fst/script/weight-class.h>
 
 // This class is necessary because registering each of the operations
 // separately overfills the stack, as there's so many of them.

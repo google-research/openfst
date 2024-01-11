@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,11 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/getters.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
+#include <fst/script/fst-class.h>
 
 DECLARE_string(pdt_parentheses);
 DECLARE_bool(left_pdt);
@@ -48,7 +50,6 @@ int pdtcompose_main(int argc, char **argv) {
   usage += " in.pdt in.fst [out.pdt]\n";
   usage += " in.fst in.pdt [out.pdt]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc < 3 || argc > 4) {
     ShowUsage();
@@ -76,8 +77,7 @@ int pdtcompose_main(int argc, char **argv) {
   }
 
   std::vector<std::pair<int64_t, int64_t>> parens;
-  if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens, false))
-    return 1;
+  if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens)) return 1;
 
   VectorFstClass ofst(ifst1->ArcType());
 

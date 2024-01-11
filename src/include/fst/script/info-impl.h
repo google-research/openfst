@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,18 +21,23 @@
 #ifndef FST_SCRIPT_INFO_IMPL_H_
 #define FST_SCRIPT_INFO_IMPL_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
 
-#include <fst/connect.h>
+#include <fst/log.h>
+#include <fst/arcfilter.h>
+#include <fst/cc-visitors.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
 #include <fst/lookahead-matcher.h>
 #include <fst/matcher.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
-#include <fst/test-properties.h>
+#include <fst/util.h>
 #include <fst/verify.h>
 #include <fst/visit.h>
 #include <fst/script/arcfilter-impl.h>

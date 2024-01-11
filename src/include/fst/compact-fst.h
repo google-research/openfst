@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,23 +21,36 @@
 #ifndef FST_COMPACT_FST_H_
 #define FST_COMPACT_FST_H_
 
+#include <sys/types.h>
+
 #include <climits>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <istream>
 #include <iterator>
 #include <memory>
+#include <ostream>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/cache.h>
 #include <fst/expanded-fst.h>
 #include <fst/fst-decl.h>  // For optional argument declarations
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mapped-file.h>
 #include <fst/matcher.h>
+#include <fst/properties.h>
 #include <fst/test-properties.h>
 #include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
@@ -1155,7 +1168,7 @@ class CompactFst
 
   // Read a CompactFst from a file; return nullptr on error
   // Empty source reads from standard input
-  static CompactFst *Read(const std::string &source) {
+  static CompactFst *Read(std::string_view source) {
     auto *impl = ImplToExpandedFst<Impl>::Read(source);
     return impl ? new CompactFst(std::shared_ptr<Impl>(impl)) : nullptr;
   }

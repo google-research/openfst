@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 
 #include <fst/extensions/special/phi-fst.h>
 
+#include <fst/flags.h>
 #include <fst/arc.h>
-#include <fst/fst.h>
 #include <fst/register.h>
 
 DEFINE_int64(phi_fst_phi_label, 0,

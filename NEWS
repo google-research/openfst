@@ -1,5 +1,18 @@
 OpenFst: Release 1.8
-   * Fixes pywrapfst support issues (1.8.2post1)
+   * Eliminates negative label option in `SymbolTable` (1.8.3)
+   * Change `allow_negative_labels` arg of `SymbolTable.read_text` to
+     keyword-only in pywrapfst (1.8.3)
+   * Adds `FastNumStates` method (1.8.3)
+   * Splits `cc-visitors.h` from `connect.h` (1.8.3)
+   * Standardizes default seeds for `fstrandgen` (1.8.3)
+   * fstclosure now has a `--closure_type` flag expecting values
+     (`star`, `plus`) (1.8.2)
+   * fstepsnormalize now has a `--eps_norm_type` flag expecting values
+     (`input`, `output`) (1.8.2)
+   * fstpush and fstreweight now has a `--reweight_type` flag expecting values
+     (`to_initial`, `to_final`) (1.8.2)
+   * Makes mapper argument to ArcMapFst optional, in which case it is default
+     constructed (1.8.2)
    * Adds farencode (1.8.2)
    * Deletes MakeArcMapFst in favor of CTAD on ArcMapFst (1.8.2)
    * Removes `int64` (etc.) type shims in place of <cstdint> (1.8.2)
@@ -11,7 +24,7 @@ OpenFst: Release 1.8
    * Updates Bazel build (1.8.0)
    * Better handling for empty FARs (1.8.0)
    * Improves to ExpectationWeight (1.8.0)
-   * Improves display of properties masks in pywrapfst (1.8.0) 
+   * Improves display of properties masks in pywrapfst (1.8.0)
    * Internal reference-counting/smart pointer improvements (1.8.0)
    * Deprecates PROJECT_(IN|OUT)PUT in favor of scoped enum ProjectType (1.8.0)
 

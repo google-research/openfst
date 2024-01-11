@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/relabel.h>
-#include <fst/script/weight-class.h>
 
 DECLARE_string(isymbols);
 DECLARE_string(osymbols);
@@ -37,13 +38,11 @@ DECLARE_string(relabel_ipairs);
 DECLARE_string(relabel_opairs);
 DECLARE_string(unknown_isymbol);
 DECLARE_string(unknown_osymbol);
-DECLARE_bool(allow_negative_labels);
 
 int fstrelabel_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
   using fst::SymbolTable;
-  using fst::SymbolTableTextOptions;
   using fst::script::MutableFstClass;
 
   std::string usage =
@@ -58,7 +57,6 @@ int fstrelabel_main(int argc, char **argv) {
   usage += "  --relabel_ipairs ipairs.txt\n";
   usage += "  --relabel_opairs opairs.txt\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -73,31 +71,30 @@ int fstrelabel_main(int argc, char **argv) {
   std::unique_ptr<MutableFstClass> fst(MutableFstClass::Read(in_name, true));
   if (!fst) return 1;
 
-  // Relabel with symbol tables.
-  const SymbolTableTextOptions opts(FST_FLAGS_allow_negative_labels);
-
   if (!FST_FLAGS_relabel_isymbols.empty() ||
       !FST_FLAGS_relabel_osymbols.empty()) {
     bool attach_new_isymbols = (fst->InputSymbols() != nullptr);
     std::unique_ptr<const SymbolTable> old_isymbols(
         FST_FLAGS_isymbols.empty()
             ? nullptr
-            : SymbolTable::ReadText(FST_FLAGS_isymbols, opts));
+            : SymbolTable::ReadText(FST_FLAGS_isymbols,
+                                    FST_FLAGS_fst_field_separator));
     const std::unique_ptr<const SymbolTable> relabel_isymbols(
         FST_FLAGS_relabel_isymbols.empty()
             ? nullptr
             : SymbolTable::ReadText(FST_FLAGS_relabel_isymbols,
-                                    opts));
+                                    FST_FLAGS_fst_field_separator));
     bool attach_new_osymbols = (fst->OutputSymbols() != nullptr);
     std::unique_ptr<const SymbolTable> old_osymbols(
         FST_FLAGS_osymbols.empty()
             ? nullptr
-            : SymbolTable::ReadText(FST_FLAGS_osymbols, opts));
+            : SymbolTable::ReadText(FST_FLAGS_osymbols,
+                                    FST_FLAGS_fst_field_separator));
     const std::unique_ptr<const SymbolTable> relabel_osymbols(
         FST_FLAGS_relabel_osymbols.empty()
             ? nullptr
             : SymbolTable::ReadText(FST_FLAGS_relabel_osymbols,
-                                    opts));
+                                    FST_FLAGS_fst_field_separator));
     s::Relabel(fst.get(),
                old_isymbols ? old_isymbols.get() : fst->InputSymbols(),
                relabel_isymbols.get(), FST_FLAGS_unknown_isymbol,
@@ -108,16 +105,14 @@ int fstrelabel_main(int argc, char **argv) {
   } else {
     // Reads in relabeling pairs.
     std::vector<std::pair<int64_t, int64_t>> ipairs;
-    if (!FST_FLAGS_relabel_ipairs.empty()) {
-      if (!ReadLabelPairs(FST_FLAGS_relabel_ipairs, &ipairs,
-                          FST_FLAGS_allow_negative_labels))
-        return 1;
+    if (!FST_FLAGS_relabel_ipairs.empty() &&
+        !ReadLabelPairs(FST_FLAGS_relabel_ipairs, &ipairs)) {
+      return 1;
     }
     std::vector<std::pair<int64_t, int64_t>> opairs;
-    if (!FST_FLAGS_relabel_opairs.empty()) {
-      if (!ReadLabelPairs(FST_FLAGS_relabel_opairs, &opairs,
-                          FST_FLAGS_allow_negative_labels))
-        return 1;
+    if (!FST_FLAGS_relabel_opairs.empty() &&
+        !ReadLabelPairs(FST_FLAGS_relabel_opairs, &opairs)) {
+      return 1;
     }
     s::Relabel(fst.get(), ipairs, opairs);
   }

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,20 +18,26 @@
 // Compiles a set of stings as FSTs and stores them in a finite-state archive.
 
 #include <cstring>
+#include <istream>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/extensions/far/far-class.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
+#include <fst/extensions/far/getters.h>
 #include <fstream>
+#include <fst/string.h>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
 #include <fst/script/getters.h>
 
 DECLARE_string(key_prefix);
 DECLARE_string(key_suffix);
 DECLARE_int32(generate_keys);
 DECLARE_string(far_type);
-DECLARE_bool(allow_negative_labels);
 DECLARE_string(arc_type);
 DECLARE_string(entry_type);
 DECLARE_string(fst_type);
@@ -47,11 +53,10 @@ int farcompilestrings_main(int argc, char **argv) {
   using fst::script::FarWriterClass;
 
   std::string usage = "Compiles a set of strings as FSTs and stores them in";
-  usage += " a finite-state archive.\n\n  Usage:";
+  usage += " an FST archive.\n\n  Usage: ";
   usage += argv[0];
   usage += " [in1.txt [[in2.txt ...] out.far]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   s::ExpandArgs(argc, argv, &argc, &argv);
 
@@ -115,7 +120,6 @@ int farcompilestrings_main(int argc, char **argv) {
       entry_type, token_type, FST_FLAGS_symbols,
       FST_FLAGS_unknown_symbol, FST_FLAGS_keep_symbols,
       FST_FLAGS_initial_symbols,
-      FST_FLAGS_allow_negative_labels,
       FST_FLAGS_key_prefix, FST_FLAGS_key_suffix);
 
   if (writer->Error()) {

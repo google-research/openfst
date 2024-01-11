@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,19 @@
 
 #include <fst/script/fst-class.h>
 
+#include <ios>
+#include <iostream>
 #include <istream>
 #include <memory>
 #include <string>
 
 #include <fst/log.h>
-#include <fst/equal.h>
-#include <fst/fst-decl.h>
-#include <fst/reverse.h>
-#include <fst/union.h>
+#include <fst/arc.h>
+#include <fstream>
+#include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <fst/script/weight-class.h>
 #include <string_view>
 
 namespace fst {
@@ -40,7 +44,7 @@ namespace {
 
 template <class F>
 std::unique_ptr<F> ReadFstClass(std::istream &istrm,
-                                const std::string &source) {
+                                                const std::string &source) {
   if (!istrm) {
     LOG(ERROR) << "ReadFstClass: Can't open file: " << source;
     return nullptr;
@@ -59,7 +63,8 @@ std::unique_ptr<F> ReadFstClass(std::istream &istrm,
 }
 
 template <class F>
-std::unique_ptr<FstClassImplBase> CreateFstClass(std::string_view arc_type) {
+std::unique_ptr<FstClassImplBase> CreateFstClass(
+    std::string_view arc_type) {
   static const auto *reg = FstClassIORegistration<F>::Register::GetRegister();
   auto creator = reg->GetCreator(arc_type);
   if (!creator) {
@@ -70,7 +75,8 @@ std::unique_ptr<FstClassImplBase> CreateFstClass(std::string_view arc_type) {
 }
 
 template <class F>
-std::unique_ptr<FstClassImplBase> ConvertFstClass(const FstClass &other) {
+std::unique_ptr<FstClassImplBase> ConvertFstClass(
+    const FstClass &other) {
   static const auto *reg = FstClassIORegistration<F>::Register::GetRegister();
   auto converter = reg->GetConverter(other.ArcType());
   if (!converter) {
@@ -84,7 +90,8 @@ std::unique_ptr<FstClassImplBase> ConvertFstClass(const FstClass &other) {
 
 // FstClass methods.
 
-std::unique_ptr<FstClass> FstClass::Read(const std::string &source) {
+std::unique_ptr<FstClass> FstClass::Read(
+    const std::string &source) {
   if (!source.empty()) {
     std::ifstream istrm(source, std::ios_base::in | std::ios_base::binary);
     return ReadFstClass<FstClass>(istrm, source);
@@ -93,8 +100,8 @@ std::unique_ptr<FstClass> FstClass::Read(const std::string &source) {
   }
 }
 
-std::unique_ptr<FstClass> FstClass::Read(std::istream &istrm,
-                                         const std::string &source) {
+std::unique_ptr<FstClass> FstClass::Read(
+    std::istream &istrm, const std::string &source) {
   return ReadFstClass<FstClass>(istrm, source);
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,64 @@
 #ifndef FST_TEST_ALGO_TEST_H_
 #define FST_TEST_ALGO_TEST_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <fst/log.h>
+#include <fst/arc-map.h>
+#include <fst/arc.h>
+#include <fst/arcfilter.h>
+#include <fst/arcsort.h>
+#include <fst/cache.h>
+#include <fst/closure.h>
+#include <fst/compose-filter.h>
+#include <fst/compose.h>
+#include <fst/concat.h>
+#include <fst/connect.h>
+#include <fst/determinize.h>
+#include <fst/dfs-visit.h>
+#include <fst/difference.h>
+#include <fst/disambiguate.h>
+#include <fst/encode.h>
+#include <fst/equivalent.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
 #include <fst/fstlib.h>
+#include <fst/intersect.h>
+#include <fst/invert.h>
+#include <fst/lookahead-matcher.h>
+#include <fst/matcher-fst.h>
+#include <fst/matcher.h>
+#include <fst/minimize.h>
+#include <fst/mutable-fst.h>
+#include <fst/pair-weight.h>
+#include <fst/project.h>
+#include <fst/properties.h>
+#include <fst/prune.h>
+#include <fst/push.h>
+#include <fst/randequivalent.h>
+#include <fst/randgen.h>
+#include <fst/rational.h>
+#include <fst/relabel.h>
+#include <fst/reverse.h>
+#include <fst/reweight.h>
+#include <fst/rmepsilon.h>
+#include <fst/shortest-distance.h>
+#include <fst/shortest-path.h>
+#include <fst/string-weight.h>
+#include <fst/synchronize.h>
+#include <fst/topsort.h>
+#include <fst/union-weight.h>
+#include <fst/union.h>
+#include <fst/vector-fst.h>
+#include <fst/verify.h>
 #include <fst/weight.h>
 #include <fst/test/rand-fst.h>
 
@@ -39,7 +90,7 @@ namespace fst {
 template <class A>
 class EpsMapper {
  public:
-  EpsMapper() {}
+  EpsMapper() = default;
 
   A operator()(const A &arc) const {
     return A(0, 0, arc.weight, arc.nextstate);

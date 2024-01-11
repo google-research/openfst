@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,17 @@
 #ifndef FST_EXTENSIONS_FAR_EXTRACT_H_
 #define FST_EXTENSIONS_FAR_EXTRACT_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
+#include <fst/fst.h>
 #include <fst/util.h>
 #include <string_view>
 
@@ -60,10 +64,9 @@ inline void FarWriteFst(const Fst<Arc> *fst, std::string_view key,
 
 template <class Arc>
 void Extract(FarReader<Arc> &reader, int32_t generate_sources,
-             const std::string &keys, const std::string &key_separator,
-             const std::string &range_delimiter,
-             const std::string &source_prefix,
-             const std::string &source_suffix) {
+             const std::string &keys, std::string_view key_separator,
+             std::string_view range_delimiter, std::string_view source_prefix,
+             std::string_view source_suffix) {
   std::string okey;
   int nrep = 0;
   // User has specified a set of FSTs to extract, where some of these may in

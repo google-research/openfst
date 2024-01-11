@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -102,8 +102,12 @@
 #include <vector>
 
 #include <fst/log.h>
+#include <fst/arc.h>
 #include <fst/generic-register.h>
+#include <fst/util.h>
 #include <fst/script/fst-class.h>
+#include <fst/script/weight-class.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -117,18 +121,18 @@ enum class RandArcSelection : uint8_t { UNIFORM, LOG_PROB, FAST_LOG_PROB };
 // signature.
 template <class OperationSignature>
 class GenericOperationRegister
-    : public GenericRegister<std::pair<std::string, std::string>,
+    : public GenericRegister<std::pair<std::string_view, std::string_view>,
                              OperationSignature,
                              GenericOperationRegister<OperationSignature>> {
  public:
-  OperationSignature GetOperation(const std::string &operation_name,
-                                  const std::string &arc_type) {
+  OperationSignature GetOperation(std::string_view operation_name,
+                                  std::string_view arc_type) {
     return this->GetEntry(std::make_pair(operation_name, arc_type));
   }
 
  protected:
   std::string ConvertKeyToSoFilename(
-      const std::pair<std::string, std::string> &key) const final {
+      const std::pair<std::string_view, std::string_view> &key) const final {
     // Uses the old-style FST for now.
     std::string legal_type(key.second);  // The arc type.
     ConvertToLegalCSymbol(&legal_type);

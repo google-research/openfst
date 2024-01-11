@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
+#include <fst/fst.h>
 #include <fst/fstlib.h>
 #include <fst/script/fst-class.h>
 
@@ -36,7 +38,7 @@ class StateIteratorImplBase {
   virtual int64_t Value() const = 0;
   virtual void Next() = 0;
   virtual void Reset() = 0;
-  virtual ~StateIteratorImplBase() {}
+  virtual ~StateIteratorImplBase() = default;
 };
 
 // Templated implementation.
@@ -53,7 +55,7 @@ class StateIteratorClassImpl : public StateIteratorImplBase {
 
   void Reset() final { siter_.Reset(); }
 
-  ~StateIteratorClassImpl() override {}
+  ~StateIteratorClassImpl() override = default;
 
  private:
   StateIterator<Fst<Arc>> siter_;

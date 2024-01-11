@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,13 @@
 #ifndef FST_EXTENSIONS_PDT_PDT_H_
 #define FST_EXTENSIONS_PDT_PDT_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
 #include <map>
 #include <set>
+#include <utility>
+#include <vector>
 
 #include <fst/compat.h>
 #include <fst/log.h>
@@ -166,7 +171,7 @@ class PdtStateTable : public CompactHashStateTable<
                           PdtStateTuple<StateId, StackId>,
                           PdtStateHash<PdtStateTuple<StateId, StackId>>> {
  public:
-  PdtStateTable() {}
+  PdtStateTable() = default;
 
   PdtStateTable(const PdtStateTable &other) {}
 

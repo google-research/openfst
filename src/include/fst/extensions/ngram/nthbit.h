@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #ifndef FST_EXTENSIONS_NGRAM_NTHBIT_H_
 #define FST_EXTENSIONS_NGRAM_NTHBIT_H_
 
+#include <array>
 #include <cstdint>
 
 #if defined(__aarch64__)
@@ -34,7 +35,7 @@
 namespace fst {
 // Returns the position (0-63) of the r-th 1 bit in v.
 // 0 <= r < CountOnes(v) <= 64. Therefore, v must not be 0.
-inline uint32_t nth_bit(uint64_t v, uint32_t r) {
+inline int nth_bit(uint64_t v, uint32_t r) {
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
   DCHECK_LT(r, __builtin_popcountll(v));
@@ -52,7 +53,7 @@ inline uint32_t nth_bit(uint64_t v, uint32_t r) {
 namespace fst {
 // Returns the position (0-63) of the r-th 1 bit in v.
 // 0 <= r < CountOnes(v) <= 64. Therefore, v must not be 0.
-uint32_t nth_bit(uint64_t v, uint32_t r);
+int nth_bit(uint64_t v, uint32_t r);
 }  // namespace fst
 
 #elif SIZE_MAX == UINT64_MAX
@@ -60,7 +61,18 @@ uint32_t nth_bit(uint64_t v, uint32_t r);
 
 namespace fst {
 namespace internal {
-extern const uint64_t kPrefixSumOverflow[64];
+
+constexpr std::array<uint64_t, 64> PrefixSumOverflows() {
+  std::array<uint64_t, 64> a{};
+  constexpr uint64_t kOnesStep8 = 0x0101010101010101;
+  for (int i = 0; i < 64; ++i) {
+    a[i] = (0x7F - i) * kOnesStep8;
+  }
+  return a;
+}
+
+constexpr std::array<uint64_t, 64> kPrefixSumOverflow = PrefixSumOverflows();
+
 extern const uint8_t kSelectInByte[2048];
 }  // namespace internal
 
@@ -71,7 +83,7 @@ extern const uint8_t kSelectInByte[2048];
 // Rank/Select Queries" by Sebastiano Vigna, p. 5, Algorithm 2, with
 // improvements from "Optimized Succinct Data Structures for Massive Data"
 // by Gog & Petri, 2014.
-inline uint32_t nth_bit(const uint64_t v, const uint32_t r) {
+inline int nth_bit(const uint64_t v, const uint32_t r) {
   constexpr uint64_t kOnesStep8 = 0x0101010101010101;
   constexpr uint64_t kMSBsStep8 = 0x80 * kOnesStep8;
 

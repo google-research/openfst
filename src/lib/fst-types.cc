@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@
 // Registration of common FST and arc types.
 
 #include <fst/arc.h>
+#include <fst/cache.h>
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
 #include <fst/edit-fst.h>
+#include <fst/float-weight.h>
 #include <fst/register.h>
 #include <fst/vector-fst.h>
 

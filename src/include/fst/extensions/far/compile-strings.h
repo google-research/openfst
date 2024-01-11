@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,15 +20,27 @@
 
 #include <libgen.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
+#include <iostream>
 #include <istream>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
+#include <fst/compact-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/string.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <string_view>
 
 namespace fst {
 namespace internal {
@@ -50,7 +62,7 @@ class StringReader {
 
   StringReader(std::istream &istrm, const std::string &source,
                FarEntryType entry_type, TokenType token_type,
-               bool allow_negative_labels, const SymbolTable *syms = nullptr,
+               const SymbolTable *syms = nullptr,
                Label unknown_label = kNoStateId)
       : nline_(0),
         istrm_(istrm),
@@ -59,7 +71,7 @@ class StringReader {
         token_type_(token_type),
         symbols_(syms),
         done_(false),
-        compiler_(token_type, syms, unknown_label, allow_negative_labels) {
+        compiler_(token_type, syms, unknown_label) {
     Next();  // Initialize the reader to the first input.
   }
 
@@ -134,7 +146,7 @@ class StringReader {
 
 // Computes the minimal length required to encode each line number as a decimal
 // number, or zero if the file is not seekable.
-int KeySize(const std::string &source);
+int KeySize(std::string_view source);
 
 }  // namespace internal
 
@@ -144,8 +156,7 @@ void CompileStrings(const std::vector<std::string> &sources,
                     int32_t generate_keys, FarEntryType entry_type,
                     TokenType token_type, const std::string &symbols_source,
                     const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, bool allow_negative_labels,
-                    const std::string &key_prefix,
+                    bool initial_symbols, const std::string &key_prefix,
                     const std::string &key_suffix) {
   bool compact;
   if (fst_type.empty() || (fst_type == "vector")) {
@@ -159,8 +170,8 @@ void CompileStrings(const std::vector<std::string> &sources,
   std::unique_ptr<const SymbolTable> syms;
   typename Arc::Label unknown_label = kNoLabel;
   if (!symbols_source.empty()) {
-    const SymbolTableTextOptions opts(allow_negative_labels);
-    syms.reset(SymbolTable::ReadText(symbols_source, opts));
+    syms.reset(SymbolTable::ReadText(symbols_source,
+                                     FST_FLAGS_fst_field_separator));
     if (!syms) {
       LOG(ERROR) << "CompileStrings: Error reading symbol table: "
                  << symbols_source;
@@ -204,7 +215,7 @@ void CompileStrings(const std::vector<std::string> &sources,
     bool keep_syms = keep_symbols;
     for (internal::StringReader<Arc> reader(
              istrm, in_source.empty() ? "stdin" : in_source, entry_type,
-             token_type, allow_negative_labels, syms.get(), unknown_label);
+             token_type, syms.get(), unknown_label);
          !reader.Done(); reader.Next()) {
       ++n;
       std::unique_ptr<const Fst<Arc>> fst;

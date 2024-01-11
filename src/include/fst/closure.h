@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,21 @@
 #include <algorithm>
 #include <vector>
 
-
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/rational.h>
-
 
 namespace fst {
 
 // Computes the concatenative closure. This version modifies its
 // MutableFst input. If an FST transduces string x to y with weight a,
 // then its closure transduces x to y with weight a, xx to yy with
-// weight Times(a, a), xxx to yyy with with Times(Times(a, a), a),
+// weight Times(a, a), xxx to yyy with Times(Times(a, a), a),
 // etc. If closure_type == CLOSURE_STAR, then the empty string is
 // transduced to itself with weight Weight::One() as well.
 //

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ DEFINE_bool(encode_reuse, false, "Re-use existing mapper");
 DEFINE_string(far_type, "default",
               "FAR file format type: one of: \"default\", \"fst\", "
               "\"stlist\", \"sttable\"; "
-              "\"default\" means use type of input FAR");
+              "the input FAR type is used if \"default\"");
 
 int farencode_main(int argc, char **argv);
 

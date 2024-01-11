@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
 //
 #include <cstdint>
 #include <limits>
-#include <random>
 
 #include <fst/flags.h>
+#include <fst/script/getters.h>
 
 DEFINE_int32(max_length, std::numeric_limits<int32_t>::max(),
              "Maximum path length");
 DEFINE_int32(npath, 1, "Number of paths to generate");
-DEFINE_uint64(seed, std::random_device()(), "Random seed");
+DEFINE_uint64(seed, ::fst::script::kDefaultSeed, "Random seed");
 DEFINE_string(select, "uniform",
               "Selection type: one of "
               " \"uniform\", \"log_prob\" (when appropriate),"

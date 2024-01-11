@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,20 @@
 
 #include <fst/extensions/pdt/pdtscript.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/extensions/pdt/compose.h>
-#include <fst/extensions/pdt/expand.h>
 #include <fst/extensions/pdt/replace.h>
-#include <fst/extensions/pdt/reverse.h>
-#include <fst/extensions/pdt/shortest-path.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/script-impl.h>
+#include <fst/script/weight-class.h>
 
 namespace fst {
 namespace script {

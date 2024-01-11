@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@
 #ifndef FST_EXTENSIONS_LINEAR_TRIE_H_
 #define FST_EXTENSIONS_LINEAR_TRIE_H_
 
+#include <cstddef>
+#include <istream>
+#include <iterator>
 #include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -30,11 +34,11 @@ namespace fst {
 
 inline constexpr int kNoTrieNodeId = -1;
 
+template <class L, class H>
+class FlatTrieTopology;
 // Forward declarations of all available trie topologies.
 template <class L, class H>
 class NestedTrieTopology;
-template <class L, class H>
-class FlatTrieTopology;
 
 // A pair of parent node id and label, part of a trie edge
 template <class L>
@@ -42,7 +46,7 @@ struct ParentLabel {
   int parent;
   L label;
 
-  ParentLabel() {}
+  ParentLabel() = default;
   ParentLabel(int p, L l) : parent(p), label(l) {}
 
   bool operator==(const ParentLabel &that) const {
@@ -275,7 +279,7 @@ class FlatTrieTopology {
   typedef L Label;
   typedef H Hash;
 
-  FlatTrieTopology() {}
+  FlatTrieTopology() = default;
   FlatTrieTopology(const FlatTrieTopology &that) : next_(that.next_) {}
   template <class T>
   explicit FlatTrieTopology(const T &that);
@@ -383,7 +387,7 @@ class MutableTrie {
   typedef T Topology;
 
   // Constructs a trie with only the root node.
-  MutableTrie() {}
+  MutableTrie() = default;
 
   // Conversion from another trie of a possiblly different
   // topology. The underlying topology must supported conversion.

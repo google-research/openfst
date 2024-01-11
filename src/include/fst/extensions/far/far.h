@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
 #define FST_EXTENSIONS_FAR_FAR_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <ios>
 #include <iostream>
+#include <istream>
+#include <memory>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fst/log.h>
 #include <fst/extensions/far/stlist.h>
@@ -33,6 +39,8 @@
 #include <fst/arc.h>
 #include <fstream>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
 #include <fst/vector-fst.h>
 #include <string_view>
 
@@ -50,8 +58,9 @@ enum class FarType {
 // Checks for FST magic number in an input stream (to be opened given the source
 // name), to indicate to the caller function that the stream content is an FST
 // header.
-inline bool IsFst(const std::string &source) {
-  std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
+inline bool IsFst(std::string_view source) {
+  std::ifstream strm(std::string(source),
+                          std::ios_base::in | std::ios_base::binary);
   if (!strm) return false;
   int32_t magic_number = 0;
   ReadType(strm, &magic_number);
@@ -107,7 +116,7 @@ class FarWriter {
   using Arc = A;
 
   // Creates a new (empty) FST archive; returns null on error.
-  static FarWriter *Create(const std::string &source,
+  static FarWriter *Create(std::string_view source,
                            FarType type = FarType::DEFAULT);
 
   // Adds an FST to the end of an archive. Keys must be non-empty and
@@ -118,10 +127,10 @@ class FarWriter {
 
   virtual bool Error() const = 0;
 
-  virtual ~FarWriter() {}
+  virtual ~FarWriter() = default;
 
  protected:
-  FarWriter() {}
+  FarWriter() = default;
 };
 
 // This class iterates through an existing archive of FSTs.
@@ -162,10 +171,10 @@ class FarReader {
 
   virtual bool Error() const = 0;
 
-  virtual ~FarReader() {}
+  virtual ~FarReader() = default;
 
  protected:
-  FarReader() {}
+  FarReader() = default;
 };
 
 template <class Arc>
@@ -181,7 +190,7 @@ class STTableFarWriter : public FarWriter<A> {
  public:
   using Arc = A;
 
-  static STTableFarWriter *Create(const std::string &source) {
+  static STTableFarWriter *Create(std::string_view source) {
     auto *writer = STTableWriter<Fst<Arc>, FstWriter<Arc>>::Create(source);
     return new STTableFarWriter(writer);
   }
@@ -206,7 +215,7 @@ class STListFarWriter : public FarWriter<A> {
  public:
   using Arc = A;
 
-  static STListFarWriter *Create(const std::string &source) {
+  static STListFarWriter *Create(std::string_view source) {
     auto *writer = STListWriter<Fst<Arc>, FstWriter<Arc>>::Create(source);
     return new STListFarWriter(writer);
   }
@@ -231,10 +240,10 @@ class FstFarWriter final : public FarWriter<A> {
  public:
   using Arc = A;
 
-  explicit FstFarWriter(const std::string &source)
+  explicit FstFarWriter(std::string_view source)
       : source_(source), error_(false), written_(false) {}
 
-  static FstFarWriter *Create(const std::string &source) {
+  static FstFarWriter *Create(std::string_view source) {
     return new FstFarWriter(source);
   }
 
@@ -252,7 +261,7 @@ class FstFarWriter final : public FarWriter<A> {
 
   bool Error() const final { return error_; }
 
-  ~FstFarWriter() final {}
+  ~FstFarWriter() final = default;
 
  private:
   std::string source_;
@@ -261,11 +270,11 @@ class FstFarWriter final : public FarWriter<A> {
 };
 
 template <class Arc>
-FarWriter<Arc> *FarWriter<Arc>::Create(const std::string &source,
-                                       FarType type) {
+FarWriter<Arc> *FarWriter<Arc>::Create(std::string_view source, FarType type) {
   switch (type) {
     case FarType::DEFAULT:
       if (source.empty()) return STListFarWriter<Arc>::Create(source);
+      [[fallthrough]];
     case FarType::STTABLE:
       return STTableFarWriter<Arc>::Create(source);
     case FarType::STLIST:
@@ -292,7 +301,7 @@ class STTableFarReader : public FarReader<A> {
  public:
   using Arc = A;
 
-  static STTableFarReader *Open(const std::string &source) {
+  static STTableFarReader *Open(std::string_view source) {
     auto reader =
         fst::WrapUnique(STTableReader<Fst<Arc>, FstReader<Arc>>::Open(source));
     if (!reader || reader->Error()) return nullptr;
@@ -335,7 +344,7 @@ class STListFarReader : public FarReader<A> {
  public:
   using Arc = A;
 
-  static STListFarReader *Open(const std::string &source) {
+  static STListFarReader *Open(std::string_view source) {
     auto reader =
         fst::WrapUnique(STListReader<Fst<Arc>, FstReader<Arc>>::Open(source));
     if (!reader || reader->Error()) return nullptr;
@@ -378,9 +387,9 @@ class FstFarReader final : public FarReader<A> {
  public:
   using Arc = A;
 
-  static FstFarReader *Open(const std::string &source) {
+  static FstFarReader *Open(std::string_view source) {
     std::vector<std::string> sources;
-    sources.push_back(source);
+    sources.push_back(std::string(source));
     return new FstFarReader<Arc>(sources);
   }
 

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,23 @@
 #ifndef FST_RELABEL_H_
 #define FST_RELABEL_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/cache.h>
-#include <fst/test-properties.h>
-
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <unordered_map>
 
 namespace fst {
@@ -62,8 +69,7 @@ void Relabel(
       DCHECK_NE(arc.ilabel, kNoLabel);
       DCHECK_NE(arc.olabel, kNoLabel);
       // Relabels input.
-      auto it = input_map.find(arc.ilabel);
-      if (it != input_map.end()) {
+      if (auto it = input_map.find(arc.ilabel); it != input_map.end()) {
         if (it->second == kNoLabel) {
           FSTERROR() << "Input symbol ID " << arc.ilabel
                      << " missing from target vocabulary";
@@ -73,8 +79,7 @@ void Relabel(
         arc.ilabel = it->second;
       }
       // Relabels output.
-      it = output_map.find(arc.olabel);
-      if (it != output_map.end()) {
+      if (auto it = output_map.find(arc.olabel); it != output_map.end()) {
         if (it->second == kNoLabel) {
           FSTERROR() << "Output symbol id " << arc.olabel
                      << " missing from target vocabulary";
@@ -334,12 +339,12 @@ class RelabelFstImpl : public CacheImpl<Arc> {
     for (ArcIterator<Fst<Arc>> aiter(*fst_, s); !aiter.Done(); aiter.Next()) {
       auto arc = aiter.Value();
       if (relabel_input_) {
-        auto it = input_map_.find(arc.ilabel);
-        if (it != input_map_.end()) arc.ilabel = it->second;
+        if (auto it = input_map_.find(arc.ilabel); it != input_map_.end()) {
+          arc.ilabel = it->second;
+        }
       }
       if (relabel_output_) {
-        auto it = output_map_.find(arc.olabel);
-        if (it != output_map_.end()) {
+        if (auto it = output_map_.find(arc.olabel); it != output_map_.end()) {
           arc.olabel = it->second;
         }
       }

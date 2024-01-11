@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,13 @@
 #include <ostream>
 #include <string>
 
+#include <fst/log.h>
+#include <fst/arc.h>
 #include <fst/const-fst.h>
+#include <fst/fst.h>
 #include <fst/matcher-fst.h>
 #include <fst/matcher.h>
+#include <fst/util.h>
 
 DECLARE_int64(phi_fst_phi_label);
 DECLARE_bool(phi_fst_phi_loop);
@@ -54,13 +58,13 @@ class PhiFstMatcherData {
 
   static PhiFstMatcherData<Label> *Read(std::istream &istrm,
                                         const FstReadOptions &read) {
-    auto *data = new PhiFstMatcherData<Label>();
+    auto data = std::make_unique<PhiFstMatcherData<Label>>();
     ReadType(istrm, &data->phi_label_);
     ReadType(istrm, &data->phi_loop_);
     int32_t rewrite_mode;
     ReadType(istrm, &rewrite_mode);
     data->rewrite_mode_ = static_cast<MatcherRewriteMode>(rewrite_mode);
-    return data;
+    return data.release();
   }
 
   bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {

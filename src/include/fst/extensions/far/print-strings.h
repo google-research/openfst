@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,14 +22,21 @@
 
 #include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
 #include <fstream>
 #include <fst/shortest-distance.h>
 #include <fst/string.h>
+#include <fst/symbol-table.h>
 
 DECLARE_string(far_field_separator);
 
@@ -44,9 +51,8 @@ void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
                   const std::string &source_suffix) {
   std::unique_ptr<const SymbolTable> syms;
   if (!symbols_source.empty()) {
-    // TODO(kbg): Allow negative flag?
-    const SymbolTableTextOptions opts(true);
-    syms.reset(SymbolTable::ReadText(symbols_source, opts));
+    syms.reset(SymbolTable::ReadText(symbols_source,
+                                     FST_FLAGS_fst_field_separator));
     if (!syms) {
       LOG(ERROR) << "PrintStrings: Error reading symbol table "
                  << symbols_source;
@@ -83,7 +89,7 @@ void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
         std::cout << FST_FLAGS_far_field_separator[0]
                   << ShortestDistance(*fst);
       }
-      std::cout << std::endl;
+      std::cout << '\n';
     } else if (entry_type == FarEntryType::FILE) {
       std::stringstream sstrm;
       if (generate_sources) {

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,24 +20,34 @@
 #ifndef FST_RMEPSILON_H_
 #define FST_RMEPSILON_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <stack>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/arcfilter.h>
 #include <fst/cache.h>
+#include <fst/cc-visitors.h>
 #include <fst/connect.h>
+#include <fst/dfs-visit.h>
 #include <fst/factor-weight.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/invert.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/prune.h>
 #include <fst/queue.h>
 #include <fst/shortest-distance.h>
 #include <fst/topsort.h>
-
+#include <fst/util.h>
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {
@@ -94,7 +104,7 @@ class RmEpsilonState {
     Label olabel;
     StateId nextstate;
 
-    Element() {}
+    Element() = default;
 
     Element(Label ilabel, Label olabel, StateId nexstate)
         : ilabel(ilabel), olabel(olabel), nextstate(nexstate) {}
@@ -133,10 +143,10 @@ class RmEpsilonState {
   ElementMap element_map_;
   EpsilonArcFilter<Arc> eps_filter_;
   std::stack<StateId, std::vector<StateId>>
-      eps_queue_;                  // Queue used to visit the epsilon-closure.
-  std::vector<bool> visited_;      // True if the state has been visited.
-  std::vector<StateId> visited_states_;        // List of visited states.
-  std::vector<Arc> arcs_;                      // Arcs of state being expanded.
+      eps_queue_;              // Queue used to visit the epsilon-closure.
+  std::vector<bool> visited_;  // True if the state has been visited.
+  std::vector<StateId> visited_states_;  // List of visited states.
+  std::vector<Arc> arcs_;                // Arcs of state being expanded.
   Weight final_weight_;  // Final weight of state being expanded.
   StateId expand_id_;    // Unique ID for each call to Expand
 

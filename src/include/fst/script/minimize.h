@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <tuple>
 
 #include <fst/minimize.h>
+#include <fst/mutable-fst.h>
+#include <fst/shortest-distance.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {
@@ -37,7 +39,8 @@ void Minimize(FstMinimizeArgs *args) {
   Minimize(ofst1, ofst2, std::get<2>(*args), std::get<3>(*args));
 }
 
-void Minimize(MutableFstClass *ofst1, MutableFstClass *ofst2 = nullptr,
+void Minimize(MutableFstClass *ofst1,
+              MutableFstClass * ofst2 = nullptr,
               float delta = kShortestDelta, bool allow_nondet = false);
 
 }  // namespace script

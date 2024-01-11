@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,11 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/extensions/mpdt/expand.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
 #include <fst/extensions/mpdt/read_write_utils.h>
-#include <fst/util.h>
+#include <fst/script/arg-packs.h>
+#include <fst/script/fst-class.h>
 
 DECLARE_string(mpdt_parentheses);
 DECLARE_bool(connect);
@@ -45,7 +47,6 @@ int mpdtexpand_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in.pdt [out.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -68,7 +69,7 @@ int mpdtexpand_main(int argc, char **argv) {
   std::vector<std::pair<int64_t, int64_t>> parens;
   std::vector<int64_t> assignments;
   if (!ReadLabelTriples(FST_FLAGS_mpdt_parentheses, &parens,
-                        &assignments, false)) {
+                        &assignments)) {
     return 1;
   }
 

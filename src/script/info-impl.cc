@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,15 @@
 #include <fst/script/info-impl.h>
 
 #include <cstdint>
+#include <ios>
+#include <iostream>
+#include <ostream>
 #include <string>
+
+#include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/script/arcfilter-impl.h>
+#include <string_view>
 
 namespace fst {
 

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,15 +20,23 @@
 #ifndef FST_EXTENSIONS_MPDT_MPDT_H_
 #define FST_EXTENSIONS_MPDT_MPDT_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/log.h>
 #include <fst/extensions/pdt/pdt.h>
+#include <fst/fst.h>
+#include <fst/util.h>
 #include <unordered_map>
 #include <optional>
 
@@ -46,8 +54,11 @@ template <typename StackId, typename Level, Level nlevels>
 using StackConfig = std::array<StackId, nlevels>;
 
 // Forward declaration so `KeyPair` can declare `KeyPairHasher` its friend.
+// WARNING: Do not use `class` here because that may result in linker errors
+// under the Microsoft C++ ABI. Please take a look at MS documentation
+// http://shortn/_TZy5qaXiBe
 template <typename Level>
-class KeyPairHasher;
+struct KeyPairHasher;
 
 // Defines the KeyPair type used as the key to MPdtStack.paren_id_map_. The hash
 // function is provided as a separate struct to match templating syntax.

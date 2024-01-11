@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ DEFINE_string(ssymbols, "", "State label symbol table");
 DEFINE_bool(keep_isymbols, false, "Store input label symbol table with FST");
 DEFINE_bool(keep_osymbols, false, "Store output label symbol table with FST");
 DEFINE_bool(keep_state_numbering, false, "Do not renumber input states");
-DEFINE_bool(allow_negative_labels, false,
-            "Allow negative labels (not recommended; may cause conflicts)");
 
 int fstcompile_main(int argc, char **argv);
 

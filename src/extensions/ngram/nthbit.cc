@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -232,7 +232,7 @@ static const uint8_t nth_bit_bit_pos[8][256] = {
         255, 255, 255, 7,
     }};
 
-uint32_t nth_bit(const uint64_t v, uint32_t r) {
+int nth_bit(const uint64_t v, uint32_t r) {
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
   DCHECK_LT(r, __builtin_popcountll(v));
@@ -272,14 +272,7 @@ uint32_t nth_bit(const uint64_t v, uint32_t r) {
 }
 
 #elif SIZE_MAX == UINT64_MAX  // 64-bit, non-BMI2
-// These tables are generated using:
-//
-//  constexpr uint64_t kOnesStep8 = 0x0101010101010101;
-//  printf("const uint64_t kPrefixSumOverflow[64] = {\n");
-//  for (int k = 0; k < 64; ++k) {
-//    printf("  0x%x,\n",  (0x7F - k) * kOnesStep8);
-//  }
-//  printf("};\n");
+// This table is generated using:
 //
 //  printf("const uint8_t kSelectInByte[8 * 256] = {\n");
 //  for (int j = 0; j < 8; ++j) {
@@ -294,74 +287,6 @@ uint32_t nth_bit(const uint64_t v, uint32_t r) {
 //  printf("};\n");
 //
 namespace internal {
-
-// clang-format off
-const uint64_t kPrefixSumOverflow[64] = {
-  0x7f7f7f7f7f7f7f7f,
-  0x7e7e7e7e7e7e7e7e,
-  0x7d7d7d7d7d7d7d7d,
-  0x7c7c7c7c7c7c7c7c,
-  0x7b7b7b7b7b7b7b7b,
-  0x7a7a7a7a7a7a7a7a,
-  0x7979797979797979,
-  0x7878787878787878,
-  0x7777777777777777,
-  0x7676767676767676,
-  0x7575757575757575,
-  0x7474747474747474,
-  0x7373737373737373,
-  0x7272727272727272,
-  0x7171717171717171,
-  0x7070707070707070,
-  0x6f6f6f6f6f6f6f6f,
-  0x6e6e6e6e6e6e6e6e,
-  0x6d6d6d6d6d6d6d6d,
-  0x6c6c6c6c6c6c6c6c,
-  0x6b6b6b6b6b6b6b6b,
-  0x6a6a6a6a6a6a6a6a,
-  0x6969696969696969,
-  0x6868686868686868,
-  0x6767676767676767,
-  0x6666666666666666,
-  0x6565656565656565,
-  0x6464646464646464,
-  0x6363636363636363,
-  0x6262626262626262,
-  0x6161616161616161,
-  0x6060606060606060,
-  0x5f5f5f5f5f5f5f5f,
-  0x5e5e5e5e5e5e5e5e,
-  0x5d5d5d5d5d5d5d5d,
-  0x5c5c5c5c5c5c5c5c,
-  0x5b5b5b5b5b5b5b5b,
-  0x5a5a5a5a5a5a5a5a,
-  0x5959595959595959,
-  0x5858585858585858,
-  0x5757575757575757,
-  0x5656565656565656,
-  0x5555555555555555,
-  0x5454545454545454,
-  0x5353535353535353,
-  0x5252525252525252,
-  0x5151515151515151,
-  0x5050505050505050,
-  0x4f4f4f4f4f4f4f4f,
-  0x4e4e4e4e4e4e4e4e,
-  0x4d4d4d4d4d4d4d4d,
-  0x4c4c4c4c4c4c4c4c,
-  0x4b4b4b4b4b4b4b4b,
-  0x4a4a4a4a4a4a4a4a,
-  0x4949494949494949,
-  0x4848484848484848,
-  0x4747474747474747,
-  0x4646464646464646,
-  0x4545454545454545,
-  0x4444444444444444,
-  0x4343434343434343,
-  0x4242424242424242,
-  0x4141414141414141,
-  0x4040404040404040
-};
 
 const uint8_t kSelectInByte[8 * 256] = {
   0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,

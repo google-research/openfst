@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,12 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/determinize.h>
 #include <fst/script/determinize.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
+#include <fst/script/weight-class.h>
 
 DECLARE_double(delta);
 DECLARE_string(weight);
@@ -43,7 +47,6 @@ int fstdeterminize_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();

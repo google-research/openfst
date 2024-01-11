@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,11 @@
 #include <fst/extensions/ngram/bitmap-index.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <iterator>
+#include <utility>
+#include <vector>
 
 #include <fst/log.h>
 #include <fst/extensions/ngram/nthbit.h>
@@ -28,6 +31,13 @@ namespace fst {
 
 static_assert(sizeof(long long) >= sizeof(uint64_t),  // NOLINT
               "__builtin_...ll is used on uint64_t values.");
+
+constexpr std::array<uint64_t, 64> LowBitsMasks() {
+  std::array<uint64_t, 64> m{};
+  for (int i = 0; i < 64; ++i) m[i] = (uint64_t{1} << i) - 1;
+  return m;
+}
+constexpr std::array<uint64_t, 64> kLowBitsMasks = LowBitsMasks();
 
 size_t BitmapIndex::Rank1(size_t end) const {
   DCHECK_LE(end, Bits());
@@ -42,8 +52,7 @@ size_t BitmapIndex::Rank1(size_t end) const {
   // TODO(jrosenstock): better with or without special case, and does
   // this depend on whether there's a popcnt instruction?
   if (bit_index == 0) return sum;  // Entire answer is in the index.
-  const uint64_t mask = (uint64_t{1} << bit_index) - 1;
-  return sum + __builtin_popcountll(bits_[end_word] & mask);
+  return sum + __builtin_popcountll(bits_[end_word] & kLowBitsMasks[bit_index]);
 }
 
 size_t BitmapIndex::Select1(size_t bit_index) const {
@@ -217,30 +226,8 @@ uint32_t BitmapIndex::GetIndexOnesCount(size_t array_index) const {
       rank_index_[array_index / kUnitsPerRankIndexEntry];
   uint32_t ones_count = rank_index_entry.absolute_ones_count();
   static_assert(kUnitsPerRankIndexEntry == 8);
-  switch (array_index % kUnitsPerRankIndexEntry) {
-    case 1:
-      ones_count += rank_index_entry.relative_ones_count_1();
-      break;
-    case 2:
-      ones_count += rank_index_entry.relative_ones_count_2();
-      break;
-    case 3:
-      ones_count += rank_index_entry.relative_ones_count_3();
-      break;
-    case 4:
-      ones_count += rank_index_entry.relative_ones_count_4();
-      break;
-    case 5:
-      ones_count += rank_index_entry.relative_ones_count_5();
-      break;
-    case 6:
-      ones_count += rank_index_entry.relative_ones_count_6();
-      break;
-    case 7:
-      ones_count += rank_index_entry.relative_ones_count_7();
-      break;
-  }
-  return ones_count;
+  return ones_count + rank_index_entry.relative_ones_count(
+                          array_index % kUnitsPerRankIndexEntry);
 }
 
 void BitmapIndex::BuildIndex(const uint64_t* bits, size_t num_bits,
@@ -252,6 +239,7 @@ void BitmapIndex::BuildIndex(const uint64_t* bits, size_t num_bits,
   DCHECK_LT(num_bits, uint64_t{1} << 32);
   bits_ = bits;
   num_bits_ = num_bits;
+  rank_index_.clear();
   rank_index_.resize(rank_index_size());
 
   select_0_index_.clear();
@@ -265,122 +253,95 @@ void BitmapIndex::BuildIndex(const uint64_t* bits, size_t num_bits,
     select_1_index_.reserve(num_bits / (2 * kBitsPerSelect1Block) + 1);
   }
 
+  const size_t kArraySize = ArraySize();
   uint32_t ones_count = 0;
-  uint32_t zeros_count = 0;  // Only updated if enable_select_0_index.
-  for (uint32_t word_index = 0; word_index < ArraySize(); ++word_index) {
-    auto& rank_index_entry = rank_index_[word_index / kUnitsPerRankIndexEntry];
-    static_assert(kUnitsPerRankIndexEntry == 8);
-    switch (word_index % kUnitsPerRankIndexEntry) {
-      case 0:
-        rank_index_entry.set_absolute_ones_count(ones_count);
-        break;
-      case 1:
-        rank_index_entry.set_relative_ones_count_1(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 2:
-        rank_index_entry.set_relative_ones_count_2(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 3:
-        rank_index_entry.set_relative_ones_count_3(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 4:
-        rank_index_entry.set_relative_ones_count_4(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 5:
-        rank_index_entry.set_relative_ones_count_5(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 6:
-        rank_index_entry.set_relative_ones_count_6(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-      case 7:
-        rank_index_entry.set_relative_ones_count_7(
-            ones_count - rank_index_entry.absolute_ones_count());
-        break;
-    }
+  uint32_t zeros_count = 0;
+  for (uint32_t word_index = 0; word_index < kArraySize; word_index += 8) {
+    const uint64_t word[8] = {
+        bits[word_index],
+        (word_index + 1 < kArraySize) ? bits[word_index + 1] : 0,
+        (word_index + 2 < kArraySize) ? bits[word_index + 2] : 0,
+        (word_index + 3 < kArraySize) ? bits[word_index + 3] : 0,
+        (word_index + 4 < kArraySize) ? bits[word_index + 4] : 0,
+        (word_index + 5 < kArraySize) ? bits[word_index + 5] : 0,
+        (word_index + 6 < kArraySize) ? bits[word_index + 6] : 0,
+        (word_index + 7 < kArraySize) ? bits[word_index + 7] : 0,
+    };
 
-    // We can assume that the last word has zeros in the high bits.
-    const uint64_t word = bits[word_index];
-    const int word_ones_count = __builtin_popcountll(word);
-    const uint32_t bit_offset = kStorageBitSize * word_index;
+    const int word_ones_count[8] = {
+        __builtin_popcountll(word[0]), __builtin_popcountll(word[1]),
+        __builtin_popcountll(word[2]), __builtin_popcountll(word[3]),
+        __builtin_popcountll(word[4]), __builtin_popcountll(word[5]),
+        __builtin_popcountll(word[6]), __builtin_popcountll(word[7]),
+    };
+
+    auto& rank_index_entry = rank_index_[word_index / kUnitsPerRankIndexEntry];
+    const uint32_t abs_ones_count = ones_count;
+    rank_index_entry.set_absolute_ones_count(abs_ones_count);
+    ones_count += word_ones_count[0];
+    rank_index_entry.set_relative_ones_count_1(ones_count - abs_ones_count);
+    ones_count += word_ones_count[1];
+    rank_index_entry.set_relative_ones_count_2(ones_count - abs_ones_count);
+    ones_count += word_ones_count[2];
+    rank_index_entry.set_relative_ones_count_3(ones_count - abs_ones_count);
+    ones_count += word_ones_count[3];
+    rank_index_entry.set_relative_ones_count_4(ones_count - abs_ones_count);
+    ones_count += word_ones_count[4];
+    rank_index_entry.set_relative_ones_count_5(ones_count - abs_ones_count);
+    ones_count += word_ones_count[5];
+    rank_index_entry.set_relative_ones_count_6(ones_count - abs_ones_count);
+    ones_count += word_ones_count[6];
+    rank_index_entry.set_relative_ones_count_7(ones_count - abs_ones_count);
+    ones_count += word_ones_count[7];
 
     if (enable_select_0_index) {
-      // Zeros count is somewhat move involved to compute, so only do it
-      // if we need it. The last word has zeros in the high bits, so
-      // that needs to be accounted for when computing the zeros count
-      // from the ones count.
-      const uint32_t bits_remaining = num_bits - bit_offset;
-      const int word_zeros_count =
-          std::min(bits_remaining, kStorageBitSize) - word_ones_count;
+      int s0_zeros_count = zeros_count;
+      for (int i = 0; i < 8; ++i) {
+        const size_t bit_offset = (word_index + i) * kStorageBitSize;
+        if (bit_offset >= num_bits_) break;
 
-      // We record a 0 every kBitsPerSelect0Block bits. So, if zeros_count
-      // is 0 mod kBitsPerSelect0Block, we record the next zero. If
-      // zeros_count is 1 mod kBitsPerSelect0Block, we need to skip
-      // kBitsPerSelect0Block - 1 zeros, then record a zero. And so on.
-      // What function is this?  It's -zeros_count % kBitsPerSelect0Block.
-      const uint32_t zeros_to_skip = -zeros_count % kBitsPerSelect0Block;
-      if (word_zeros_count > zeros_to_skip) {
-        const int nth = nth_bit(~word, zeros_to_skip);
-        select_0_index_.push_back(bit_offset + nth);
+        // Zeros count is somewhat more involved to compute, so only do it
+        // if we need it. The last word has zeros in the high bits, so
+        // that needs to be accounted for when computing the zeros count
+        // from the ones count.
+        const uint32_t bits_remaining = num_bits - bit_offset;
+        const int word_zeros_count =
+            std::min(bits_remaining, kStorageBitSize) - word_ones_count[i];
+
+        // We record a 0 every kBitsPerSelect0Block bits. So, if zeros_count
+        // is 0 mod kBitsPerSelect0Block, we record the next zero. If
+        // zeros_count is 1 mod kBitsPerSelect0Block, we need to skip
+        // kBitsPerSelect0Block - 1 zeros, then record a zero. And so on.
+        // What function is this?  It's -zeros_count % kBitsPerSelect0Block.
+        const uint32_t zeros_to_skip = -s0_zeros_count % kBitsPerSelect0Block;
+        if (word_zeros_count > zeros_to_skip) {
+          const int nth = nth_bit(~word[i], zeros_to_skip);
+          select_0_index_.push_back(bit_offset + nth);
+          static_assert(kBitsPerSelect0Block >= 512,
+                        "kBitsPerSelect0Block must be at least 512.");
+          break;  // 8 entries is 512 bits, so we can't push another bit here.
+        }
+        s0_zeros_count += word_zeros_count;
       }
-
-      zeros_count += word_zeros_count;
+      zeros_count += 8 * kStorageBitSize - (ones_count - abs_ones_count);
     }
 
     if (enable_select_1_index) {
-      const uint32_t ones_to_skip = -ones_count % kBitsPerSelect1Block;
-      if (word_ones_count > ones_to_skip) {
-        const int nth = nth_bit(word, ones_to_skip);
-        select_1_index_.push_back(bit_offset + nth);
+      int s1_ones_count = abs_ones_count;
+      for (int i = 0; i < 8; ++i) {
+        const size_t bit_offset = (word_index + i) * kStorageBitSize;
+        uint32_t ones_to_skip = -s1_ones_count % kBitsPerSelect1Block;
+        if (word_ones_count[i] > ones_to_skip) {
+          const int nth = nth_bit(word[i], ones_to_skip);
+          select_1_index_.push_back(bit_offset + nth);
+          static_assert(kBitsPerSelect1Block >= 512,
+                        "kBitsPerSelect1Block must be at least 512.");
+          break;  // 8 entries is 512 bits, so we can't push another bit here.
+        }
+        s1_ones_count += word_ones_count[i];
       }
     }
-
-    ones_count += word_ones_count;
   }
-
-  // Do we have any extra bits that need to be recorded?
-  // We already recorded all the lower relative positions,
-  // so we need to do the higher ones.
-  // This is only necessary if num_bits % kBitsPerRankIndexEntry != 0,
-  // but if it is 0, we end up in case 7 and do nothing. This also
-  // holds for num_bits == 0. If we do have an if statement guarding
-  // this, mutants complains that it can be changed to if (true).
-  // Therefore, we complicate the understanding of the code to please the
-  // tools.
-  auto& rank_index_entry = rank_index_[(num_bits - 1) / kBitsPerRankIndexEntry];
-  switch (((num_bits - 1) / kStorageBitSize) % kUnitsPerRankIndexEntry) {
-    case 0:
-      rank_index_entry.set_relative_ones_count_1(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 1:
-      rank_index_entry.set_relative_ones_count_2(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 2:
-      rank_index_entry.set_relative_ones_count_3(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 3:
-      rank_index_entry.set_relative_ones_count_4(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 4:
-      rank_index_entry.set_relative_ones_count_5(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 5:
-      rank_index_entry.set_relative_ones_count_6(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 6:
-      rank_index_entry.set_relative_ones_count_7(
-          ones_count - rank_index_entry.absolute_ones_count());
-    case 7:
-      // Nothing to do, this count will be included in the final
-      // absolute count.
-      break;
-  }
-
   // Add the extra entry with the total number of bits.
   rank_index_.back().set_absolute_ones_count(ones_count);
 

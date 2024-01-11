@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,11 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/fst.h>
+#include <fst/symbol-table.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/print-impl.h>
+#include <string_view>
 
 DECLARE_string(fst_field_separator);
 
@@ -71,7 +74,7 @@ void PrintFst(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
 // TODO(kbg,2019-09-01): Deprecated.
 template <class Arc>
 void PrintFst(const Fst<Arc> &fst, std::ostream &ostrm,
-              const std::string &dest = "", const SymbolTable *isyms = nullptr,
+              std::string_view dest = "", const SymbolTable *isyms = nullptr,
               const SymbolTable *osyms = nullptr,
               const SymbolTable *ssyms = nullptr) {
   const std::string sep = FST_FLAGS_fst_field_separator.substr(0, 1);

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
+#include <fst/symbol-table.h>
 #include <fst/script/draw.h>
+#include <fst/script/fst-class.h>
 
 DECLARE_bool(acceptor);
 DECLARE_string(isymbols);
@@ -44,19 +46,16 @@ DECLARE_double(height);
 DECLARE_double(width);
 DECLARE_double(nodesep);
 DECLARE_double(ranksep);
-DECLARE_bool(allow_negative_labels);
 
 int fstdraw_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
-  using fst::SymbolTableTextOptions;
   using fst::script::FstClass;
 
   std::string usage = "Prints out binary FSTs in dot text format.\n\n  Usage: ";
   usage += argv[0];
   usage += " [binary.fst [text.dot]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -81,23 +80,27 @@ int fstdraw_main(int argc, char **argv) {
   }
   std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
 
-  const SymbolTableTextOptions opts(FST_FLAGS_allow_negative_labels);
-
   std::unique_ptr<const SymbolTable> isyms;
   if (!FST_FLAGS_isymbols.empty() && !FST_FLAGS_numeric) {
-    isyms.reset(SymbolTable::ReadText(FST_FLAGS_isymbols, opts));
+    isyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_isymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!isyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> osyms;
   if (!FST_FLAGS_osymbols.empty() && !FST_FLAGS_numeric) {
-    osyms.reset(SymbolTable::ReadText(FST_FLAGS_osymbols, opts));
+    osyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_osymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!osyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> ssyms;
   if (!FST_FLAGS_ssymbols.empty() && !FST_FLAGS_numeric) {
-    ssyms.reset(SymbolTable::ReadText(FST_FLAGS_ssymbols));
+    ssyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_osymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!ssyms) return 1;
   }
 

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ DEFINE_string(save_isymbols, "", "Save input symbol table to file");
 DEFINE_string(save_osymbols, "", "Save output symbol table to file");
 DEFINE_bool(show_weight_one, false,
             "Print/draw arc weights and final weights equal to semiring One?");
-DEFINE_bool(allow_negative_labels, false,
-            "Allow negative labels (not recommended; may cause conflicts)?");
 DEFINE_string(missing_symbol, "",
               "Symbol to print when lookup fails (default raises error)");
 

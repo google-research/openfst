@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,13 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
-#include <fst/fst.h>
+#include <fst/accumulator.h>
+#include <fst/arc.h>
+#include <fst/const-fst.h>
+#include <fst/lookahead-matcher.h>
 #include <fst/matcher-fst.h>
+#include <fst/matcher.h>
+#include <fst/register.h>
 
 namespace fst {
 

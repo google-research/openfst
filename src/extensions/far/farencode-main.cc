@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,14 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/extensions/far/far-class.h>
+#include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
+#include <fst/util.h>
+#include <fst/script/arg-packs.h>
+#include <fst/script/encodemapper-class.h>
+#include <fst/script/getters.h>
 
 DECLARE_bool(decode);
 DECLARE_bool(encode_labels);
@@ -38,11 +44,11 @@ int farencode_main(int argc, char **argv) {
   using fst::script::FarReaderClass;
   using fst::script::FarWriterClass;
 
-  std::string usage = "Encodes FAR labels and/or weights.\n\n Usage: ";
+  std::string usage = "Encodes FST labels and/or weights in an FST archive.";
+  usage += "\n\n  Usage: ";
   usage += argv[0];
   usage += " [in.far mapper [out.far]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc < 3 || argc > 4) {
     ShowUsage();

@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,18 @@
 
 #include <fst/script/text-io.h>
 
-#include <cstring>
+#include <sys/types.h>
+
+#include <cstddef>
+#include <iostream>
 #include <ostream>
-#include <sstream>
 #include <string>
-#include <utility>
+#include <vector>
 
 #include <fst/log.h>
 #include <fstream>
 #include <fst/util.h>
-#include <fst/windows_defs.inc>
+#include <fst/script/weight-class.h>
 #include <string_view>
 
 namespace fst {
@@ -54,7 +56,7 @@ bool ReadPotentials(std::string_view weight_type, const std::string &source,
                  << "file = " << source << ", line = " << nline;
       return false;
     }
-    const ssize_t s = StrToInt64(col[0], source, nline, false);
+    const ssize_t s = StrToInt64(col[0], source, nline);
     const WeightClass weight(weight_type, col[1]);
     while (potentials->size() <= s) {
       potentials->push_back(WeightClass::Zero(weight_type));

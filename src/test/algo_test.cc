@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,18 @@
 #include <fst/test/algo_test.h>
 
 #include <random>
-#include <vector>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
+#include <fst/fst-decl.h>
+#include <fst/lexicographic-weight.h>
+#include <fst/power-weight.h>
+#include <fst/string-weight.h>
+#include <fst/tuple-weight.h>
+#include <fst/weight.h>
 
 // DEFINEs determine which semirings are tested; these are controlled by
 // the `defines` attributes of the associated build rules.
@@ -39,7 +48,6 @@ using fst::WeightGenerate;
 
 int main(int argc, char **argv) {
   SetFlag(&FST_FLAGS_fst_verify_properties, true);
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(argv[0], &argc, &argv, true);
 
   static const int kCacheGcLimit = 20;

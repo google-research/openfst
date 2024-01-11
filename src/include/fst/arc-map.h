@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,27 @@
 #ifndef FST_ARC_MAP_H_
 #define FST_ARC_MAP_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/cache.h>
+#include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/string-weight.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
+#include <fst/weight.h>
 #include <unordered_map>
-
 
 namespace fst {
 
@@ -213,8 +223,8 @@ void ArcMap(const Fst<A> &ifst, MutableFst<B> *ofst, C *mapper) {
     return;
   }
   const auto final_action = mapper->FinalAction();
-  if (ifst.Properties(kExpanded, false)) {
-    ofst->ReserveStates(CountStates(ifst) +
+  if (std::optional<StateId> num_states = ifst.NumStatesIfKnown()) {
+    ofst->ReserveStates(*num_states +
                         (final_action == MAP_NO_SUPERFINAL ? 0 : 1));
   }
   // Adds all states.

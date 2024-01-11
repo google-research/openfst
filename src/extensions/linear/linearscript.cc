@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,22 @@
 #include <fst/extensions/linear/linearscript.h>
 
 #include <cctype>
-#include <cstdio>
+#include <cstddef>
+#include <functional>
 #include <set>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/extensions/linear/linear-fst.h>
 #include <fst/arc.h>
+#include <fst/cache.h>
 #include <fstream>
+#include <fst/float-weight.h>
 #include <fst/script/script-impl.h>
+#include <unordered_map>
 
 DEFINE_string(delimiter, "|",
               "Single non-white-space character delimiter inside sequences of "
@@ -80,7 +88,7 @@ void SplitByWhitespace(const std::string &str, std::vector<std::string> *out) {
 }
 
 int ScanNumClasses(char **models, int models_len) {
-  std::set<std::string> preds;
+  std::set<std::string, std::less<>> preds;
   for (int i = 0; i < models_len; ++i) {
     std::ifstream in(models[i]);
     if (!in) LOG(FATAL) << "Failed to open " << models[i];

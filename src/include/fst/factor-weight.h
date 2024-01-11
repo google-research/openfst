@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,21 @@
 #define FST_FACTOR_WEIGHT_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
 #include <fst/cache.h>
-#include <fst/test-properties.h>
-
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/properties.h>
+#include <fst/string-weight.h>
+#include <fst/union-weight.h>
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {
@@ -241,7 +246,7 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
   using CacheBaseImpl<CacheState<Arc>>::SetStart;
 
   struct Element {
-    Element() {}
+    Element() = default;
 
     Element(StateId s, Weight weight_) : state(s), weight(std::move(weight_)) {}
 

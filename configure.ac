@@ -1,11 +1,15 @@
-AC_INIT([OpenFst],[1.8.2.post1],[help@www.openfst.org])
+AC_INIT([OpenFst],[1.8.3],[help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror subdir-objects])
 AM_PROG_AR
 
 AC_PROG_CXX
 # This library does not throw exceptions, so we do not generate exception
 # handling code. However, users are free to re-enable exception handling.
-CXX="$CXX -std=c++17 -fno-exceptions -Wno-deprecated-declarations"
+CXX="$CXX \
+    -std=c++17 \
+    -fno-exceptions \
+    -Wno-deprecated-declarations \
+    -Wno-missing-template-keyword"
 
 AC_DISABLE_STATIC
 LT_INIT
@@ -105,10 +109,8 @@ AC_ARG_ENABLE([python],
               [enable_python=no])
 AM_CONDITIONAL([HAVE_PYTHON], [test "x$enable_python" != xno])
 if test "x$enable_python" != xno; then
-  # TODO(kbg): This is overly strict; 3.6 should work too. But the macro is
-  # buggy when comparing two-digit and single-digit minor version numbers.
-  AM_PATH_PYTHON(3.10)
-  AX_PYTHON_DEVEL([>= '3.10'])
+  AM_PATH_PYTHON
+  AX_PYTHON_DEVEL(,,AC_MSG_ERROR([Python headers not found]))
 fi
 
 AC_ARG_ENABLE([special],
@@ -161,10 +163,8 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
                  bool FloatEqIsReflexive(T m) {
                    volatile T x = 1.111;
                    x *= m;
-
                    T y = 1.111;
                    y *= m;
-
                    return x == y;
                  }
                ], [
@@ -178,10 +178,10 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
                    return 1;
                  }
                ])],
-              [echo "Float equality is good"],
+              [echo "Checking for float equality... yes"],
               [AC_MSG_FAILURE(m4_normalize([
-                   Test float equality failed!
-                   Compile with -msse -mfpmath=sse if using g++.
+                   "Checking for float equality... no
+                   Compile with -msse -mfpmath=sse if using g++."
               ]))])
 
 AC_CHECK_LIB([dl], dlopen, [DL_LIBS=-ldl])

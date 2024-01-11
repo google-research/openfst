@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ class GenericRegister {
     }
   }
 
-  virtual ~GenericRegister() {}
+  virtual ~GenericRegister() = default;
 
  protected:
   // Override this if you want to be able to load missing definitions from
@@ -120,8 +120,8 @@ class GenericRegister {
 
   virtual const EntryType *LookupEntry(KeyLookupRef key) const {
     MutexLock l(&register_lock_);
-    const auto it = register_table_.find(key);
-    if (it != register_table_.end()) {
+    if (const auto it = register_table_.find(key);
+        it != register_table_.end()) {
       return &it->second;
     } else {
       return nullptr;

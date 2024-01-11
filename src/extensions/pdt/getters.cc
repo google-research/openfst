@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,12 @@
 // finite-state transducer library.
 
 #include <fst/extensions/pdt/getters.h>
+
+#include <string>
+
+#include <fst/extensions/pdt/compose.h>
+#include <fst/extensions/pdt/replace.h>
+#include <string_view>
 
 namespace fst {
 namespace script {

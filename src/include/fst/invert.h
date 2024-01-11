@@ -1,4 +1,4 @@
-// Copyright 2005-2020 Google LLC
+// Copyright 2005-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
 #define FST_INVERT_H_
 
 #include <cstdint>
-
+#include <memory>
 
 #include <fst/arc-map.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
-
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
 
 namespace fst {
 
@@ -35,7 +41,7 @@ struct InvertMapper {
   using FromArc = A;
   using ToArc = A;
 
-  InvertMapper() {}
+  InvertMapper() = default;
 
   ToArc operator()(const FromArc &arc) const {
     return ToArc(arc.olabel, arc.ilabel, arc.weight, arc.nextstate);
