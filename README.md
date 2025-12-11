@@ -1,4 +1,4 @@
-![openfst](logo.png)
+![openfst](logo.svg)
 
 # OpenFst Library
 
