@@ -1,0 +1,24 @@
+# bazel output directories
+bazel-bin
+bazel-heir
+bazel-out
+bazel-testlogs
+
+# default cmake output directory
+build
+
+# python
+venv
+**/dist/
+*.egg-info
+wheelhouse
+.python-version
+
+# vscode
+.vscode/**
+
+# for python files
+__pycache__
+
+# lockfile is updated by automation
+MODULE.bazel.lock
