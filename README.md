@@ -7,7 +7,7 @@
 OpenFst is a library for constructing, combining, optimizing, and searching
 weighted finite-state transducers (FSTs).
 
-Please see https://www.openfst.org/ for extensive documentation.
+Please see https://www.openfst.org for extensive documentation.
 
 ## Citing OpenFst
 
