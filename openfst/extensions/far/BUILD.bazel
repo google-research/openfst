@@ -18,7 +18,6 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
-    "testdata/strings.far",
     "testdata/test1-01.fst",
     "testdata/test1-02.fst",
     "testdata/test1-03.fst",
