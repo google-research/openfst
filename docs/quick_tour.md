@@ -445,96 +445,96 @@ Click on operation name for additional information.
 Operation                                | Usage                                                                                  | Description
 ---------------------------------------- | -------------------------------------------------------------------------------------- | -----------
 [ArcMap](arc_map.md)                     | `ArcMap(&A, mapper);`                                                                  | transforms arcs in an FST
-                                         | `ArcMap(A, &B, mapper);`                                                               |
-                                         | `ArcMapFst<InArc, OutArc, ArcMapper>(A, mapper);`                                      |
-                                         | `fstmap [--delta=$d] [--map=$type] [--weight=$w] in.fst out.fst`                       |
+&nbsp;                                   | `ArcMap(A, &B, mapper);`                                                               |
+&nbsp;                                   | `ArcMapFst<InArc, OutArc, ArcMapper>(A, mapper);`                                      |
+&nbsp;                                   | `fstmap [--delta=$d] [--map=$type] [--weight=$w] in.fst out.fst`                       |
 [ArcSort](arc_sort.md)                   | `ArcSort(&A, compare);`                                                                | sorts arcs using compare function object
-                                         | `ArcSortFst<Arc, Compare>(A, compare);`                                                |
-                                         | `fstarcsort [--sort_type=$type] in.fst out.fst`                                        |
+&nbsp;                                   | `ArcSortFst<Arc, Compare>(A, compare);`                                                |
+&nbsp;                                   | `fstarcsort [--sort_type=$type] in.fst out.fst`                                        |
 [Closure](closure.md)                    | `Closure(&A, type);`                                                                   | A* = {ε} ∪ A ∪ AA ∪ ....
-                                         | `ClosureFst<Arc>(A, type);`                                                            |
-                                         | `fstclosure in.fst out.fst`                                                            |
+&nbsp;                                   | `ClosureFst<Arc>(A, type);`                                                            |
+&nbsp;                                   | `fstclosure in.fst out.fst`                                                            |
 [Compose](compose.md)                    | `Compose(A, B, &C);`                                                                   | composition of binary relations A and B
-                                         | `ComposeFst<Arc>(A, B);`                                                               |
-                                         | `fstcompose a.fst b.fst out.fst`                                                       |
+&nbsp;                                   | `ComposeFst<Arc>(A, B);`                                                               |
+&nbsp;                                   | `fstcompose a.fst b.fst out.fst`                                                       |
 [Concat](concat.md)                      | `Concat(&A, B);`                                                                       | contains the strings in A followed by B
-                                         | `Concat(A, &B);`                                                                       |
-                                         | `ConcatFst<Arc>(A,B);`                                                                 |
-                                         | `fstconcat a.fst b.fst out.fst`                                                        |
+&nbsp;                                   | `Concat(A, &B);`                                                                       |
+&nbsp;                                   | `ConcatFst<Arc>(A,B);`                                                                 |
+&nbsp;                                   | `fstconcat a.fst b.fst out.fst`                                                        |
 [Connect](connect.md)                    | `Connect(&A);`                                                                         | removes states and arcs not on a path from the start to a final state
-                                         | `fstconnect in.fst out.fst`                                                            |
+&nbsp;                                   | `fstconnect in.fst out.fst`                                                            |
 [Decode](encode_decode.md)               | `Decode(&A, encoder);`                                                                 | decodes previously encoded Fst
-                                         | `DecodeFst(A, encoder);`                                                               |
-                                         | `fstencode --decode in.fst encoder out.fst`                                            |
+&nbsp;                                   | `DecodeFst(A, encoder);`                                                               |
+&nbsp;                                   | `fstencode --decode in.fst encoder out.fst`                                            |
 [Determinize](determinize.md)            | `Determinize(A, &B);`                                                                  | creates equiv. FST with no state with two arcs with the same input label
-                                         | `DeterminizeFst<Arc>(A);`                                                              |
-                                         | `fstdeterminize in.fst out.fst`                                                        |
+&nbsp;                                   | `DeterminizeFst<Arc>(A);`                                                              |
+&nbsp;                                   | `fstdeterminize in.fst out.fst`                                                        |
 [Difference](difference.md)              | `Difference(A, B, &C);`                                                                | contains strings in A but not B; B unweighted
-                                         | `DifferenceFst<Arc>(A, B);`                                                            |
-                                         | `fstdifference a.fsa b.dfa out.fsa`                                                    |
+&nbsp;                                   | `DifferenceFst<Arc>(A, B);`                                                            |
+&nbsp;                                   | `fstdifference a.fsa b.dfa out.fsa`                                                    |
 [Disambiguate](disambiguate.md)          | `Disambiguate(A, &B);`                                                                 | creates equiv. FST with no two successful paths with the same input labels
-                                         | `fstdisambiguate in.fst out.fst`                                                       |
+&nbsp;                                   | `fstdisambiguate in.fst out.fst`                                                       |
 [Encode](encode_decode.md)               | `Encode(&A, encoder);`                                                                 | combines input labels with output labels and/or weights into new input labels
-                                         | `EncodeFst(A, encoder);`                                                               |
-                                         | `fstencode [--encode_labels] [--encode_weights] in.fst encoder out.fst`                |
+&nbsp;                                   | `EncodeFst(A, encoder);`                                                               |
+&nbsp;                                   | `fstencode [--encode_labels] [--encode_weights] in.fst encoder out.fst`                |
 [EpsNormalize](eps_normalize.md)         | `EpsNormalize(A, &B, type);`                                                           | creates equiv. FST with any input (output) epsilons at path ends
-                                         | `fstepsnormalize [--eps_norm_output] in.fst out.fst`                                   |
+&nbsp;                                   | `fstepsnormalize [--eps_norm_output] in.fst out.fst`                                   |
 [Equal](equal.md)                        | `Equal(A, B);`                                                                         | determines if FSTs A and B have the same states and transitions with the same numbering and order
-                                         | `fstequal a.fst b.fst`                                                                 |
+&nbsp;                                   | `fstequal a.fst b.fst`                                                                 |
 [Equivalent](equivalent.md)              | `Equivalent(A, B);`                                                                    | determines if acceptors A and B accept the same strings with the same weights
-                                         | `fstequivalent a.dfa b.dfa`                                                            |
+&nbsp;                                   | `fstequivalent a.dfa b.dfa`                                                            |
 [Intersect](intersect.md)                | `Intersect(A, B, &C);`                                                                 | contains strings both in A and B
-                                         | `IntersectFst<Arc>(A, B);`                                                             |
-                                         | `fstintersect a.fsa b.fsa out.fsa`                                                     |
+&nbsp;                                   | `IntersectFst<Arc>(A, B);`                                                             |
+&nbsp;                                   | `fstintersect a.fsa b.fsa out.fsa`                                                     |
 [Invert](invert.md)                      | `Invert(&A);`                                                                          | inverse binary relation; exchanges input and output labels
-                                         | `InvertFst<Arc>(A);`                                                                   |
-                                         | `fstinvert in.fst out.fst`                                                             |
+&nbsp;                                   | `InvertFst<Arc>(A);`                                                                   |
+&nbsp;                                   | `fstinvert in.fst out.fst`                                                             |
 [Isomorphic](isomorphic.md)              | `Isomorphic(A, B)`                                                                     | determines if FSTs A and B have the same states and transitions irrespective of numbering and order
-                                         | `fstisomorphic a.fst b.fst`                                                            |
+&nbsp;                                   | `fstisomorphic a.fst b.fst`                                                            |
 [Minimize](minimize.md)                  | `Minimize(&A);`                                                                        | transforms to equiv. deterministic FSA with fewest states and arcs
-                                         | `Minimize(&A, &B);`                                                                    | transforms to equiv. deterministic FST with fewest states and arcs
-                                         | `fstminimize in.fst out1.fst [out2.fst]`                                               |
+&nbsp;                                   | `Minimize(&A, &B);`                                                                    | transforms to equiv. deterministic FST with fewest states and arcs
+&nbsp;                                   | `fstminimize in.fst out1.fst [out2.fst]`                                               |
 [Project](project.md)                    | `Project(&A, type);`                                                                   | creates acceptor of just the input or output strings
-                                         | `ProjectFst<Arc>(A, type);`                                                            |
-                                         | `fstproject [--project_output] in.fst out.fsa`                                         |
+&nbsp;                                   | `ProjectFst<Arc>(A, type);`                                                            |
+&nbsp;                                   | `fstproject [--project_output] in.fst out.fsa`                                         |
 [Prune](prune.md)                        | `Prune(&A, threshold);`                                                                | removes paths outside a threshold of best path
-                                         | `fstprune [--weight=$w] in.fst out.fst`                                                |
+&nbsp;                                   | `fstprune [--weight=$w] in.fst out.fst`                                                |
 [Push](push.md)                          | `Push<Arc, Type>(&A, flags);`                                                          | creates equiv. FST pushing weights and/or output labels toward initial or final states
-                                         | `fstpush [--push_labels] [--push_weights] [--to_final] in.fst out.fst`                 |
+&nbsp;                                   | `fstpush [--push_labels] [--push_weights] [--to_final] in.fst out.fst`                 |
 [RandEquivalent](rand_equivalent.md)     | `RandEquivalent(A, B, npath);`                                                         | checks if transducers A and B transduce the same randomly-generated string pairs with the same weights
-                                         | `fstequivalent --random [-npath=$n] a.fst b.fst`                                       |
+&nbsp;                                   | `fstequivalent --random [-npath=$n] a.fst b.fst`                                       |
 [RandGen](rand_gen.md)                   | `RandGen(A, &B [, opts]);`                                                             | generates random path(s) through an FST
-                                         | `fstrandgen [--max_length=$l] [--npath=$n] [--seed=$s] [--select=$sel] in.fst out.fst` |
+&nbsp;                                   | `fstrandgen [--max_length=$l] [--npath=$n] [--seed=$s] [--select=$sel] in.fst out.fst` |
 [Relabel](relabel.md)                    | `Relabel(&A, isyms, osyms);`                                                           | changes input and output label IDs
-                                         | `RelabelFst<Arc>(A, isyms, osyms);`                                                    |
-                                         | `fstrelabel [--relabel_isymbols=$isyms] [--relabel_osymbols=$osyms] in.fst out.fst`    |
+&nbsp;                                   | `RelabelFst<Arc>(A, isyms, osyms);`                                                    |
+&nbsp;                                   | `fstrelabel [--relabel_isymbols=$isyms] [--relabel_osymbols=$osyms] in.fst out.fst`    |
 [Replace](replace.md)                    | `Replace(fst_label_pairs, &B, root_label);`                                            | replaces non-terminals with FSTs analogous to an RTN
-                                         | `ReplaceFst<Arc>(fst_label_pairs, root_label);`                                        |
-                                         | `fstreplace root.fst rootlabel [rule1.fst rule1.label ...] out.fst`                    |
+&nbsp;                                   | `ReplaceFst<Arc>(fst_label_pairs, root_label);`                                        |
+&nbsp;                                   | `fstreplace root.fst rootlabel [rule1.fst rule1.label ...] out.fst`                    |
 [Reverse](reverse.md)                    | `Reverse(A, &B);`                                                                      | contains the reversed strings in A
-                                         | `fstreverse a.fst out.fst`                                                             |
+&nbsp;                                   | `fstreverse a.fst out.fst`                                                             |
 [Reweight](reweight.md)                  | `Reweight(&A, potentials, type);`                                                      | creates equiv. FST changing arc weights based on potentials
-                                         | `fstreweight [--to_final] in.fst potentials.txt out.fst`                               |
+&nbsp;                                   | `fstreweight [--to_final] in.fst potentials.txt out.fst`                               |
 [RmEpsilon](rm_epsilon.md)               | `RmEpsilon(&A);`                                                                       | creates equiv. FST with no input/output epsilons
-                                         | `RmEpsilonFst<Arc>(A);`                                                                |
-                                         | `fstrmepsilon in.fst out.fst`                                                          |
+&nbsp;                                   | `RmEpsilonFst<Arc>(A);`                                                                |
+&nbsp;                                   | `fstrmepsilon in.fst out.fst`                                                          |
 [ShortestDistance](shortest_distance.md) | `ShortestDistance(A, &distance);`                                                      | shortest distance from initial state to each state
-                                         | `ShortestDistance(A, &distance, true);`                                                | shortest distance from each state to final states
-                                         | `fstshortestdistance [--reverse] in.fst [distance.txt]`                                |
+&nbsp;                                   | `ShortestDistance(A, &distance, true);`                                                | shortest distance from each state to final states
+&nbsp;                                   | `fstshortestdistance [--reverse] in.fst [distance.txt]`                                |
 [ShortestPath](shortest_path.md)         | `ShortestPath(A, &B, nshortest=1);`                                                    | N-best paths
-                                         | `fstshortestpath [--nshortest=$n] in.fst out.fst`                                      |
+&nbsp;                                   | `fstshortestpath [--nshortest=$n] in.fst out.fst`                                      |
 [StateMap](state_map.md)                 | `StateMap(&A, mapper);`                                                                | transforms states in an FST
-                                         | `StateMap(A, &B, mapper);`                                                             |
-                                         | `StateMapFst<InArc, OutArc, StateMapper>(A, mapper);`                                  |
-                                         | `fstmap [--map=$type] in.fst out.fst`                                                  |
+&nbsp;                                   | `StateMap(A, &B, mapper);`                                                             |
+&nbsp;                                   | `StateMapFst<InArc, OutArc, StateMapper>(A, mapper);`                                  |
+&nbsp;                                   | `fstmap [--map=$type] in.fst out.fst`                                                  |
 [Synchronize](synchronize.md)            | `Synchronize(A, &B);`                                                                  | synchronizes an FST
-                                         | `SynchronizeFst<Arc>(A);`                                                              |
-                                         | `fstsynchronize in.fst out.fst`                                                        |
+&nbsp;                                   | `SynchronizeFst<Arc>(A);`                                                              |
+&nbsp;                                   | `fstsynchronize in.fst out.fst`                                                        |
 [TopSort](top_sort.md)                   | `TopSort(&A);`                                                                         | sorts an acyclic FST so that all transitions are from lower to higher state IDs
-                                         | `fsttopsort in.fst out.fst`                                                            |
+&nbsp;                                   | `fsttopsort in.fst out.fst`                                                            |
 [Union](union.md)                        | `Union(&A, B);`                                                                        | contains strings in A or B
-                                         | `UnionFst<Arc>(A, B);`                                                                 |
-                                         | `fstunion a.fst b.fst out.fst`                                                         |
+&nbsp;                                   | `UnionFst<Arc>(A, B);`                                                                 |
+&nbsp;                                   | `fstunion a.fst b.fst out.fst`                                                         |
 [Verify](verify.md)                      | `Verify(A);`                                                                           | tests sanity of FST's contents
 
 ## FST Weights {#weights}
