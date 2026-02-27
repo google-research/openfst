@@ -97,7 +97,7 @@ where,
     *not* be empty.
 *   The second `LIST` is a list of possible output symbols. When the list is
     empty, this field has a special meaning that the input can pair with all the
-    possible output symbols. The set of all the possible symbols is the union
+    possible output symbols. The set of "all the possible symbols" is the union
     of all output symbols appearing in the third field of all the vocabulary
     records and in the output n-gram of all the feature weights.
 
@@ -122,9 +122,9 @@ non-negative integer which indicates the size of look-ahead window of all the
 features in this file. The look-ahead window is the number of input symbols
 after the current input position that the decoder needs to know in order to
 evaluate feature values for the current input position. For example, a feature
-template current word, next word, current tag has a look-ahead window of 1;
-the emission feature in HMM current word, current tag has a look-ahead window
-of 0; the transition feature in HMM previous tag, current tag also has a
+template "current word, next word, current tag" has a look-ahead window of 1;
+the emission feature in HMM "current word, current tag" has a look-ahead window
+of 0; the transition feature in HMM "previous tag, current tag" also has a
 look-ahead window of 0. Note the look-ahead window only applies to the input; on
 the output side there is never look ahead. Look-ahead shall not be used
 arbitrarily because they incur a rather significant performance penalty.
@@ -154,7 +154,7 @@ where
 *   The number is the weight of this feature, in library-default weight type.
 
 For example, below is a model file of features from the feature template
-current word, next word, current tag, using the vocabulary from the previous
+"current word, next word, current tag", using the vocabulary from the previous
 example,
 
 ```txt
@@ -164,7 +164,8 @@ example,
 0:something|0:<unk>   N   -0.75
 ```
 
-Heres another example with transition features (`NULL` is used as the boundary)
+Here is another example with transition features (`NULL` is used as the
+boundary)
 
 ```txt
 0
