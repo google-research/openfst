@@ -31,7 +31,7 @@ env:
 
 jobs:
     build-and-test-x64-linux-bazel:
-      name: Build and Test (x64 Linux)
+      name: Build and Test (x64 Linux, Bazel)
       runs-on: ubuntu-latest
       env:
         BAZEL: bazelisk-linux-amd64
