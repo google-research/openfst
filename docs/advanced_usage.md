@@ -325,19 +325,19 @@ table to allow customization such as described
 OpenFst has several global options in the library proper that most users can
 ignore, leaving them with their default values:
 
-Option                             | Type   | Default | Description
----------------------------------- | ------ | ------- | -----------
-`FLAGS_fst_compat_symbols`         | bool   | true    | Require symbol tables to match when appropriate
-`FLAGS_fst_default_cache_gc`       | bool   | true    | Enable garbage collection of cached Fsts
-`FLAGS_fst_default_cache_gc_limit` | int64  | 1048576 | Byte size that triggers garbage collection of cached Fsts
-`FLAGS_fst_error_fatal`            | bool   | true    | FST errors are fatal; o.w. return objects flagged as bad: e.g., FSTs - `kError` prop. true, FST weights - not a `Member()`
-`FLAGS_fst_field_separator`        | string | " \t"   | Set of characters used as a separator between printed fields
-`FLAGS_fst_weight_parentheses`     | string | ""      | Characters enclosing the first weight of a printed composite weight (and derived classes) to ensure proper I/O of nested composite weights; must have size 0 (none) or 2 (open and close parenthesis)
-`FLAGS_fst_weight_separator`       | string | ","     | Character separator between printed composite weights; must be a single character
-`FLAGS_fst_verify_properties`      | bool   | false   | Verify Fst properties are correctly set when queried
+Option                             | Type     | Default   | Description
+---------------------------------- | -------- | --------- | -----------
+`FLAGS_fst_compat_symbols`         | `bool`   | `true`    | Require symbol tables to match when appropriate
+`FLAGS_fst_default_cache_gc`       | `bool`   | `true`    | Enable garbage collection of cached Fsts
+`FLAGS_fst_default_cache_gc_limit` | `int64`  | `1048576` | Byte size that triggers garbage collection of cached Fsts
+`FLAGS_fst_error_fatal`            | `bool`   | `true`    | FST errors are fatal; o.w. return objects flagged as bad: e.g., FSTs - `kError` prop. true, FST weights - not a `Member()`
+`FLAGS_fst_field_separator`        | `string` | `" \t"`   | Set of characters used as a separator between printed fields
+`FLAGS_fst_weight_parentheses`     | `string` | `""`      | Characters enclosing the first weight of a printed composite weight (and derived classes) to ensure proper I/O of nested composite weights; must have size 0 (none) or 2 (open and close parenthesis)
+`FLAGS_fst_weight_separator`       | `string` | `","`     | Character separator between printed composite weights; must be a single character
+`FLAGS_fst_verify_properties`      | `bool`   | `false`   | Verify Fst properties are correctly set when queried
 
 The first ensures the arguments of binary FST operations (e.g.
-[composition](compose.md)) have compatible symbol tables (e..g output symbol
+[composition](compose.md)) have compatible symbol tables (e.g. output symbol
 table matches input symbol table for composition). The second two are used to
 control the [caching](advanced_usage.md#caching) of expanded state and arc
 information found in most [delayed Fst classes](quick_tour.md); the default
