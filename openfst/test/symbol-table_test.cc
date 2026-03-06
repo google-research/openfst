@@ -46,17 +46,10 @@ class SymbolTableTest : public testing::Test {
  protected:
   std::string test_tmpdir_;
   void SetUp() override {
-#ifdef _WIN32
-    const std::string path = "openfst/test/testdata/symbol-table/";
-    std::vector<std::string> existing_tmp_dirs;
-    GetExistingTempDirectories(&existing_tmp_dirs);
-    test_tmpdir_ = existing_tmp_dirs.front();
-#else
     const std::string path = JoinPath(
         std::string("."),
         "openfst/test/testdata/symbol-table");
     test_tmpdir_ = ::testing::TempDir();
-#endif
     const std::string phoneset_name = JoinPath(path, "phones.map");
 
     pphoneset_.reset(SymbolTable::ReadText(phoneset_name));
