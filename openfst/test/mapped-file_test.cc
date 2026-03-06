@@ -35,6 +35,10 @@
 #include "openfst/compat/compat_memory.h"
 #include "openfst/lib/file-util.h"
 
+#if defined(_WIN32)
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#endif  // _WIN32
 #if !defined(_WIN32) && !defined(O_TMPFILE)
 #include "openfst/compat/file_path.h"
 #endif  // _WIN32 || O_TMPFILE
@@ -53,7 +57,7 @@ ScopedFd OpenReadOnly(const std::string& filename) {
   return ScopedFd(::_open(filename.c_str(), _O_RDONLY));
 #else
   return ScopedFd(::open(filename.c_str(), O_RDONLY));
-#endif
+#endif  // _WIN32
 }
 
 // TODO: We can make this implementatio cleaner.

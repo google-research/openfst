@@ -2157,6 +2157,7 @@ cc_test(
         "//openfst/lib:util",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",  # build_cleaner: keep
         "@com_google_googletest//:gtest_main",
     ],
 )
