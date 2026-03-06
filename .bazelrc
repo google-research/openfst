@@ -59,6 +59,30 @@ build:macos --cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-mmacos-version-min=10.15
 
 # ------------------------------------------------------------------------------
+# Options for Windows.
+# ------------------------------------------------------------------------------
+
+build:windows --cxxopt=/std:c++17
+build:windows --host_cxxopt=/std:c++17
+
+# Make sure to include as little of <windows.h> as possible.
+build:windows --copt=-DWIN32_LEAN_AND_MEAN
+build:windows --host_copt=-DWIN32_LEAN_AND_MEAN
+build:windows --copt=-DNOGDI
+build:windows --host_copt=-DNOGDI
+
+# https://learn.microsoft.com/en-us/cpp/c-runtime-library/math-constants?view=msvc-170
+build:windows --copt=/D_USE_MATH_DEFINES
+build:windows --host_copt=/D_USE_MATH_DEFINES
+
+# https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
+# otherwise, there will be some compiling error due to preprocessing.
+build:windows --copt=/Zc:preprocessor
+
+# Increase linker stack size.
+build:windows --linkopt=/STACK:8388608
+
+# ------------------------------------------------------------------------------
 # Options for --config=gcc, gcc_old, llvm, and llvm_old.
 # ------------------------------------------------------------------------------
 # NOTE: GCC toolchains are broken with Bazel 9 until
