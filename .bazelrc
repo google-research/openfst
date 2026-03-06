@@ -15,6 +15,12 @@
 # Enable logging rc options.
 common --announce_rc
 
+# By default, detect the platform and use the platform-specific options below.
+build --enable_platform_specific_config
+
+# Disable C++ exceptions.
+build --features=-exceptions
+
 # ------------------------------------------------------------------------------
 # Compilation-mode options.
 # ------------------------------------------------------------------------------
@@ -23,30 +29,25 @@ common --announce_rc
 build:dev --copt=-O1
 
 # ------------------------------------------------------------------------------
-# Per-plaform options.
+# Per-plaform options for toolchains using GCC or clang.
 # ------------------------------------------------------------------------------
 
-# By default, detect the platform and use the platform-specific options below.
-build --enable_platform_specific_config
-
-# Flags common to all the platforms.
-build --cxxopt=-std=c++17
-build --cxxopt=-Wno-sign-compare
-build --cxxopt=-fno-exceptions
-build --cxxopt=-Wno-deprecated-declarations
+build:gcc_clang --cxxopt=-std=c++17
+build:gcc_clang --cxxopt=-Wno-sign-compare
+build:gcc_clang --cxxopt=-Wno-deprecated-declarations
 # TODO: b/476056201 - This warning is enabled in Google, so unclear why it is
 # failing here.  Investigate, fix, and re-enable.
-build --cxxopt=-Wno-overloaded-virtual
+build:gcc_clang --cxxopt=-Wno-overloaded-virtual
 
 # Temporarily disabled warnings that we would like to turn on.
-build --cxxopt=-Wno-defaulted-function-deleted
-build --cxxopt=-Wno-nullability-completeness
+build:gcc_clang --cxxopt=-Wno-defaulted-function-deleted
+build:gcc_clang --cxxopt=-Wno-nullability-completeness
 
 # ------------------------------------------------------------------------------
 # Options for Linux.
 # ------------------------------------------------------------------------------
 
-# No Linux-specific flags here yet.
+build:linux --config=gcc_clang
 
 # ------------------------------------------------------------------------------
 # Options for macOS.
@@ -54,6 +55,8 @@ build --cxxopt=-Wno-nullability-completeness
 
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
+
+build:macos --config=gcc_clang
 build:macos --features=-supports_dynamic_linker
 build:macos --cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-mmacos-version-min=10.15
@@ -64,6 +67,13 @@ build:macos --cxxopt=-mmacos-version-min=10.15
 
 build:windows --cxxopt=/std:c++17
 build:windows --host_cxxopt=/std:c++17
+
+# Signed/unsigned mismatch.
+build:windows --cxxopt=/wd4018
+build:windows --cxxopt=/wd4389
+
+# Suppress deprecated declaration warnings.
+build:windows --cxxopt=/wd4996
 
 # Make sure to include as little of <windows.h> as possible.
 build:windows --copt=-DWIN32_LEAN_AND_MEAN

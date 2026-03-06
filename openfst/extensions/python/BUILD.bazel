@@ -229,8 +229,9 @@ py_test(
     size = "small",
     srcs = ["pywrapfst_test.py"],
     data = [":testdata"],
+    legacy_create_init = False,
     deps = [
-        ":pywrapfst",
+        "//openfst:pywrapfst",
         "@com_google_absl_py//absl/testing:absltest",
         "@com_google_absl_py//absl/testing:parameterized",
     ],

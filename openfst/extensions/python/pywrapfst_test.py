@@ -25,7 +25,7 @@ import unittest
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import openfst.extensions.python.pywrapfst as fst
+from openfst import pywrapfst as fst
 
 
 class PywrapFstTest(parameterized.TestCase):
