@@ -12,22 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_license//rules:license.bzl", "license")
-load("@rules_python//python:py_library.bzl", "py_library")
+"""OpenFst Python extensions package."""
 
-package(default_visibility = ["//visibility:public"])
-
-license(
-    name = "license",
-    package_name = "openfst",
-)
-
-licenses(["notice"])
-
-exports_files(["LICENSE"])
-
-py_library(
-    name = "pywrapfst",
-    srcs = ["__init__.py"],
-    deps = ["//openfst/extensions/python:pywrapfst"],
-)
+from .extensions.python import pywrapfst

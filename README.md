@@ -141,7 +141,19 @@ Example usage: `bash cmake -S . -B build -DOPENFST_ENABLE_FAR=ON
 
 ### Python with Bazel
 
-Not yet supported.
+To build and test the Python wrapper (`pywrapfst`) run
+
+```bash
+bazel test -c opt openfst/extensions/python/...
+```
+
+See the corresponding unit test `pywrapfst_test.py` for a detailed API example.
+Access the API by depending on `//openfst:pywrapfst` and import the wrappers
+like so:
+
+```python
+from openfst import pywrapfst
+```
 
 ### Python with CMake
 
@@ -162,7 +174,7 @@ The Python extension requires OpenFst to be built as **shared libraries**.
 
 ```bash
 # Configure with shared libraries enabled
-cmake -S . -B build -DOPENFST_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+cmake -S . -B build -DOPENFST_ENABLE_PYTHON=ON -DOPENFST_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
 # Build the project
 cmake --build build -j$(nproc)
