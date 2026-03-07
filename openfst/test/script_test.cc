@@ -15,7 +15,7 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Tests of the scripting autoerface.
+// Tests of the scripting interface.
 
 #include <array>
 #include <cstdint>
@@ -72,6 +72,11 @@ class ClassTest : public testing::Test {
       {"tropical", "log", "log64"}};
   static constexpr std::array<uint32_t, 3> kEncodeFlags = {
       {kEncodeLabels, kEncodeWeights, kEncodeLabels | kEncodeWeights}};
+
+  void SetUp() override {
+    // Makes FSTERROR death tests actually fatal.
+    absl::SetFlag(&FLAGS_fst_error_fatal, true);
+  }
 };
 
 // Test the number-of-states accessors,
@@ -288,11 +293,3 @@ TEST_F(ClassTest, EncodeMapperClassOperations) {
 
 }  // namespace
 }  // namespace fst
-
-int main(int argc, char** argv) {
-  // Makes FSTERROR death tests actually fatal.
-  absl::SetFlag(&FLAGS_fst_error_fatal, true);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
