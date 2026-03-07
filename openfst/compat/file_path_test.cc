@@ -50,5 +50,12 @@ TEST(FilePathTest, CheckJoinPathThreeComponents) {
   EXPECT_EQ("hello/world/test", JoinPath("hello", "world", "test"));
 }
 
+TEST(FilePathTest, CheckBasename) {
+  EXPECT_EQ("", Basename(""));
+  EXPECT_EQ("", Basename("/"));
+  EXPECT_EQ("hello", Basename("hello"));
+  EXPECT_EQ("hello", Basename("/a/b/c/hello"));
+}
+
 }  // namespace
 }  // namespace fst

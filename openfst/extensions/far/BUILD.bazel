@@ -76,6 +76,7 @@ fst_cc_library(
     deps = [
         ":sttable",
         "//openfst/compat:compat_memory",
+        "//openfst/compat:file_path",
         "//openfst/lib:file-util",
         "//openfst/lib:lib_lite",
         "//openfst/lib:register",
@@ -111,6 +112,7 @@ cc_library(
     deps = [
         ":lib",
         "//openfst/compat:compat_memory",
+        "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
         "//openfst/lib:symbol-table",

@@ -20,17 +20,13 @@
 #ifndef OPENFST_EXTENSIONS_FAR_CREATE_H_
 #define OPENFST_EXTENSIONS_FAR_CREATE_H_
 
-#include <libgen.h>
-
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <memory>
 #include <sstream>
 #include <string>
 
-#include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
+#include "openfst/compat/file_path.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far.h"
 #include "openfst/lib/fst.h"
@@ -52,10 +48,7 @@ void Create(absl::Span<const std::string> sources, FarWriter<Arc>& writer,
       keybuf << i + 1;
       key = keybuf.str();
     } else {
-      auto source =
-          make_unique_for_overwrite<char[]>(sources[i].size() + 1);
-      strcpy(source.get(), sources[i].c_str());
-      key = basename(source.get());
+      key = Basename(sources[i]);
     }
     writer.Add(key_prefix + key + key_suffix, *ifst);
   }

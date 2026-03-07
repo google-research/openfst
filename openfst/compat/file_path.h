@@ -32,6 +32,10 @@ std::string JoinPath(std::string_view path1, std::string_view path2,
 std::string JoinPathRespectAbsolute(std::string_view path1,
                                     std::string_view path2);
 
+// Returns the part of the path after the final "/".  If there is no
+// "/" in the path, the result is the same as the input.
+std::string_view Basename(std::string_view path);
+
 }  // namespace fst
 
 #endif  // OPENFST_COMPAT_FILE_PATH_H_

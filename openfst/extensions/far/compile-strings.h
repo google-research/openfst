@@ -18,21 +18,17 @@
 #ifndef OPENFST_EXTENSIONS_FAR_COMPILE_STRINGS_H_
 #define OPENFST_EXTENSIONS_FAR_COMPILE_STRINGS_H_
 
-#include <libgen.h>
-
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <iostream>
 #include <istream>
 #include <memory>
 #include <sstream>
 #include <string>
 
+#include "openfst/compat/file_path.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far.h"
@@ -247,10 +243,7 @@ void CompileStrings(absl::Span<const std::string> sources,
       if (generate_keys > 0) {
         key = keybuf.str();
       } else {
-        auto source =
-            make_unique_for_overwrite<char[]>(in_source.size() + 1);
-        strcpy(source.get(), in_source.c_str());
-        key = basename(source.get());
+        key = Basename(in_source);
         if (entry_type != FarEntryType::FILE) {
           key += "-";
           key += keybuf.str();
