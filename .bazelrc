@@ -66,7 +66,11 @@ build:macos --cxxopt=-mmacos-version-min=10.15
 # ------------------------------------------------------------------------------
 
 build:windows --cxxopt=/std:c++17
-build:windows --host_cxxopt=/std:c++17
+
+# Force compiler to (1) read the sources in UTF8 instead of Windows system's
+# default local code page and (2) encode all string literals as UTF8 during
+# execution.
+build:windows --cxxopt=-utf-8
 
 # Signed/unsigned mismatch.
 build:windows --cxxopt=/wd4018
@@ -77,13 +81,10 @@ build:windows --cxxopt=/wd4996
 
 # Make sure to include as little of <windows.h> as possible.
 build:windows --copt=-DWIN32_LEAN_AND_MEAN
-build:windows --host_copt=-DWIN32_LEAN_AND_MEAN
 build:windows --copt=-DNOGDI
-build:windows --host_copt=-DNOGDI
 
 # https://learn.microsoft.com/en-us/cpp/c-runtime-library/math-constants?view=msvc-170
 build:windows --copt=/D_USE_MATH_DEFINES
-build:windows --host_copt=/D_USE_MATH_DEFINES
 
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 # otherwise, there will be some compiling error due to preprocessing.
