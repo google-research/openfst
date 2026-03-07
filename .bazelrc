@@ -97,6 +97,9 @@ build:windows --linkopt=/STACK:8388608
 # otherwise.
 build:windows --enable_runfiles
 
+# Enable symlinks, per https://bazel.build/configure/windows#symlink.
+startup --windows_enable_symlinks
+
 # ------------------------------------------------------------------------------
 # Options for --config=gcc, gcc_old, llvm, and llvm_old.
 # ------------------------------------------------------------------------------
