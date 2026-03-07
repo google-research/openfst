@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/random/random.h"
 #include "benchmark/benchmark.h"
 #include "openfst/extensions/ngram/ngram-fst.h"
 #include "openfst/lib/arc.h"
@@ -49,12 +50,12 @@ std::string Testfile() {
 }
 
 std::vector<std::vector<StdArc::Label>> GetWords(size_t n, size_t sigma) {
-  unsigned int seed = 100;
+  absl::BitGen bitgen;
   std::vector<std::vector<StdArc::Label>> output;
   for (int i = 0; i < n; i++) {
     std::vector<StdArc::Label> tempvector;
-    for (int j = 0; j < rand_r(&seed) % 12 + 1; j++) {
-      tempvector.push_back(rand_r(&seed) % sigma + 1);
+    for (int j = 0; j < absl::Uniform(bitgen, 0, RAND_MAX) % 12 + 1; j++) {
+      tempvector.push_back(absl::Uniform(bitgen, 0, RAND_MAX) % sigma + 1);
     }
     output.push_back(tempvector);
   }
