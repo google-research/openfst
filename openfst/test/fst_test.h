@@ -24,6 +24,7 @@
 #include <memory>
 #include <string>
 
+#include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/base/casts.h"
 #include "absl/memory/memory.h"
@@ -215,8 +216,10 @@ class FstTester {
   // This verifies the read/write methods.
   template <class G>
   void TestIO(const G& fst) const {
-    const std::string filename = ::testing::TempDir() + "/test.fst";
-    const std::string aligned = ::testing::TempDir() + "/aligned.fst";
+    const std::string filename =
+        JoinPath(::testing::TempDir(), "test.fst");
+    const std::string aligned =
+        JoinPath(::testing::TempDir(), "aligned.fst");
     {
       // write/read
       ASSERT_TRUE(fst.Write(filename));

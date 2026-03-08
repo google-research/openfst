@@ -273,6 +273,7 @@ cc_library(
     hdrs = ["fst_test.h"],
     deps = [
         "//openfst/compat:compat_memory",
+        "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
         "@com_google_absl//absl/base",
