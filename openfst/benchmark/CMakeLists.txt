@@ -69,10 +69,4 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
       set_target_properties(${BENCHMARK_TARGET} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
   endif()
-
-  add_test(
-    NAME ${BENCHMARK_TARGET}
-    COMMAND ${BENCHMARK_TARGET}
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  )
 endforeach()
