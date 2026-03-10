@@ -36,11 +36,10 @@ cc_test(
     linkstatic = True,
     deps = [
         ":categorial-weight",
-        "//openfst/compat:init",
+        "//base",
         "//openfst/lib:weight",
         "//openfst/test:weight_tester",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
         "@com_google_googletest//:gtest",

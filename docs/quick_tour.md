@@ -1,7 +1,5 @@
 # OpenFst Quick Tour
 
-[TOC]
-
 Below is a brief tutorial on the OpenFst library. After reading this, you may
 wish to browse the [Advanced Usage](advanced_usage.md) topic for greater detail,
 read the library [Conventions](conventions.md) topic to ensure correct usage and

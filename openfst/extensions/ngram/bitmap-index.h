@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "openfst/compat/compat.h"
+#include "base/port.h"
 #include "absl/base/config.h"
 #include "absl/base/optimization.h"
 #include "absl/log/check.h"
@@ -218,7 +218,7 @@ class BitmapIndex {
       // This load is unaligned for `k < 4` and aligned otherwise.  The
       // address is always within `RankIndexEntry`.
       uint32_t relative_ones_counts_8x4 =
-          UnalignedLoad<uint32_t>(&relative_ones_counts_[k >> 2][0] - 1);
+          base::UnalignedLoad<uint32_t>(&relative_ones_counts_[k >> 2][0] - 1);
 #ifdef ABSL_IS_LITTLE_ENDIAN
       // Clear out the garbage byte.
       relative_ones_counts_8x4 &= ~0xFF;

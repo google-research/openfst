@@ -1,7 +1,5 @@
 # OpenFst Advanced Usage
 
-[TOC]
-
 Below are a variety of topics covered in greater depth or of more specialized
 interest than found in the Quick Tour. Reading the [Quick Tour](quick_tour.md)
 first is recommended.

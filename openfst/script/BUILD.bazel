@@ -202,6 +202,7 @@ fst_cc_library(
     hdrs = ["info-impl.h"],
     deps = [
         ":arcfilter-impl",
+        "//base",
         "//openfst/lib",
         "//openfst/lib:util",
         "@com_google_absl//absl/strings",

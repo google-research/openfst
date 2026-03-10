@@ -312,6 +312,7 @@ fst_cc_library(
         ":lib_lite",
         ":symbol-table",
         ":util",
+        "//base",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
@@ -353,6 +354,7 @@ fst_cc_library(
     ],
     deps = [
         ":file-util",
+        "//base",
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_map",

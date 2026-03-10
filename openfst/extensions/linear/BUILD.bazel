@@ -66,6 +66,7 @@ cc_library(
     hdrs = ["linear-fst-data.h"],
     deps = [
         ":trie",
+        "//base",
         "//openfst/lib",
         "//openfst/lib:util",
         "@com_google_absl//absl/log",
@@ -134,6 +135,7 @@ cc_library(
         ":linear-fst-data",
         ":linear-fst-data-builder",
         ":linear-fst-header",
+        "//base",
         "//openfst/lib",
         "//openfst/lib:file-util",
         "//openfst/lib:symbol-table",
@@ -155,9 +157,8 @@ cc_library(
     deps = [
         ":linear-fst",
         ":script",
-        "//openfst/compat:init",
+        "//base",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:flags",
     ],
 )
@@ -168,10 +169,9 @@ cc_library(
     deps = [
         ":linear-fst",
         ":loglinear-apply",
-        "//openfst/compat:init",
+        "//base",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
     ],

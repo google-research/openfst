@@ -974,13 +974,12 @@ cc_test(
     data = [],
     linkstatic = True,
     deps = [
-        "//openfst/compat:init",
+        "//base",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1145,6 +1144,7 @@ cc_test(
     srcs = ["interval-set_test.cc"],
     linkstatic = True,
     deps = [
+        "//base",
         "//openfst/lib:interval-set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
@@ -2102,10 +2102,9 @@ cc_test(
     srcs = ["union-find_test.cc"],
     linkstatic = True,
     deps = [
-        "//openfst/compat:init",
+        "//base",
         "//openfst/lib:union-find",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:flags",
         "@com_google_benchmark//:benchmark",
         "@com_google_googletest//:gtest",
@@ -2210,7 +2209,7 @@ cc_test(
     deps = [
         ":compactors",
         ":fst_test-hdr",
-        "//openfst/compat:init",
+        "//base",
         "//openfst/extensions/lookahead:arc_lookahead-fst",
         "//openfst/extensions/lookahead:ilabel_lookahead-fst",
         "//openfst/extensions/lookahead:olabel_lookahead-fst",
@@ -2219,7 +2218,6 @@ cc_test(
         "//openfst/lib:register",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
     ],
@@ -2231,6 +2229,7 @@ cc_test(
     srcs = ["script_test.cc"],
     linkstatic = True,
     deps = [
+        "//base",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
@@ -2276,10 +2275,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":weight_tester",
-        "//openfst/compat:init",
+        "//base",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:flags",
         "@com_google_googletest//:gtest",
     ],
@@ -2352,8 +2350,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":my_register",
-        "//openfst/compat:init",
-        "@com_google_absl//absl/flags:usage",
+        "//base",
     ],
 )
 
