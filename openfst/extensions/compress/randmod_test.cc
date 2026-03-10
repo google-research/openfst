@@ -103,6 +103,5 @@ int main(int argc, char** argv) {
                                             : time(nullptr);
   srand(seed);
   LOG(INFO) << "Seed = " << seed;
-  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

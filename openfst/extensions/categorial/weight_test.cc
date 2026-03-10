@@ -63,6 +63,5 @@ int main(int argc, char **argv) {
                                             : time(nullptr);
   std::srand(seed);
   LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
-  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

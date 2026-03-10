@@ -117,6 +117,9 @@ startup --windows_enable_symlinks
 # is merged.
 build:gcc --extra_toolchains=@gcc_toolchain_cur//:all
 build:gcc_old --extra_toolchains=@gcc_toolchain_old//:all
+# If `--config=llvm` fails with `libxml2.so.2` errors, install `libxml2`
+# manually using `apt install libxml2` or similar.
+# https://github.com/bazel-contrib/toolchains_llvm/issues/657#issuecomment-3786505615
 build:llvm --extra_toolchains=@llvm_toolchain_cur//:all
 build:llvm --linkopt=-fuse-ld=lld
 build:llvm_old --extra_toolchains=@llvm_toolchain_old//:all
