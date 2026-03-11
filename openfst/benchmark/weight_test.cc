@@ -17,9 +17,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
-#include "absl/log/flags.h"
 #include "benchmark/benchmark.h"
 #include "openfst/lib/set-weight.h"
 #include "openfst/lib/signed-log-weight.h"
@@ -75,11 +73,3 @@ BENCHMARK(BM_SignedLogWeight)->Range(1, 1 << 21);
 
 }  // namespace
 }  // namespace fst
-
-int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
-  LOG_TRAIT(fst::UISetWeight, std::is_nothrow_move_constructible_v);
-  LOG_TRAIT(fst::SignedLog64Weight, std::is_nothrow_move_constructible_v);
-  benchmark::RunSpecifiedBenchmarks();
-  return 0;
-}

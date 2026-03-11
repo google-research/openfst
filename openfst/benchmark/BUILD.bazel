@@ -16,9 +16,20 @@
 #
 # Run with --config=benchmark.
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "benchmark_main",
+    srcs = ["benchmain_main.cc"],
+    deps = [
+        "//base",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
 
 cc_binary(
     name = "symbol-table_test",
@@ -26,6 +37,7 @@ cc_binary(
     srcs = ["symbol-table_test.cc"],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:compat_memory",
         "//openfst/lib:symbol-table",
@@ -48,6 +60,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/extensions/ngram:ngram-fst",
@@ -75,6 +88,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/extensions/ngram:ngram-fst",
@@ -103,6 +117,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -128,6 +143,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -151,6 +167,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -171,6 +188,7 @@ cc_binary(
     data = [],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/lib",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -192,6 +210,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -214,6 +233,7 @@ cc_binary(
     ],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -234,6 +254,7 @@ cc_binary(
     data = ["testdata/serialize.fst"],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -252,6 +273,7 @@ cc_binary(
     srcs = ["weight_test.cc"],
     linkstatic = True,
     deps = [
+        ":benchmark_main",
         "//base",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",

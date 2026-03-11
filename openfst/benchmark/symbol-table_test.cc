@@ -22,10 +22,8 @@
 #include <string>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/log/flags.h"
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
 #include "absl/strings/str_cat.h"
@@ -190,9 +188,3 @@ BENCHMARK(BM_LabeledCheckSum)->ThreadRange(1, 64);
 
 }  // namespace
 }  // namespace fst
-
-int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
-  benchmark::RunSpecifiedBenchmarks();
-  return 0;
-}

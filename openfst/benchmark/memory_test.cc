@@ -26,11 +26,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/log/flags.h"
 #include "benchmark/benchmark.h"
 
 namespace fst {
@@ -134,9 +132,3 @@ BENCHMARK_TEMPLATE(BM_AssocContainer, PoolAllocNodeHashSet);
 
 }  // namespace
 }  // namespace fst
-
-int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
-  benchmark::RunSpecifiedBenchmarks();
-  return 0;
-}

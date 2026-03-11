@@ -23,13 +23,11 @@
 #include <memory>
 #include <string>
 
-#include "openfst/compat/init.h"
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
-#include "absl/log/flags.h"
 #include "benchmark/benchmark.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/expanded-fst.h"
@@ -118,9 +116,3 @@ BENCHMARK(BM_DeterminizeFstTrans);
 
 }  // namespace
 }  // namespace fst
-
-int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
-  benchmark::RunSpecifiedBenchmarks();
-  return 0;
-}
