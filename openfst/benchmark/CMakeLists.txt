@@ -36,7 +36,7 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
   # Since many benchmarks share filenames with the tests in openfst/test
   # (e.g., compact_test.cc), we append a suffix to the target name.
   set(BENCHMARK_TARGET "${BENCHMARK_SRC}_benchmark")
-  add_executable(${BENCHMARK_TARGET} ${BENCHMARK_SRC}.cc)
+  add_executable(${BENCHMARK_TARGET} ${BENCHMARK_SRC}.cc benchmain_main.cc)
 
   # Set the output filename to match the source name (e.g., 'compact_test')
   # so the binary on disk does not have the suffix.
