@@ -27,7 +27,6 @@
 #include <set>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -184,7 +183,7 @@ BENCHMARK(BM_UnionFind)->Range(8, 1 << 16);
 }  // namespace
 
 int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   int error = RUN_ALL_TESTS();
   benchmark::RunSpecifiedBenchmarks();
   return error;

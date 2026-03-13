@@ -21,7 +21,6 @@
 #include <memory>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "openfst/lib/arc-map.h"
@@ -528,6 +527,6 @@ TEST_F(ErrorTest, UnionErrorTest) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_error_fatal, false);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

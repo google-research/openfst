@@ -25,7 +25,6 @@
 #include <memory>
 #include <string>
 
-#include "openfst/compat/init.h"
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
@@ -98,7 +97,7 @@ TEST_F(RandModTest, UnweightedRandMod) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
                                             : time(nullptr);
   srand(seed);

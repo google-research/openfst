@@ -23,7 +23,6 @@
 #include <iostream>
 #include <ostream>
 
-#include "openfst/compat/init.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -58,7 +57,7 @@ TEST(CategorialWeight, RightTest) {
 }  // namespace fst
 
 int main(int argc, char **argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
                                             : time(nullptr);
   std::srand(seed);

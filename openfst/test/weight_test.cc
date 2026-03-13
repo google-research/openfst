@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <utility>
 
-#include "openfst/compat/init.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -514,7 +513,7 @@ void RunTest() {
 }  // namespace fst
 
 int main(int argc, char** argv) {
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   fst::RunTest();
   return 0;
 }

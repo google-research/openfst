@@ -25,7 +25,7 @@
 #include <ostream>
 #include <string>
 
-#include "openfst/compat/init.h"
+#include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
@@ -257,6 +257,6 @@ void RunTest() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   fst::RunTest();
 }

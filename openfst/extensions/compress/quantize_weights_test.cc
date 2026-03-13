@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "openfst/compat/init.h"
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
@@ -173,6 +172,6 @@ TEST_F(QuantizeWeightsTest, QuantizeWeightsZeroTest) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

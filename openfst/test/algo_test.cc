@@ -22,7 +22,7 @@
 #include <cstdint>
 #include <random>
 
-#include "openfst/compat/init.h"
+#include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
@@ -51,7 +51,7 @@ using ::fst::WeightGenerate;
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
-  fst::InitOpenFst(argv[0], &argc, &argv, true);
+  ::testing::InitGoogleTest(&argc, argv);
 
   static const int kCacheGcLimit = 20;
 
