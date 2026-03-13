@@ -25,7 +25,9 @@
 #include <arm_neon.h>
 #endif  // __aarch64__
 
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 
 #if defined(__BMI2__)  // Intel Bit Manipulation Instruction Set 2
 // PDEP requires BMI2; this is present starting with Haswell.
@@ -38,12 +40,12 @@ namespace fst {
 inline int nth_bit(uint64_t v, uint32_t r) {
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
-  DCHECK_LT(r, __builtin_popcountll(v));
+  DCHECK_LT(r, absl::popcount(v));
 
   // PDEP example from https://stackoverflow.com/a/27453505
-  // __builtin_ctzll is UB for 0, but the conditions above ensure that can't
-  // happen.
-  return __builtin_ctzll(_pdep_u64(uint64_t{1} << r, v));
+  // _tzcnt_u64 is defined for 0, but the conditions above ensure that can't
+  // happen.  We are assuming BMI2, so there is no overhead for handling 0.
+  return _tzcnt_u64(_pdep_u64(uint64_t{1} << r, v));
 }
 }  // namespace fst
 
@@ -130,7 +132,7 @@ inline int nth_bit(const uint64_t v, const uint32_t r) {
 
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
-  DCHECK_LT(r, __builtin_popcountll(v));
+  DCHECK_LT(r, absl::popcount(v));
 
 #if defined(__aarch64__)
   // Use the ARM64 CNT instruction to compute a byte-wise popcount.
@@ -157,7 +159,8 @@ inline int nth_bit(const uint64_t v, const uint32_t r) {
   // The first bit set is the high bit in the byte, so
   // num_trailing_zeros == 8 * byte_nr + 7 and the byte number is the
   // number of trailing zeros divided by 8.
-  const int byte_nr = __builtin_ctzll(b) >> 3;
+  ABSL_ASSUME(b != 0);
+  const int byte_nr = absl::countr_zero(b) >> 3;
   const int shift = byte_nr << 3;
   // The top byte contains the whole-word popcount; we never need that.
   byte_sums <<= 8;

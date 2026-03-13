@@ -21,6 +21,7 @@
 #define OPENFST_LIB_FLOAT_WEIGHT_H_
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -42,15 +43,6 @@
 
 namespace fst {
 
-namespace internal {
-// `std::isnan` is not `constexpr` until C++23.
-// TODO: Replace with `std::isnan` when C++23 can be used.
-template <class T>
-inline constexpr bool IsNan(T value) {
-  return value != value;
-}
-}  // namespace internal
-
 // Numeric limits class.
 template <class T>
 class FloatLimits {
@@ -63,6 +55,55 @@ class FloatLimits {
 
   static constexpr T NumberBad() { return std::numeric_limits<T>::quiet_NaN(); }
 };
+
+namespace internal {
+// `std::isnan` is not `constexpr` until C++23.
+// TODO: Replace with `std::isnan` when C++23 can be used.
+template <class T>
+inline constexpr bool IsNan(T value) {
+#ifdef _MSC_VER
+  // MSVC does not correctly implement constexpr NaN comparisons, so
+  // reimplement them with bit operations.  When float-weight_test passes
+  // without this work-around, it can be removed.
+  // https://godbolt.org/z/9zaPMd5n3
+  if (__builtin_is_constant_evaluated()) {
+    if constexpr (!std::is_floating_point_v<T>) return false;
+    static_assert(sizeof(T) == 4 || sizeof(T) == 8,
+                  "IsNan only supports 4-byte or 8-byte floating point types.");
+    using uint_t = std::conditional_t<sizeof(T) == 8, uint64_t, uint32_t>;
+    uint_t bits = __builtin_bit_cast(uint_t, value);
+
+    constexpr int kMantissaBits = std::numeric_limits<T>::digits - 1;
+    constexpr int kTotalBits = sizeof(T) * CHAR_BIT;
+
+    constexpr uint_t kMantissaMask = (uint_t{1} << kMantissaBits) - 1;
+    constexpr uint_t kSignMask = uint_t{1} << (kTotalBits - 1);
+    constexpr uint_t kExponentMask = ~(kSignMask | kMantissaMask);
+
+    return ((bits & kExponentMask) == kExponentMask) &&
+           ((bits & kMantissaMask) != 0);
+  }
+#endif  // _MSC_VER
+  return value != value;
+}
+
+template <typename T>
+constexpr bool IsGreaterThanNegInf(T val) {
+  static_assert(std::is_floating_point_v<T>);
+  static_assert(std::numeric_limits<T>::is_iec559);
+  static_assert(sizeof(T) == 4 || sizeof(T) == 8);
+
+  // MSVC has buggy handling of NaN in constexpr; work around it.
+#ifdef _MSC_VER
+  if (__builtin_is_constant_evaluated()) {
+    if (internal::IsNan(val)) return false;
+  }
+#endif  // _MSC_VER
+
+  return FloatLimits<T>::NegInfinity() < val;
+}
+
+}  // namespace internal
 
 // Weight class to be templated on floating-points types.
 template <class T = float>
@@ -153,6 +194,13 @@ constexpr bool operator!=(const FloatWeightTpl<double>& w1,
 
 template <class T>
 constexpr bool FloatApproxEqual(T w1, T w2, float delta = kDelta) {
+#ifdef _MSC_VER
+  // MSVC has buggy handling of NaN in constexpr; work around it.
+  if (__builtin_is_constant_evaluated()) {
+    if (internal::IsNan(w1)) return false;
+    if (internal::IsNan(w2)) return false;
+  }
+#endif  // _MSC_VER
   return w1 <= w2 + delta && w2 <= w1 + delta;
 }
 
@@ -235,17 +283,7 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
     // it is strictly greater than negative infinity, which fails for negative
     // infinity itself but also for NaNs. This can usually be accomplished in a
     // single instruction (such as *UCOMI* on x86) without branching logic.
-    //
-    // An additional wrinkle involves constexpr correctness of floating point
-    // comparisons against NaN. GCC is uneven when it comes to which expressions
-    // it considers compile-time constants. In particular, current versions of
-    // GCC do not always consider (nan < inf) to be a constant expression, but
-    // do consider (inf < nan) to be a constant expression. (See
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88173 and
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88683 for details.) In order
-    // to allow Member() to be a constexpr function accepted by GCC, we write
-    // the comparison here as (-inf < v).
-    return Limits::NegInfinity() < Value();
+    return internal::IsGreaterThanNegInf(Value());
   }
 
   TropicalWeightTpl<T> Quantize(float delta = kDelta) const {
@@ -450,7 +488,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
 
   constexpr bool Member() const {
     // The comments for TropicalWeightTpl<>::Member() apply here unchanged.
-    return Limits::NegInfinity() < Value();
+    return internal::IsGreaterThanNegInf(Value());
   }
 
   LogWeightTpl Quantize(float delta = kDelta) const {

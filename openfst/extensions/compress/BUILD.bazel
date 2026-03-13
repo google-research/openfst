@@ -110,7 +110,6 @@ cc_test(
     deps = [
         ":compress",
         "//openfst/compat:file_path",
-        "//openfst/compat:init",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
@@ -128,7 +127,6 @@ cc_test(
         ":compress",
         ":randmod",
         "//openfst/compat:file_path",
-        "//openfst/compat:init",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
@@ -195,7 +193,6 @@ cc_test(
     deps = [
         ":quantize_weights",
         "//openfst/compat:file_path",
-        "//openfst/compat:init",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",

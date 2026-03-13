@@ -246,7 +246,8 @@ cc_test(
         "//openfst/compat:file_path",
         "//openfst/extensions/pdt:compose",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -266,7 +267,8 @@ cc_test(
         ":read_write_utils",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -278,7 +280,8 @@ cc_test(
     deps = [
         ":mpdt",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -297,7 +300,8 @@ cc_test(
         ":reverse",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 

@@ -99,8 +99,9 @@ cc_test(
         ":phi-fst",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -140,8 +141,9 @@ cc_test(
         ":rho-fst",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -179,8 +181,9 @@ cc_test(
         ":sigma-fst",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
