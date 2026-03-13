@@ -34,8 +34,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compat_memory",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/memory",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -52,7 +53,8 @@ cc_test(
     linkstatic = True,
     deps = [
         ":file_path",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -75,13 +77,14 @@ cc_test(
     linkstatic = True,
     deps = [
         ":status_macros",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:cord",
         "@com_google_absl//absl/strings:string_view",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -104,10 +107,12 @@ cc_test(
     linkstatic = True,
     deps = [
         ":init",
+        # Cannot be `test:test_main`, since that will call
+        # `absl::SetProgramUsage` twice.
+        "@com_google_googletest//:gtest_main",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:fixed_array",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 

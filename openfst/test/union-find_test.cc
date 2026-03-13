@@ -28,8 +28,6 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "absl/flags/flag.h"
-#include "absl/log/flags.h"
 #include "benchmark/benchmark.h"
 
 constexpr uint64_t kSeed = 403;
@@ -181,10 +179,3 @@ static void BM_UnionFind(benchmark::State& state) {
 BENCHMARK(BM_UnionFind)->Range(8, 1 << 16);
 
 }  // namespace
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  int error = RUN_ALL_TESTS();
-  benchmark::RunSpecifiedBenchmarks();
-  return error;
-}

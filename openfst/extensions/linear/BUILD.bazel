@@ -203,8 +203,9 @@ cc_test(
         ":linear-fst-data-builder",
         "//openfst/lib:lib_lite",
         "//openfst/lib:weight",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -220,7 +221,8 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -231,8 +233,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":trie",
+        "//openfst/test:test_main",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )

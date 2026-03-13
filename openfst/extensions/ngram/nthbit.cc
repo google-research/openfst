@@ -72,7 +72,7 @@ constexpr std::array<std::array<uint8_t, 256>, 8> kBitPos =
 int nth_bit(uint64_t v, uint32_t r) {
   DCHECK_NE(v, 0);
   DCHECK_LE(0, r);
-  DCHECK_LT(r, __builtin_popcountll(v));
+  DCHECK_LT(r, absl::popcount(v));
 
   uint32_t next_byte = v & 255;
   uint32_t byte_popcount = kBitCount[next_byte];

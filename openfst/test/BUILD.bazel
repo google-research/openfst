@@ -209,6 +209,17 @@ cc_library(
 )
 
 cc_library(
+    name = "test_main",
+    testonly = 1,
+    srcs = ["test_main.cc"],
+    deps = [
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
     name = "weight_tester",
     testonly = 1,
     hdrs = ["weight-tester.h"],
@@ -345,10 +356,11 @@ cc_test(
     data = [":testdata/accumulator/ac.fst"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -362,10 +374,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -399,10 +412,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -416,13 +430,14 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -433,8 +448,9 @@ cc_test(
     data = [],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -444,8 +460,9 @@ cc_test(
     srcs = ["cast_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -464,10 +481,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -496,11 +514,12 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compactors",
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -548,8 +567,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compose_test-hdr",
+        ":test_main",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -586,10 +606,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -618,10 +639,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -671,11 +693,12 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -716,10 +739,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -754,12 +778,13 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
         "//openfst/script",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -816,12 +841,13 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -839,9 +865,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -875,9 +902,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -905,11 +933,12 @@ cc_test(
     data = [":testdata/intersect/i1.fst"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -944,6 +973,7 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -952,7 +982,7 @@ cc_test(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -989,9 +1019,10 @@ cc_test(
     srcs = ["expander-fst_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1009,11 +1040,12 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1023,8 +1055,9 @@ cc_test(
     srcs = ["float-weight_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1045,12 +1078,13 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1072,7 +1106,8 @@ cc_test(
     linkstatic = True,
     deps = [
         ":my_register",
-        "@com_google_googletest//:gtest_main",
+        ":test_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1082,10 +1117,11 @@ cc_test(
     srcs = ["heap_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/random",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1114,10 +1150,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1143,10 +1180,11 @@ cc_test(
     srcs = ["interval-set_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib:interval-set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1160,9 +1198,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1193,9 +1232,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1227,6 +1267,7 @@ cc_test(
     linkstatic = True,
     shard_count = 4,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
@@ -1234,7 +1275,7 @@ cc_test(
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1248,10 +1289,11 @@ cc_test(
     deps = [
         ":compactors",
         ":lookahead_test-hdr",
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1311,9 +1353,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1339,9 +1382,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1352,8 +1396,9 @@ cc_test(
     data = [],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1389,9 +1434,10 @@ cc_test(
     srcs = ["partition_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1402,9 +1448,10 @@ cc_test(
     linkstatic = True,
     deps = [
         ":power-weight-util",
+        ":test_main",
         ":weight_tester",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1415,10 +1462,11 @@ cc_test(
     linkstatic = True,
     deps = [
         ":power-weight-util",
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1449,9 +1497,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1479,10 +1528,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1514,10 +1564,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1551,11 +1602,12 @@ cc_test(
     srcs = ["queue_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1571,9 +1623,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1601,11 +1654,12 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1656,9 +1710,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1690,10 +1745,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1723,9 +1779,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1756,10 +1813,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1790,9 +1848,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1806,12 +1865,13 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
         "//openfst/script",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1855,11 +1915,12 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1896,9 +1957,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1912,9 +1974,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1924,6 +1987,7 @@ cc_test(
     srcs = ["string_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/script",
@@ -1931,7 +1995,7 @@ cc_test(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1942,6 +2006,7 @@ cc_test(
     data = [":testdata/symbol-table/phones.map"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib:symbol-table",
@@ -1949,7 +2014,7 @@ cc_test(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1964,10 +2029,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -1986,13 +2052,14 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2024,9 +2091,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2054,9 +2122,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2087,10 +2156,11 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2100,8 +2170,8 @@ cc_test(
     srcs = ["union-find_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib:union-find",
-        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
         "@com_google_benchmark//:benchmark",
         "@com_google_googletest//:gtest",
@@ -2134,9 +2204,10 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2149,6 +2220,7 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",  # build_cleaner: keep
         "//openfst/lib:file-util",
@@ -2156,7 +2228,7 @@ cc_test(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",  # build_cleaner: keep
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2228,6 +2300,7 @@ cc_test(
     srcs = ["script_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
@@ -2236,7 +2309,7 @@ cc_test(
         "//openfst/script:weight-class",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2246,8 +2319,9 @@ cc_test(
     srcs = ["util_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib:util",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2257,12 +2331,13 @@ cc_test(
     srcs = ["vector-fst_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib:fst-decl",
         "//openfst/lib:lib_lite",
         "//openfst/lib:weight",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2302,6 +2377,7 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -2309,7 +2385,7 @@ cc_test(
         "@com_google_absl//absl/functional:function_ref",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2319,10 +2395,11 @@ cc_test(
     linkstatic = True,
     deps = [
         ":inline-fst",
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -2331,10 +2408,11 @@ cc_test(
     srcs = ["arc-arena_test.cc"],
     linkstatic = True,
     deps = [
+        ":test_main",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 

@@ -25,12 +25,10 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "openfst/extensions/ngram/nthbit.h"
 
 namespace fst {
-
-static_assert(sizeof(long long) >= sizeof(uint64_t),
-              "__builtin_...ll is used on uint64_t values.");
 
 constexpr std::array<uint64_t, 64> LowBitsMasks() {
   std::array<uint64_t, 64> m{};
@@ -52,7 +50,7 @@ size_t BitmapIndex::Rank1(size_t end) const {
   // TODO: better with or without special case, and does
   // this depend on whether there's a popcnt instruction?
   if (bit_index == 0) return sum;  // Entire answer is in the index.
-  return sum + __builtin_popcountll(bits_[end_word] & kLowBitsMasks[bit_index]);
+  return sum + absl::popcount(bits_[end_word] & kLowBitsMasks[bit_index]);
 }
 
 size_t BitmapIndex::Select1(size_t bit_index) const {
@@ -197,8 +195,9 @@ std::pair<size_t, size_t> BitmapIndex::Select0s(size_t bit_index) const {
 
   // Then, we want to "1-out" everything below that position, and count trailing
   // ones on the result. This gives us the position of the next zero.
-  // There is no count trailing ones builtin, so we invert and use count
-  // trailing zeros.
+  // This is written with countr_zero since it previously used __builtin_ctz,
+  // and there is no count trailing ones builtin.
+  // TODO: Switch to countr_ones.
 
   // This mask has 1s in the nth+1 low order bits; it is equivalent to
   // (1 << (nth + 1)) - 1, but doesn't need a special case when nth == 63.
@@ -210,7 +209,7 @@ std::pair<size_t, size_t> BitmapIndex::Select0s(size_t bit_index) const {
   // If this is 0, then the next zero is not in the same word.
   if (masked_inv_word != 0) {
     // We can't ctz on 0, but we already checked that.
-    const int next_nth = __builtin_ctzll(masked_inv_word);
+    const int next_nth = absl::countr_zero(masked_inv_word);
     return {kStorageBitSize * word_index + nth,
             kStorageBitSize * word_index + next_nth};
   } else {
@@ -269,10 +268,10 @@ void BitmapIndex::BuildIndex(const uint64_t* bits, size_t num_bits,
     };
 
     const int word_ones_count[8] = {
-        __builtin_popcountll(word[0]), __builtin_popcountll(word[1]),
-        __builtin_popcountll(word[2]), __builtin_popcountll(word[3]),
-        __builtin_popcountll(word[4]), __builtin_popcountll(word[5]),
-        __builtin_popcountll(word[6]), __builtin_popcountll(word[7]),
+        absl::popcount(word[0]), absl::popcount(word[1]),
+        absl::popcount(word[2]), absl::popcount(word[3]),
+        absl::popcount(word[4]), absl::popcount(word[5]),
+        absl::popcount(word[6]), absl::popcount(word[7]),
     };
 
     auto& rank_index_entry = rank_index_[word_index / kUnitsPerRankIndexEntry];

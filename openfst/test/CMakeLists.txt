@@ -20,6 +20,12 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
 )
 
 # Common libraries for tests
+add_library(test_main STATIC test_main.cc)
+target_include_directories(test_main
+                           PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+)
+target_link_libraries(test_main PRIVATE fst benchmark::benchmark GTest::gtest)
+
 add_library(test_rand_fst INTERFACE)
 target_include_directories(
   test_rand_fst INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -105,11 +111,20 @@ foreach(TEST_NAME ${TESTS})
     ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   )
+
+  set(TEST_MAIN_LIB test_main)
+  if(TEST_NAME STREQUAL "error_test"
+     OR TEST_NAME STREQUAL "fst_test"
+     OR TEST_NAME STREQUAL "weight_test"
+  )
+    set(TEST_MAIN_LIB GTest::gtest)
+  endif()
+
   target_link_libraries(
     ${TEST_NAME}
     PRIVATE fst
             fstscript
-            GTest::gtest_main
+            ${TEST_MAIN_LIB}
             GTest::gmock
             absl::flags
             absl::flags_parse
@@ -117,15 +132,8 @@ foreach(TEST_NAME ${TESTS})
             absl::log
             absl::status
             absl::statusor
+            benchmark::benchmark
   )
-
-  if(TEST_NAME STREQUAL "arc-arena_test")
-    target_link_libraries(${TEST_NAME} PRIVATE benchmark::benchmark)
-  endif()
-
-  if(TEST_NAME STREQUAL "union-find_test")
-    target_link_libraries(${TEST_NAME} PRIVATE benchmark::benchmark)
-  endif()
 
   if(TEST_NAME STREQUAL "heap_test")
     target_link_libraries(
@@ -169,7 +177,7 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
   target_link_libraries(
     ${VAR_TEST_NAME}
     PRIVATE fst
-            GTest::gtest_main
+            GTest::gtest
             GTest::gmock
             absl::flags
             absl::flags_parse
