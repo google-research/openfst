@@ -79,83 +79,58 @@
 #include "openfst/script/union.h"
 #include "openfst/script/verify.h"
 
-// This class is necessary because registering each of the operations
-// separately overfills the stack, as there's so many of them.
-namespace fst {
-namespace script {
-
-template <class Arc>
-class AllFstOperationsRegisterer {
- public:
-  AllFstOperationsRegisterer() {
-    RegisterBatch1();
-    RegisterBatch2();
-  }
-
- private:
-  void RegisterBatch1() {
-    REGISTER_FST_OPERATION(ArcSort, Arc, FstArcSortArgs);
-    REGISTER_FST_OPERATION(Closure, Arc, FstClosureArgs);
-    REGISTER_FST_OPERATION(CompileInternal, Arc, FstCompileArgs);
-    REGISTER_FST_OPERATION(Compose, Arc, FstComposeArgs);
-    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs1);
-    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs2);
-    REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs3);
-    REGISTER_FST_OPERATION(Connect, Arc, MutableFstClass);
-    REGISTER_FST_OPERATION(Convert, Arc, FstConvertArgs);
-    REGISTER_FST_OPERATION(Decode, Arc, FstDecodeArgs);
-    REGISTER_FST_OPERATION(Determinize, Arc, FstDeterminizeArgs);
-    REGISTER_FST_OPERATION(Difference, Arc, FstDifferenceArgs);
-    REGISTER_FST_OPERATION(Disambiguate, Arc, FstDisambiguateArgs);
-    REGISTER_FST_OPERATION(Draw, Arc, FstDrawArgs);
-    REGISTER_FST_OPERATION(Encode, Arc, FstEncodeArgs);
-    REGISTER_FST_OPERATION(EpsNormalize, Arc, FstEpsNormalizeArgs);
-    REGISTER_FST_OPERATION(Equal, Arc, FstEqualArgs);
-    REGISTER_FST_OPERATION(Equivalent, Arc, FstEquivalentArgs);
-    REGISTER_FST_OPERATION(Info, Arc, FstInfoArgs);
-    REGISTER_FST_OPERATION(InitArcIteratorClass, Arc, InitArcIteratorClassArgs);
-    REGISTER_FST_OPERATION(InitMutableArcIteratorClass, Arc,
-                           InitMutableArcIteratorClassArgs);
-    REGISTER_FST_OPERATION(InitStateIteratorClass, Arc,
-                           InitStateIteratorClassArgs);
-    REGISTER_FST_OPERATION(Intersect, Arc, FstIntersectArgs);
-    REGISTER_FST_OPERATION(Invert, Arc, MutableFstClass);
-    REGISTER_FST_OPERATION(Isomorphic, Arc, FstIsomorphicArgs);
-  }
-
-  void RegisterBatch2() {
-    REGISTER_FST_OPERATION(Map, Arc, FstMapArgs);
-    REGISTER_FST_OPERATION(Minimize, Arc, FstMinimizeArgs);
-    REGISTER_FST_OPERATION(Print, Arc, FstPrintArgs);
-    REGISTER_FST_OPERATION(Project, Arc, FstProjectArgs);
-    REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs1);
-    REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs2);
-    REGISTER_FST_OPERATION(Push, Arc, FstPushArgs1);
-    REGISTER_FST_OPERATION(Push, Arc, FstPushArgs2);
-    REGISTER_FST_OPERATION(RandEquivalent, Arc, FstRandEquivalentArgs);
-    REGISTER_FST_OPERATION(RandGen, Arc, FstRandGenArgs);
-    REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs1);
-    REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs2);
-    REGISTER_FST_OPERATION(Replace, Arc, FstReplaceArgs);
-    REGISTER_FST_OPERATION(Reverse, Arc, FstReverseArgs);
-    REGISTER_FST_OPERATION(Reweight, Arc, FstReweightArgs);
-    REGISTER_FST_OPERATION(RmEpsilon, Arc, FstRmEpsilonArgs);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs1);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs2);
-    REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs3);
-    REGISTER_FST_OPERATION(ShortestPath, Arc, FstShortestPathArgs);
-    REGISTER_FST_OPERATION(Synchronize, Arc, FstSynchronizeArgs);
-    REGISTER_FST_OPERATION(TopSort, Arc, FstTopSortArgs);
-    REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs1);
-    REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs2);
-    REGISTER_FST_OPERATION(Verify, Arc, FstVerifyArgs);
-  }
-};
-
-}  // namespace script
-}  // namespace fst
-
-#define REGISTER_FST_OPERATIONS(Arc) \
-  AllFstOperationsRegisterer<Arc> register_all_fst_operations##Arc;
+#define REGISTER_FST_OPERATIONS(Arc)                                           \
+  REGISTER_FST_OPERATION(ArcSort, Arc, FstArcSortArgs);                        \
+  REGISTER_FST_OPERATION(Closure, Arc, FstClosureArgs);                        \
+  REGISTER_FST_OPERATION(CompileInternal, Arc, FstCompileArgs);                \
+  REGISTER_FST_OPERATION(Compose, Arc, FstComposeArgs);                        \
+  REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs1);                         \
+  REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs2);                         \
+  REGISTER_FST_OPERATION(Concat, Arc, FstConcatArgs3);                         \
+  REGISTER_FST_OPERATION(Connect, Arc, MutableFstClass);                       \
+  REGISTER_FST_OPERATION(Convert, Arc, FstConvertArgs);                        \
+  REGISTER_FST_OPERATION(Decode, Arc, FstDecodeArgs);                          \
+  REGISTER_FST_OPERATION(Determinize, Arc, FstDeterminizeArgs);                \
+  REGISTER_FST_OPERATION(Difference, Arc, FstDifferenceArgs);                  \
+  REGISTER_FST_OPERATION(Disambiguate, Arc, FstDisambiguateArgs);              \
+  REGISTER_FST_OPERATION(Draw, Arc, FstDrawArgs);                              \
+  REGISTER_FST_OPERATION(Encode, Arc, FstEncodeArgs);                          \
+  REGISTER_FST_OPERATION(EpsNormalize, Arc, FstEpsNormalizeArgs);              \
+  REGISTER_FST_OPERATION(Equal, Arc, FstEqualArgs);                            \
+  REGISTER_FST_OPERATION(Equivalent, Arc, FstEquivalentArgs);                  \
+  REGISTER_FST_OPERATION(Info, Arc, FstInfoArgs);                              \
+  REGISTER_FST_OPERATION(InitArcIteratorClass, Arc, InitArcIteratorClassArgs); \
+  REGISTER_FST_OPERATION(InitMutableArcIteratorClass, Arc,                     \
+                         InitMutableArcIteratorClassArgs);                     \
+  REGISTER_FST_OPERATION(InitStateIteratorClass, Arc,                          \
+                         InitStateIteratorClassArgs);                          \
+  REGISTER_FST_OPERATION(Intersect, Arc, FstIntersectArgs);                    \
+  REGISTER_FST_OPERATION(Invert, Arc, MutableFstClass);                        \
+  REGISTER_FST_OPERATION(Isomorphic, Arc, FstIsomorphicArgs);                  \
+  REGISTER_FST_OPERATION(Map, Arc, FstMapArgs);                                \
+  REGISTER_FST_OPERATION(Minimize, Arc, FstMinimizeArgs);                      \
+  REGISTER_FST_OPERATION(Print, Arc, FstPrintArgs);                            \
+  REGISTER_FST_OPERATION(Project, Arc, FstProjectArgs);                        \
+  REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs1);                           \
+  REGISTER_FST_OPERATION(Prune, Arc, FstPruneArgs2);                           \
+  REGISTER_FST_OPERATION(Push, Arc, FstPushArgs1);                             \
+  REGISTER_FST_OPERATION(Push, Arc, FstPushArgs2);                             \
+  REGISTER_FST_OPERATION(RandEquivalent, Arc, FstRandEquivalentArgs);          \
+  REGISTER_FST_OPERATION(RandGen, Arc, FstRandGenArgs);                        \
+  REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs1);                       \
+  REGISTER_FST_OPERATION(Relabel, Arc, FstRelabelArgs2);                       \
+  REGISTER_FST_OPERATION(Replace, Arc, FstReplaceArgs);                        \
+  REGISTER_FST_OPERATION(Reverse, Arc, FstReverseArgs);                        \
+  REGISTER_FST_OPERATION(Reweight, Arc, FstReweightArgs);                      \
+  REGISTER_FST_OPERATION(RmEpsilon, Arc, FstRmEpsilonArgs);                    \
+  REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs1);     \
+  REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs2);     \
+  REGISTER_FST_OPERATION(ShortestDistance, Arc, FstShortestDistanceArgs3);     \
+  REGISTER_FST_OPERATION(ShortestPath, Arc, FstShortestPathArgs);              \
+  REGISTER_FST_OPERATION(Synchronize, Arc, FstSynchronizeArgs);                \
+  REGISTER_FST_OPERATION(TopSort, Arc, FstTopSortArgs);                        \
+  REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs1);                           \
+  REGISTER_FST_OPERATION(Union, Arc, FstUnionArgs2);                           \
+  REGISTER_FST_OPERATION(Verify, Arc, FstVerifyArgs)
 
 #endif  // OPENFST_SCRIPT_FSTSCRIPT_H_
