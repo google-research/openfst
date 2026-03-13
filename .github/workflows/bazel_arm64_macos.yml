@@ -47,10 +47,10 @@ jobs:
           run: bazelisk --version
         - name: Build
           run: |
-            bazelisk build -c opt //...
+            bazelisk build --config=dev -c fastbuild //...
         - name: Test
           run: >-
-            bazelisk test -c opt
+            bazelisk test --config=dev -c fastbuild
             --test_size_filters=-enormous
             --test_output=errors
             --test_filter=PywrapFstTest.testRandGen*
