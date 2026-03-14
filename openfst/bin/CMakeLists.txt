@@ -56,18 +56,6 @@ foreach(TOOL_NAME ${BINARIES})
   # Create the main library (e.g., fstarcsort-main)
   add_library(${TOOL_NAME}-main ${TOOL_NAME}-main.cc)
 
-  if(APPLE)
-    # There is a dependency cycle that the macOS linker cannot resolve,
-    # specifically regarding where the absl::flag is defined versus where it is
-    # used. The macOS linker is strict and does not allow undefined symbols in
-    # shared libraries by default. Below we relax this requirement.
-    target_link_options(
-      ${TOOL_NAME}-main
-      PRIVATE
-        $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:LINKER:-undefined,dynamic_lookup>
-    )
-  endif()
-
   target_link_libraries(
     ${TOOL_NAME}-main
     PUBLIC fstscript
