@@ -37,9 +37,9 @@ TEST(InitTestA, BasicTestRemoveFlags) {
   std::memcpy(argv, const_argv, sizeof(*argv) * (argc + 1));
   InitOpenFst("", &argc, &argv, /*remove_flags=*/true);
   EXPECT_EQ(3, argc);
-  EXPECT_EQ("my_test", argv[0]);
-  EXPECT_EQ("pos_arg1", argv[1]);
-  EXPECT_EQ("pos_arg2", argv[2]);
+  EXPECT_STREQ("my_test", argv[0]);
+  EXPECT_STREQ("pos_arg1", argv[1]);
+  EXPECT_STREQ("pos_arg2", argv[2]);
 }
 
 }  // namespace
