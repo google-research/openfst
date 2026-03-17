@@ -336,8 +336,10 @@ fst_cc_library(
 
 fst_cc_library(
     name = "file-util",
-    hdrs = [
-        "file-util.h",
+    srcs = ["file-util.cc"],
+    hdrs = ["file-util.h"],
+    deps = [
+        "@com_google_absl//absl/log",  # build_cleaner: keep
     ],
 )
 

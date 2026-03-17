@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <ios>
 #include <iostream>
@@ -64,6 +65,7 @@ class STListWriter {
                       std::string(source),
                       std::ios_base::out | std::ios_base::binary)),
         error_(false) {
+    if (source.empty()) SetBinaryMode(stdout);
     WriteType(*stream_, kSTListMagicNumber);
     WriteType(*stream_, kSTListFileVersion);
     if (!stream_) {
@@ -126,6 +128,7 @@ class STListReader {
         if (!has_stdin) {
           streams_[i] = &std::cin;
           sources_[i] = "stdin";
+          if (!has_stdin) SetBinaryMode(stdin);
           has_stdin = true;
         } else {
           FSTERROR() << "STListReader::STListReader: Cannot read multiple "

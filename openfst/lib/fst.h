@@ -26,6 +26,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <ios>
 #include <iostream>
 #include <istream>
@@ -287,6 +288,7 @@ class FST_LTO_VISIBILITY_PUBLIC Fst {
       }
       return Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Read(std::cin, FstReadOptions("standard input"));
     }
   }
@@ -345,6 +347,7 @@ class FST_LTO_VISIBILITY_PUBLIC Fst {
       }
       return true;
     } else {
+      SetBinaryMode(stdout);
       return Write(std::cout, FstWriteOptions("standard output"));
     }
   }

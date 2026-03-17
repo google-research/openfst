@@ -12,30 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See www.openfst.org for extensive documentation on this weighted
-// finite-state transducer library.
-
-#ifndef OPENFST_LIB_FILE_UTIL_H_
-#define OPENFST_LIB_FILE_UTIL_H_
+#include "openfst/lib/file-util.h"
 
 #include <cstdio>
+#if defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
 
-#define OPENFST_USE_PORTABLE_FILE 1
-
-#include <fstream>
-
-namespace file {
-using FileInStream = std::ifstream;
-using FileOutStream = std::ofstream;
-}  // namespace file
+#include "absl/log/log.h"
+#endif  // _WIN32
 
 namespace fst {
 
-// Sets binary mode on the file given file pointer. This is required for
-// platforms where the standard input and output streams support binary mode
-// by default.
-void SetBinaryMode(FILE* fp);
+void SetBinaryMode(FILE* fp) {
+#if defined(_WIN32)
+  if (_setmode(_fileno(fp), _O_BINARY) < 0) {
+    // Quietly log the error message and continue.
+    LOG(ERROR) << "Failed to mark the file as binary.";
+  }
+#endif  // _WIN32
+}
 
 }  // namespace fst
-
-#endif  // OPENFST_LIB_FILE_UTIL_H_

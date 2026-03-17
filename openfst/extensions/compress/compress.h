@@ -767,6 +767,7 @@ template <class Arc>
     }
   }
   std::ostream& ostrm = fstrm.is_open() ? fstrm : std::cout;
+  if (!fstrm.is_open()) SetBinaryMode(stdout);
   if (!Compress(fst, ostrm)) return false;
   return !!ostrm;
 }
@@ -790,6 +791,7 @@ template <class Arc>
     }
   }
   std::istream& istrm = fstrm.is_open() ? fstrm : std::cin;
+  if (!fstrm.is_open()) SetBinaryMode(stdin);
   if (!Decompress(istrm, source.empty() ? "standard input" : source, fst)) {
     return false;
   }

@@ -100,6 +100,7 @@ absl_nullable std::unique_ptr<FstClass> FstClass::Read(
     file::FileInStream istrm(source, std::ios_base::in | std::ios_base::binary);
     return ReadFstClass<FstClass>(istrm, source);
   } else {
+    SetBinaryMode(stdin);
     return ReadFstClass<FstClass>(std::cin, "standard input");
   }
 }
@@ -128,6 +129,7 @@ absl_nullable std::unique_ptr<MutableFstClass> MutableFstClass::Read(
       file::FileInStream in(source, std::ios_base::in | std::ios_base::binary);
       return ReadFstClass<MutableFstClass>(in, source);
     } else {
+      SetBinaryMode(stdin);
       return ReadFstClass<MutableFstClass>(std::cin, "standard input");
     }
   } else {  // Converts to VectorFstClass if not mutable.
@@ -150,6 +152,7 @@ absl_nullable std::unique_ptr<VectorFstClass> VectorFstClass::Read(
     file::FileInStream in(source, std::ios_base::in | std::ios_base::binary);
     return ReadFstClass<VectorFstClass>(in, source);
   } else {
+    SetBinaryMode(stdin);
     return ReadFstClass<VectorFstClass>(std::cin, "standard input");
   }
 }
