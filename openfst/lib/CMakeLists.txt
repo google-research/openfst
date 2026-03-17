@@ -18,6 +18,7 @@ add_library(
   ../compat/file_path.cc
   ../compat/init.cc
   encode.cc
+  file-util.cc
   fst.cc
   fst-types.cc
   mapped-file.cc
