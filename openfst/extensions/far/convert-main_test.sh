@@ -96,12 +96,14 @@ cd "$TST"
 "$FARINFO" test1.stlist.const.stdout2.far | grep '^fst type.*const$'
 
 # Same thing with "/dev/stdout" for output filename.
-"$FARCONVERT" --far_type=stlist --fst_type=const \
-  "$DAT/test1.sttable.far" /dev/stdout > test1.stlist.const.stdout3.far
-"$FAREQUAL" "$DAT/test1.sttable.far" test1.stlist.const.stdout3.far
-"$FARINFO" test1.stlist.const.stdout3.far | grep '^far type.*stlist$'
-"$FARINFO" test1.stlist.const.stdout3.far | grep '^arc type.*log$'
-"$FARINFO" test1.stlist.const.stdout3.far | grep '^fst type.*const$'
+if [[ -e /dev/stdout ]]; then
+  "$FARCONVERT" --far_type=stlist --fst_type=const \
+    "$DAT/test1.sttable.far" /dev/stdout > test1.stlist.const.stdout3.far
+  "$FAREQUAL" "$DAT/test1.sttable.far" test1.stlist.const.stdout3.far
+  "$FARINFO" test1.stlist.const.stdout3.far | grep '^far type.*stlist$'
+  "$FARINFO" test1.stlist.const.stdout3.far | grep '^arc type.*log$'
+  "$FARINFO" test1.stlist.const.stdout3.far | grep '^fst type.*const$'
+fi
 
 # Reading from stdin is only supported with stlist, so that is tested below.
 
