@@ -18,6 +18,8 @@ set -euxo pipefail
 
 echo "--- Running CMake tests ---"
 
+NPROC="$(getconf _NPROCESSORS_ONLN)"
+
 # Using -DOPENFST_ENABLE_FSTS=ON and -DOPENFST_ENABLE_GRM=ON ensures we test
 # all extensions, similar to the CI workflow.
 cmake -S . -B build \
@@ -28,5 +30,5 @@ cmake -S . -B build \
   -DOPENFST_ENABLE_PYTHON=ON \
   -DBUILD_SHARED_LIBS=ON
 
-cmake --build build -j$(nproc)
-ctest --test-dir build --output-on-failure -j$(nproc)
+cmake --build build -j "$NPROC"
+ctest --test-dir build --output-on-failure -j "$NPROC"

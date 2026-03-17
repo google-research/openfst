@@ -95,12 +95,12 @@ downloaded using `FetchContent`.
 cmake -S . -B build -DOPENFST_BUILD_TESTS=ON
 
 # Build the project
-# [`nproc`](https://man7.org/linux/man-pages/man1/nproc.1.html) is
-# Linux-specific.  `getconf _NPROCESSORS_ONLN` is portable, but longer.
-cmake --build build -j$(nproc)
+# On Linux, `-j$(nproc)` can be used to reduce typing.
+# https://man7.org/linux/man-pages/man1/nproc.1.html
+cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 
 # Run tests
-ctest --test-dir build --output-on-failure -j$(nproc)
+ctest --test-dir build --output-on-failure -j$(getconf _NPROCESSORS_ONLN)
 
 # Install the project
 # Use --prefix to specify an installation directory
@@ -178,7 +178,7 @@ The Python extension requires OpenFst to be built as **shared libraries**.
 cmake -S . -B build -DOPENFST_ENABLE_PYTHON=ON -DOPENFST_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
 
 # Build the project
-cmake --build build -j$(nproc)
+cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 
 # Run the Python test
 ctest --test-dir build -R pywrapfst_test --output-on-failure

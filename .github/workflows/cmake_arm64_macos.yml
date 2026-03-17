@@ -37,6 +37,9 @@ jobs:
         cache-name: ${{github.job}}
       steps:
         - uses: actions/checkout@v6
+        - name: Set Build Parallelism
+          run: |
+            echo "NPROC=$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
         - name: Setup Python
           uses: actions/setup-python@v6
         - name: Check Python
@@ -58,7 +61,7 @@ jobs:
             -DOPENFST_ENABLE_CATEGORIAL=ON
         - name: Build
           run: |
-            cmake --build build -j$(nproc)
+            cmake --build build -j "$NPROC"
         - name: Test
           run: |
-            ctest --test-dir build --output-on-failure -j$(nproc)
+            ctest --test-dir build --output-on-failure -j "$NPROC"
