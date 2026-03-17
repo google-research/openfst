@@ -18,6 +18,7 @@
 #include "openfst/extensions/far/sttable.h"
 
 #include <cstdint>
+#include <ios>
 #include <string>
 
 #include "absl/strings/string_view.h"
@@ -27,7 +28,8 @@
 namespace fst {
 
 bool IsSTTable(absl::string_view source) {
-  file::FileInStream strm((std::string(source)));
+  file::FileInStream strm(std::string(source),
+                          std::ios_base::in | std::ios_base::binary);
   if (!strm.good()) return false;
 
   int32_t magic_number = 0;
