@@ -24,7 +24,7 @@
 
 namespace fst {
 
-void SetBinaryMode(FILE* fp) {
+void SetBinaryMode(std::FILE* fp) {
 #if defined(_WIN32)
   if (_setmode(_fileno(fp), _O_BINARY) < 0) {
     // Quietly log the error message and continue.

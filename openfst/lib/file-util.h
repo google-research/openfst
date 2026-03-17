@@ -34,7 +34,7 @@ namespace fst {
 // Sets binary mode on the file given file pointer. This is required for
 // platforms where the standard input and output streams support binary mode
 // by default.
-void SetBinaryMode(FILE* fp);
+void SetBinaryMode(std::FILE* fp);
 
 }  // namespace fst
 
