@@ -35,7 +35,6 @@ jobs:
       runs-on: ubuntu-latest
       env:
         cache-name: ${{github.job}}
-        cache-path: "./build"
       steps:
         - uses: actions/checkout@v6
         - name: Setup Python
@@ -45,16 +44,15 @@ jobs:
         - name: Install dependendcies
           run: |
             python3 -m pip install --break-system-packages absl-py cython
-        - name: Restore CMake cache
-          uses: actions/cache/restore@v5
-          id: cmake-cache-restore
+        - name: Setup ccache
+          uses: hendrikmuhs/ccache-action@1bbbcda0748b3e340dee71a314fa68ffcbd6df79 # v1.2.21
           with:
-            path: ${{env.cache-path}}
             key: cmake-cache-${{env.cache-name}}
-            restore-keys: cmake-cache-${{env.cache-name}}-
         - name: Configure
           run: >-
             cmake -S . -B build
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             -DOPENFST_ENABLE_BIN=ON -DOPENFST_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
             -DOPENFST_ENABLE_FSTS=ON -DOPENFST_ENABLE_GRM=ON -DOPENFST_ENABLE_PYTHON=ON
             -DOPENFST_ENABLE_CATEGORIAL=ON
@@ -64,9 +62,3 @@ jobs:
         - name: Test
           run: |
             ctest --test-dir build --output-on-failure -j$(nproc)
-        - name: Save new cache for main
-          if: github.ref == 'refs/heads/main'
-          uses: actions/cache/save@v5
-          with:
-            path: ${{env.cache-path}}
-            key: cmake-cache-${{env.cache-name}}-${{github.run_id}}
