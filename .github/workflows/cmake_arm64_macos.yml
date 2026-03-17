@@ -26,9 +26,8 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  actions: write
+# This gives read-only access to the token.
+permissions: read-all
 
 jobs:
     build-and-test-arm64-macos-cmake:

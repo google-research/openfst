@@ -26,6 +26,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+# This gives read-only access to the token.
+permissions: read-all
+
 jobs:
     build-and-test-arm64-macos-bazel:
       name: Build and Test
