@@ -86,9 +86,11 @@ class GenericRegister {
   virtual ~GenericRegister() = default;
 
  protected:
-  // Override this if you want to be able to load missing definitions from
-  // shared object files.
-  virtual EntryType LoadEntryFromSharedObject(KeyLookupRef key) const {
+  // Override this to define how to turn a key into an SO filename.
+  virtual std::string ConvertKeyToSoFilename(KeyLookupRef key) const = 0;
+
+ private:
+  EntryType LoadEntryFromSharedObject(KeyLookupRef key) const {
 #ifdef FST_NO_DYNAMIC_LINKING
     return EntryType();
 #else
@@ -114,10 +116,7 @@ class GenericRegister {
 #endif  // FST_NO_DYNAMIC_LINKING
   }
 
-  // Override this to define how to turn a key into an SO filename.
-  virtual std::string ConvertKeyToSoFilename(KeyLookupRef key) const = 0;
-
-  virtual const EntryType* LookupEntry(KeyLookupRef key) const {
+  const EntryType* LookupEntry(KeyLookupRef key) const {
     absl::MutexLock l(register_lock_);
     if (const auto it = register_table_.find(key);
         it != register_table_.end()) {
@@ -127,7 +126,6 @@ class GenericRegister {
     }
   }
 
- private:
   mutable absl::Mutex register_lock_;
   std::map<KeyType, EntryType, std::less<>> register_table_;
 };
