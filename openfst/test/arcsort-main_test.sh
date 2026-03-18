@@ -15,6 +15,8 @@
 #!/bin/bash
 # Unit test for fstarcsort and one input FST argument file handling.
 
+source googletest.sh || exit
+
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail

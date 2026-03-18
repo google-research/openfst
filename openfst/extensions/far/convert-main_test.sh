@@ -15,9 +15,11 @@
 #!/bin/bash
 # Unit test for farconvert.
 
+source googletest.sh || exit
+
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
-set -euo pipefail
+set -eou pipefail
 
 PLATFORM="$(uname)"
 

@@ -15,6 +15,8 @@
 #!/bin/bash
 # Unit test that tests the generic behavior for registries loading DSOs.
 
+source googletest.sh || exit
+
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail

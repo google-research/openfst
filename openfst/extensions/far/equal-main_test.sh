@@ -15,9 +15,11 @@
 #!/bin/bash
 # Unit test for farequal.
 
+TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
+
 set -eou pipefail
 
-TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
+source googletest.sh || exit
 
 readonly FST="${TEST_SRCDIR}/openfst"
 readonly FARBIN="${FST}/extensions/far"

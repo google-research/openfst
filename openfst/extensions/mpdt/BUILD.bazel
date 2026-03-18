@@ -243,6 +243,7 @@ cc_test(
     deps = [
         ":compose",
         ":read_write_utils",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/extensions/pdt:compose",
         "//openfst/lib",
@@ -265,6 +266,7 @@ cc_test(
     deps = [
         ":expand",
         ":read_write_utils",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -279,6 +281,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":mpdt",
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/test:test_main",
         "@com_google_googletest//:gtest",
@@ -298,6 +301,7 @@ cc_test(
     deps = [
         ":read_write_utils",
         ":reverse",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -318,6 +322,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -333,6 +340,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -347,5 +357,8 @@ sh_test(
         ":testdata/vparen.triples.out",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )

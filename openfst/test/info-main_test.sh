@@ -15,9 +15,11 @@
 #!/bin/bash
 # Unit test for fstinfo.
 
+source googletest.sh || exit
+
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
-set -e pipefail
+set -eou pipefail
 
 TST="$TEST_TMPDIR"
 FST="$TEST_SRCDIR/openfst"

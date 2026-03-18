@@ -96,6 +96,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":ngram-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
@@ -115,6 +116,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":ngram-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -153,6 +155,7 @@ cc_test(
     deps = [
         ":compact-louds-tree-fst",
         ":ngram-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -171,6 +174,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":louds-tree",
+        "//file/localfile",
         "//openfst/test:test_main",
         "@com_google_googletest//:gtest",
     ],

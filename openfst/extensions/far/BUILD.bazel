@@ -370,6 +370,7 @@ cc_test(
     deps = [
         ":lib",
         ":script",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/compat:status_macros",
         "//openfst/lib:lib_lite",
@@ -396,6 +397,9 @@ sh_test(
         ":testdata/test2.stlist.far",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -412,6 +416,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -423,6 +430,9 @@ sh_test(
         ":farequal",
         ":testdata/test2.stlist.far",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -436,6 +446,9 @@ sh_test(
         ":testdata/strings.sttable.far",
         ":testdata/test1.sttable.far",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -457,6 +470,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -469,6 +485,9 @@ sh_test(
         ":testdata/strings.sttable.far",
         ":testdata/test1.sttable.far",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -502,6 +521,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -530,5 +552,8 @@ sh_test(
         ":testdata/strings2-symbol.fst",
         ":testdata/syms.map",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )

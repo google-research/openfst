@@ -208,6 +208,18 @@ cc_library(
     ],
 )
 
+# //file/localfile cannot be complied for Windows and for some reason it's
+# not needed.
+cc_library(
+    name = "localfile_if_not_windows",
+    testonly = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["//file/localfile"],
+    }),
+)
+
 cc_library(
     name = "test_main",
     testonly = 1,
@@ -357,6 +369,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -375,6 +388,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -392,6 +406,9 @@ sh_test(
         "//openfst/bin:fstarcsort",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -413,6 +430,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -431,6 +449,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
@@ -449,6 +468,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
     ],
@@ -482,6 +502,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -501,6 +522,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -515,6 +539,7 @@ cc_test(
     deps = [
         ":compactors",
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
@@ -535,6 +560,9 @@ sh_test(
         "//openfst/bin:fstcompile",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -567,6 +595,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compose_test-hdr",
+        ":localfile_if_not_windows",
         ":test_main",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -588,6 +617,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -607,6 +639,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -626,6 +659,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -640,6 +676,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -658,6 +695,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -673,6 +713,9 @@ sh_test(
         "//openfst/bin:fstmap",
         "//openfst/bin:fstproject",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -694,6 +737,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -724,6 +768,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -740,6 +787,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -761,6 +809,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -779,6 +830,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -799,6 +851,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 sh_test(
@@ -812,6 +867,9 @@ sh_test(
         ":testdata/draw/draw-5p.dot",
         "//openfst/bin:fstdraw",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -829,6 +887,9 @@ sh_test(
         "//openfst/bin:fstprint",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -842,6 +903,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -866,6 +928,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -886,6 +949,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -903,6 +969,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -924,6 +991,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -934,6 +1004,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -950,6 +1021,9 @@ sh_test(
         ":testdata/intersect/i1.fst",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -974,6 +1048,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -997,6 +1072,9 @@ sh_test(
         "//openfst/bin:fstequivalent",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1006,6 +1084,7 @@ cc_test(
     data = [],
     linkstatic = True,
     deps = [
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
@@ -1042,6 +1121,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
@@ -1080,6 +1160,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -1098,6 +1179,9 @@ sh_test(
         "generic_register_dso_test_helper",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1108,6 +1192,7 @@ cc_test(
     deps = [
         ":my_register",
         ":test_main",
+        "//file/localfile",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1136,6 +1221,9 @@ sh_test(
         "//openfst/bin:fstinfo",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1152,6 +1240,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -1173,6 +1262,9 @@ sh_test(
         "//openfst/bin:fstintersect",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1182,6 +1274,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib:interval-set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
@@ -1200,6 +1293,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1216,6 +1310,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstinvert",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -1234,6 +1331,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1249,6 +1347,9 @@ sh_test(
         ":testdata/isomorphic/i2.fst",
         "//openfst/bin:fstisomorphic",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -1269,6 +1370,7 @@ cc_test(
     shard_count = 4,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
@@ -1291,6 +1393,7 @@ cc_test(
         ":compactors",
         ":lookahead_test-hdr",
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "@com_google_absl//absl/flags:flag",
@@ -1322,6 +1425,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstmap",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -1355,6 +1461,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1384,6 +1491,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1398,6 +1506,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
     ],
@@ -1427,6 +1536,9 @@ sh_test(
         "//openfst/bin:fstminimize",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1436,6 +1548,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "@com_google_absl//absl/log",
         "@com_google_googletest//:gtest",
@@ -1485,6 +1598,9 @@ sh_test(
         "//openfst/bin:fstprint",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1499,6 +1615,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1517,6 +1634,9 @@ sh_test(
         "//openfst/bin:fstproject",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1530,6 +1650,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -1550,6 +1671,9 @@ sh_test(
         "//openfst/bin:fstprune",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1566,6 +1690,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -1595,6 +1720,9 @@ sh_test(
         "//openfst/bin:fstpush",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1604,6 +1732,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
@@ -1625,6 +1754,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1642,6 +1772,9 @@ sh_test(
         "//openfst/bin:fstrandgen",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1656,6 +1789,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -1682,6 +1816,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstrelabel",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -1712,6 +1849,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1732,6 +1870,9 @@ sh_test(
         "//openfst/bin:fstreplace",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1747,6 +1888,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -1767,6 +1909,9 @@ sh_test(
         "//openfst/bin:fstreverse",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1781,6 +1926,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1800,6 +1946,9 @@ sh_test(
         "//openfst/bin:fstreweight",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1815,6 +1964,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -1837,6 +1987,9 @@ sh_test(
         "//openfst/bin:fstrmepsilon",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1850,6 +2003,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1867,6 +2021,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -1893,6 +2048,9 @@ sh_test(
         "//openfst/bin:fstshortestdistance",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1917,6 +2075,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -1944,6 +2103,9 @@ sh_test(
         "//openfst/bin:fstshortestpath",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -1959,6 +2121,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -1976,6 +2139,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -2007,6 +2171,7 @@ cc_test(
     data = [":testdata/symbol-table/phones.map"],
     linkstatic = True,
     deps = [
+        ":localfile_if_not_windows",
         ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
@@ -2031,6 +2196,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -2054,6 +2220,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:weight",
@@ -2080,6 +2247,9 @@ sh_test(
         "//openfst/bin:fstsymbols",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -2093,6 +2263,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -2110,6 +2281,9 @@ sh_test(
         "//openfst/bin:fstsynchronize",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -2124,6 +2298,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -2140,6 +2315,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fsttopsort",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -2158,6 +2336,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/script",
@@ -2172,6 +2351,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib:union-find",
         "@com_google_absl//absl/log:flags",
         "@com_google_benchmark//:benchmark",
@@ -2191,6 +2371,9 @@ sh_test(
         "//openfst/bin:fstunion",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -2206,6 +2389,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_googletest//:gtest",
@@ -2221,6 +2405,7 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
+        ":localfile_if_not_windows",
         ":test_main",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",  # build_cleaner: keep
@@ -2247,6 +2432,7 @@ cc_test(
         linkstatic = True,
         deps = [
             ":rand-fst",
+            "//file/localfile",
             "//openfst/compat:compat_memory",
             "//openfst/compat:init",
             "//openfst/lib",
@@ -2281,6 +2467,7 @@ cc_test(
     deps = [
         ":compactors",
         ":fst_test-hdr",
+        "//file/localfile",
         "//openfst/extensions/lookahead:arc_lookahead-fst",
         "//openfst/extensions/lookahead:ilabel_lookahead-fst",
         "//openfst/extensions/lookahead:olabel_lookahead-fst",
@@ -2302,6 +2489,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
@@ -2349,6 +2537,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":weight_tester",
+        "//file/localfile",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
@@ -2379,6 +2568,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//file/localfile",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
@@ -2397,6 +2587,7 @@ cc_test(
     deps = [
         ":inline-fst",
         ":test_main",
+        "//file/localfile",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",

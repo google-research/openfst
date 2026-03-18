@@ -15,9 +15,11 @@
 #!/bin/bash
 # Unit test for farencode.
 
+TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
+
 set -eou pipefail
 
-TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
+source googletest.sh || exit
 
 readonly FST_DIR="${TEST_SRCDIR}/openfst"
 source "${FST_DIR}/bin/setup.sh"

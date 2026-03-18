@@ -97,6 +97,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":phi-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -119,6 +120,9 @@ sh_test(
         "//openfst/extensions/so:output_phi-fst.so",
         "//openfst/extensions/so:phi-fst.so",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 filegroup(
@@ -139,6 +143,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":rho-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -160,6 +165,9 @@ sh_test(
         "//openfst/extensions/so:input_rho-fst.so",
         "//openfst/extensions/so:rho-fst.so",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 filegroup(
@@ -179,6 +187,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":sigma-fst",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
@@ -199,5 +208,8 @@ sh_test(
         "//openfst/bin:setup",
         "//openfst/extensions/so:input_sigma-fst.so",
         "//openfst/extensions/so:sigma-fst.so",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )

@@ -109,6 +109,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compress",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -126,6 +127,7 @@ cc_test(
     deps = [
         ":compress",
         ":randmod",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
@@ -146,6 +148,9 @@ sh_test(
         ":testdata/unweight.fst",
         "//openfst/bin:fstisomorphic",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
 
@@ -169,6 +174,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         "quantize_weights",
+        "//file/localfile",
         "//openfst/compat:init",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -192,6 +198,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":quantize_weights",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",

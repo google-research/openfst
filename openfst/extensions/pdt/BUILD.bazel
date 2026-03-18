@@ -340,6 +340,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":collection",
+        "//file/localfile",
         "//openfst/test:test_main",
         "@com_google_googletest//:gtest",
     ],
@@ -358,6 +359,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compose",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -379,6 +381,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -395,6 +400,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":expand",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -416,6 +422,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -429,6 +438,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":paren",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -459,6 +469,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":replace",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -482,6 +493,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -496,6 +510,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":reverse",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -516,6 +531,9 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
+    deps = [
+        "//testing/shbase",
+    ],
 )
 
 cc_test(
@@ -532,6 +550,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":shortest-path",
+        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:util",
@@ -551,5 +570,8 @@ sh_test(
         ":testdata/spparen.pairs",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
+    ],
+    deps = [
+        "//testing/shbase",
     ],
 )
