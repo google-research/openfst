@@ -19,8 +19,6 @@ TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail
 
-source googletest.sh || exit
-
 readonly FST_DIR="${TEST_SRCDIR}/openfst"
 source "${FST_DIR}/bin/setup.sh"
 

@@ -322,9 +322,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 sh_test(
@@ -340,9 +337,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 sh_test(
@@ -357,8 +351,5 @@ sh_test(
         ":testdata/vparen.triples.out",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )

@@ -407,9 +407,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -522,9 +519,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -560,9 +554,6 @@ sh_test(
         "//openfst/bin:fstcompile",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -617,9 +608,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -659,9 +647,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -695,9 +680,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 sh_test(
@@ -713,9 +695,6 @@ sh_test(
         "//openfst/bin:fstmap",
         "//openfst/bin:fstproject",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -768,9 +747,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -808,9 +784,6 @@ sh_test(
         "//openfst/bin:fstdifference",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -851,9 +824,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 sh_test(
@@ -867,9 +837,6 @@ sh_test(
         ":testdata/draw/draw-5p.dot",
         "//openfst/bin:fstdraw",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -886,9 +853,6 @@ sh_test(
         "//openfst/bin:fstmap",
         "//openfst/bin:fstprint",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -949,9 +913,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -991,9 +952,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1021,9 +979,6 @@ sh_test(
         ":testdata/intersect/i1.fst",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1071,9 +1026,6 @@ sh_test(
         ":testdata/equivalent/e2.fst",
         "//openfst/bin:fstequivalent",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1179,9 +1131,6 @@ sh_test(
         "generic_register_dso_test_helper",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1221,9 +1170,6 @@ sh_test(
         "//openfst/bin:fstinfo",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1261,9 +1207,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstintersect",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1311,9 +1254,6 @@ sh_test(
         "//openfst/bin:fstinvert",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1347,9 +1287,6 @@ sh_test(
         ":testdata/isomorphic/i2.fst",
         "//openfst/bin:fstisomorphic",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1425,9 +1362,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstmap",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1536,9 +1470,6 @@ sh_test(
         "//openfst/bin:fstminimize",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1598,9 +1529,6 @@ sh_test(
         "//openfst/bin:fstprint",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1633,9 +1561,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstproject",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1670,9 +1595,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstprune",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1719,9 +1641,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstpush",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1772,9 +1691,6 @@ sh_test(
         "//openfst/bin:fstrandgen",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1816,9 +1732,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstrelabel",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1870,9 +1783,6 @@ sh_test(
         "//openfst/bin:fstreplace",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1909,9 +1819,6 @@ sh_test(
         "//openfst/bin:fstreverse",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -1945,9 +1852,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstreweight",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -1986,9 +1890,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstrmepsilon",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -2048,9 +1949,6 @@ sh_test(
         "//openfst/bin:fstshortestdistance",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -2102,9 +2000,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstshortestpath",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -2247,9 +2142,6 @@ sh_test(
         "//openfst/bin:fstsymbols",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -2280,9 +2172,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstsynchronize",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -2315,9 +2204,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fsttopsort",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -2370,9 +2256,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:fstunion",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 

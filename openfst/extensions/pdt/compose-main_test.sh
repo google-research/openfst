@@ -15,8 +15,6 @@
 #! /bin/sh
 # Unit test for pdtcompose.
 
-source googletest.sh || exit
-
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail

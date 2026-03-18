@@ -15,8 +15,6 @@
 #!/bin/bash
 # Unit test for DSO loading of Fst and arc type extensions.
 
-source googletest.sh || exit
-
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail

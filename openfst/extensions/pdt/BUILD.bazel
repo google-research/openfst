@@ -381,9 +381,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -421,9 +418,6 @@ sh_test(
         ":testdata/eparen.pairs",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -493,9 +487,6 @@ sh_test(
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_test(
@@ -530,9 +521,6 @@ sh_test(
         ":testdata/vparen.pairs",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )
 
@@ -570,8 +558,5 @@ sh_test(
         ":testdata/spparen.pairs",
         "//openfst/bin:fstequal",
         "//openfst/bin:setup",
-    ],
-    deps = [
-        "//testing/shbase",
     ],
 )

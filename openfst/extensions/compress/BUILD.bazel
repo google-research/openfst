@@ -149,9 +149,6 @@ sh_test(
         "//openfst/bin:fstisomorphic",
         "//openfst/bin:setup",
     ],
-    deps = [
-        "//testing/shbase",
-    ],
 )
 
 cc_library(

@@ -15,8 +15,6 @@
 #!/bin/bash
 # Unit test for pdtexpand.
 
-source googletest.sh || exit
-
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail

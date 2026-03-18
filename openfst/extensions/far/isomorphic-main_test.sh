@@ -19,8 +19,6 @@ TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail
 
-source googletest.sh || exit
-
 readonly FST="${TEST_SRCDIR}/openfst"
 readonly FARBIN="${FST}/extensions/far"
 readonly DAT="${FST}/extensions/far/testdata"

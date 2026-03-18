@@ -15,8 +15,6 @@
 #!/bin/bash
 # Unit test for fstcompose and two input FST argument file handling.
 
-source googletest.sh || exit
-
 TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail
