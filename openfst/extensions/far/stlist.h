@@ -128,7 +128,7 @@ class STListReader {
         if (!has_stdin) {
           streams_[i] = &std::cin;
           sources_[i] = "stdin";
-          if (!has_stdin) SetBinaryMode(stdin);
+          SetBinaryMode(stdin);
           has_stdin = true;
         } else {
           FSTERROR() << "STListReader::STListReader: Cannot read multiple "
