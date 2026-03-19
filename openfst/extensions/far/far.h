@@ -385,6 +385,7 @@ class FstFarReader final : public FarReader<A> {
         if (!has_stdin_) {
           streams_[i] = &std::cin;
           has_stdin_ = true;
+          SetBinaryMode(stdin);
         } else {
           FSTERROR() << "FstFarReader::FstFarReader: standard input should "
                         "only appear once in the input file list";
