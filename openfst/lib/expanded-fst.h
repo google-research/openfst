@@ -23,6 +23,7 @@
 #include <sys/types.h>
 
 #include <cstddef>
+#include <cstdio>
 #include <ios>
 #include <iostream>
 #include <istream>
@@ -97,6 +98,7 @@ class ExpandedFst : public Fst<A> {
       }
       return Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Read(std::cin, FstReadOptions("standard input"));
     }
   }
@@ -172,6 +174,7 @@ class ImplToExpandedFst : public ImplToFst<I, FST> {
       }
       return Impl::Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Impl::Read(std::cin, FstReadOptions("standard input"));
     }
   }
