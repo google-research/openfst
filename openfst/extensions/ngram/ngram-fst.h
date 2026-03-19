@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <ios>
 #include <iostream>
@@ -413,6 +414,7 @@ class NGramFst : public ImplToExpandedFst<internal::NGramFstImpl<A>> {
       }
       return Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Read(std::cin, FstReadOptions("standard input"));
     }
   }
