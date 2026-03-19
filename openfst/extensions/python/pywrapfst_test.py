@@ -49,7 +49,11 @@ class PywrapFstTest(parameterized.TestCase):
   def testEncodeMapperPicklingRoundtrip(self):
     f = fst.MutableFst.read(self.fst_testdir / "fst-file/vector1.fst")
     g = f.copy()
-    mapper = fst.EncodeMapper(f.arc_type(), encode_labels=True)
+    mapper = fst.EncodeMapper(f.arc_type())
+    # Neither `encode_labels` nor `encode_weights` are set.
+    self.assertFalse(mapper.flags())
+    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_LABELS)
+    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_WEIGHTS)
     f.encode(mapper)
     mapper = pickle.loads(pickle.dumps(mapper))
     g.encode(mapper)
@@ -507,13 +511,23 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertEqual(str(it.value().weight), w)
 
   def testArcIterationFinality(self):
-    it = self.f.arcs(self.f.start())
-    while not it.done():
-      it.next()
-    self.assertTrue(it.done())
+    arciter = self.f.arcs(self.f.start())
+    self.assertEqual(arciter.flags(), fst.ArcIteratorFlags.ARC_VALUE_FLAGS)
+    while not arciter.done():
+      arciter.next()
+    self.assertTrue(arciter.done())
     # Cowardly refuses to return an arc that doesn't exist.
     with self.assertRaises(fst.FstOpError):
-      unused_a = it.value()
+      unused_a = arciter.value()
+
+  def testArcIterationSetFlags(self):
+    arciter = self.f.arcs(self.f.start())
+    arciter.set_flags(
+        fst.ArcIteratorFlags.ARC_VALUE_FLAGS
+        | fst.ArcIteratorFlags.ARC_I_LABEL_VALUE,
+        fst.ArcIteratorFlags.ARC_VALUE_FLAGS,
+    )
+    self.assertEqual(arciter.flags(), fst.ArcIteratorFlags.ARC_VALUE_FLAGS)
 
   def testMutableArcIteration(self):
     orig_arcs = list(self.f.arcs(self.f.start()))
@@ -799,12 +813,14 @@ class PywrapFstTest(parameterized.TestCase):
     # Label encoding
     e1_res = e1.copy()
     encoder = fst.EncodeMapper(e1_res.arc_type(), encode_labels=True)
+    self.assertEqual(encoder.flags(), fst.EncodeMapperFlags.ENCODE_LABELS)
     e1_res.encode(encoder)
     e1_res.decode(encoder)
     self.assertTrue(fst.equal(e1, e1_cd))
     # Weight encoding.
     e1_res = e1.copy()
     encoder = fst.EncodeMapper(e1_res.arc_type(), encode_weights=True)
+    self.assertEqual(encoder.flags(), fst.EncodeMapperFlags.ENCODE_WEIGHTS)
     e1_res.encode(encoder)
     e1_res.decode(encoder)
     self.assertTrue(fst.equal(e1_res, e1_cd))
@@ -812,6 +828,11 @@ class PywrapFstTest(parameterized.TestCase):
     e1_res = e1.copy()
     encoder = fst.EncodeMapper(
         e1_res.arc_type(), encode_labels=True, encode_weights=True)
+    self.assertEqual(
+        encoder.flags(),
+        fst.EncodeMapperFlags.ENCODE_LABELS
+        | fst.EncodeMapperFlags.ENCODE_WEIGHTS,
+    )
     e1_res.encode(encoder)
     e1_res.decode(encoder)
     self.assertTrue(fst.equal(e1_res, e1_cd))
@@ -1210,6 +1231,123 @@ class PywrapFstTest(parameterized.TestCase):
     with self.assertRaises(TypeError):
       unused_result = fst.FST_PROPERTIES - fst.ACCEPTOR  # pytype: disable=unsupported-operands
 
+  def testWeightPropertiesTruthiness(self):
+    self.assertTrue(fst.WeightProperties.SEMIRING)
+    self.assertFalse(
+        fst.WeightProperties.LEFT_SEMIRING & fst.WeightProperties.RIGHT_SEMIRING
+    )
+    self.assertTrue(
+        fst.WeightProperties.LEFT_SEMIRING | fst.WeightProperties.RIGHT_SEMIRING
+    )
+    self.assertEqual(
+        fst.WeightProperties.LEFT_SEMIRING,
+        fst.WeightProperties.LEFT_SEMIRING | fst.WeightProperties.LEFT_SEMIRING,
+    )
+    self.assertTrue(
+        fst.WeightProperties.LEFT_SEMIRING
+        | (
+            fst.WeightProperties.LEFT_SEMIRING
+            & fst.WeightProperties.RIGHT_SEMIRING
+        )
+    )
+    self.assertTrue(
+        fst.WeightProperties.SEMIRING & fst.WeightProperties.LEFT_SEMIRING
+    )
+
+  def testWeightPropertiesDontInteropWithInt(self):
+    with self.assertRaises(TypeError):
+      unused_result = fst.WeightProperties.SEMIRING & 3  # pytype: disable=unsupported-operands
+    with self.assertRaises(TypeError):
+      unused_result = fst.WeightProperties.SEMIRING | 3  # pytype: disable=unsupported-operands
+
+  def testWeightPropertiesDontSupportMinus(self):
+    with self.assertRaises(TypeError):
+      unused_result = (
+          fst.WeightProperties.SEMIRING - fst.WeightProperties.LEFT_SEMIRING  # pytype: disable=unsupported-operands
+      )
+
+  def testArcIteratorFlagsTruthiness(self):
+    self.assertTrue(fst.ArcIteratorFlags.ARC_I_LABEL_VALUE)
+    self.assertFalse(
+        fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+        & fst.ArcIteratorFlags.ARC_O_LABEL_VALUE
+    )
+    self.assertTrue(
+        fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+        | fst.ArcIteratorFlags.ARC_O_LABEL_VALUE
+    )
+    self.assertEqual(
+        fst.ArcIteratorFlags.ARC_I_LABEL_VALUE,
+        fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+        | fst.ArcIteratorFlags.ARC_I_LABEL_VALUE,
+    )
+    self.assertTrue(
+        fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+        | (
+            fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+            & fst.ArcIteratorFlags.ARC_O_LABEL_VALUE
+        )
+    )
+    self.assertTrue(
+        fst.ArcIteratorFlags.ARC_VALUE_FLAGS
+        & fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+    )
+
+  def testArcIteratorFlagsDontInteropWithInt(self):
+    with self.assertRaises(TypeError):
+      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS & 3  # pytype: disable=unsupported-operands
+    with self.assertRaises(TypeError):
+      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS | 3  # pytype: disable=unsupported-operands
+
+  def testArcIteratorFlagsDontSupportMinus(self):
+    with self.assertRaises(TypeError):
+      unused_result = (
+          fst.ArcIteratorFlags.ARC_VALUE_FLAGS  # pytype: disable=unsupported-operands
+          - fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
+      )
+
+  def testEncoderMapperFlagsTruthiness(self):
+    self.assertTrue(fst.EncodeMapperFlags.ENCODE_LABELS)
+    self.assertFalse(
+        fst.EncodeMapperFlags.ENCODE_LABELS
+        & fst.EncodeMapperFlags.ENCODE_WEIGHTS
+    )
+    self.assertTrue(
+        fst.EncodeMapperFlags.ENCODE_LABELS
+        | fst.EncodeMapperFlags.ENCODE_WEIGHTS
+    )
+    self.assertEqual(
+        fst.EncodeMapperFlags.ENCODE_LABELS,
+        fst.EncodeMapperFlags.ENCODE_LABELS
+        | fst.EncodeMapperFlags.ENCODE_LABELS,
+    )
+    self.assertTrue(
+        fst.EncodeMapperFlags.ENCODE_LABELS
+        | (
+            fst.EncodeMapperFlags.ENCODE_LABELS
+            & fst.EncodeMapperFlags.ENCODE_WEIGHTS
+        )
+    )
+    self.assertTrue(
+        (
+            fst.EncodeMapperFlags.ENCODE_WEIGHTS
+            | fst.EncodeMapperFlags.ENCODE_LABELS
+        )
+        & fst.EncodeMapperFlags.ENCODE_LABELS
+    )
+
+  def testEncoderMapperFlagsDontInteropWithInt(self):
+    with self.assertRaises(TypeError):
+      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS & 3  # pytype: disable=unsupported-operands
+    with self.assertRaises(TypeError):
+      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS | 3  # pytype: disable=unsupported-operands
+
+  def testEncoderMapperFlagsDontSupportMinus(self):
+    with self.assertRaises(TypeError):
+      unused_result = (
+          fst.EncodeMapperFlags.ENCODE_WEIGHTS  # pytype: disable=unsupported-operands
+          - fst.EncodeMapperFlags.ENCODE_WEIGHTS
+      )
 
 if __name__ == "__main__":
   absltest.main()
