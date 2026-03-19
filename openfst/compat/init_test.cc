@@ -44,3 +44,9 @@ TEST(InitTestA, BasicTestRemoveFlags) {
 
 }  // namespace
 }  // namespace fst
+
+int main(int argc, char** argv) {
+  // Do not call `InitOpenFst` since it calls `absl::SetProgramUsageMessage`,
+  // which can be called at most once.
+  return RUN_ALL_TESTS();
+}

@@ -107,12 +107,10 @@ cc_test(
     linkstatic = True,
     deps = [
         ":init",
-        # Cannot be `test:test_main`, since that will call
-        # `absl::SetProgramUsage` twice.
-        "@com_google_googletest//:gtest_main",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:fixed_array",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_googletest//:gtest",
     ],
 )
 
