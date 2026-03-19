@@ -88,6 +88,7 @@ absl_nullable std::unique_ptr<EncodeMapperClass> EncodeMapperClass::Read(
     file::FileInStream strm(source, std::ios_base::in | std::ios_base::binary);
     return ReadEncodeMapper(strm, source);
   } else {
+    SetBinaryMode(stdin);
     return ReadEncodeMapper(std::cin, "standard input");
   }
 }
