@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <ios>
 #include <iostream>
 #include <istream>
@@ -167,6 +168,7 @@ class MutableFst : public ExpandedFst<A> {
         }
         return Read(strm, FstReadOptions(source));
       } else {
+        SetBinaryMode(stdin);
         return Read(std::cin, FstReadOptions("standard input"));
       }
     } else {  // Converts to 'convert_type' if not mutable.
