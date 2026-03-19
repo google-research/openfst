@@ -44,11 +44,13 @@ ABSL_DECLARE_FLAG(bool, test_properties);
 ABSL_DECLARE_FLAG(bool, fst_verify);
 
 namespace {
+
 // Prints info using only the header of the FST with path `in_name`.
 // Returns true on success.
 bool PrintHeaderInfo(const std::string& in_name) {
   fst::FstHeader header;
   if (in_name.empty()) {
+    fst::SetBinaryMode(stdin);
     if (!header.Read(std::cin, "stdin")) {
       LOG(ERROR) << "fstinfo: Unable to read header from stdin";
       return false;
@@ -73,6 +75,7 @@ bool PrintHeaderInfo(const std::string& in_name) {
   fst::PrintHeader(std::cout, header);
   return true;
 }
+
 }  // namespace
 
 int fstinfo_main(int argc, char** argv) {
