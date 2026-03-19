@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <ios>
 #include <iostream>
@@ -528,6 +529,7 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
       }
       return Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Read(std::cin, FstReadOptions("standard input"));
     }
   }
@@ -548,6 +550,7 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
       }
       return Write(strm, FstWriteOptions(source));
     } else {
+      SetBinaryMode(stdout);
       return Write(std::cout, FstWriteOptions("standard output"));
     }
   }
@@ -980,6 +983,7 @@ class LinearClassifierFst
       }
       return Read(strm, FstReadOptions(source));
     } else {
+      SetBinaryMode(stdin);
       return Read(std::cin, FstReadOptions("standard input"));
     }
   }
@@ -1001,6 +1005,7 @@ class LinearClassifierFst
       }
       return Write(strm, FstWriteOptions(source));
     } else {
+      SetBinaryMode(stdout);
       return Write(std::cout, FstWriteOptions("standard output"));
     }
   }
