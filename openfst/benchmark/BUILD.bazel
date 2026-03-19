@@ -38,7 +38,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:compat_memory",
         "//openfst/lib:symbol-table",
         "@com_google_absl//absl/flags:flag",
@@ -60,7 +59,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/extensions/ngram:ngram-fst",
         "//openfst/extensions/ngram:ngram-fst-file",
@@ -87,7 +85,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/extensions/ngram:ngram-fst",
         "//openfst/extensions/ngram:ngram-fst-file",
@@ -116,7 +113,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
@@ -142,7 +138,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -165,7 +160,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -185,7 +179,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/lib",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:node_hash_set",
@@ -205,7 +198,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -227,7 +219,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",
@@ -247,7 +238,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",

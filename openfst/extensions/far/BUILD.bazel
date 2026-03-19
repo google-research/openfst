@@ -370,7 +370,6 @@ cc_test(
     deps = [
         ":lib",
         ":script",
-        "//file/localfile",
         "//openfst/compat:file_path",
         "//openfst/compat:status_macros",
         "//openfst/lib:lib_lite",
