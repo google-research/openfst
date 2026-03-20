@@ -78,3 +78,48 @@ foreach(BIN ${PDT_BINS})
   target_link_libraries(${BIN} PRIVATE ${BIN}-main absl::status absl::statusor)
   openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach()
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+  set(PDT_TESTS
+      collection_test
+      compose_test
+      expand_test
+      paren_test
+      replace_test
+      reverse_test
+      shortest-path_test
+  )
+
+  foreach(TEST_NAME ${PDT_TESTS})
+    add_executable(pdt_${TEST_NAME} ${TEST_NAME}.cc)
+    set_target_properties(
+      pdt_${TEST_NAME}
+      PROPERTIES
+        CROSSCOMPILING_EMULATOR
+          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+    )
+    target_include_directories(
+      pdt_${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+    target_link_libraries(
+      pdt_${TEST_NAME}
+      PRIVATE fst
+              test_main
+              GTest::gtest
+              GTest::gmock
+              absl::flags
+              absl::log
+    )
+    gtest_discover_tests(
+      pdt_${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endforeach()
+endif()

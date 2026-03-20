@@ -26,3 +26,41 @@ set(COMPAT_HEADERS
 openfst_install(FILES ${COMPAT_HEADERS}
                 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/compat
 )
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+
+  set(COMPAT_TESTS
+      compat_memory_test
+      file_path_test
+      status_macros_test
+      init_test
+      unaligned_test
+  )
+
+  foreach(TEST_NAME ${COMPAT_TESTS})
+    add_executable(${TEST_NAME} ${TEST_NAME}.cc)
+    set_target_properties(
+      ${TEST_NAME}
+      PROPERTIES
+        CROSSCOMPILING_EMULATOR
+          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+    )
+    target_link_libraries(
+      ${TEST_NAME}
+      PRIVATE fst
+              test_main
+              GTest::gtest
+              GTest::gmock
+              absl::strings
+              absl::status
+              absl::statusor
+              absl::log
+              absl::base
+    )
+    gtest_discover_tests(
+      ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endforeach()
+endif()

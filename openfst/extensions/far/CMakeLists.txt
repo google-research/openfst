@@ -142,3 +142,44 @@ foreach(BIN ${FAR_BINS})
   openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endforeach()
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+  set(FAR_TESTS far_test)
+
+  foreach(TEST_NAME ${FAR_TESTS})
+    add_executable(${TEST_NAME} ${TEST_NAME}.cc)
+    set_target_properties(
+      ${TEST_NAME}
+      PROPERTIES
+        CROSSCOMPILING_EMULATOR
+          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+    )
+    target_include_directories(
+      ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+    target_link_libraries(
+      ${TEST_NAME}
+      PRIVATE fstfar
+              fstfarscript
+              fst
+              fstscript
+              test_main
+              GTest::gtest
+              GTest::gmock
+              absl::log
+              absl::flags
+              absl::status
+              absl::statusor
+    )
+    gtest_discover_tests(
+      ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endforeach()
+endif()

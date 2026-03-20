@@ -95,3 +95,67 @@ openfst_install(
   FILES ${SPECIAL_HEADERS}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/special
 )
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+  add_executable(phi-fst_test phi-fst_test.cc)
+  set_target_properties(
+    phi-fst_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    phi-fst_test
+    PRIVATE fstphi-fst
+            fst
+            test_main
+            absl::flags
+  )
+  gtest_discover_tests(
+    phi-fst_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(rho-fst_test rho-fst_test.cc)
+  set_target_properties(
+    rho-fst_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    rho-fst_test
+    PRIVATE fstrho-fst
+            fst
+            test_main
+            absl::flags
+  )
+  gtest_discover_tests(
+    rho-fst_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(sigma-fst_test sigma-fst_test.cc)
+  set_target_properties(
+    sigma-fst_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    sigma-fst_test
+    PRIVATE fstsigma-fst
+            fst
+            test_main
+            absl::flags
+  )
+  gtest_discover_tests(
+    sigma-fst_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+endif()

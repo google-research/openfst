@@ -105,3 +105,70 @@ openfst_install(
   FILES ${COMPRESS_HEADERS}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/compress
 )
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+  add_executable(compress_test compress_test.cc)
+  set_target_properties(
+    compress_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    compress_test
+    PRIVATE fstcompress_compress
+            test_main
+            absl::flags
+            absl::log
+            fst
+  )
+  gtest_discover_tests(
+    compress_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(randmod_test randmod_test.cc)
+  set_target_properties(
+    randmod_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    randmod_test
+    PRIVATE fstcompress_compress
+            test_main
+            absl::flags
+            absl::log
+            fst
+  )
+  gtest_discover_tests(
+    randmod_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(quantize_weights_test quantize_weights_test.cc)
+  set_target_properties(
+    quantize_weights_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    quantize_weights_test
+    PRIVATE fstquantize_weights
+            test_main
+            absl::flags
+            absl::log
+            fst
+  )
+  gtest_discover_tests(
+    quantize_weights_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+endif()

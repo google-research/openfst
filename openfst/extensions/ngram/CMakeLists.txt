@@ -47,3 +47,53 @@ set(NGRAM_HEADERS
 openfst_install(FILES ${NGRAM_HEADERS}
                 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/ngram
 )
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+  set(NGRAM_TESTS
+      bitmap-index_test
+      compact-louds-tree-fst_test
+      louds-tree_test
+      ngram-fst_test
+      nthbit_test
+  )
+
+  foreach(TEST_NAME ${NGRAM_TESTS})
+    add_executable(${TEST_NAME} ${TEST_NAME}.cc)
+    set_target_properties(
+      ${TEST_NAME}
+      PROPERTIES
+        CROSSCOMPILING_EMULATOR
+          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+    )
+    target_include_directories(
+      ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+    target_link_libraries(
+      ${TEST_NAME}
+      PRIVATE fstngram
+              fst
+              test_main
+              GTest::gtest
+              GTest::gmock
+              absl::flags
+              absl::log
+              absl::die_if_null
+              absl::check
+              absl::numeric
+              absl::random_random
+              absl::strings
+              benchmark::benchmark
+    )
+    gtest_discover_tests(
+      ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endforeach()
+endif()

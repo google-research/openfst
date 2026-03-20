@@ -82,3 +82,58 @@ openfst_install(
   FILES ${LINEAR_HEADERS}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/linear
 )
+
+if(OPENFST_BUILD_TESTS)
+  include(GoogleTest)
+
+  add_executable(linear-fst-data_test linear-fst-data_test.cc)
+  set_target_properties(
+    linear-fst-data_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(linear-fst-data_test PRIVATE fst test_main absl::log)
+  gtest_discover_tests(
+    linear-fst-data_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(linear-fst_test linear-fst_test.cc)
+  set_target_properties(
+    linear-fst_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    linear-fst_test
+    PRIVATE fstlinear_tagger_fst
+            fstlinear_classifier_fst
+            fst
+            test_main
+  )
+  gtest_discover_tests(
+    linear-fst_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+
+  add_executable(trie_test trie_test.cc)
+  set_target_properties(
+    trie_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    trie_test
+    PRIVATE fst
+            test_main
+            absl::strings
+            absl::flat_hash_map
+  )
+  gtest_discover_tests(
+    trie_test
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+endif()
