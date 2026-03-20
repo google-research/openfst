@@ -18,6 +18,14 @@ parse:
       kwargs:
         PROPERTIES: "*"
       max_subgroups_hwrap: 1
+    set_tests_properties:
+      kwargs:
+        PROPERTIES:
+          kwargs:
+            ENVIRONMENT: 1
+            WILL_FAIL: 1
+            LABELS: 1
+      max_subgroups_hwrap: 1
     set:
       kwargs:
         CACHE: 3

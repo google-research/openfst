@@ -114,12 +114,11 @@ endif()
 if(APPLE)
   # There is a dependency cycle that the macOS linker cannot resolve regarding
   # where the abseil flags are defined versus where they are used. The macOS
-  # linker is strict and does not allow undefined symbols in shared libraries
-  # by default. Below we relax this requirement.
-  # Append the flag ONLY for shared library targets.
-  set(
-    CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-undefined,dynamic_lookup"
+  # linker is strict and does not allow undefined symbols in shared libraries by
+  # default. Below we relax this requirement. Append the flag ONLY for shared
+  # library targets.
+  set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-undefined,dynamic_lookup"
   )
 endif()
 

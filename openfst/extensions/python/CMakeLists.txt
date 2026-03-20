@@ -70,7 +70,10 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
 
   # Python module
   add_library(pywrapfst MODULE ${PYWRAPFST_CC})
-  set_target_properties(pywrapfst PROPERTIES PREFIX "")
+  set_target_properties(
+    pywrapfst
+    PROPERTIES PREFIX ""
+  )
 
   target_include_directories(pywrapfst PRIVATE ${CMAKE_SOURCE_DIR}
                                                ${Python3_INCLUDE_DIRS}
@@ -139,7 +142,7 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
     pywrapfst_test
     PROPERTIES
       ENVIRONMENT
-      "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
+        "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
       WILL_FAIL TRUE
       LABELS "ExpectFailure"
   )
