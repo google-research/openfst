@@ -28,12 +28,9 @@ DAT="$FST/extensions/special/testdata"
 
 source "$FBIN"/setup.sh
 
-# This allows fo dynamic loading in `fstcompose` and `fstequal`.
-if [[ "$(uname)" == "Darwin" ]]; then
-  export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-}:${SBIN}"
-else
-  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:${SBIN}"
-fi
+# This allows for dynamic loading in `fstcompose` and `fstequal`.
+export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:+$DYLD_LIBRARY_PATH:}${SBIN}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}${SBIN}"
 
 # phi, match on output.
 "${SPBIN}/fstspecial" --fst_type="phi" "${DAT}/b1.fst" |

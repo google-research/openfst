@@ -29,13 +29,8 @@ DAT="$FST/test/testdata/dso"
 source "$BIN"/setup.sh
 
 # Adds path to shared objects used below.
-if [[ "$(uname)" == "Darwin" ]]; then
-  DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-}:$LIB"
-  export DYLD_LIBRARY_PATH
-else
-  LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:$LIB"
-  export LD_LIBRARY_PATH
-fi
+export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:+$DYLD_LIBRARY_PATH:}${LIB}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}${LIB}"
 
 # Tests Fst type extension defined in basic-fst.so.
 "$BIN"/fstcompile -fst_type=basic "$DAT"/basic.txt "$TST"/basic.fst

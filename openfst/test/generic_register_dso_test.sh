@@ -25,12 +25,7 @@ LIB="$FST/test"
 source "$FST/bin/setup.sh"
 
 # Adds path to shared objects used below.
-if [[ "$(uname)" == "Darwin" ]]; then
-  DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-}:$LIB"
-  export DYLD_LIBRARY_PATH
-else
-  LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:$LIB"
-  export LD_LIBRARY_PATH
-fi
+export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:+$DYLD_LIBRARY_PATH:}${LIB}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}${LIB}"
 
 "$LIB"/generic_register_dso_test_helper
