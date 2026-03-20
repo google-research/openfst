@@ -53,6 +53,131 @@ fst_cc_library(
 )
 
 fst_cc_library(
+    name = "far-type",
+    hdrs = ["far-type.h"],
+)
+
+fst_cc_library(
+    name = "far-writer",
+    hdrs = ["far-writer.h"],
+    deps = [
+        ":far-type",
+        "//openfst/lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "far-reader",
+    hdrs = ["far-reader.h"],
+    deps = [
+        ":far-type",
+        "//openfst/lib",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+fst_cc_library(
+    name = "fst-writer",
+    hdrs = ["fst-writer.h"],
+    deps = [
+        "//openfst/lib",
+    ],
+)
+
+fst_cc_library(
+    name = "fst-reader",
+    hdrs = ["fst-reader.h"],
+    deps = [
+        "//openfst/lib",
+    ],
+)
+
+fst_cc_library(
+    name = "sttable-far-writer",
+    hdrs = ["sttable-far-writer.h"],
+    deps = [
+        ":far-type",
+        ":far-writer",
+        ":fst-writer",
+        ":sttable",
+        "//openfst/lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "sttable-far-reader",
+    hdrs = ["sttable-far-reader.h"],
+    deps = [
+        ":far-reader",
+        ":far-type",
+        ":fst-reader",
+        ":sttable",
+        "//openfst/compat:compat_memory",
+        "//openfst/lib",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "stlist-far-writer",
+    hdrs = ["stlist-far-writer.h"],
+    deps = [
+        ":far-type",
+        ":far-writer",
+        ":fst-writer",
+        ":sttable",
+        "//openfst/lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "stlist-far-reader",
+    hdrs = ["stlist-far-reader.h"],
+    deps = [
+        ":far-reader",
+        ":far-type",
+        ":fst-reader",
+        ":sttable",
+        "//openfst/compat:compat_memory",
+        "//openfst/lib",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "fst-far-writer",
+    hdrs = ["fst-far-writer.h"],
+    deps = [
+        ":far-type",
+        ":far-writer",
+        "//openfst/lib",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
+    name = "fst-far-reader",
+    hdrs = ["fst-far-reader.h"],
+    deps = [
+        ":far-reader",
+        ":far-type",
+        "//openfst/lib",
+        "//openfst/lib:file-stream-status",
+        "//openfst/lib:file-util",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+fst_cc_library(
     name = "lib",
     srcs = [
         "far.cc",
@@ -74,7 +199,18 @@ fst_cc_library(
         "print-strings.h",
     ],
     deps = [
+        ":far-reader",
+        ":far-type",
+        ":far-writer",
+        ":fst-far-reader",
+        ":fst-far-writer",
+        ":fst-reader",
+        ":fst-writer",
+        ":stlist-far-reader",
+        ":stlist-far-writer",
         ":sttable",
+        ":sttable-far-reader",
+        ":sttable-far-writer",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib:file-util",
@@ -82,14 +218,10 @@ fst_cc_library(
         "//openfst/lib:register",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],

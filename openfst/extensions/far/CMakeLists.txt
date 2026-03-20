@@ -82,16 +82,27 @@ set(FAR_HEADERS
     equal.h
     extract.h
     far-class.h
+    far-reader.h
+    far-type.h
+    far-writer.h
     far.h
     farlib.h
     farscript.h
+    fst-far-reader.h
+    fst-far-writer.h
+    fst-reader.h
+    fst-writer.h
     getters.h
     info.h
     isomorphic.h
     map-reduce.h
     print-strings.h
     script-impl.h
+    stlist-far-reader.h
+    stlist-far-writer.h
     stlist.h
+    sttable-far-reader.h
+    sttable-far-writer.h
     sttable.h
 )
 
