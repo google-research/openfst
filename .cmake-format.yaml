@@ -16,7 +16,10 @@ parse:
   additional_commands:
     set_target_properties:
       kwargs:
-        PROPERTIES: "*"
+        PROPERTIES:
+          kwargs:
+            CROSSCOMPILING_EMULATOR: 1
+            SOVERSION: 1
       max_subgroups_hwrap: 1
     set_tests_properties:
       kwargs:
@@ -40,6 +43,23 @@ parse:
         LIBRARY: 1
         ARCHIVE: 1
         RUNTIME: 1
+    gtest_discover_tests:
+      flags:
+        - NO_PRETTY_TYPES
+        - NO_PRETTY_VALUES
+      kwargs:
+        EXTRA_ARGS: "*"
+        WORKING_DIRECTORY: 1
+        TEST_PREFIX: 1
+        TEST_SUFFIX: 1
+        TEST_FILTER: 1
+        PROPERTIES: "*"
+        TEST_LIST: 1
+        JUNIT_OUTPUT_DIR: 1
+        DISCOVERY_TIMEOUT: 1
+        XML_OUTPUT_DIR: 1
+        DISCOVERY_MODE: 1
+      max_subgroups_hwrap: 1
     FetchContent_Declare:
       kwargs:
         URL: 1
@@ -134,3 +154,5 @@ misc:
     target_sources:
       pargs_hwrap: 0
       max_subgroups_hwrap: 0
+
+

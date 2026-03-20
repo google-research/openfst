@@ -24,7 +24,13 @@ add_library(test_main STATIC test_main.cc)
 target_include_directories(test_main
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
 )
-target_link_libraries(test_main PRIVATE fst benchmark::benchmark GTest::gtest)
+target_link_libraries(
+  test_main
+  PUBLIC fst
+         benchmark::benchmark
+         GTest::gtest
+         GTest::gmock
+)
 
 add_library(test_rand_fst INTERFACE)
 target_include_directories(
@@ -107,6 +113,12 @@ set(TESTS
 
 foreach(TEST_NAME ${TESTS})
   add_executable(${TEST_NAME} ${TEST_NAME}.cc)
+  set_target_properties(
+    ${TEST_NAME}
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
   target_include_directories(
     ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -146,10 +158,18 @@ foreach(TEST_NAME ${TESTS})
     )
   endif()
 
-  add_test(
-    NAME ${TEST_NAME}
-    COMMAND ${TEST_NAME}
+  # TODO: Improve the speed of --gtest_list_tests for heavy binaries.
+  set(DISCOVERY_TIMEOUT_VAR 5)
+  if(TEST_NAME STREQUAL "weight_test")
+    set(DISCOVERY_TIMEOUT_VAR 60)
+  elseif(TEST_NAME STREQUAL "fst_test")
+    set(DISCOVERY_TIMEOUT_VAR 15)
+  endif()
+
+  gtest_discover_tests(
+    ${TEST_NAME}
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    DISCOVERY_TIMEOUT ${DISCOVERY_TIMEOUT_VAR}
   )
 endforeach()
 
@@ -169,6 +189,12 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
   string(TOUPPER ${WEIGHT} WEIGHT_UPPER)
   set(VAR_TEST_NAME "algo_test_${WEIGHT}")
   add_executable(${VAR_TEST_NAME} algo_test.cc)
+  set_target_properties(
+    ${VAR_TEST_NAME}
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
   target_include_directories(
     ${VAR_TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -187,9 +213,9 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
             absl::statusor
             absl::memory
   )
-  add_test(
-    NAME ${VAR_TEST_NAME}
-    COMMAND ${VAR_TEST_NAME}
+  gtest_discover_tests(
+    ${VAR_TEST_NAME}
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    DISCOVERY_TIMEOUT 60
   )
 endforeach()

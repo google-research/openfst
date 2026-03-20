@@ -166,6 +166,8 @@ if(OPENFST_BUILD_TESTS)
     FetchContent_MakeAvailable(googletest)
   endif()
 
+  include(GoogleTest)
+
   # Google Benchmark
   if(OPENFST_USE_SYSTEM_BENCHMARK)
     find_package(benchmark REQUIRED)
