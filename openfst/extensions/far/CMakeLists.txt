@@ -149,7 +149,11 @@ if(OPENFST_BUILD_TESTS)
        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
   )
 
-  set(FAR_TESTS far_test)
+  set(FAR_TESTS
+      fst-far_test
+      stlist-far_test
+      sttable-far_test
+  )
 
   foreach(TEST_NAME ${FAR_TESTS})
     add_executable(${TEST_NAME} ${TEST_NAME}.cc)

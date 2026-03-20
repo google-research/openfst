@@ -489,10 +489,23 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "far-test-base",
+    testonly = True,
+    hdrs = ["far-test-base.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
 cc_test(
-    name = "far_test",
+    name = "sttable-far_test",
     size = "medium",
-    srcs = ["far_test.cc"],
+    timeout = "short",
+    srcs = ["sttable-far_test.cc"],
     data = [
         ":testdata/test1-01.fst",
         ":testdata/test1-02.fst",
@@ -500,15 +513,60 @@ cc_test(
     ],
     linkstatic = True,
     deps = [
-        ":lib",
-        ":script",
+        ":far-test-base",
+        ":sttable-far-reader",
+        ":sttable-far-writer",
         "//openfst/compat:file_path",
         "//openfst/compat:status_macros",
-        "//openfst/lib:lib_lite",
+        "//openfst/lib",
         "//openfst/lib:util",
-        "//openfst/script",
         "//openfst/test:test_main",
-        "@com_google_absl//absl/flags:flag",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "stlist-far_test",
+    size = "medium",
+    timeout = "short",
+    srcs = ["stlist-far_test.cc"],
+    data = [
+        ":testdata/test1-01.fst",
+        ":testdata/test1-02.fst",
+        ":testdata/test1-03.fst",
+    ],
+    linkstatic = True,
+    deps = [
+        ":far-test-base",
+        ":stlist-far-reader",
+        ":stlist-far-writer",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "//openfst/lib:util",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "fst-far_test",
+    size = "medium",
+    timeout = "short",
+    srcs = ["fst-far_test.cc"],
+    data = [
+        ":testdata/test1-01.fst",
+        ":testdata/test1-02.fst",
+        ":testdata/test1-03.fst",
+    ],
+    linkstatic = True,
+    deps = [
+        ":far-test-base",
+        ":fst-far-reader",
+        ":fst-far-writer",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "//openfst/lib:util",
+        "//openfst/test:test_main",
         "@com_google_googletest//:gtest",
     ],
 )
