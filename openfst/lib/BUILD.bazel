@@ -290,12 +290,14 @@ fst_cc_library(
 
 fst_cc_library(
     name = "register",
+    srcs = ["generic-register.cc"],
     hdrs = [
         "generic-register.h",
         "register.h",
     ],
     deps = [
         ":util",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",

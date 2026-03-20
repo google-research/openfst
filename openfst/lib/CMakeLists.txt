@@ -21,6 +21,7 @@ add_library(
   file-util.cc
   fst.cc
   fst-types.cc
+  generic-register.cc
   mapped-file.cc
   properties.cc
   symbol-table.cc

@@ -18,14 +18,11 @@
 #ifndef OPENFST_LIB_GENERIC_REGISTER_H_
 #define OPENFST_LIB_GENERIC_REGISTER_H_
 
-#ifndef FST_NO_DYNAMIC_LINKING
-#include <dlfcn.h>
-#endif  // FST_NO_DYNAMIC_LINKING
-
 #include <functional>
 #include <map>
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
@@ -46,6 +43,9 @@
 namespace fst {
 
 namespace internal {
+
+bool LoadSharedObject(const char* absl_nonnull so_filename);
+
 template <class T>
 struct KeyLookupReferenceType {
   using type = const T&;
@@ -91,18 +91,10 @@ class GenericRegister {
 
  private:
   EntryType LoadEntryFromSharedObject(KeyLookupRef key) const {
-#ifdef FST_NO_DYNAMIC_LINKING
-    return EntryType();
-#else
-    const auto so_filename = ConvertKeyToSoFilename(key);
-    void* handle = dlopen(so_filename.c_str(), RTLD_LAZY);
-    if (handle == nullptr) {
-      LOG(ERROR) << "GenericRegister::GetEntry: " << dlerror();
+    const std::string so_filename = ConvertKeyToSoFilename(key);
+    if (!internal::LoadSharedObject(so_filename.c_str())) {
       return EntryType();
     }
-#ifdef RUN_MODULE_INITIALIZERS
-    RUN_MODULE_INITIALIZERS();
-#endif
     // We assume that the DSO constructs a static object in its global scope
     // that does the registration. Thus we need only load it, not call any
     // methods.
@@ -113,7 +105,6 @@ class GenericRegister {
       return EntryType();
     }
     return *entry;
-#endif  // FST_NO_DYNAMIC_LINKING
   }
 
   const EntryType* LookupEntry(KeyLookupRef key) const {
