@@ -295,6 +295,14 @@ fst_cc_library(
         "generic-register.h",
         "register.h",
     ],
+    # `FST_NO_DYNAMIC_LINKING` is only used in `generic-register.cc`.
+    defines = select({
+        "@platforms//os:ios": ["FST_NO_DYNAMIC_LINKING"],
+        "@platforms//os:chromiumos": ["FST_NO_DYNAMIC_LINKING"],
+        "@platforms//os:fuchsia": ["FST_NO_DYNAMIC_LINKING"],
+        "@platforms//os:windows": ["FST_NO_DYNAMIC_LINKING"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":util",
         "@com_google_absl//absl/base:nullability",

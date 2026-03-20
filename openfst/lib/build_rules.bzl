@@ -42,13 +42,6 @@ def fst_cc_library(
             "@platforms//os:linux": deps,
             "//conditions:default": portable_deps,
         }),
-        defines = defines + select({
-            "@platforms//os:ios": ["FST_NO_DYNAMIC_LINKING"],
-            "@platforms//os:chromiumos": ["FST_NO_DYNAMIC_LINKING"],
-            "@platforms//os:fuchsia": ["FST_NO_DYNAMIC_LINKING"],
-            "@platforms//os:windows": ["FST_NO_DYNAMIC_LINKING"],
-            "//conditions:default": [],
-        }),
         **kwargs
     )
 
