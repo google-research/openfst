@@ -20,9 +20,6 @@
 #ifndef OPENFST_TEST_ALGO_TEST_H_
 #define OPENFST_TEST_ALGO_TEST_H_
 
-#include <sys/types.h>
-
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -446,8 +443,8 @@ class WeightedTester {
       static const int kNumLabels = 10;
       // set up relabeling pairs
       std::vector<Label> labelset(kNumLabels);
-      for (size_t i = 0; i < kNumLabels; ++i) labelset[i] = i;
-      for (size_t i = 0; i < kNumLabels; ++i) {
+      for (int i = 0; i < kNumLabels; ++i) labelset[i] = i;
+      for (int i = 0; i < kNumLabels; ++i) {
         using std::swap;
         const auto index =
             std::uniform_int_distribution<>(0, kNumLabels - 1)(rand_);
@@ -456,7 +453,7 @@ class WeightedTester {
 
       std::vector<std::pair<Label, Label>> ipairs1(kNumLabels);
       std::vector<std::pair<Label, Label>> opairs1(kNumLabels);
-      for (size_t i = 0; i < kNumLabels; ++i) {
+      for (int i = 0; i < kNumLabels; ++i) {
         ipairs1[i] = std::make_pair(i, labelset[i]);
         opairs1[i] = std::make_pair(labelset[i], i);
       }
@@ -465,7 +462,7 @@ class WeightedTester {
 
       std::vector<std::pair<Label, Label>> ipairs2(kNumLabels);
       std::vector<std::pair<Label, Label>> opairs2(kNumLabels);
-      for (size_t i = 0; i < kNumLabels; ++i) {
+      for (int i = 0; i < kNumLabels; ++i) {
         ipairs2[i] = std::make_pair(labelset[i], i);
         opairs2[i] = std::make_pair(i, labelset[i]);
       }
@@ -1024,7 +1021,7 @@ class WeightedTester {
                                                      kRandomPathLength);
 
     VectorFst<Arc> path, paths1, paths2;
-    for (ssize_t n = 0; n < kNumRandomPaths; ++n) {
+    for (int n = 0; n < kNumRandomPaths; ++n) {
       RandGen(fst1, &path, opts);
       Invert(&path);
       ArcMap(&path, RmWeightMapper<Arc>());
