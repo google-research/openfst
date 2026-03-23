@@ -158,19 +158,22 @@ foreach(TEST_NAME ${TESTS})
     )
   endif()
 
-  # TODO: Improve the speed of --gtest_list_tests for heavy binaries.
-  set(DISCOVERY_TIMEOUT_VAR 5)
-  if(TEST_NAME STREQUAL "weight_test")
-    set(DISCOVERY_TIMEOUT_VAR 60)
-  elseif(TEST_NAME STREQUAL "fst_test")
-    set(DISCOVERY_TIMEOUT_VAR 15)
+  # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
+  # then use gtest_discover_tests.
+  if(TEST_NAME STREQUAL "weight_test"
+     OR TEST_NAME STREQUAL "fst_test")
+    add_test(
+      NAME ${TEST_NAME}
+      COMMAND ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  else()
+    gtest_discover_tests(
+      ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
   endif()
 
-  gtest_discover_tests(
-    ${TEST_NAME}
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DISCOVERY_TIMEOUT ${DISCOVERY_TIMEOUT_VAR}
-  )
 endforeach()
 
 # algo_test variants
@@ -213,9 +216,11 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
             absl::statusor
             absl::memory
   )
-  gtest_discover_tests(
-    ${VAR_TEST_NAME}
+  # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
+  # then use gtest_discover_tests.
+  add_test(
+    NAME ${VAR_TEST_NAME}
+    COMMAND ${VAR_TEST_NAME}
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DISCOVERY_TIMEOUT 60
   )
 endforeach()
