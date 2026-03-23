@@ -116,7 +116,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "abseil-py",
-    version = "2.1.0",
+    version = "2.4.0",
     repo_name = "com_google_absl_py",
 )
 
