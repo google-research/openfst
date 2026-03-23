@@ -40,7 +40,7 @@ bool LoadSharedObject(const char* absl_nonnull so_filename) {
     FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, GetLastError(),
                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf,
-                   sizeof(buf) / sizeof(wchar_t), nullptr);
+                   std::size(buf), nullptr);
     LOG(ERROR) << "GenericRegister::GetEntry for '" << so_filename
                << "': " << buf;
     return false;
