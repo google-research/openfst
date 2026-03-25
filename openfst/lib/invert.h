@@ -68,9 +68,9 @@ struct InvertMapper {
 // where V is the number of states and E is the number of arcs.
 template <class Arc>
 inline void Invert(const Fst<Arc>& ifst, MutableFst<Arc>* ofst) {
-  std::unique_ptr<SymbolTable> input(
+  std::unique_ptr<const SymbolTable> input(
       ifst.InputSymbols() ? ifst.InputSymbols()->Copy() : nullptr);
-  std::unique_ptr<SymbolTable> output(
+  std::unique_ptr<const SymbolTable> output(
       ifst.OutputSymbols() ? ifst.OutputSymbols()->Copy() : nullptr);
   ArcMap(ifst, ofst, InvertMapper<Arc>());
   ofst->SetInputSymbols(output.get());
@@ -80,9 +80,9 @@ inline void Invert(const Fst<Arc>& ifst, MutableFst<Arc>* ofst) {
 // Destructive variant of the above.
 template <class Arc>
 inline void Invert(MutableFst<Arc>* fst) {
-  std::unique_ptr<SymbolTable> input(
+  std::unique_ptr<const SymbolTable> input(
       fst->InputSymbols() ? fst->InputSymbols()->Copy() : nullptr);
-  std::unique_ptr<SymbolTable> output(
+  std::unique_ptr<const SymbolTable> output(
       fst->OutputSymbols() ? fst->OutputSymbols()->Copy() : nullptr);
   ArcMap(fst, InvertMapper<Arc>());
   fst->SetInputSymbols(output.get());
