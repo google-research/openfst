@@ -547,7 +547,7 @@ void Minimize(MutableFst<Arc>* fst, MutableFst<Arc>* sfst = nullptr,
       FactorWeightFst<GallicArc<Arc, GALLIC_LEFT>,
                       GallicFactor<typename Arc::Label, Weight, GALLIC_LEFT>>
           fwfst(gfst);
-      std::unique_ptr<SymbolTable> osyms(
+      std::unique_ptr<const SymbolTable> osyms(
           fst->OutputSymbols() ? fst->OutputSymbols()->Copy() : nullptr);
       ArcMap(fwfst, fst, FromGallicMapper<Arc, GALLIC_LEFT>());
       fst->SetOutputSymbols(osyms.get());
