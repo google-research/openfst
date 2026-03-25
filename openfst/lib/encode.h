@@ -126,12 +126,14 @@ class EncodeTable {
           olabel(flags & kEncodeLabels ? arc.olabel : 0),
           weight(flags & kEncodeWeights ? arc.weight : Weight::One()) {}
 
-    static std::unique_ptr<Triple> Read(std::istream& strm) {
-      auto triple = std::make_unique<Triple>();
-      ReadType(strm, &triple->ilabel);
-      ReadType(strm, &triple->olabel);
-      ReadType(strm, &triple->weight);
-      return triple;
+    static std::unique_ptr<const Triple> Read(std::istream& strm) {
+      Label ilabel;
+      ReadType(strm, &ilabel);
+      Label olabel;
+      ReadType(strm, &olabel);
+      Weight weight;
+      ReadType(strm, &weight);
+      return std::make_unique<const Triple>(ilabel, olabel, weight);
     }
 
     void Write(std::ostream& strm) const {
@@ -183,9 +185,10 @@ class EncodeTable {
     // a clash with a true epsilon arc; to avoid this we hallucinate kNoLabel
     // labels instead.
     if (arc.nextstate == kNoStateId && (flags_ & kEncodeWeights)) {
-      return Encode(std::make_unique<Triple>(kNoLabel, kNoLabel, arc.weight));
+      return Encode(
+          std::make_unique<const Triple>(kNoLabel, kNoLabel, arc.weight));
     } else {
-      return Encode(std::make_unique<Triple>(arc, flags_));
+      return Encode(std::make_unique<const Triple>(arc, flags_));
     }
   }
 
@@ -233,7 +236,7 @@ class EncodeTable {
   }
 
  private:
-  Label Encode(std::unique_ptr<Triple> triple) {
+  Label Encode(std::unique_ptr<const Triple> triple) {
     auto [iter, inserted] =
         triple2label_.emplace(triple.get(), triples_.size() + 1);
     if (inserted) triples_.push_back(std::move(triple));
@@ -243,7 +246,7 @@ class EncodeTable {
   uint8_t flags_;
   // This contains pointers instead of `Triple`s so that the pointers in
   // `triple2label_` remain valid when `Encode` adds a new `Triple`.
-  std::vector<std::unique_ptr<Triple>> triples_;
+  std::vector<std::unique_ptr<const Triple>> triples_;
   // Pointers to `Triple`s owned by `triples_` vector.
   absl::flat_hash_map<const Triple*, Label, TripleHash, TripleEqual>
       triple2label_;
