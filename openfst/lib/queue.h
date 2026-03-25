@@ -88,14 +88,16 @@ enum QueueType {
 // queues considered by AutoQueue.
 template <class S>
 class QueueBase {
+ protected:
+  QueueBase() = delete;
+  explicit QueueBase(QueueType type) : queue_type_(type), error_(false) {}
+
  public:
   using StateId = S;
 
   virtual ~QueueBase() = default;
 
   // Concrete implementation.
-
-  explicit QueueBase(QueueType type) : queue_type_(type), error_(false) {}
 
   void SetError(bool error) { error_ = error; }
 
@@ -671,10 +673,10 @@ class AutoQueue : public QueueBase<S> {
       // Decomposes into strongly-connected components.
       SccVisitor<Arc> scc_visitor(&scc_, nullptr, nullptr, &properties);
       DfsVisit(fst, &scc_visitor, filter);
-      auto nscc = *std::max_element(scc_.begin(), scc_.end()) + 1;
+      const auto nscc = *std::max_element(scc_.begin(), scc_.end()) + 1;
       std::vector<QueueType> queue_types(nscc);
-      std::unique_ptr<Less> less;
-      std::unique_ptr<Compare> comp;
+      std::unique_ptr<const Less> less;
+      std::unique_ptr<const Compare> comp;
       if constexpr (IsPath<Weight>::value) {
         if (distance) {
           less = std::make_unique<Less>();
@@ -684,7 +686,7 @@ class AutoQueue : public QueueBase<S> {
       // Finds the queue type to use per SCC.
       bool unweighted;
       bool all_trivial;
-      SccQueueType(fst, scc_, &queue_types, filter, less.get(), &all_trivial,
+      SccQueueType(fst, scc_, less.get(), &queue_types, filter, &all_trivial,
                    &unweighted);
       // If unweighted and semiring is idempotent, uses LIFO queue.
       if (unweighted) {
@@ -756,8 +758,9 @@ class AutoQueue : public QueueBase<S> {
  private:
   template <class Arc, class ArcFilter, class Less>
   static void SccQueueType(const Fst<Arc>& fst, const std::vector<StateId>& scc,
+                           const Less* less,
                            std::vector<QueueType>* queue_types,
-                           ArcFilter filter, Less* less, bool* all_trivial,
+                           ArcFilter filter, bool* all_trivial,
                            bool* unweighted);
 
   std::unique_ptr<QueueBase<StateId>> queue_;
@@ -776,9 +779,10 @@ template <class StateId>
 template <class Arc, class ArcFilter, class Less>
 void AutoQueue<StateId>::SccQueueType(const Fst<Arc>& fst,
                                       const std::vector<StateId>& scc,
+                                      const Less* less,
                                       std::vector<QueueType>* queue_type,
-                                      ArcFilter filter, Less* less,
-                                      bool* all_trivial, bool* unweighted) {
+                                      ArcFilter filter, bool* all_trivial,
+                                      bool* unweighted) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   *all_trivial = true;
