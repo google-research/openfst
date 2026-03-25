@@ -92,9 +92,6 @@
 #ifndef OPENFST_SCRIPT_SCRIPT_IMPL_H_
 #define OPENFST_SCRIPT_SCRIPT_IMPL_H_
 
-// This file contains general-purpose templates which are used in the
-// implementation of the operations.
-
 #include <cstdint>
 #include <memory>
 #include <string>
