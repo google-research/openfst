@@ -31,7 +31,6 @@ permissions: read-all
 
 jobs:
     build-and-test-x64-windows-bazel:
-      name: Build and Test
       runs-on: windows-latest
       defaults:
         run:

@@ -31,7 +31,6 @@ permissions: read-all
 
 jobs:
     build-and-test-arm64-macos-cmake:
-      name: Build and Test
       runs-on: macos-latest
       env:
         cache-name: ${{github.job}}

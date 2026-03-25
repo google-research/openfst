@@ -31,7 +31,6 @@ permissions: read-all
 
 jobs:
     build-and-test-x64-linux-bazel:
-      name: Build and Test
       runs-on: ubuntu-latest
       env:
         USE_BAZEL_VERSION: 9.0.0
