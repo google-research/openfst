@@ -86,13 +86,13 @@ namespace fst {
 
 // Mapper to change input and output label of every transition into
 // epsilons.
-template <class A>
+template <class Arc>
 class EpsMapper {
  public:
   EpsMapper() = default;
 
-  A operator()(const A& arc) const {
-    return A(0, 0, arc.weight, arc.nextstate);
+  Arc operator()(const Arc& arc) const {
+    return Arc(0, 0, arc.weight, arc.nextstate);
   }
 
   uint64_t Properties(uint64_t props) const {
@@ -977,7 +977,7 @@ class WeightedTester {
 
   // Tests if two FSTS are equivalent by checking if random
   // strings from one FST are transduced the same by both FSTs.
-  template <class A>
+  template <class A>  // Do not shadow `Arc`.
   bool Equiv(const Fst<A>& fst1, const Fst<A>& fst2) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     EXPECT_TRUE(Verify(fst1));
@@ -1004,8 +1004,7 @@ class WeightedTester {
   // Ensures input-epsilon free transducers fst1 and fst2 have the
   // same domain and that for each string pair '(is, os)' in fst1,
   // '(is, os)' is the minimum weight match to 'is' in fst2.
-  template <class A>
-  bool MinRelated(const Fst<A>& fst1, const Fst<A>& fst2) {
+  bool MinRelated(const Fst<Arc>& fst1, const Fst<Arc>& fst2) {
     // Same domain
     VectorFst<Arc> P1(fst1), P2(fst2);
     Project(&P1, ProjectType::INPUT);
@@ -1016,9 +1015,9 @@ class WeightedTester {
     }
 
     // Ensures seed used once per instantiation.
-    static const UniformArcSelector<A> uniform_selector(seed_);
-    const RandGenOptions<UniformArcSelector<A>> opts(uniform_selector,
-                                                     kRandomPathLength);
+    static const UniformArcSelector<Arc> uniform_selector(seed_);
+    const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector,
+                                                       kRandomPathLength);
 
     VectorFst<Arc> path, paths1, paths2;
     for (int n = 0; n < kNumRandomPaths; ++n) {
@@ -1038,8 +1037,7 @@ class WeightedTester {
   }
 
   // Tests ShortestDistance(A - P) >= ShortestDistance(A) times Threshold.
-  template <class A>
-  bool PruneEquiv(const Fst<A>& fst, const Fst<A>& pfst, Weight threshold) {
+  bool PruneEquiv(const Fst<Arc>& fst, const Fst<Arc>& pfst, Weight threshold) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     EXPECT_TRUE(Verify(fst));
     EXPECT_TRUE(Verify(pfst));
