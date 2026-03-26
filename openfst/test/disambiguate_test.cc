@@ -131,13 +131,13 @@ class DisambiguateTest : public ::testing::Test {
     bool operator()(const T& t1, const T& t2) const { return true; }
   };
 
-  std::unique_ptr<VectorFst<Arc>> dfst1_;
-  std::unique_ptr<VectorFst<Arc>> dfst2_;
-  std::unique_ptr<VectorFst<Arc>> dfst3_;
-  std::unique_ptr<VectorFst<Arc>> dfst4_;
-  std::unique_ptr<VectorFst<Arc>> dfst5_;
-  std::unique_ptr<VectorFst<Arc>> dfst6_;
-  std::unique_ptr<VectorFst<Arc>> dfst7_;
+  std::unique_ptr<const VectorFst<Arc>> dfst1_;
+  std::unique_ptr<const VectorFst<Arc>> dfst2_;
+  std::unique_ptr<const VectorFst<Arc>> dfst3_;
+  std::unique_ptr<const VectorFst<Arc>> dfst4_;
+  std::unique_ptr<const VectorFst<Arc>> dfst5_;
+  std::unique_ptr<const VectorFst<Arc>> dfst6_;
+  std::unique_ptr<const VectorFst<Arc>> dfst7_;
 };
 
 // Tests relation filter when R(p, q) <=> p == q.

@@ -154,13 +154,13 @@ class RelationDeterminizeFilter {
   // Pairs arc labels with state tuples with possible heads and empty subsets.
   void InitLabelMap(LabelMap* label_map) const;
 
-  std::unique_ptr<Fst<Arc>> fst_;  // Input FST.
-  std::vector<StateId>* head_;     // Head state for a given state,
-                                   // owned by the Disambiguator.
-  std::unique_ptr<Relation> r_;    // Relation compatible with inv. trans. fnc.
-  StateId s_;                      // Current state.
-  const StateTuple* tuple_;        // Current tuple.
-  bool is_final_;                  // Is the current head state final?
+  std::unique_ptr<const Fst<Arc>> fst_;  // Input FST.
+  std::vector<StateId>* head_;           // Head state for a given state,
+                                         // owned by the Disambiguator.
+  std::unique_ptr<Relation> r_;  // Relation compatible with inv. trans. fnc.
+  StateId s_;                    // Current state.
+  const StateTuple* tuple_;      // Current tuple.
+  bool is_final_;                // Is the current head state final?
 };
 
 template <class Arc, class Relation>
