@@ -45,21 +45,24 @@ template <class A, class A1, class A2>
 void TestAccumulator(const Fst<A>& fst, A1* accum1, A2* accum2) {
   using W = typename A::Weight;
   for (StateIterator<Fst<A>> siter(fst); !siter.Done(); siter.Next()) {
-    StateId s = siter.Value();
+    const StateId s = siter.Value();
     accum1->SetState(s);
     accum2->SetState(s);
     ArcIterator<Fst<A>> aiter(fst, s);
-    size_t narcs = fst.NumArcs(s);
-    size_t mid = narcs / 2;
+    const size_t narcs = fst.NumArcs(s);
+    const size_t mid = narcs / 2;
     W w1 = accum1->Sum(W::Zero(), &aiter, 0, mid);
     W w2 = accum2->Sum(W::Zero(), &aiter, 0, mid);
-    ASSERT_TRUE(ApproxEqual(w1, w2)) << w1.Value() << " " << w2.Value();
+    EXPECT_TRUE(ApproxEqual(w1, w2))
+        << s << ": " << w1.Value() << " " << w2.Value();
     w1 = accum1->Sum(W::Zero(), &aiter, mid, narcs);
     w2 = accum2->Sum(W::Zero(), &aiter, mid, narcs);
-    ASSERT_TRUE(ApproxEqual(w1, w2)) << w1.Value() << " " << w2.Value();
+    EXPECT_TRUE(ApproxEqual(w1, w2))
+        << s << ": " << w1.Value() << " " << w2.Value();
     w1 = accum1->Sum(W::Zero(), &aiter, 0, narcs);
     w2 = accum2->Sum(W::Zero(), &aiter, 0, narcs);
-    ASSERT_TRUE(ApproxEqual(w1, w2)) << w1.Value() << " " << w2.Value();
+    EXPECT_TRUE(ApproxEqual(w1, w2))
+        << s << ": " << w1.Value() << " " << w2.Value();
   }
 }
 
@@ -71,7 +74,7 @@ class AccumulatorTest : public testing::Test {
         "openfst/test/testdata/accumulator/ac.fst")));
   }
 
-  std::unique_ptr<VectorFst<Arc>> fst_;
+  std::unique_ptr<const VectorFst<Arc>> fst_;
 };
 
 TEST_F(AccumulatorTest, LogAccumulatorTest) {
