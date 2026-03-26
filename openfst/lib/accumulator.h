@@ -57,10 +57,10 @@ class DefaultAccumulator {
 
   void SetState(StateId state) {}
 
-  Weight Sum(Weight w, Weight v) { return Plus(w, v); }
+  Weight Sum(Weight w, Weight v) const { return Plus(w, v); }
 
   template <class ArcIter>
-  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) {
+  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) const {
     Adder<Weight> adder(w);  // maintains cumulative sum accurately
     aiter->Seek(begin);
     for (auto pos = begin; pos < end; aiter->Next(), ++pos)
@@ -92,10 +92,10 @@ class LogAccumulator {
 
   void SetState(StateId s) {}
 
-  Weight Sum(Weight w, Weight v) { return LogPlus(w, v); }
+  Weight Sum(Weight w, Weight v) const { return LogPlus(w, v); }
 
   template <class ArcIter>
-  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) {
+  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) const {
     auto sum = w;
     aiter->Seek(begin);
     for (auto pos = begin; pos < end; aiter->Next(), ++pos) {
@@ -107,7 +107,7 @@ class LogAccumulator {
   constexpr bool Error() const { return false; }
 
  private:
-  Weight LogPlus(Weight w, Weight v) {
+  Weight LogPlus(Weight w, Weight v) const {
     if (w == Weight::Zero()) {
       return v;
     }
@@ -537,7 +537,7 @@ class CacheLogAccumulator {
     }
   }
 
-  Weight Sum(Weight w, Weight v) { return LogPlus(w, v); }
+  Weight Sum(Weight w, Weight v) const { return LogPlus(w, v); }
 
   template <class ArcIter>
   Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) {
@@ -596,17 +596,17 @@ class CacheLogAccumulator {
   bool Error() const { return error_; }
 
  private:
-  double LogPosExp(double x) {
+  static double LogPosExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
                                                    : log(1.0F + exp(-x));
   }
 
-  double LogMinusExp(double x) {
+  static double LogMinusExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
                                                    : log(1.0F - exp(-x));
   }
 
-  Weight LogPlus(Weight w, Weight v) {
+  Weight LogPlus(Weight w, Weight v) const {
     if (w == Weight::Zero()) {
       return v;
     }
@@ -619,7 +619,7 @@ class CacheLogAccumulator {
     }
   }
 
-  double LogPlus(double f1, Weight v) {
+  double LogPlus(double f1, Weight v) const {
     const auto f2 = to_log_weight_(v).Value();
     if (f1 == FloatLimits<double>::PosInfinity()) {
       return f2;
@@ -631,7 +631,7 @@ class CacheLogAccumulator {
   }
 
   // Assumes f1 < f2.
-  Weight LogMinus(double f1, double f2) {
+  Weight LogMinus(double f1, double f2) const {
     if (f2 == FloatLimits<double>::PosInfinity()) {
       return to_weight_(Log64Weight(f1));
     } else {
@@ -782,13 +782,13 @@ class ReplaceAccumulator {
                                                      tuple.fst_state);
   }
 
-  Weight Sum(Weight w, Weight v) {
+  Weight Sum(Weight w, Weight v) const {
     if (error_) return Weight::NoWeight();
     return data_->GetAccumulator(fst_id_)->Sum(w, v);
   }
 
   template <class ArcIter>
-  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) {
+  Weight Sum(Weight w, ArcIter* aiter, ssize_t begin, ssize_t end) const {
     if (error_) return Weight::NoWeight();
     auto sum = begin == end ? Weight::Zero()
                             : data_->GetAccumulator(fst_id_)->Sum(
@@ -869,9 +869,9 @@ class SafeReplaceAccumulator {
     aiter_.Set(*GetFst(fst_id_), tuple.fst_state);
   }
 
-  Weight Sum(Weight w, Weight v) {
+  Weight Sum(Weight w, Weight v) const {
     if (error_) return Weight::NoWeight();
-    return GetAccumulator(fst_id_)->Sum(w, v);
+    return GetAccumulator(fst_id_).Sum(w, v);
   }
 
   template <class ArcIter>
@@ -906,6 +906,7 @@ class SafeReplaceAccumulator {
   };
 
   Accumulator* GetAccumulator(size_t i) { return &accumulators_[i]; }
+  const Accumulator& GetAccumulator(size_t i) const { return accumulators_[i]; }
 
   const Fst<Arc>* GetFst(size_t i) const { return fst_array_[i].get(); }
 
