@@ -160,8 +160,7 @@ foreach(TEST_NAME ${TESTS})
 
   # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
   # then use gtest_discover_tests.
-  if(TEST_NAME STREQUAL "weight_test"
-     OR TEST_NAME STREQUAL "fst_test")
+  if(TEST_NAME STREQUAL "weight_test")
     add_test(
       NAME ${TEST_NAME}
       COMMAND ${TEST_NAME}
