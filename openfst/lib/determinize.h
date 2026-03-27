@@ -243,17 +243,16 @@ class DefaultDeterminizeFilter {
     using Other = DefaultDeterminizeFilter<A>;
   };
 
-  explicit DefaultDeterminizeFilter(const Fst<Arc>& fst) : fst_(fst.Copy()) {}
+  explicit DefaultDeterminizeFilter(const Fst<Arc>& fst) {}
 
   // This is needed (e.g.) to go into the gallic domain for transducers.
   template <class Filter>
-  DefaultDeterminizeFilter(const Fst<Arc>& fst, std::unique_ptr<Filter> filter)
-      : fst_(fst.Copy()) {}
+  DefaultDeterminizeFilter(const Fst<Arc>& fst,
+                           std::unique_ptr<Filter> filter) {}
 
   // Copy constructor; the FST can be passed if it has been deep-copied.
   DefaultDeterminizeFilter(const DefaultDeterminizeFilter& filter,
-                           const Fst<Arc>* fst = nullptr)
-      : fst_(fst ? fst->Copy() : filter.fst_->Copy()) {}
+                           const Fst<Arc>* fst = nullptr) {}
 
   FilterState Start() const { return FilterState(0); }
 
@@ -275,12 +274,11 @@ class DefaultDeterminizeFilter {
   }
 
   // Filters super-final transition, returning new final weight.
-  Weight FilterFinal(Weight weight, const Element& element) { return weight; }
+  Weight FilterFinal(Weight weight, const Element& element) const {
+    return weight;
+  }
 
   static uint64_t Properties(uint64_t props) { return props; }
-
- private:
-  std::unique_ptr<Fst<Arc>> fst_;
 };
 
 // Determinization state table interface:
