@@ -97,7 +97,8 @@ class StringReader {
       done_ = true;                   // whitespace at the end of a file.
   }
 
-  std::unique_ptr<VectorFst<Arc>> GetVectorFst(bool keep_symbols = false) {
+  std::unique_ptr<VectorFst<Arc>> GetVectorFst(
+      bool keep_symbols = false) const {
     auto fst = std::make_unique<VectorFst<Arc>>();
     if (keep_symbols) {
       fst->SetInputSymbols(symbols_);
@@ -111,7 +112,7 @@ class StringReader {
   }
 
   std::unique_ptr<CompactStringFst<Arc>> GetCompactFst(
-      bool keep_symbols = false) {
+      bool keep_symbols = false) const {
     std::unique_ptr<CompactStringFst<Arc>> fst;
     if (keep_symbols) {
       VectorFst<Arc> tmp;
@@ -136,7 +137,7 @@ class StringReader {
   TokenType token_type_;
   const SymbolTable* symbols_;
   bool done_;
-  StringCompiler<Arc> compiler_;
+  const StringCompiler<Arc> compiler_;
   std::string content_;  // The actual content of the input stream's next FST.
 
   StringReader(const StringReader&) = delete;
