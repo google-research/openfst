@@ -215,8 +215,8 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
             absl::statusor
             absl::memory
   )
-  # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
-  # then use gtest_discover_tests.
+  # This could use `gtest_discover_tests`, but it's about 5s slower (74s vs
+  # 69s) since there are hundreds of very small test cases.
   add_test(
     NAME ${VAR_TEST_NAME}
     COMMAND ${VAR_TEST_NAME}

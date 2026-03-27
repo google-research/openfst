@@ -36,18 +36,50 @@
 #include "openfst/lib/test-properties.h"
 #include "openfst/lib/weight.h"
 
-// DEFINEs determine which semirings are tested; these are controlled by
-// the `defines` attributes of the associated build rules.
-
 ABSL_FLAG(uint64_t, seed, 403, "random seed");
 ABSL_FLAG(int32_t, repeat, 25, "number of test repetitions");
 
+namespace fst {
 namespace {
 
-using ::fst::AlgoTester;
-using ::fst::WeightGenerate;
+// These macros determine which semirings are tested; they are controlled by the
+// `defines` attributes of the associated build rules.  We can try to use one
+// test with all these as `ArcTypes`, but that may blow up the build time.
+#if defined(TEST_TROPICAL)
+using Arc = StdArc;
+#elif defined(TEST_LOG)
+using Arc = LogArc;
+#elif defined(TEST_MINMAX)
+using Arc = MinMaxArc;
+#elif defined(TEST_LEFT_STRING)
+using Arc = StringArc<STRING_LEFT>;
+#elif defined(TEST_RIGHT_STRING)
+using Arc = StringArc<STRING_RIGHT>;
+#elif defined(TEST_GALLIC)
+using Arc = GallicArc<StdArc>;
+#elif defined(TEST_LEXICOGRAPHIC)
+using Arc = LexicographicArc<TropicalWeight, TropicalWeight>;
+#elif defined(TEST_POWER)
+using Arc = ArcTpl<PowerWeight<TropicalWeight, 3> >;
+#else
+#error "Must have one of the TEST_* macros defined."
+#endif
+
+using ArcTypes = ::testing::Types<Arc>;
+// The extra comma is for C++17 compat.  We need to include an empty "..."
+// arg instead of omitting it.  It can be removed when we require C++20.
+INSTANTIATE_TYPED_TEST_SUITE_P(MyRational, RationalTest, ArcTypes, );
+INSTANTIATE_TYPED_TEST_SUITE_P(MyMap, MapTest, ArcTypes, );
+INSTANTIATE_TYPED_TEST_SUITE_P(MyCompose, ComposeTest, ArcTypes, );
+INSTANTIATE_TYPED_TEST_SUITE_P(MySort, SortTest, ArcTypes, );
+INSTANTIATE_TYPED_TEST_SUITE_P(MyOptimize, OptimizeTest, ArcTypes, );
+INSTANTIATE_TYPED_TEST_SUITE_P(MySearch, SearchTest, ArcTypes, );
+using UnweightedArcTypes = ::testing::Types<fst::StdArc>;
+INSTANTIATE_TYPED_TEST_SUITE_P(MyUnweighted, UnweightedTest,
+                               UnweightedArcTypes, );
 
 }  // namespace
+}  // namespace fst
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
@@ -66,34 +98,6 @@ int main(int argc, char** argv) {
   VLOG(1) << "default_cache_gc:" << absl::GetFlag(FLAGS_fst_default_cache_gc);
   VLOG(1) << "default_cache_gc_limit:"
           << absl::GetFlag(FLAGS_fst_default_cache_gc_limit);
-#if defined(TEST_TROPICAL)
-  using Arc = fst::StdArc;
-#elif defined(TEST_LOG)
-  using Arc = fst::LogArc;
-#elif defined(TEST_MINMAX)
-  using Arc = fst::MinMaxArc;
-#elif defined(TEST_LEFT_STRING)
-  using Arc = fst::StringArc<fst::STRING_LEFT>;
-#elif defined(TEST_RIGHT_STRING)
-  using Arc = fst::StringArc<fst::STRING_RIGHT>;
-#elif defined(TEST_GALLIC)
-  using Arc = fst::GallicArc<fst::StdArc>;
-#elif defined(TEST_LEXICOGRAPHIC)
-  using fst::LexicographicArc;
-  using fst::TropicalWeight;
-  using Arc = LexicographicArc<TropicalWeight, TropicalWeight>;
-#elif defined(TEST_POWER)
-  using fst::ArcTpl;
-  using fst::PowerWeight;
-  using fst::TropicalWeight;
-  using Arc = ArcTpl<PowerWeight<TropicalWeight, 3> >;
-#else
-#error "Must have one of the TEST_* macros defined."
-#endif
-  WeightGenerate<Arc::Weight> weight_generator(absl::GetFlag(FLAGS_seed),
-                                               /*allow_zero=*/false);
-  AlgoTester<Arc> arc_tester(weight_generator, absl::GetFlag(FLAGS_seed));
-  arc_tester.Test();
 
-  return 0;
+  return RUN_ALL_TESTS();
 }
