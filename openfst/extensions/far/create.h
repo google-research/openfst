@@ -38,7 +38,7 @@ void Create(absl::Span<const std::string> sources, FarWriter<Arc>& writer,
             int32_t generate_keys, const std::string& key_prefix,
             const std::string& key_suffix) {
   for (size_t i = 0; i < sources.size(); ++i) {
-    std::unique_ptr<Fst<Arc>> ifst(Fst<Arc>::Read(sources[i]));
+    std::unique_ptr<const Fst<Arc>> ifst(Fst<Arc>::Read(sources[i]));
     if (!ifst) return;
     std::string key;
     if (generate_keys > 0) {
