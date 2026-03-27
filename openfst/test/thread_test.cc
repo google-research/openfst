@@ -74,7 +74,7 @@ class ThreadTest : public testing::Test {
     ASSERT_GE(num_threads, 1);
     ASSERT_GE(num_tasks, num_threads);
 
-    std::vector<std::unique_ptr<Fst<Arc>>> tfsts;
+    std::vector<std::unique_ptr<const Fst<Arc>>> tfsts;
     tfsts.reserve(num_tasks);
     for (int32_t i = 0; i < num_tasks; ++i) {
       tfsts.push_back(absl::WrapUnique(fst.Copy(safe)));
@@ -86,9 +86,9 @@ class ThreadTest : public testing::Test {
     // When C++20 is allowed, use std::jthread.
     std::vector<std::thread> threads;
     threads.reserve(num_threads);
-    absl::Span<std::unique_ptr<Fst<Arc>>> tfsts_span(tfsts);
+    absl::Span<std::unique_ptr<const Fst<Arc>>> tfsts_span(tfsts);
     for (int32_t i = 0; i < num_threads; ++i) {
-      absl::Span<std::unique_ptr<Fst<Arc>>> thread_fsts;
+      absl::Span<std::unique_ptr<const Fst<Arc>>> thread_fsts;
       if (i == num_threads - 1) {
         thread_fsts = tfsts_span;
       } else {
