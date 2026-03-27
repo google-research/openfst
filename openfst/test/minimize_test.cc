@@ -87,16 +87,16 @@ class MinimizeTest : public testing::Test {
   std::unique_ptr<VectorFst<Arc>> m2_;
   std::unique_ptr<VectorFst<Arc>> m3_;
   std::unique_ptr<VectorFst<Arc>> m4_;
-  std::unique_ptr<VectorFst<Arc>> m5_;
+  std::unique_ptr<const VectorFst<Arc>> m5_;
   std::unique_ptr<VectorFst<Arc>> m6_;
-  std::unique_ptr<VectorFst<Arc>> acyclic_min_;
-  std::unique_ptr<VectorFst<Arc>> cyclic_min_;
-  std::unique_ptr<VectorFst<Arc>> weighted_acyclic_min_;
-  std::unique_ptr<VectorFst<Arc>> weighted_cyclic_min_;
-  std::unique_ptr<VectorFst<Arc>> transducer_acyclic_min_;
-  std::unique_ptr<VectorFst<Arc>> transducer_acyclic_min1_;
-  std::unique_ptr<VectorFst<Arc>> transducer_acyclic_min2_;
-  std::unique_ptr<VectorFst<Arc>> transducer_cyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> acyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> cyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> weighted_acyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> weighted_cyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> transducer_acyclic_min_;
+  std::unique_ptr<const VectorFst<Arc>> transducer_acyclic_min1_;
+  std::unique_ptr<const VectorFst<Arc>> transducer_acyclic_min2_;
+  std::unique_ptr<const VectorFst<Arc>> transducer_cyclic_min_;
 };
 
 TEST_F(MinimizeTest, AcyclicMinimizeTest) {

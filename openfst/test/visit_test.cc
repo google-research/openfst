@@ -52,10 +52,10 @@ class VisitTest : public testing::Test {
     vfst4_.reset(VectorFst<Arc>::Read(visit4_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> vfst1_;
-  std::unique_ptr<VectorFst<Arc>> vfst2_;
-  std::unique_ptr<VectorFst<Arc>> vfst3_;
-  std::unique_ptr<VectorFst<Arc>> vfst4_;
+  std::unique_ptr<const VectorFst<Arc>> vfst1_;
+  std::unique_ptr<const VectorFst<Arc>> vfst2_;
+  std::unique_ptr<const VectorFst<Arc>> vfst3_;
+  std::unique_ptr<const VectorFst<Arc>> vfst4_;
 };
 
 TEST_F(VisitTest, DfsVisit) {

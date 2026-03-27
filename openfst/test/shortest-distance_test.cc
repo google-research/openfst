@@ -57,8 +57,8 @@ class ShortestDistanceTest : public testing::Test {
     sdfst2_.reset(VectorFst<Arc>::Read(shortest_distance2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> sdfst1_;
-  std::unique_ptr<VectorFst<Arc>> sdfst2_;
+  std::unique_ptr<const VectorFst<Arc>> sdfst1_;
+  std::unique_ptr<const VectorFst<Arc>> sdfst2_;
 };
 
 TEST_F(ShortestDistanceTest, ShortestDistance) {

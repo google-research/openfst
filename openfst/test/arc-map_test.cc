@@ -83,15 +83,15 @@ class ArcMapTest : public testing::Test {
     mfst16_.reset(VectorFst<StdArc>::Read(map16_name));
   }
 
-  std::unique_ptr<VectorFst<StdArc>> mfst1_;
-  std::unique_ptr<VectorFst<LogArc>> mfst2_;
-  std::unique_ptr<VectorFst<GallicArc<StdArc>>> mfst3_;
-  std::unique_ptr<VectorFst<StdArc>> mfst4_;
-  std::unique_ptr<VectorFst<StdArc>> mfst5_;
-  std::unique_ptr<VectorFst<StdArc>> mfst13_;
-  std::unique_ptr<VectorFst<StdArc>> mfst14_;
-  std::unique_ptr<VectorFst<StdArc>> mfst15_;
-  std::unique_ptr<VectorFst<StdArc>> mfst16_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst1_;
+  std::unique_ptr<const VectorFst<LogArc>> mfst2_;
+  std::unique_ptr<const VectorFst<GallicArc<StdArc>>> mfst3_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst4_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst5_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst13_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst14_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst15_;
+  std::unique_ptr<const VectorFst<StdArc>> mfst16_;
 };
 
 // This tests the self-modifying map using the identity mapper.

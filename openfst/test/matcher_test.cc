@@ -161,28 +161,28 @@ class MatcherTest : public testing::Test {
     }
   }
 
-  std::unique_ptr<VectorFst<Arc>> mfst1_;
+  std::unique_ptr<const VectorFst<Arc>> mfst1_;
   std::unique_ptr<VectorFst<Arc>> mfst2_;
-  std::unique_ptr<VectorFst<Arc>> mfst3_;
-  std::unique_ptr<VectorFst<Arc>> mfst4_;
-  std::unique_ptr<VectorFst<Arc>> mfst5_;
-  std::unique_ptr<VectorFst<Arc>> mfst6_;
-  std::unique_ptr<VectorFst<Arc>> mfst7_;
-  std::unique_ptr<VectorFst<Arc>> mfst8_;
-  std::unique_ptr<VectorFst<Arc>> mfst9_;
-  std::unique_ptr<VectorFst<Arc>> mfst10_;
-  std::unique_ptr<VectorFst<Arc>> mfst11_;
-  std::unique_ptr<VectorFst<Arc>> mfst12_;
-  std::unique_ptr<VectorFst<Arc>> mfst13_;
-  std::unique_ptr<VectorFst<Arc>> mfst14_;
+  std::unique_ptr<const VectorFst<Arc>> mfst3_;
+  std::unique_ptr<const VectorFst<Arc>> mfst4_;
+  std::unique_ptr<const VectorFst<Arc>> mfst5_;
+  std::unique_ptr<const VectorFst<Arc>> mfst6_;
+  std::unique_ptr<const VectorFst<Arc>> mfst7_;
+  std::unique_ptr<const VectorFst<Arc>> mfst8_;
+  std::unique_ptr<const VectorFst<Arc>> mfst9_;
+  std::unique_ptr<const VectorFst<Arc>> mfst10_;
+  std::unique_ptr<const VectorFst<Arc>> mfst11_;
+  std::unique_ptr<const VectorFst<Arc>> mfst12_;
+  std::unique_ptr<const VectorFst<Arc>> mfst13_;
+  std::unique_ptr<const VectorFst<Arc>> mfst14_;
 
   std::unique_ptr<VectorFst<Arc>> lm_fst_;
-  std::unique_ptr<VectorFst<Arc>> a_fst_;
-  std::unique_ptr<VectorFst<Arc>> bb_fst_;
-  std::unique_ptr<VectorFst<Arc>> a_bb_fst_;
-  std::unique_ptr<VectorFst<Arc>> lm_a_fst_;
-  std::unique_ptr<VectorFst<Arc>> lm_bb_fst_;
-  std::unique_ptr<VectorFst<Arc>> lm_a_bb_fst_;
+  std::unique_ptr<const VectorFst<Arc>> a_fst_;
+  std::unique_ptr<const VectorFst<Arc>> bb_fst_;
+  std::unique_ptr<const VectorFst<Arc>> a_bb_fst_;
+  std::unique_ptr<const VectorFst<Arc>> lm_a_fst_;
+  std::unique_ptr<const VectorFst<Arc>> lm_bb_fst_;
+  std::unique_ptr<const VectorFst<Arc>> lm_a_bb_fst_;
 };
 
 TEST_F(MatcherTest, ComposeWithRhoMatcher) {

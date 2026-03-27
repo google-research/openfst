@@ -126,7 +126,7 @@ class ReachableTest : public testing::Test {
   }
 
   std::mt19937_64 rand_;
-  std::vector<std::unique_ptr<VectorFst<Arc>>> afst_;
+  std::vector<std::unique_ptr<const VectorFst<Arc>>> afst_;
   std::vector<StateId> scc_;
   std::vector<size_t> nscc_;
   static constexpr int kNumRandomStates = 1000;  // Number of states to examine.

@@ -47,22 +47,22 @@ class SynchronizeTest : public testing::Test {
     sfst2_.reset(VectorFst<Arc>::Read(synchronize2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> sfst1_;
-  std::unique_ptr<VectorFst<Arc>> sfst2_;
+  std::unique_ptr<const VectorFst<Arc>> sfst1_;
+  std::unique_ptr<const VectorFst<Arc>> sfst2_;
 };
 
 TEST_F(SynchronizeTest, SynchronizeFst) {
   VectorFst<Arc> nfst;
 
-  SynchronizeFst<Arc> dfst(*sfst1_);
+  const SynchronizeFst<Arc> dfst(*sfst1_);
   ASSERT_TRUE(Verify(dfst));
   ASSERT_TRUE(Equal(dfst, *sfst2_));
 
-  SynchronizeFst<Arc> ndfst(nfst);
+  const SynchronizeFst<Arc> ndfst(nfst);
   ASSERT_TRUE(Verify(ndfst));
 
   for (const bool safe : {false, true}) {
-    SynchronizeFst<Arc> cfst(dfst, safe);
+    const SynchronizeFst<Arc> cfst(dfst, safe);
     ASSERT_TRUE(Verify(cfst));
     ASSERT_TRUE(Equal(cfst, *sfst2_));
   }

@@ -61,10 +61,10 @@ class RmEpsilonTest : public testing::Test {
     rfst4_.reset(VectorFst<Arc>::Read(rmeps4_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
-  std::unique_ptr<VectorFst<Arc>> rfst3_;
-  std::unique_ptr<VectorFst<Arc>> rfst4_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst3_;
+  std::unique_ptr<const VectorFst<Arc>> rfst4_;
 };
 
 TEST_F(RmEpsilonTest, RmEpsilon) {

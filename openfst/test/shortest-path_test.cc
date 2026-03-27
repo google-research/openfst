@@ -73,15 +73,15 @@ class ShortestPathTest : public testing::Test {
     spfst9_.reset(VectorFst<Arc>::Read(shortest_path9_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> spfst1_;
-  std::unique_ptr<VectorFst<Arc>> spfst2_;
-  std::unique_ptr<VectorFst<Arc>> spfst3_;
-  std::unique_ptr<VectorFst<Arc>> spfst4_;
-  std::unique_ptr<VectorFst<Arc>> spfst5_;
-  std::unique_ptr<VectorFst<Arc>> spfst6_;
-  std::unique_ptr<VectorFst<Arc>> spfst7_;
-  std::unique_ptr<VectorFst<Arc>> spfst8_;
-  std::unique_ptr<VectorFst<Arc>> spfst9_;
+  std::unique_ptr<const VectorFst<Arc>> spfst1_;
+  std::unique_ptr<const VectorFst<Arc>> spfst2_;
+  std::unique_ptr<const VectorFst<Arc>> spfst3_;
+  std::unique_ptr<const VectorFst<Arc>> spfst4_;
+  std::unique_ptr<const VectorFst<Arc>> spfst5_;
+  std::unique_ptr<const VectorFst<Arc>> spfst6_;
+  std::unique_ptr<const VectorFst<Arc>> spfst7_;
+  std::unique_ptr<const VectorFst<Arc>> spfst8_;
+  std::unique_ptr<const VectorFst<Arc>> spfst9_;
 };
 
 TEST_F(ShortestPathTest, ShortestPath) {

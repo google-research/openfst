@@ -48,7 +48,7 @@ class EqualTest : public testing::Test {
     fst_.reset(VectorFst<Arc>::Read(i1_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> fst_;
+  std::unique_ptr<const VectorFst<Arc>> fst_;
 };
 
 TEST_F(EqualTest, MismatchedStart) {

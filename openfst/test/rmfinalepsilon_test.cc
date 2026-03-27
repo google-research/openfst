@@ -48,8 +48,8 @@ class RmFinalEpsilonTest : public testing::Test {
     rfst2_.reset(VectorFst<Arc>::Read(rmeps2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
 };
 
 TEST_F(RmFinalEpsilonTest, RmEpsilon) {

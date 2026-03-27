@@ -83,12 +83,12 @@ class FactorWeightTest : public testing::Test {
     fwfst6_.reset(VectorFst<Arc>::Read(fw6_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> fwfst1_;
-  std::unique_ptr<VectorFst<Arc>> fwfst2_;
-  std::unique_ptr<VectorFst<Arc>> fwfst3_;
-  std::unique_ptr<VectorFst<Arc>> fwfst4_;
-  std::unique_ptr<VectorFst<Arc>> fwfst5_;
-  std::unique_ptr<VectorFst<Arc>> fwfst6_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst1_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst2_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst3_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst4_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst5_;
+  std::unique_ptr<const VectorFst<Arc>> fwfst6_;
 };
 
 TEST_F(FactorWeightTest, FactorWeightFst) {

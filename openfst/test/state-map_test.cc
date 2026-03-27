@@ -51,10 +51,10 @@ class StateMapTest : public testing::Test {
     b2_.reset(VectorFst<Arc>::Read(b2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> a1_;
-  std::unique_ptr<VectorFst<Arc>> a2_;
-  std::unique_ptr<VectorFst<Arc>> b1_;
-  std::unique_ptr<VectorFst<Arc>> b2_;
+  std::unique_ptr<const VectorFst<Arc>> a1_;
+  std::unique_ptr<const VectorFst<Arc>> a2_;
+  std::unique_ptr<const VectorFst<Arc>> b1_;
+  std::unique_ptr<const VectorFst<Arc>> b2_;
 };
 
 TEST_F(StateMapTest, IdentityTest) {

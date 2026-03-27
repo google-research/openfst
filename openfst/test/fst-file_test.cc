@@ -57,52 +57,52 @@ class FstFileTest : public testing::Test {
     compact2_name_ = JoinPath(path, "compact2.fst");
   }
 
-  void FstTest(absl::string_view file) {
-    std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(file));
+  void FstTest(absl::string_view file) const {
+    std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(file));
     EXPECT_TRUE(Verify(*fst));
   }
 
-  void VectorFstTest() {
-    std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  void VectorFstTest() const {
+    std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
     std::ostringstream oss;
     VectorFst<Arc>::WriteFst(*fst, oss, FstWriteOptions());
     std::istringstream iss(oss.str());
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
     EXPECT_TRUE(Verify(*fst2));
     EXPECT_TRUE(Equal(*fst, *fst2));
     EXPECT_EQ(fst2->Type(), "vector");
   }
 
-  void VectorAsConstFstTest() {
-    std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  void VectorAsConstFstTest() const {
+    std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
     std::ostringstream oss;
     ConstFst<Arc>::WriteFst(*fst, oss, FstWriteOptions());
     std::istringstream iss(oss.str());
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
     EXPECT_TRUE(Verify(*fst2));
     EXPECT_TRUE(Equal(*fst, *fst2));
     EXPECT_EQ(fst2->Type(), "const");
   }
 
-  void ConstFstTest() {
-    std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  void ConstFstTest() const {
+    std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
     std::ostringstream oss;
     VectorFst<Arc> vfst(*fst);
     ConstFst<Arc>::WriteFst(vfst, oss, FstWriteOptions());
     std::istringstream iss(oss.str());
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
     EXPECT_TRUE(Verify(*fst2));
     EXPECT_TRUE(Equal(*fst, *fst2));
     EXPECT_EQ(fst2->Type(), "const");
   }
 
-  void ConstAsVectorFstTest() {
-    std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  void ConstAsVectorFstTest() const {
+    std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
     std::ostringstream oss;
     ConstFst<Arc> cfst(*fst);
     VectorFst<Arc>::WriteFst(cfst, oss, FstWriteOptions());
     std::istringstream iss(oss.str());
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
     EXPECT_TRUE(Verify(*fst2));
     EXPECT_TRUE(Equal(*fst, *fst2));
     EXPECT_EQ(fst2->Type(), "vector");
@@ -173,7 +173,7 @@ TEST_F(FstFileTest, StripSymbolsTest) {
     std::istringstream iss(oss.str());
     FstReadOptions opts;
     opts.read_isymbols = false;
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, opts));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, opts));
     EXPECT_TRUE(fst2->InputSymbols() == nullptr);
     EXPECT_FALSE(fst2->OutputSymbols() == nullptr);
   }
@@ -181,7 +181,7 @@ TEST_F(FstFileTest, StripSymbolsTest) {
     std::istringstream iss(oss.str());
     FstReadOptions opts;
     opts.read_osymbols = false;
-    std::unique_ptr<Fst<Arc>> fst2(Fst<Arc>::Read(iss, opts));
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, opts));
     EXPECT_FALSE(fst2->InputSymbols() == nullptr);
     EXPECT_TRUE(fst2->OutputSymbols() == nullptr);
   }
@@ -202,7 +202,7 @@ class noseekostream : public std::ostream {
 };
 
 TEST_F(FstFileTest, NoSeek) {
-  std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
   noseekostream oss;
   FstWriteOptions opts;
   opts.stream_write = true;

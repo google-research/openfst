@@ -53,10 +53,10 @@ class RandGenTest : public testing::Test {
     rfst4_.reset(VectorFst<Arc>::Read(randgen4_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
-  std::unique_ptr<VectorFst<Arc>> rfst3_;
-  std::unique_ptr<VectorFst<Arc>> rfst4_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst3_;
+  std::unique_ptr<const VectorFst<Arc>> rfst4_;
 };
 
 TEST_F(RandGenTest, UniformRandGenEmpty) {

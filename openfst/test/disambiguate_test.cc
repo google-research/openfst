@@ -116,13 +116,13 @@ class DisambiguateTest : public ::testing::Test {
   // Tests (partially) if two FSTs have the same states
   // and arcs irrespective of state and arc orderings.
   bool UnorderedEqual(const Fst<Arc>& fst1, const Fst<Arc>& fst2) const {
-    UniformArcSelector<Arc> uniform_selector(0);
-    RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector, 25);
-    bool fst_equiv =
+    const UniformArcSelector<Arc> uniform_selector(0);
+    const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector, 25);
+    const bool fst_equiv =
         RandEquivalent(fst1, fst2, /*npath=*/100, opts,
                        /*delta=*/.05, /*seed=*/absl::GetFlag(FLAGS_seed));
-    bool state_size_equiv = CountStates(fst1) == CountStates(fst2);
-    bool arc_size_equiv = CountArcs(fst1) == CountArcs(fst2);
+    const bool state_size_equiv = CountStates(fst1) == CountStates(fst2);
+    const bool arc_size_equiv = CountArcs(fst1) == CountArcs(fst2);
     return fst_equiv && state_size_equiv && arc_size_equiv;
   }
 

@@ -50,9 +50,9 @@ class ProjectTest : public testing::Test {
     pfst3_.reset(VectorFst<Arc>::Read(project3_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> pfst1_;
-  std::unique_ptr<VectorFst<Arc>> pfst2_;
-  std::unique_ptr<VectorFst<Arc>> pfst3_;
+  std::unique_ptr<const VectorFst<Arc>> pfst1_;
+  std::unique_ptr<const VectorFst<Arc>> pfst2_;
+  std::unique_ptr<const VectorFst<Arc>> pfst3_;
 };
 
 TEST_F(ProjectTest, Project) {

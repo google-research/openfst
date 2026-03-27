@@ -58,8 +58,8 @@ class AStarTest : public Test {
     ASSERT_TRUE(shortest_) << "Failed to read " << shortest_name;
   }
 
-  std::unique_ptr<VectorFst<StdArc>> dfa_;
-  std::unique_ptr<VectorFst<StdArc>> shortest_;
+  std::unique_ptr<const VectorFst<StdArc>> dfa_;
+  std::unique_ptr<const VectorFst<StdArc>> shortest_;
 };
 
 StateId CountExploredStates(absl::Span<const Weight> distance) {

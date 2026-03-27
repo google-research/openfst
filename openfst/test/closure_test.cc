@@ -71,13 +71,13 @@ class ClosureTest : public testing::Test {
     cfst7_.reset(VectorFst<Arc>::Read(closure7_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> cfst1_;
-  std::unique_ptr<VectorFst<Arc>> cfst2_;
-  std::unique_ptr<VectorFst<Arc>> cfst3_;
-  std::unique_ptr<VectorFst<Arc>> cfst4_;
-  std::unique_ptr<VectorFst<Arc>> cfst5_;
-  std::unique_ptr<VectorFst<Arc>> cfst6_;
-  std::unique_ptr<VectorFst<Arc>> cfst7_;
+  std::unique_ptr<const VectorFst<Arc>> cfst1_;
+  std::unique_ptr<const VectorFst<Arc>> cfst2_;
+  std::unique_ptr<const VectorFst<Arc>> cfst3_;
+  std::unique_ptr<const VectorFst<Arc>> cfst4_;
+  std::unique_ptr<const VectorFst<Arc>> cfst5_;
+  std::unique_ptr<const VectorFst<Arc>> cfst6_;
+  std::unique_ptr<const VectorFst<Arc>> cfst7_;
 };
 
 TEST_F(ClosureTest, MutableClosure) {

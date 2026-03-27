@@ -51,9 +51,9 @@ class ReweightTest : public testing::Test {
     rfst3_.reset(VectorFst<Arc>::Read(reweight3_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
-  std::unique_ptr<VectorFst<Arc>> rfst3_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst3_;
 };
 
 TEST_F(ReweightTest, Reweight) {

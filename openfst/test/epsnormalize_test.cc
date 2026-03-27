@@ -58,12 +58,12 @@ class EpsNormalizeTest : public testing::Test {
     efst6_.reset(VectorFst<Arc>::Read(epsnorm6_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> efst1_;
-  std::unique_ptr<VectorFst<Arc>> efst2_;
-  std::unique_ptr<VectorFst<Arc>> efst3_;
-  std::unique_ptr<VectorFst<Arc>> efst4_;
-  std::unique_ptr<VectorFst<Arc>> efst5_;
-  std::unique_ptr<VectorFst<Arc>> efst6_;
+  std::unique_ptr<const VectorFst<Arc>> efst1_;
+  std::unique_ptr<const VectorFst<Arc>> efst2_;
+  std::unique_ptr<const VectorFst<Arc>> efst3_;
+  std::unique_ptr<const VectorFst<Arc>> efst4_;
+  std::unique_ptr<const VectorFst<Arc>> efst5_;
+  std::unique_ptr<const VectorFst<Arc>> efst6_;
 };
 
 TEST_F(EpsNormalizeTest, EpsNormalizeInput) {

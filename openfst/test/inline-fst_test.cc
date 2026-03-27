@@ -35,13 +35,13 @@ namespace {
 
 TEST(InlineFstTest, TestStdInline) {
   // Note that this example uses C++11 raw string literals.
-  std::unique_ptr<StdFst> f1(InlineFst<StdArc>(
+  std::unique_ptr<const StdFst> f1(InlineFst<StdArc>(
       R"(0 1 2 3 2.0
 1 2 3 4 1.0
 2
 )"));
   ASSERT_TRUE(f1 != nullptr);
-  std::unique_ptr<StdFst> f2(InlineFst<StdArc>(
+  std::unique_ptr<const StdFst> f2(InlineFst<StdArc>(
       R"(0 1 3 1
 1 2 4 2
 2
@@ -49,7 +49,7 @@ TEST(InlineFstTest, TestStdInline) {
   ASSERT_TRUE(f2 != nullptr);
   StdVectorFst f3;
   Compose(*f1, *f2, &f3);
-  std::unique_ptr<StdFst> f4(InlineFst<StdArc>(
+  std::unique_ptr<const StdFst> f4(InlineFst<StdArc>(
       R"(0 1 2 1 2
 1 2 3 2 1
 2
@@ -61,7 +61,7 @@ TEST(InlineFstTest, TestStdInline) {
 TEST(InlineFstTest, TestLexicographicInline) {
   using Weight = LexicographicWeight<TropicalWeight, TropicalWeight>;
   using LexArc = ArcTpl<Weight>;
-  std::unique_ptr<Fst<LexArc>> f1(
+  std::unique_ptr<const Fst<LexArc>> f1(
       InlineFst<LexArc>("0 1 2 3 0.1,0.2\n"
                         "1 0.9,0.3\n"));
   ASSERT_TRUE(f1 != nullptr);

@@ -56,11 +56,11 @@ class PushTest : public testing::Test {
     pfst5_.reset(VectorFst<Arc>::Read(push5_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> pfst1_;
-  std::unique_ptr<VectorFst<Arc>> pfst2_;
-  std::unique_ptr<VectorFst<Arc>> pfst3_;
-  std::unique_ptr<VectorFst<Arc>> pfst4_;
-  std::unique_ptr<VectorFst<Arc>> pfst5_;
+  std::unique_ptr<const VectorFst<Arc>> pfst1_;
+  std::unique_ptr<const VectorFst<Arc>> pfst2_;
+  std::unique_ptr<const VectorFst<Arc>> pfst3_;
+  std::unique_ptr<const VectorFst<Arc>> pfst4_;
+  std::unique_ptr<const VectorFst<Arc>> pfst5_;
 };
 
 TEST_F(PushTest, PushWeight) {

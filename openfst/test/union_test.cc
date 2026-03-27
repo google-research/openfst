@@ -62,12 +62,12 @@ class UnionTest : public testing::Test {
     ufst6_.reset(VectorFst<Arc>::Read(union6_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> ufst1_;
-  std::unique_ptr<VectorFst<Arc>> ufst2_;
-  std::unique_ptr<VectorFst<Arc>> ufst3_;
-  std::unique_ptr<VectorFst<Arc>> ufst4_;
-  std::unique_ptr<VectorFst<Arc>> ufst5_;
-  std::unique_ptr<VectorFst<Arc>> ufst6_;
+  std::unique_ptr<const VectorFst<Arc>> ufst1_;
+  std::unique_ptr<const VectorFst<Arc>> ufst2_;
+  std::unique_ptr<const VectorFst<Arc>> ufst3_;
+  std::unique_ptr<const VectorFst<Arc>> ufst4_;
+  std::unique_ptr<const VectorFst<Arc>> ufst5_;
+  std::unique_ptr<const VectorFst<Arc>> ufst6_;
 };
 
 TEST_F(UnionTest, MutableUnion) {

@@ -54,9 +54,9 @@ class EncodeTest : public testing::Test {
     dfst_cd_.reset(VectorFst<Arc>::Read(d_cd_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> pfst_;
-  std::unique_ptr<VectorFst<Arc>> pfst_cd_;
-  std::unique_ptr<VectorFst<Arc>> dfst_cd_;
+  std::unique_ptr<const VectorFst<Arc>> pfst_;
+  std::unique_ptr<const VectorFst<Arc>> pfst_cd_;
+  std::unique_ptr<const VectorFst<Arc>> dfst_cd_;
 };
 
 TEST_F(EncodeTest, EncodeLabels) {

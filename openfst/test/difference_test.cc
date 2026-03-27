@@ -61,11 +61,11 @@ class DifferenceTest : public testing::Test {
     ifst5_.reset(VectorFst<Arc>::Read(difference5_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> ifst1_;
-  std::unique_ptr<VectorFst<Arc>> ifst2_;
-  std::unique_ptr<VectorFst<Arc>> ifst3_;
-  std::unique_ptr<VectorFst<Arc>> ifst4_;
-  std::unique_ptr<VectorFst<Arc>> ifst5_;
+  std::unique_ptr<const VectorFst<Arc>> ifst1_;
+  std::unique_ptr<const VectorFst<Arc>> ifst2_;
+  std::unique_ptr<const VectorFst<Arc>> ifst3_;
+  std::unique_ptr<const VectorFst<Arc>> ifst4_;
+  std::unique_ptr<const VectorFst<Arc>> ifst5_;
 };
 
 TEST_F(DifferenceTest, DifferenceFst) {

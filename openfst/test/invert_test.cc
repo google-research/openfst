@@ -48,8 +48,8 @@ class InvertTest : public testing::Test {
     ifst2_.reset(VectorFst<Arc>::Read(invert2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> ifst1_;
-  std::unique_ptr<VectorFst<Arc>> ifst2_;
+  std::unique_ptr<const VectorFst<Arc>> ifst1_;
+  std::unique_ptr<const VectorFst<Arc>> ifst2_;
 };
 
 TEST_F(InvertTest, Invert) {

@@ -53,9 +53,9 @@ class TopsortTest : public testing::Test {
     tfst3_.reset(VectorFst<Arc>::Read(topsort3_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> tfst1_;
-  std::unique_ptr<VectorFst<Arc>> tfst2_;
-  std::unique_ptr<VectorFst<Arc>> tfst3_;
+  std::unique_ptr<const VectorFst<Arc>> tfst1_;
+  std::unique_ptr<const VectorFst<Arc>> tfst2_;
+  std::unique_ptr<const VectorFst<Arc>> tfst3_;
 };
 
 TEST_F(TopsortTest, Topsort) {

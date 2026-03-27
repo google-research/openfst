@@ -69,15 +69,15 @@ class DeterminizeTest : public testing::Test {
     dfst9_.reset(VectorFst<Arc>::Read(determinize9_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> dfst1_;
-  std::unique_ptr<VectorFst<Arc>> dfst2_;
-  std::unique_ptr<VectorFst<Arc>> dfst3_;
-  std::unique_ptr<VectorFst<Arc>> dfst4_;
-  std::unique_ptr<VectorFst<Arc>> dfst5_;
-  std::unique_ptr<VectorFst<Arc>> dfst6_;
-  std::unique_ptr<VectorFst<Arc>> dfst7_;
-  std::unique_ptr<VectorFst<Arc>> dfst8_;
-  std::unique_ptr<VectorFst<Arc>> dfst9_;
+  std::unique_ptr<const VectorFst<Arc>> dfst1_;
+  std::unique_ptr<const VectorFst<Arc>> dfst2_;
+  std::unique_ptr<const VectorFst<Arc>> dfst3_;
+  std::unique_ptr<const VectorFst<Arc>> dfst4_;
+  std::unique_ptr<const VectorFst<Arc>> dfst5_;
+  std::unique_ptr<const VectorFst<Arc>> dfst6_;
+  std::unique_ptr<const VectorFst<Arc>> dfst7_;
+  std::unique_ptr<const VectorFst<Arc>> dfst8_;
+  std::unique_ptr<const VectorFst<Arc>> dfst9_;
 };
 
 TEST_F(DeterminizeTest, AcceptorDeterminize) {

@@ -52,8 +52,8 @@ class PruneTest : public testing::Test {
     pfst2_.reset(VectorFst<Arc>::Read(prune2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> pfst1_;
-  std::unique_ptr<VectorFst<Arc>> pfst2_;
+  std::unique_ptr<const VectorFst<Arc>> pfst1_;
+  std::unique_ptr<const VectorFst<Arc>> pfst2_;
 };
 
 TEST_F(PruneTest, DestructivePrune) {

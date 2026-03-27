@@ -52,8 +52,8 @@ class CompactTest : public testing::Test {
     fst2_.reset(VectorFst<StdArc>::Read(compact2_name));
   }
 
-  std::unique_ptr<VectorFst<StdArc>> fst1_;
-  std::unique_ptr<VectorFst<StdArc>> fst2_;
+  std::unique_ptr<const VectorFst<StdArc>> fst1_;
+  std::unique_ptr<const VectorFst<StdArc>> fst2_;
 };
 
 template <class Arc, class Container, class Compactor>

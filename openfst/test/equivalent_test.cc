@@ -73,7 +73,8 @@ class EquivTest : public testing::Test {
  protected:
   // Map from string IDs to FSTs.
   using Name2FstMap =
-      absl::flat_hash_map<absl::string_view, std::unique_ptr<VectorFst<Arc>>>;
+      absl::flat_hash_map<absl::string_view,
+                          std::unique_ptr<const VectorFst<Arc>>>;
 
   void SetUp() override {
     const std::string kTestPath =

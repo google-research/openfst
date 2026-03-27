@@ -130,7 +130,7 @@ TEST_F(ClassTest, MutableFstClassCopy) {
 
 // Tests that a read from a nonexistent test returns NULL.
 TEST_F(ClassTest, ReactsCorrectlyToBadFilename) {
-  std::unique_ptr<FstClass> f(FstClass::Read(std::string(kDummyName)));
+  std::unique_ptr<const FstClass> f(FstClass::Read(std::string(kDummyName)));
   ASSERT_EQ(nullptr, f);
 }
 

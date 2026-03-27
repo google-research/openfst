@@ -58,9 +58,9 @@ class ConnectTest : public testing::Test {
     cfst3_.reset(VectorFst<Arc>::Read(connect3_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> cfst1_;
-  std::unique_ptr<VectorFst<Arc>> cfst2_;
-  std::unique_ptr<VectorFst<Arc>> cfst3_;
+  std::unique_ptr<const VectorFst<Arc>> cfst1_;
+  std::unique_ptr<const VectorFst<Arc>> cfst2_;
+  std::unique_ptr<const VectorFst<Arc>> cfst3_;
 };
 
 TEST_F(ConnectTest, Connect) {

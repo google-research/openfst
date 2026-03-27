@@ -101,8 +101,8 @@ class StateTableTest : public testing::Test {
     stfst2_.reset(VectorFst<Arc>::Read(sttable2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> stfst1_;
-  std::unique_ptr<VectorFst<Arc>> stfst2_;
+  std::unique_ptr<const VectorFst<Arc>> stfst1_;
+  std::unique_ptr<const VectorFst<Arc>> stfst2_;
 };
 
 // Checks that composition using the generic (hash-based) state table is

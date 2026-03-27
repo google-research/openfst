@@ -54,8 +54,8 @@ class SymbolTableOpsTest : public testing::Test {
 // This test the merging of two symbol tables, where conflicts are resolved
 // by repositioning values taken from the right table higher.
 TEST_F(SymbolTableOpsTest, MergeSymbolTableTest) {
-  std::unique_ptr<SymbolTable> left(SymbolTable::ReadText(t1_map_name_));
-  std::unique_ptr<SymbolTable> right(SymbolTable::ReadText(t2_map_name_));
+  std::unique_ptr<const SymbolTable> left(SymbolTable::ReadText(t1_map_name_));
+  std::unique_ptr<const SymbolTable> right(SymbolTable::ReadText(t2_map_name_));
 
   bool relabel;
   std::unique_ptr<SymbolTable> merged(
@@ -102,9 +102,9 @@ TEST_F(SymbolTableOpsTest, MergeSymbolTableTestSubsets) {
 
 // This tests crunches the numbering of symbol table, removing holes.
 TEST_F(SymbolTableOpsTest, CompactSymbolTableTest) {
-  std::unique_ptr<SymbolTable> st(SymbolTable::ReadText(t1_map_name_));
+  std::unique_ptr<const SymbolTable> st(SymbolTable::ReadText(t1_map_name_));
 
-  std::unique_ptr<SymbolTable> compact(CompactSymbolTable(*st));
+  std::unique_ptr<const SymbolTable> compact(CompactSymbolTable(*st));
 
   EXPECT_EQ(compact->Find("a"), 1);
   EXPECT_EQ(compact->Find("b"), 2);
@@ -125,7 +125,7 @@ TEST_F(SymbolTableOpsTest, PruneSymbolTableTest) {
   std::unique_ptr<SymbolTable> left(SymbolTable::ReadText(t2_map_name_));
 
   Relabel(fst.get(), left.get(), left.get());
-  std::unique_ptr<SymbolTable> pruned(
+  std::unique_ptr<const SymbolTable> pruned(
       PruneSymbolTable(*fst, *fst->InputSymbols(), true));
 
   EXPECT_EQ(pruned->NumSymbols(), 2);

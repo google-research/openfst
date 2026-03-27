@@ -69,14 +69,14 @@ class ConcatTest : public ::testing::Test {
     cfst8_.reset(VectorFst<Arc>::Read(concat8_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> cfst1_;
-  std::unique_ptr<VectorFst<Arc>> cfst2_;
-  std::unique_ptr<VectorFst<Arc>> cfst3_;
-  std::unique_ptr<VectorFst<Arc>> cfst4_;
-  std::unique_ptr<VectorFst<Arc>> cfst5_;
-  std::unique_ptr<VectorFst<Arc>> cfst6_;
-  std::unique_ptr<VectorFst<Arc>> cfst7_;
-  std::unique_ptr<VectorFst<Arc>> cfst8_;
+  std::unique_ptr<const VectorFst<Arc>> cfst1_;
+  std::unique_ptr<const VectorFst<Arc>> cfst2_;
+  std::unique_ptr<const VectorFst<Arc>> cfst3_;
+  std::unique_ptr<const VectorFst<Arc>> cfst4_;
+  std::unique_ptr<const VectorFst<Arc>> cfst5_;
+  std::unique_ptr<const VectorFst<Arc>> cfst6_;
+  std::unique_ptr<const VectorFst<Arc>> cfst7_;
+  std::unique_ptr<const VectorFst<Arc>> cfst8_;
 };
 
 TEST_F(ConcatTest, MutableConcat) {

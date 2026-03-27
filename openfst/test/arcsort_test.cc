@@ -53,8 +53,8 @@ class ArcSortTest : public testing::Test {
     afst2_.reset(VectorFst<Arc>::Read(arcsort2_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> afst1_;
-  std::unique_ptr<VectorFst<Arc>> afst2_;
+  std::unique_ptr<const VectorFst<Arc>> afst1_;
+  std::unique_ptr<const VectorFst<Arc>> afst2_;
 };
 
 TEST_F(ArcSortTest, ILabelArcSort) {
