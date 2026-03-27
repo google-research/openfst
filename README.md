@@ -3,11 +3,11 @@
 # OpenFst Library
 
 [![GitHub license](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/google-research/nisaba/blob/main/LICENSE)
-[![bazel_x64_linux](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml/badge.svg?branch=main)](https://github.com/google-research/openfst/actions?query=workflow%3A%22Bazel%20%28x64%20Linux%29%22)
-[![cmake_x64_linux](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml/badge.svg?branch=main)](https://github.com/google-research/openfst/actions?query=workflow%3A%22CMake%20%28x64%20Linux%29%22)
-[![bazel_arm64_macos](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml/badge.svg?branch=main)](https://github.com/google-research/openfst/actions?query=workflow%3A%22Bazel%20%28arm64%20macOS%29%22)
-[![cmake_arm64_macos](https://github.com/google-research/openfst/actions/workflows/cmake_arm64_macos.yml/badge.svg?branch=main)](https://github.com/google-research/openfst/actions?query=workflow%3A%22CMake%20%28arm64%20macOS%2922)
-[![bazel_x64_windows](https://github.com/google-research/openfst/actions/workflows/bazel_x64_windows.yml/badge.svg?branch=main)](https://github.com/google-research/openfst/actions?query=workflow%3A%22Bazel%20%28x64%20Windows%29%22)
+[![Bazel (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml)
+[![CMake (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml)
+[![Bazel (arm64 macOS)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml)
+[![CMake (arm64 macOS)](https://github.com/google-research/openfst/actions/workflows/cmake_arm64_macos.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake_arm64_macos.yml)
+[![Bazel (x64 Windows)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_windows.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_windows.yml)
 
 This library is for constructing, combining, optimizing, and searching *weighted
 finite-state transducers* (FSTs). Weighted finite-state transducers are automata
