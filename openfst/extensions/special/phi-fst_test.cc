@@ -53,12 +53,12 @@ class PhiFstTest : public ::testing::Test {
     return Verify(cfst) && Equal(ofst, cfst);
   }
 
-  std::unique_ptr<StdFst> a_;
-  std::unique_ptr<StdFst> b1_;
-  std::unique_ptr<StdFst> b2_;
-  std::unique_ptr<StdFst> c1_;
-  std::unique_ptr<StdFst> c2_;
-  std::unique_ptr<StdFst> c3_;
+  std::unique_ptr<const StdFst> a_;
+  std::unique_ptr<const StdFst> b1_;
+  std::unique_ptr<const StdFst> b2_;
+  std::unique_ptr<const StdFst> c1_;
+  std::unique_ptr<const StdFst> c2_;
+  std::unique_ptr<const StdFst> c3_;
 };
 
 TEST_F(PhiFstTest, StdPhiFstTest) {

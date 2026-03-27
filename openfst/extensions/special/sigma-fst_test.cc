@@ -52,13 +52,13 @@ class SigmaFstTest : public ::testing::Test {
   }
 
   // A string.
-  std::unique_ptr<StdFst> g_;
+  std::unique_ptr<const StdFst> g_;
   // A context-free rewrite rule "contained" by sigma-star (where sigma = 3).
-  std::unique_ptr<StdFst> h_;
+  std::unique_ptr<const StdFst> h_;
   // Application of h to g where labels matching sigma are passed through.
-  std::unique_ptr<StdFst> i1_;
+  std::unique_ptr<const StdFst> i1_;
   // Application of h to g where labels matching sigma are not passed through.
-  std::unique_ptr<StdFst> i2_;
+  std::unique_ptr<const StdFst> i2_;
 };
 
 TEST_F(SigmaFstTest, StdSigmaFstTest) {

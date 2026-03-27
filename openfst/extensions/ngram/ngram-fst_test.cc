@@ -53,7 +53,7 @@ static std::string Testfile() {
 }
 
 TEST(NGramFstTest, EmptyFst) {
-  NGramFst<StdArc> fst;
+  const NGramFst<StdArc> fst;
   EXPECT_EQ(fst::kNoStateId, fst.Start());
   EXPECT_EQ(0, fst.NumStates());
 }
@@ -103,7 +103,7 @@ struct Mapper {
 };
 
 TEST(NGramFstTest, TestNGramFstWithCustomArc) {
-  std::unique_ptr<StdFst> fst(StdFst::Read(Testfile()));
+  std::unique_ptr<const StdFst> fst(StdFst::Read(Testfile()));
   VectorFst<CustomArc> cfst;
   ArcMap(*fst, &cfst, Mapper());
 
@@ -114,18 +114,18 @@ TEST(NGramFstTest, TestNGramFstWithCustomArc) {
 }
 
 TEST(NGramFstTest, NGramFstIO) {
-  std::unique_ptr<StdFst> fst(StdFst::Read(Testfile()));
+  std::unique_ptr<const StdFst> fst(StdFst::Read(Testfile()));
   NGramFst<StdArc> loudsfst(*fst);
 
   std::string source = JoinPath(::testing::TempDir(), "loudslm.fst");
   loudsfst.Write(source);
-  std::unique_ptr<NGramFst<StdArc>> readloudsfst(
+  std::unique_ptr<const NGramFst<StdArc>> readloudsfst(
       NGramFst<StdArc>::Read(source));
   EXPECT_TRUE(Equal(loudsfst, *readloudsfst));
 }
 
 TEST(NGramFstTest, NGramFstAlignedIO) {
-  std::unique_ptr<StdFst> fst(StdFst::Read(Testfile()));
+  std::unique_ptr<const StdFst> fst(StdFst::Read(Testfile()));
   NGramFst<StdArc> loudsfst(*fst);
   std::string source = JoinPath(::testing::TempDir(), "loudslm.fst");
   {
@@ -135,7 +135,7 @@ TEST(NGramFstTest, NGramFstAlignedIO) {
     opts.align = true;
     loudsfst.Write(file, opts);
   }
-  std::unique_ptr<NGramFst<StdArc>> readloudsfst(
+  std::unique_ptr<const NGramFst<StdArc>> readloudsfst(
       ABSL_DIE_IF_NULL(NGramFst<StdArc>::Read(source)));
   EXPECT_TRUE(Equal(loudsfst, *readloudsfst));
 }

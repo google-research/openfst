@@ -69,7 +69,7 @@ using FastVectorFst = VectorFst<Arc, FastState>;
 
 // Tests connection.
 static void ConnectTest(absl::string_view file, benchmark::State& state) {
-  std::unique_ptr<FstType> fst(ABSL_DIE_IF_NULL(FstType::Read(file)));
+  std::unique_ptr<const FstType> fst(ABSL_DIE_IF_NULL(FstType::Read(file)));
   for (auto _ : state) {
     FastVectorFst cfst(*fst);
     Connect(&cfst);

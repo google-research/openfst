@@ -45,8 +45,9 @@ using FstType = StdFst;
 
 // Tests minimization of cyclic transducer.
 static void BM_MinimizeCyclicTransducer(benchmark::State& state) {
-  std::unique_ptr<FstType> disamb(FstType::Read(JoinPathRespectAbsolute(
-      std::string("."), absl::GetFlag(FLAGS_input_fst))));
+  std::unique_ptr<const FstType> disamb(
+      FstType::Read(JoinPathRespectAbsolute(
+          std::string("."), absl::GetFlag(FLAGS_input_fst))));
   CHECK(disamb != nullptr);
   VectorFst<Arc> det;
   Determinize(*disamb, &det);

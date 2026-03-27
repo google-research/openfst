@@ -51,7 +51,7 @@ using FstType = StdFst;
 
 // Tests shortest path on acyclic input.
 static void BM_AcyclicShortestPath(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_acyclic_fst)))));
   int64_t props = fst->Properties(kFstProperties, true);
@@ -64,7 +64,7 @@ static void BM_AcyclicShortestPath(benchmark::State& state) {
 
 // Tests shortest path on cyclic input.
 static void BM_CyclicShortestPath(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_cyclic_fst)))));
   int64_t props = fst->Properties(kFstProperties, true);

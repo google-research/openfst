@@ -46,60 +46,57 @@ constexpr char kTestDataDir[] =
 class QuantizeWeightsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    namespace f = fst;
-
     // Input fst.
     const std::string input_fst_name = JoinPath(
         std::string("."), kTestDataDir, "quantize_weights_input.fst");
-    input_fst_.reset(f::Fst<Arc>::Read(input_fst_name));
+    input_fst_.reset(Fst<Arc>::Read(input_fst_name));
 
     // Uniform quantization.
     const std::string uniformly_quantized_fst_name = JoinPath(
         std::string("."), kTestDataDir, "uniform_quantization.fst");
     uniformly_quantized_fst_.reset(
-        f::Fst<Arc>::Read(uniformly_quantized_fst_name));
+        Fst<Arc>::Read(uniformly_quantized_fst_name));
 
     // Uniform quantization to the range of the input FST.
     const std::string uniformly_quantized_input_range_fst_name =
         JoinPath(std::string("."), kTestDataDir,
                        "uniform_quantization_input_range.fst");
     uniformly_quantized_input_range_fst_.reset(
-        f::Fst<Arc>::Read(uniformly_quantized_input_range_fst_name));
+        Fst<Arc>::Read(uniformly_quantized_input_range_fst_name));
 
     // k-median quantization.
     const std::string kmedian_quantized_fst_name = JoinPath(
         std::string("."), kTestDataDir, "kmedian_quantization.fst");
-    kmedian_quantized_fst_.reset(f::Fst<Arc>::Read(kmedian_quantized_fst_name));
+    kmedian_quantized_fst_.reset(Fst<Arc>::Read(kmedian_quantized_fst_name));
 
     // Clip_weights_only.
     const std::string clip_weights_only_quantized_fst_name =
         JoinPath(std::string("."), kTestDataDir, "clip_only.fst");
-    clip_only_fst_.reset(
-        f::Fst<Arc>::Read(clip_weights_only_quantized_fst_name));
+    clip_only_fst_.reset(Fst<Arc>::Read(clip_weights_only_quantized_fst_name));
 
     // quantize_zero_weight.
     const std::string quantize_zero_weight_fst_name = JoinPath(
         std::string("."), kTestDataDir, "quantize_zero_weight.fst");
     quantize_zero_weight_fst_.reset(
-        f::Fst<Arc>::Read(quantize_zero_weight_fst_name));
+        Fst<Arc>::Read(quantize_zero_weight_fst_name));
   }
 
-  std::unique_ptr<fst::Fst<Arc>> input_fst_;
-  std::unique_ptr<fst::Fst<Arc>> uniformly_quantized_fst_;
-  std::unique_ptr<fst::Fst<Arc>> uniformly_quantized_input_range_fst_;
-  std::unique_ptr<fst::Fst<Arc>> kmedian_quantized_fst_;
-  std::unique_ptr<fst::Fst<Arc>> clip_only_fst_;
-  std::unique_ptr<fst::Fst<Arc>> quantize_zero_weight_fst_;
+  std::unique_ptr<const Fst<Arc>> input_fst_;
+  std::unique_ptr<const Fst<Arc>> uniformly_quantized_fst_;
+  std::unique_ptr<const Fst<Arc>> uniformly_quantized_input_range_fst_;
+  std::unique_ptr<const Fst<Arc>> kmedian_quantized_fst_;
+  std::unique_ptr<const Fst<Arc>> clip_only_fst_;
+  std::unique_ptr<const Fst<Arc>> quantize_zero_weight_fst_;
 };
 
 TEST_F(QuantizeWeightsTest, MinMaxFiniteWeightValues_EmptyFst) {
-  const auto min_max = fst::GetMinMaxFiniteWeightValues(StdVectorFst());
+  const auto min_max = GetMinMaxFiniteWeightValues(StdVectorFst());
   EXPECT_EQ(min_max.first, std::numeric_limits<double>::infinity());
   EXPECT_EQ(min_max.second, -std::numeric_limits<double>::infinity());
 }
 
 TEST_F(QuantizeWeightsTest, MinMaxFiniteWeightValues) {
-  const auto min_max = fst::GetMinMaxFiniteWeightValues(*input_fst_);
+  const auto min_max = GetMinMaxFiniteWeightValues(*input_fst_);
   // These values are from fstprint.
   EXPECT_NEAR(min_max.first, -0.300104588, 0.5e-9);
   EXPECT_DOUBLE_EQ(min_max.second, 99.0);
@@ -108,27 +105,27 @@ TEST_F(QuantizeWeightsTest, MinMaxFiniteWeightValues) {
 // Checks uniform quantization.
 TEST_F(QuantizeWeightsTest, UniformQuantizationTest) {
   std::vector<double> boundaries;
-  fst::ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
-                                  /*max_level=*/10.0, &boundaries);
-  fst::VectorFst<Arc> quantized_fst(*input_fst_);
-  fst::QuantizeWeights<fst::StdArc>(boundaries, &quantized_fst);
-  EXPECT_TRUE(fst::Equal(quantized_fst, *uniformly_quantized_fst_));
+  ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
+                             /*max_level=*/10.0, &boundaries);
+  VectorFst<Arc> quantized_fst(*input_fst_);
+  QuantizeWeights<StdArc>(boundaries, &quantized_fst);
+  EXPECT_TRUE(Equal(quantized_fst, *uniformly_quantized_fst_));
 }
 
 // Checks uniform to range of input FST.
 TEST_F(QuantizeWeightsTest, UniformQuantizationInputRangeTest) {
-  const auto min_max = fst::GetMinMaxFiniteWeightValues(*input_fst_);
+  const auto min_max = GetMinMaxFiniteWeightValues(*input_fst_);
 
   std::vector<double> boundaries;
-  fst::ComputeUniformQuantization(
+  ComputeUniformQuantization(
       /*num_levels=*/100, /*min_level=*/min_max.first,
       /*max_level=*/min_max.second, &boundaries);
-  fst::VectorFst<Arc> quantized_fst(*input_fst_);
-  fst::QuantizeWeights<fst::StdArc>(boundaries, &quantized_fst);
+  VectorFst<Arc> quantized_fst(*input_fst_);
+  QuantizeWeights<StdArc>(boundaries, &quantized_fst);
   // From the MinMaxFiniteWeightValues test, we see the min is ~-0.3,
   // and the max is 99. With 101 steps, the increment is ~1. The weights
   // are in fact near -0.3, 0.7, 2.7, etc.
-  EXPECT_TRUE(fst::Equal(quantized_fst, *uniformly_quantized_input_range_fst_));
+  EXPECT_TRUE(Equal(quantized_fst, *uniformly_quantized_input_range_fst_));
 }
 
 // Checks log-uniform quantization.
@@ -136,35 +133,35 @@ TEST_F(QuantizeWeightsTest, KMedianQuantizationTest) {
   std::vector<double> boundaries;
   // The input FST has ~40 weights with 10 different values, so 4 clusters
   // should provide a reasonable test of k-medians.
-  fst::ComputeWeightedkMedianQuantization(*input_fst_,
-                                          /*num_levels=*/4, &boundaries);
-  fst::VectorFst<Arc> quantized_fst(*input_fst_);
-  fst::QuantizeWeights<fst::StdArc>(boundaries, &quantized_fst);
-  EXPECT_TRUE(fst::Equal(quantized_fst, *kmedian_quantized_fst_));
+  ComputeWeightedkMedianQuantization(*input_fst_,
+                                     /*num_levels=*/4, &boundaries);
+  VectorFst<Arc> quantized_fst(*input_fst_);
+  QuantizeWeights<StdArc>(boundaries, &quantized_fst);
+  EXPECT_TRUE(Equal(quantized_fst, *kmedian_quantized_fst_));
 }
 
 // Checks clip_weights_only.
 TEST_F(QuantizeWeightsTest, ClipWeightsOnlyTest) {
   std::vector<double> boundaries;
-  fst::ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
-                                  /*max_level=*/10.0, &boundaries);
-  fst::VectorFst<Arc> quantized_fst(*input_fst_);
-  fst::QuantizeWeights<fst::StdArc>(boundaries, &quantized_fst,
-                                    /*quantize_zero_weight=*/false,
-                                    /*clip_weights_only=*/true);
-  EXPECT_TRUE(fst::Equal(quantized_fst, *clip_only_fst_));
+  ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
+                             /*max_level=*/10.0, &boundaries);
+  VectorFst<Arc> quantized_fst(*input_fst_);
+  QuantizeWeights<StdArc>(boundaries, &quantized_fst,
+                          /*quantize_zero_weight=*/false,
+                          /*clip_weights_only=*/true);
+  EXPECT_TRUE(Equal(quantized_fst, *clip_only_fst_));
 }
 
 // Checks uniform quantization with quantize_zero_weight.
 TEST_F(QuantizeWeightsTest, QuantizeWeightsZeroTest) {
   std::vector<double> boundaries;
-  fst::ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
-                                  /*max_level=*/10.0, &boundaries);
-  fst::VectorFst<Arc> quantized_fst(*input_fst_);
-  fst::QuantizeWeights<fst::StdArc>(boundaries, &quantized_fst,
-                                    /*quantize_zero_weight=*/true,
-                                    /*clip_weights_only=*/false);
-  EXPECT_TRUE(fst::Equal(quantized_fst, *quantize_zero_weight_fst_));
+  ComputeUniformQuantization(/*num_levels=*/101, /*min_level=*/-10.0,
+                             /*max_level=*/10.0, &boundaries);
+  VectorFst<Arc> quantized_fst(*input_fst_);
+  QuantizeWeights<StdArc>(boundaries, &quantized_fst,
+                          /*quantize_zero_weight=*/true,
+                          /*clip_weights_only=*/false);
+  EXPECT_TRUE(Equal(quantized_fst, *quantize_zero_weight_fst_));
 }
 
 }  // namespace

@@ -74,7 +74,7 @@ using StdNGramFst = NGramFst<StdArc>;
 
 // Loads fst of type F from file and computes its properties.
 template <class F>
-std::unique_ptr<F> LoadFst(absl::string_view filename) {
+std::unique_ptr<const F> LoadFst(absl::string_view filename) {
   auto fst = std::make_unique<F>(
       *ABSL_DIE_IF_NULL(Fst<typename F::Arc>::Read(filename)));
   fst->Properties(kFstProperties, true);  // compute properties

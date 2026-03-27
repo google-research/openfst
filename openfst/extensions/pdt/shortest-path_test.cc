@@ -68,10 +68,10 @@ class ShortestPathTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> spfst1_;
-  std::unique_ptr<VectorFst<Arc>> spfst2_;
-  std::unique_ptr<VectorFst<Arc>> spfst3_;
-  std::unique_ptr<VectorFst<Arc>> spfst4_;
+  std::unique_ptr<const VectorFst<Arc>> spfst1_;
+  std::unique_ptr<const VectorFst<Arc>> spfst2_;
+  std::unique_ptr<const VectorFst<Arc>> spfst3_;
+  std::unique_ptr<const VectorFst<Arc>> spfst4_;
   std::vector<std::pair<Label, Label>> parens_;
 };
 

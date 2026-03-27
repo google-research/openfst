@@ -53,7 +53,7 @@ namespace {
 // Tests class-specialized state and arc iterators
 template <typename F>
 static void BM_SpecializedIterators(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -75,7 +75,7 @@ static void BM_SpecializedIterators(benchmark::State& state) {
 // Tests generic state and arc iterators
 template <typename F>
 static void BM_GenericIterators(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -100,7 +100,7 @@ static void BM_GenericIterators(benchmark::State& state) {
 // Tests class-specialized matcher
 template <typename F>
 static void BM_SpecializedMatcher(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -124,7 +124,7 @@ static void BM_SpecializedMatcher(benchmark::State& state) {
 // Tests generic matcher
 template <typename F>
 static void BM_GenericMatcher(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -151,7 +151,7 @@ static void BM_GenericMatcher(benchmark::State& state) {
 // Tests copy of input FST via copy constructor.
 template <typename F>
 static void BM_IntrinsicCopy(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
   for (auto _ : state) {
@@ -163,7 +163,7 @@ static void BM_IntrinsicCopy(benchmark::State& state) {
 // Tests copy of input FST via mutators
 template <typename F>
 static void BM_ExtrinsicCopy(benchmark::State& state) {
-  std::unique_ptr<StdFst> ifst(
+  std::unique_ptr<const StdFst> ifst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -188,7 +188,7 @@ static void BM_ExtrinsicCopy(benchmark::State& state) {
 // Tests Fst::Properties().
 template <typename F>
 static void BM_Properties(benchmark::State& state) {
-  std::unique_ptr<StdFst> fst(
+  std::unique_ptr<const StdFst> fst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 

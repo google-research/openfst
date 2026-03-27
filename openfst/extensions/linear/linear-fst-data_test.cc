@@ -224,7 +224,7 @@ TEST_F(LinearFstDataTest, UnigramNoDelay) {
   AddWords(&builder);
   AddUnigramFeatures(group, &builder);
 
-  std::unique_ptr<StdLinearFstData> data_ptr(builder.Dump());
+  std::unique_ptr<const StdLinearFstData> data_ptr(builder.Dump());
   const StdLinearFstData& data = *data_ptr;
 
   // Simple properties
@@ -278,7 +278,7 @@ TEST_F(LinearFstDataTest, StartUnigramNoDelay) {
   AddUnigramFeatures(group, &builder);
   AddStartUnigramFeatures(group, &builder);
 
-  std::unique_ptr<StdLinearFstData> data_ptr(builder.Dump());
+  std::unique_ptr<const StdLinearFstData> data_ptr(builder.Dump());
   const StdLinearFstData& data = *data_ptr;
 
   // Check start
@@ -333,7 +333,7 @@ TEST_F(LinearFstDataTest, EndUnigram) {
     AddWords(&builder);
     AddEndUnigramFeatures(group, future_size, &builder);
 
-    std::unique_ptr<StdLinearFstData> data_ptr(builder.Dump());
+    std::unique_ptr<const StdLinearFstData> data_ptr(builder.Dump());
     const StdLinearFstData& data = *data_ptr;
 
     // Check start

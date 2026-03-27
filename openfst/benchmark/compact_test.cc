@@ -87,13 +87,13 @@ struct Convert<CompactFst<A, C, S>> {
 template <class F, class G>
 static void BM_BfsVisit(benchmark::State& state) {
   using Arc = typename F::Arc;
-  std::unique_ptr<Fst<Arc>> fst(
+  std::unique_ptr<const Fst<Arc>> fst(
       ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
   std::unique_ptr<F> f(Convert<F>()(*fst));
   for (auto _ : state) {
-    std::unique_ptr<F> fp(f->Copy(absl::GetFlag(FLAGS_fst_safe_copy)));
+    std::unique_ptr<const F> fp(f->Copy(absl::GetFlag(FLAGS_fst_safe_copy)));
     PartialVisitor<Arc> visitor(INT_MAX);
     FifoQueue<typename Arc::StateId> queue;
     AnyArcFilter<Arc> arc_filter;
@@ -112,13 +112,13 @@ BENCHMARK_TEMPLATE(BM_BfsVisit, StdCompactUnweightedFst,
 template <class F, class G>
 static void BM_DfsVisit(benchmark::State& state) {
   using Arc = typename F::Arc;
-  std::unique_ptr<Fst<Arc>> fst(
+  std::unique_ptr<const Fst<Arc>> fst(
       ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
   std::unique_ptr<F> f(Convert<F>()(*fst));
   for (auto _ : state) {
-    std::unique_ptr<F> fp(f->Copy(absl::GetFlag(FLAGS_fst_safe_copy)));
+    std::unique_ptr<const F> fp(f->Copy(absl::GetFlag(FLAGS_fst_safe_copy)));
     uint64_t props;
     SccVisitor<Arc> visitor(&props);
     AnyArcFilter<Arc> arc_filter;
@@ -148,11 +148,11 @@ static void BM_LookAheadCompose(benchmark::State& state) {
                                        FastLogAccumulator<Arc>>,
                  olabel_lookahead_fst_type, LookAheadRelabeler>;
 
-  std::unique_ptr<Fst<Arc>> fst1(
+  std::unique_ptr<const Fst<Arc>> fst1(
       ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_lookahead_fst)))));
 
-  std::unique_ptr<Fst<Arc>> fst2(
+  std::unique_ptr<const Fst<Arc>> fst2(
       ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_lm_fst)))));
 
@@ -184,7 +184,7 @@ BENCHMARK_TEMPLATE(BM_LookAheadCompose, StdCompactUnweightedFst);
 template <class F>
 static void BM_Copy(benchmark::State& state) {
   using Arc = typename F::Arc;
-  std::unique_ptr<Fst<Arc>> fst(
+  std::unique_ptr<const Fst<Arc>> fst(
       ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 

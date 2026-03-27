@@ -73,10 +73,10 @@ class ExpandTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> efst1_;
-  std::unique_ptr<VectorFst<Arc>> efst2_;
-  std::unique_ptr<VectorFst<Arc>> efst3_;
-  std::unique_ptr<VectorFst<Arc>> efst4_;
+  std::unique_ptr<const VectorFst<Arc>> efst1_;
+  std::unique_ptr<const VectorFst<Arc>> efst2_;
+  std::unique_ptr<const VectorFst<Arc>> efst3_;
+  std::unique_ptr<const VectorFst<Arc>> efst4_;
   std::vector<std::pair<Label, Label>> parens_;
 };
 

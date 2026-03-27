@@ -50,7 +50,7 @@ using FstType = StdFst;
 
 // Tests determinization of an acceptor.
 static void BM_DeterminizeAccept(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -65,7 +65,7 @@ static void BM_DeterminizeAccept(benchmark::State& state) {
 
 // Tests on-the-fly determinization of an acceptor.
 static void BM_DeterminizeFstAccept(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
@@ -80,11 +80,11 @@ static void BM_DeterminizeFstAccept(benchmark::State& state) {
 
 // Tests determinization of a transducer.
 static void BM_DeterminizeTrans(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
-  int64_t props = fst->Properties(kFstProperties, true);
+  const int64_t props = fst->Properties(kFstProperties, true);
   CHECK(!(props & kAcceptor));
   VectorFst<Arc> f(*fst);
   for (auto _ : state) {
@@ -95,11 +95,11 @@ static void BM_DeterminizeTrans(benchmark::State& state) {
 
 // Tests on-the-fly determinization of a transducer.
 static void BM_DeterminizeFstTrans(benchmark::State& state) {
-  std::unique_ptr<FstType> fst(
+  std::unique_ptr<const FstType> fst(
       ABSL_DIE_IF_NULL(FstType::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
 
-  int64_t props = fst->Properties(kFstProperties, true);
+  const int64_t props = fst->Properties(kFstProperties, true);
   CHECK(!(props & kAcceptor));
   VectorFst<Arc> f(*fst);
   for (auto _ : state) {

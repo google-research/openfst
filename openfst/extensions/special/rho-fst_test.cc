@@ -53,15 +53,15 @@ class RhoFstTest : public ::testing::Test {
   }
 
   // A string matching e.
-  std::unique_ptr<StdFst> d1_;
+  std::unique_ptr<const StdFst> d1_;
   // A string not matching e.
-  std::unique_ptr<StdFst> d2_;
+  std::unique_ptr<const StdFst> d2_;
   // A context-free rewrite rule unioned with rho-star (where rho = 2)....
-  std::unique_ptr<StdFst> e_;
+  std::unique_ptr<const StdFst> e_;
   // Application of e to d1.
-  std::unique_ptr<StdFst> f1_;
+  std::unique_ptr<const StdFst> f1_;
   // Application of e to d2 where labels matching rho are not passed through..
-  std::unique_ptr<StdFst> f2_;
+  std::unique_ptr<const StdFst> f2_;
 };
 
 TEST_F(RhoFstTest, StdRhoFstTest) {

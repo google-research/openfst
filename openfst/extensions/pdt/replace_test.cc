@@ -103,18 +103,18 @@ class ReplaceTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
-  std::unique_ptr<VectorFst<Arc>> rfst3_;
-  std::unique_ptr<VectorFst<Arc>> rfst4_;
-  std::unique_ptr<VectorFst<Arc>> rfst5_;
-  std::unique_ptr<VectorFst<Arc>> rfst6_;
-  std::unique_ptr<VectorFst<Arc>> rfst7_;
-  std::unique_ptr<VectorFst<Arc>> rfst8_;
-  std::unique_ptr<VectorFst<Arc>> rfst9_;
-  std::unique_ptr<VectorFst<Arc>> rfst10_;
-  std::unique_ptr<VectorFst<Arc>> rfst11_;
-  std::unique_ptr<VectorFst<Arc>> rfst12_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst3_;
+  std::unique_ptr<const VectorFst<Arc>> rfst4_;
+  std::unique_ptr<const VectorFst<Arc>> rfst5_;
+  std::unique_ptr<const VectorFst<Arc>> rfst6_;
+  std::unique_ptr<const VectorFst<Arc>> rfst7_;
+  std::unique_ptr<const VectorFst<Arc>> rfst8_;
+  std::unique_ptr<const VectorFst<Arc>> rfst9_;
+  std::unique_ptr<const VectorFst<Arc>> rfst10_;
+  std::unique_ptr<const VectorFst<Arc>> rfst11_;
+  std::unique_ptr<const VectorFst<Arc>> rfst12_;
   std::vector<std::pair<Label, Label>> parens_;
 };
 

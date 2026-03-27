@@ -63,8 +63,8 @@ class ReverseTest : public testing::Test {
     ASSERT_TRUE(ReadLabelTriples(parens_name, &parens_, &assignments_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> rfst1_;
-  std::unique_ptr<VectorFst<Arc>> rfst2_;
+  std::unique_ptr<const VectorFst<Arc>> rfst1_;
+  std::unique_ptr<const VectorFst<Arc>> rfst2_;
   std::vector<std::pair<Label, Label>> parens_;
   std::vector<Level> assignments_;
 };

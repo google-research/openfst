@@ -66,9 +66,9 @@ class ComposeTest : public testing::Test {
     ASSERT_TRUE(ReadLabelTriples(parens_name, &parens_, &assignments_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> cfst1_;
-  std::unique_ptr<VectorFst<Arc>> cfst2_;
-  std::unique_ptr<VectorFst<Arc>> cfst3_;
+  std::unique_ptr<const VectorFst<Arc>> cfst1_;
+  std::unique_ptr<const VectorFst<Arc>> cfst2_;
+  std::unique_ptr<const VectorFst<Arc>> cfst3_;
   std::vector<std::pair<Label, Label>> parens_;
   std::vector<Level> assignments_;
 };

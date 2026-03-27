@@ -67,7 +67,7 @@ class ExpandTest : public testing::Test {
     ASSERT_TRUE(ReadLabelTriples(parens_name, &parens_, &assignments_));
   }
 
-  std::unique_ptr<VectorFst<Arc>> efst1_, efst2_, efst3_, efst4_;
+  std::unique_ptr<const VectorFst<Arc>> efst1_, efst2_, efst3_, efst4_;
   std::vector<std::pair<Label, Label>> parens_;
   std::vector<Level> assignments_;
 };

@@ -39,7 +39,7 @@ namespace fst {
 namespace {
 
 TEST_F(FarTest, SSTableNoFar) {
-  std::unique_ptr<SSTableFarReader<LogArc>> reader(
+  std::unique_ptr<const SSTableFarReader<LogArc>> reader(
       SSTableFarReader<LogArc>::Open(
           JoinPath(::testing::TempDir(), "not_found.far")));
   EXPECT_THAT(reader, IsNull());
@@ -247,7 +247,7 @@ TEST_F(FarTest, SSTableFarClass) {
 }
 
 TEST_F(FarTest, SSTableEmptyFar) {
-  std::unique_ptr<SSTableFarWriter<LogArc>> writer(
+  std::unique_ptr<const SSTableFarWriter<LogArc>> writer(
       SSTableFarWriter<LogArc>::Create(
           JoinPath(::testing::TempDir(), "empty.far")));
   writer.reset();

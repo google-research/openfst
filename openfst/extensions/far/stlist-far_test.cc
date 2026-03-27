@@ -36,8 +36,9 @@ namespace {
 
 TEST_F(FarTest, STListNoFar) {
   absl::SetFlag(&FLAGS_fst_error_fatal, false);
-  std::unique_ptr<STListFarReader<LogArc>> reader(STListFarReader<LogArc>::Open(
-      JoinPath(::testing::TempDir(), "not_found.far")));
+  std::unique_ptr<const STListFarReader<LogArc>> reader(
+      STListFarReader<LogArc>::Open(
+          JoinPath(::testing::TempDir(), "not_found.far")));
   EXPECT_THAT(reader, IsNull());
 }
 
@@ -118,13 +119,14 @@ TEST_F(FarTest, STListFar) {
 }
 
 TEST_F(FarTest, STListEmptyFar) {
-  std::unique_ptr<STListFarWriter<LogArc>> writer(
+  std::unique_ptr<const STListFarWriter<LogArc>> writer(
       STListFarWriter<LogArc>::Create(
           JoinPath(::testing::TempDir(), "empty.far")));
   writer.reset();
 
-  std::unique_ptr<STListFarReader<LogArc>> reader(STListFarReader<LogArc>::Open(
-      JoinPath(::testing::TempDir(), "empty.far")));
+  std::unique_ptr<const STListFarReader<LogArc>> reader(
+      STListFarReader<LogArc>::Open(
+          JoinPath(::testing::TempDir(), "empty.far")));
   // STList does not support Find().
   ASSERT_FALSE(reader->Error());
   ASSERT_TRUE(reader->Done());

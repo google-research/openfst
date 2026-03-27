@@ -42,10 +42,10 @@ namespace fst {
 namespace {
 
 static void SerializeVectorFst(benchmark::State& state) {
-  std::unique_ptr<StdFst> fst(
+  std::unique_ptr<const StdFst> fst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
-  FstWriteOptions opts;
+  const FstWriteOptions opts;
   for (auto _ : state) {
     std::ostringstream str;
     StdVectorFst::WriteFst(*fst, str, opts);
@@ -54,10 +54,10 @@ static void SerializeVectorFst(benchmark::State& state) {
 BENCHMARK(SerializeVectorFst);
 
 static void SerializeConstFst(benchmark::State& state) {
-  std::unique_ptr<StdFst> fst(
+  std::unique_ptr<const StdFst> fst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
-  FstWriteOptions opts;
+  const FstWriteOptions opts;
   for (auto _ : state) {
     std::ostringstream str;
     StdConstFst::WriteFst(*fst, str, opts);
@@ -66,7 +66,7 @@ static void SerializeConstFst(benchmark::State& state) {
 BENCHMARK(SerializeConstFst);
 
 static void SerializeSymbolTable(benchmark::State& state) {
-  std::unique_ptr<StdFst> fst(
+  std::unique_ptr<const StdFst> fst(
       ABSL_DIE_IF_NULL(StdFst::Read(JoinPathRespectAbsolute(
           std::string("."), absl::GetFlag(FLAGS_input_fst)))));
   for (auto _ : state) {

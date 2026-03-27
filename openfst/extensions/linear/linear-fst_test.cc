@@ -62,7 +62,7 @@ class LinearTaggerFstTest : public Test {
     fst_.reset(BuildFst());
   }
 
-  StdLinearTaggerFst* BuildFst(CacheOptions opts = CacheOptions()) {
+  const StdLinearTaggerFst* BuildFst(CacheOptions opts = CacheOptions()) {
     StdLinearFstDataBuilder builder;
     AddDictionary(&builder);
     AddEmissionFeatures(&builder);
@@ -74,7 +74,9 @@ class LinearTaggerFstTest : public Test {
         static_cast<const SymbolTable*>(&syms_), opts);
   }
 
-  bool IsPossible(Label word, Label output) { return (word + output) % 2; }
+  bool IsPossible(Label word, Label output) const {
+    return (word + output) % 2;
+  }
 
   void AddDictionary(StdLinearFstDataBuilder* builder) {
     num_combinations_ = 0;
@@ -87,21 +89,23 @@ class LinearTaggerFstTest : public Test {
     }
   }
 
-  Weight EmissionWeight(Label ilabel, Label olabel) {
+  Weight EmissionWeight(Label ilabel, Label olabel) const {
     if ((ilabel + olabel) % 2)
       return Weight(ilabel - olabel);
     else
       return Weight::One();
   }
 
-  Weight TransitionWeight(Label olabel1, Label olabel2) {
+  Weight TransitionWeight(Label olabel1, Label olabel2) const {
     if (olabel2 < olabel1)
       return Weight(olabel2 - olabel1);
     else
       return Weight::One();
   }
 
-  bool InterestingWeight(Weight weight) { return weight != Weight::One(); }
+  bool InterestingWeight(Weight weight) const {
+    return weight != Weight::One();
+  }
 
   void AddEmissionFeaturesWithDelay(size_t delay,
                                     StdLinearFstDataBuilder* builder) {
@@ -146,7 +150,7 @@ class LinearTaggerFstTest : public Test {
   static constexpr int kNumWords = 2;
   static constexpr int kNumOutput = 2;
   SymbolTable syms_;
-  std::unique_ptr<StdLinearTaggerFst> fst_;
+  std::unique_ptr<const StdLinearTaggerFst> fst_;
   size_t num_combinations_;
 };
 
@@ -225,7 +229,7 @@ TEST_F(LinearTaggerFstTest, IOTest) {
   std::ostringstream out;
   ASSERT_TRUE(fst_->Write(out, FstWriteOptions("ostringstream")));
   std::istringstream in(out.str());
-  std::unique_ptr<StdLinearTaggerFst> fst(
+  std::unique_ptr<const StdLinearTaggerFst> fst(
       StdLinearTaggerFst::Read(in, FstReadOptions("istringstream")));
   ASSERT_TRUE(fst);
   StdVectorFst vfst1(*fst_), vfst2(*fst);
@@ -272,7 +276,7 @@ class LinearClassifierFstTest : public Test {
         builder.AddWeight(j, feat, i, Weight(1));
       }
     }
-    fst_ = std::make_unique<StdLinearClassifierFst>(
+    fst_ = std::make_unique<const StdLinearClassifierFst>(
         builder.Dump(), kNumClasses, static_cast<const SymbolTable*>(&syms_),
         static_cast<const SymbolTable*>(&syms_));
   }
@@ -290,7 +294,7 @@ class LinearClassifierFstTest : public Test {
   }
 
   SymbolTable syms_;
-  std::unique_ptr<StdLinearClassifierFst> fst_;
+  std::unique_ptr<const StdLinearClassifierFst> fst_;
   static constexpr int kNumClasses = 3;
   static constexpr int kNumGroups = 2;
 };
