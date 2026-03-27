@@ -144,8 +144,8 @@ class Isomorphism {
   // Checks if state pair is isomorphic.
   bool IsIsomorphicState(StateId s1, StateId s2);
 
-  std::unique_ptr<Fst<Arc>> fst1_;
-  std::unique_ptr<Fst<Arc>> fst2_;
+  std::unique_ptr<const Fst<Arc>> fst1_;
+  std::unique_ptr<const Fst<Arc>> fst2_;
   float delta_;                       // Weight equality delta.
   std::vector<Arc> arcs1_;            // For sorting arcs on FST1.
   std::vector<Arc> arcs2_;            // For sorting arcs on FST2.

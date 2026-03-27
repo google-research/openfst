@@ -1237,6 +1237,7 @@ cc_test(
         ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )

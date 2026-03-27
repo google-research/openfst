@@ -24,53 +24,45 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/vector-fst.h"
 
 namespace fst {
 namespace {
 
+constexpr absl::string_view kBaseDir =
+    "openfst/test/testdata/isomorphic";
+
 using Arc = StdArc;
 
-class IsomorphicTest : public testing::Test {
- protected:
-  void SetUp() override {
-    const std::string path =
-        JoinPath(std::string("."),
-                       "openfst/test/testdata/isomorphic");
-    const std::string iso1_name = JoinPath(path, "i1.fst");
-    const std::string iso2_name = JoinPath(path, "i2.fst");
-    const std::string iso3_name = JoinPath(path, "i3.fst");
-    const std::string iso4_name = JoinPath(path, "i4.fst");
-    const std::string iso5_name = JoinPath(path, "i5.fst");
-    const std::string iso6_name = JoinPath(path, "i6.fst");
+TEST(IsomorphicTest, Isomorphic) {
+  const std::string path = JoinPath(std::string("."), kBaseDir);
+  const std::string iso1_name = JoinPath(path, "i1.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst1(VectorFst<Arc>::Read(iso1_name));
+  EXPECT_TRUE(Isomorphic(*ifst1, *ifst1));
 
-    ifst1_.reset(VectorFst<Arc>::Read(iso1_name));
-    ifst2_.reset(VectorFst<Arc>::Read(iso2_name));
-    ifst3_.reset(VectorFst<Arc>::Read(iso3_name));
-    ifst4_.reset(VectorFst<Arc>::Read(iso4_name));
-    ifst5_.reset(VectorFst<Arc>::Read(iso5_name));
-    ifst6_.reset(VectorFst<Arc>::Read(iso6_name));
-  }
+  const std::string iso2_name = JoinPath(path, "i2.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst2(VectorFst<Arc>::Read(iso2_name));
+  EXPECT_TRUE(Isomorphic(*ifst1, *ifst2));
 
-  std::unique_ptr<VectorFst<Arc>> ifst1_;
-  std::unique_ptr<VectorFst<Arc>> ifst2_;
-  std::unique_ptr<VectorFst<Arc>> ifst3_;
-  std::unique_ptr<VectorFst<Arc>> ifst4_;
-  std::unique_ptr<VectorFst<Arc>> ifst5_;
-  std::unique_ptr<VectorFst<Arc>> ifst6_;
-};
+  const std::string iso3_name = JoinPath(path, "i3.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst3(VectorFst<Arc>::Read(iso3_name));
+  EXPECT_FALSE(Isomorphic(*ifst1, *ifst3));
 
-TEST_F(IsomorphicTest, Isomorphic) {
-  ASSERT_TRUE(Isomorphic(*ifst1_, *ifst1_));
-  ASSERT_TRUE(Isomorphic(*ifst1_, *ifst2_));
-  ASSERT_FALSE(Isomorphic(*ifst1_, *ifst3_));
-  ASSERT_FALSE(Isomorphic(*ifst1_, *ifst4_));
+  const std::string iso4_name = JoinPath(path, "i4.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst4(VectorFst<Arc>::Read(iso4_name));
+  EXPECT_FALSE(Isomorphic(*ifst1, *ifst4));
 }
 
-TEST_F(IsomorphicTest, NondetIsomorphic) {
-  // Checks that nondet Fsts equal modulo arc ordering are isomorphic.
-  ASSERT_TRUE(Isomorphic(*ifst5_, *ifst6_));
+TEST(IsomorphicTest, NondetIsomorphic) {
+  // Checks that nondet FSTs equal modulo arc ordering are isomorphic.
+  const std::string path = JoinPath(std::string("."), kBaseDir);
+  const std::string iso5_name = JoinPath(path, "i5.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst5(VectorFst<Arc>::Read(iso5_name));
+  const std::string iso6_name = JoinPath(path, "i6.fst");
+  std::unique_ptr<const VectorFst<Arc>> ifst6(VectorFst<Arc>::Read(iso6_name));
+  EXPECT_TRUE(Isomorphic(*ifst5, *ifst6));
 }
 
 }  // namespace
