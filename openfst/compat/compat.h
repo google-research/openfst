@@ -100,40 +100,6 @@ class CheckSummer {
   CheckSummer& operator=(const CheckSummer&) = delete;
 };
 
-// Range utilities
-
-// A range adaptor for a pair of iterators.
-//
-// This just wraps two iterators into a range-compatible interface. Nothing
-// fancy at all.
-template <typename IteratorT>
-class iterator_range {
- public:
-  using iterator = IteratorT;
-  using const_iterator = IteratorT;
-  using value_type = typename std::iterator_traits<IteratorT>::value_type;
-
-  iterator_range() : begin_iterator_(), end_iterator_() {}
-  iterator_range(IteratorT begin_iterator, IteratorT end_iterator)
-      : begin_iterator_(std::move(begin_iterator)),
-        end_iterator_(std::move(end_iterator)) {}
-
-  IteratorT begin() const { return begin_iterator_; }
-  IteratorT end() const { return end_iterator_; }
-
- private:
-  IteratorT begin_iterator_, end_iterator_;
-};
-
-// Convenience function for iterating over sub-ranges.
-//
-// This provides a bit of syntactic sugar to make using sub-ranges
-// in for loops a bit easier. Analogous to std::make_pair().
-template <typename T>
-iterator_range<T> make_range(T x, T y) {
-  return iterator_range<T>(std::move(x), std::move(y));
-}
-
 // String munging.
 
 namespace internal {
