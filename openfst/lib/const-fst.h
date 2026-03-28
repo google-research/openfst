@@ -386,12 +386,10 @@ bool ConstFst<Arc, Unsigned>::WriteFst(const FST& fst, std::ostream& strm,
     for (ArcIterator<FST> aiter(fst, siter.Value()); !aiter.Done();
          aiter.Next()) {
       const auto& arc = aiter.Value();
-      // 
-      // arc may contain padding which has unspecified contents. Tell MSAN to
-      // not complain about it when writing it to a file.
+      // Arc may contain padding which has unspecified contents. Tell memory
+      // sanitizer (MSan) to not complain about it when writing it to a file.
       ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(reinterpret_cast<const char*>(&arc),
                                           sizeof(arc));
-      // 
       strm.write(reinterpret_cast<const char*>(&arc), sizeof(arc));
     }
   }

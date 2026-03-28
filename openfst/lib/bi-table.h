@@ -124,7 +124,6 @@ struct HashSet : public std::unordered_set<K, H, E, PoolAllocator<K>> {
   using Base::Base;
 };
 
-// 
 // Specialization for flat hash set.
 template <class K, class H, class E>
 struct HashSet<K, H, E, HS_FLAT> : public absl::flat_hash_set<K, H, E> {
@@ -134,7 +133,6 @@ struct HashSet<K, H, E, HS_FLAT> : public absl::flat_hash_set<K, H, E> {
  public:
   using Base::Base;
 };
-// 
 
 // An implementation using a hash set for the entry to ID mapping. The hash set
 // holds keys which are either the ID or kCurrentKey. These keys can be mapped

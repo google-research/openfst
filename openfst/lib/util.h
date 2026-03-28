@@ -515,7 +515,6 @@ class CompactSet {
 
 }  // namespace fst
 
-// 
 namespace fst {
 
 template <class... T>
@@ -537,6 +536,5 @@ int AlignBufferWithOutputStream(std::ostream& strm, std::ostringstream& buffer,
                                 size_t align = MappedFile::kArchAlignment);
 
 }  // namespace fst
-// 
 
 #endif  // OPENFST_LIB_UTIL_H_
