@@ -23,8 +23,8 @@ on:
     branches: [ main ]
 
 concurrency:
-  group: ${{github.workflow}}-${{github.ref}}
-  cancel-in-progress: true
+  group: ${{github.workflow }}-${{github.head_ref || github.ref}}
+  cancel-in-progress: ${{github.ref != 'main'}}
 
 # This gives read-only access to the token.
 permissions: read-all
