@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Description: Extensions to finite-state transducer library for
+# pushdown transducer representations and algorithms
+
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
@@ -30,9 +33,6 @@ exports_files([
     "testdata/vparen.triples",
     "testdata/vparen.triples.out",
 ])
-
-# Description: Extensions to finite-state transducer library for
-# pushdown transducer representations and algorithms
 
 # Libraries.
 

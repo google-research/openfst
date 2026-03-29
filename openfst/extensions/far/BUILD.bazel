@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Description: Finite-State Transducer (FST) archives
+
 load("@//openfst/lib:build_rules.bzl", "fst_cc_library")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
@@ -23,8 +25,6 @@ exports_files([
     "testdata/test1-02.fst",
     "testdata/test1-03.fst",
 ])
-
-# Description: Finite-State Transducer (FST) archives
 
 fst_cc_library(
     name = "sttable",
