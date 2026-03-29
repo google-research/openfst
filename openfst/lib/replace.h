@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/log/log.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/bi-table.h"
@@ -143,36 +144,6 @@ class ReplaceFstStateFingerprint {
     return tuple.fst_state;
   }
 };
-
-
-// A generic hash function for replace state tuples.
-template <typename S, typename P>
-class ReplaceHash {
- public:
-  size_t operator()(const ReplaceStateTuple<S, P>& t) const {
-    // We want three prime numbers that are all reasonably large and whose
-    // differences are far from each other.  (E.g., we want prime1-prime0 to be
-    // far from prime2-prime1).  It would be safer still to use large prime
-    // numbers (i.e., prime numbers that use all 64 bits on a 64-bit machine and
-    // all 32-bits on a 32-bit machine), so that all 64-bits (respectively
-    // 32-bits) of the resulting hash would look random.  However, these
-    // modest-sized prime numbers are good enough for hash tables (such as
-    // std::unordered_set and absl::flat_hash_set) that use the low-order bits
-    // of the hash.
-    //
-    // It is important that all three components are multiplied by a prime
-    // number.  E.g., don't compute
-    //   t.prefix_id + t.fst_id * prime1 + t.fst_state * prime2
-    // which is just the identity on t.prefix_id.  Using the identity will
-    // result in long probe sequences in open-addressed hash tables (such as
-    // absl::flat_hash_map).
-    static constexpr size_t prime0 = 7853;
-    static constexpr size_t prime1 = 9001;
-    static constexpr size_t prime2 = 100003;
-    return t.prefix_id * prime0 + t.fst_id * prime1 + t.fst_state * prime2;
-  }
-};
-
 
 // Container for stack prefix.
 template <class Label, class StateId>
@@ -308,6 +279,9 @@ class VectorHashReplaceStateTable {
   std::unique_ptr<StateTable> state_table_;
   StackPrefixTable prefix_table_;
 };
+
+template <typename S, typename P>
+using ReplaceHash = absl::Hash<ReplaceStateTuple<S, P>>;
 
 // Default replace state table.
 template <class Arc, class P /* = size_t */>
