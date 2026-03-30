@@ -59,7 +59,7 @@ template <class Arc, GallicType G>
 void EpsNormalize(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
                   EpsNormalizeType type) {
   VectorFst<GallicArc<Arc, G>> gfst;
-  std::unique_ptr<SymbolTable> symbols;
+  std::unique_ptr<const SymbolTable> symbols;
   if (type == EPS_NORM_INPUT) {
     ArcMap(ifst, &gfst, ToGallicMapper<Arc, G>());
     if (ifst.OutputSymbols()) symbols.reset(ifst.OutputSymbols()->Copy());
