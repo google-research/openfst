@@ -22,42 +22,12 @@
     defined(GOOGLE_UNSUPPORTED_OS_LOONIX) || defined(__EMSCRIPTEN__) || \
     defined(__Fuchsia__)
 
-#include <string>
-
-#include "absl/strings/string_view.h"
-
-// Check sums
-namespace fst {
-
-class CheckSummer {
- public:
-  CheckSummer() : count_(0) { check_sum_.resize(kCheckSumLength, '\0'); }
-
-  void Reset() {
-    count_ = 0;
-    for (int i = 0; i < kCheckSumLength; ++i) check_sum_[i] = '\0';
-  }
-
-  void Update(absl::string_view data) {
-    for (size_t i = 0; i < data.size(); ++i) {
-      check_sum_[(count_++) % kCheckSumLength] ^= data[i];
-    }
-  }
-
-  std::string Digest() { return check_sum_; }
-
- private:
-  static constexpr int kCheckSumLength = 32;
-  int count_;
-  std::string check_sum_;
-};
-
-}  // namespace fst
+#include "openfst/compat/checksummer.h"
 
 #else  // __ANDROID__ || __native_client__ || __APPLE__ || _WIN32 ||
        // GOOGLE_UNSUPPORTED_OS_LOONIX || __EMSCRIPTEN__ || __Fuchsia__
 
-#include "openfst/compat/compat.h"
+#include "openfst/compat/checksummer.h"
 
 namespace fst {
 using CheckSummer = CheckSummer;

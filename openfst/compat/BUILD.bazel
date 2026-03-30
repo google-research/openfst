@@ -18,7 +18,6 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "compat",
-    srcs = ["compat.cc"],
     hdrs = ["compat.h"],
     deps = [":compat_memory"],
 )
@@ -38,6 +37,12 @@ cc_test(
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
     ],
+)
+
+cc_library(
+    name = "checksummer",
+    hdrs = ["checksummer.h"],
+    deps = ["@com_google_absl//absl/strings"],
 )
 
 cc_library(

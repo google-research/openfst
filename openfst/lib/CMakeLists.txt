@@ -14,7 +14,6 @@
 
 add_library(
   fst
-  ../compat/compat.cc
   ../compat/file_path.cc
   ../compat/init.cc
   encode.cc

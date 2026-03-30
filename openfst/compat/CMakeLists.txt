@@ -13,13 +13,11 @@
 # limitations under the License.
 
 set(COMPAT_HEADERS
+    checksummer.h
     compat.h
     compat_memory.h
     file_path.h
-    flags.h
     init.h
-    lock.h
-    log.h
     status_macros.h
     unaligned.h
 )
