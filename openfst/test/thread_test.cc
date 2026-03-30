@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "openfst/compat/file_path.h"
@@ -62,6 +63,9 @@ namespace {
 
 using Arc = StdArc;
 using StateId = Arc::StateId;
+
+constexpr absl::string_view kTestDataDir =
+    "openfst/test/testdata/thread";
 
 class ThreadTest : public testing::Test {
  protected:
@@ -122,11 +126,12 @@ class ThreadTest : public testing::Test {
 
   void SetUp() override {
     for (auto i = 0; i < 6; ++i) {
-      afst_.push_back(absl::WrapUnique(VectorFst<Arc>::Read(
-          JoinPath(std::string("."),
-                         "openfst/test/testdata/thread/a" +
-                             std::to_string(i) + ".fst"))));
-      ArcSort(afst_.back().get(), OLabelCompare<Arc>());
+      std::unique_ptr<StdVectorFst> afst =
+          absl::WrapUnique(VectorFst<Arc>::Read(
+              JoinPath(std::string("."), kTestDataDir,
+                             "a" + std::to_string(i) + ".fst")));
+      ArcSort(afst.get(), OLabelCompare<Arc>());
+      afst_.push_back(std::move(afst));
 
       xfst_.push_back(absl::WrapUnique(
           ArcMapFst(*afst_.back(), IdentityArcMapper<Arc>()).Copy()));
@@ -134,9 +139,8 @@ class ThreadTest : public testing::Test {
 
     for (auto i = 0; i < 6; ++i) {
       bfst_.push_back(absl::WrapUnique(VectorFst<Arc>::Read(
-          JoinPath(std::string("."),
-                         "openfst/test/testdata/thread/b" +
-                             std::to_string(i) + ".fst"))));
+          JoinPath(std::string("."), kTestDataDir,
+                         "b" + std::to_string(i) + ".fst"))));
 
       yfst_.push_back(absl::WrapUnique(
           ArcMapFst(*bfst_.back(), IdentityArcMapper<Arc>()).Copy()));
@@ -144,22 +148,21 @@ class ThreadTest : public testing::Test {
 
     for (auto i = 0; i < 2; ++i) {
       cfst_.push_back(absl::WrapUnique(VectorFst<Arc>::Read(
-          JoinPath(std::string("."),
-                         "openfst/test/testdata/thread/c" +
-                             std::to_string(i) + ".fst"))));
+          JoinPath(std::string("."), kTestDataDir,
+                         "c" + std::to_string(i) + ".fst"))));
 
       zfst_.push_back(absl::WrapUnique(
           ArcMapFst(*cfst_.back(), IdentityArcMapper<Arc>()).Copy()));
     }
   }
 
-  std::vector<std::unique_ptr<VectorFst<Arc>>> afst_;
-  std::vector<std::unique_ptr<VectorFst<Arc>>> bfst_;
-  std::vector<std::unique_ptr<VectorFst<Arc>>> cfst_;
+  std::vector<std::unique_ptr<const VectorFst<Arc>>> afst_;
+  std::vector<std::unique_ptr<const VectorFst<Arc>>> bfst_;
+  std::vector<std::unique_ptr<const VectorFst<Arc>>> cfst_;
 
-  std::vector<std::unique_ptr<Fst<Arc>>> xfst_;
-  std::vector<std::unique_ptr<Fst<Arc>>> yfst_;
-  std::vector<std::unique_ptr<Fst<Arc>>> zfst_;
+  std::vector<std::unique_ptr<const Fst<Arc>>> xfst_;
+  std::vector<std::unique_ptr<const Fst<Arc>>> yfst_;
+  std::vector<std::unique_ptr<const Fst<Arc>>> zfst_;
 };
 
 // FST CLASS TESTS
