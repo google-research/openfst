@@ -15,18 +15,10 @@
 #ifndef OPENFST_LIB_COMPAT_UTIL_H_
 #define OPENFST_LIB_COMPAT_UTIL_H_
 
-// __native_client__ is defined for --config=nacl builds, targeting Chrome.
-
-#if defined(__ANDROID__) || defined(__native_client__) ||               \
-    defined(__APPLE__) || defined(_WIN32) ||                            \
-    defined(GOOGLE_UNSUPPORTED_OS_LOONIX) || defined(__EMSCRIPTEN__) || \
-    defined(__Fuchsia__)
-
 #include <string>
 
 #include "absl/strings/string_view.h"
 
-// Check sums
 namespace fst {
 
 class CheckSummer {
@@ -44,7 +36,7 @@ class CheckSummer {
     }
   }
 
-  std::string Digest() { return check_sum_; }
+  std::string Digest() const { return check_sum_; }
 
  private:
   static constexpr int kCheckSumLength = 32;
@@ -53,17 +45,5 @@ class CheckSummer {
 };
 
 }  // namespace fst
-
-#else  // __ANDROID__ || __native_client__ || __APPLE__ || _WIN32 ||
-       // GOOGLE_UNSUPPORTED_OS_LOONIX || __EMSCRIPTEN__ || __Fuchsia__
-
-#include "openfst/compat/compat.h"
-
-namespace fst {
-using CheckSummer = CheckSummer;
-}  // namespace fst
-
-#endif  // __ANDROID__ || __native_client__ || __APPLE__ || _WIN32 ||
-        // GOOGLE_UNSUPPORTED_OS_LOONIX || __EMSCRIPTEN__ || __Fuchsia__
 
 #endif  // OPENFST_LIB_COMPAT_UTIL_H_
