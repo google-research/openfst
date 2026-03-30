@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Description: Tests for finite-state tranducer representations and algorithms to
+# build, combine, search and optimize them.
+
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
@@ -175,9 +178,6 @@ exports_files([
     "testdata/union/u2.fst",
     "testdata/union/u3.fst",
 ])
-
-# Description: Tests for finite-state tranducer representations and algorithms to
-# build, combine, search and optimize them.
 
 # UTILITIES
 
@@ -2387,6 +2387,7 @@ cc_test(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/functional:function_ref",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
     ],
