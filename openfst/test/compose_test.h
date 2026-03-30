@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OPENFST_TEST_COMPOSE_TEST_H_
-#define OPENFST_TEST_COMPOSE_TEST_H_
-
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
 // Unit test for Compose.
+
+#ifndef OPENFST_TEST_COMPOSE_TEST_H_
+#define OPENFST_TEST_COMPOSE_TEST_H_
 
 #include <memory>
 #include <string>
@@ -75,14 +75,14 @@ class ComposeTest : public testing::Test {
     cfst8_.reset(VectorFst<Arc>::Read(compose8_name));
   }
 
-  std::unique_ptr<VectorFst<Arc>> cfst1_;
-  std::unique_ptr<VectorFst<Arc>> cfst2_;
-  std::unique_ptr<VectorFst<Arc>> cfst3_;
-  std::unique_ptr<VectorFst<Arc>> cfst4_;
-  std::unique_ptr<VectorFst<Arc>> cfst5_;
-  std::unique_ptr<VectorFst<Arc>> cfst6_;
-  std::unique_ptr<VectorFst<Arc>> cfst7_;
-  std::unique_ptr<VectorFst<Arc>> cfst8_;
+  std::unique_ptr<const VectorFst<Arc>> cfst1_;
+  std::unique_ptr<const VectorFst<Arc>> cfst2_;
+  std::unique_ptr<const VectorFst<Arc>> cfst3_;
+  std::unique_ptr<const VectorFst<Arc>> cfst4_;
+  std::unique_ptr<const VectorFst<Arc>> cfst5_;
+  std::unique_ptr<const VectorFst<Arc>> cfst6_;
+  std::unique_ptr<const VectorFst<Arc>> cfst7_;
+  std::unique_ptr<const VectorFst<Arc>> cfst8_;
 };
 
 TYPED_TEST_SUITE_P(ComposeTest);
@@ -91,8 +91,8 @@ TYPED_TEST_P(ComposeTest, ComposeFstWithoutEpsilons) {
   using Arc = typename TestFixture::Arc;
   using TestFst = typename TestFixture::TestFst;
 
-  TestFst tfst1(*this->cfst1_);
-  TestFst tfst2(*this->cfst2_);
+  const TestFst tfst1(*this->cfst1_);
+  const TestFst tfst2(*this->cfst2_);
 
   VectorFst<Arc> vfst1_u(*this->cfst1_);
   VectorFst<Arc> vfst2_u(*this->cfst2_);
@@ -101,17 +101,17 @@ TYPED_TEST_P(ComposeTest, ComposeFstWithoutEpsilons) {
   vfst1_u.SetProperties(0, kOLabelSorted);
   vfst2_u.SetProperties(0, kILabelSorted);
 
-  ComposeFst<Arc> dfst1(tfst1, tfst2);
-  ASSERT_TRUE(Verify(dfst1));
-  ASSERT_TRUE(Equal(*this->cfst3_, dfst1));
+  const ComposeFst<Arc> dfst1(tfst1, tfst2);
+  EXPECT_TRUE(Verify(dfst1));
+  EXPECT_TRUE(Equal(*this->cfst3_, dfst1));
 
-  ComposeFst<Arc> dfst2(vfst1_u, tfst2);
-  ASSERT_TRUE(Verify(dfst2));
-  ASSERT_TRUE(Equal(*this->cfst3_, dfst2));
+  const ComposeFst<Arc> dfst2(vfst1_u, tfst2);
+  EXPECT_TRUE(Verify(dfst2));
+  EXPECT_TRUE(Equal(*this->cfst3_, dfst2));
 
-  ComposeFst<Arc> dfst3(tfst1, vfst2_u);
-  ASSERT_TRUE(Verify(dfst3));
-  ASSERT_TRUE(Equal(*this->cfst3_, dfst3));
+  const ComposeFst<Arc> dfst3(tfst1, vfst2_u);
+  EXPECT_TRUE(Verify(dfst3));
+  EXPECT_TRUE(Equal(*this->cfst3_, dfst3));
 }
 
 TYPED_TEST_P(ComposeTest, FstClassCompose) {
@@ -119,9 +119,9 @@ TYPED_TEST_P(ComposeTest, FstClassCompose) {
   using TestFst = typename TestFixture::TestFst;
   namespace s = fst::script;
 
-  TestFst tfst1(*this->cfst1_);
-  TestFst tfst2(*this->cfst2_);
-  TestFst tfst3(*this->cfst3_);
+  const TestFst tfst1(*this->cfst1_);
+  const TestFst tfst2(*this->cfst2_);
+  const TestFst tfst3(*this->cfst3_);
 
   VectorFst<Arc> vfst1_u(*this->cfst1_);
   VectorFst<Arc> vfst2_u(*this->cfst2_);
@@ -130,44 +130,44 @@ TYPED_TEST_P(ComposeTest, FstClassCompose) {
   vfst1_u.SetProperties(0, kOLabelSorted);
   vfst2_u.SetProperties(0, kILabelSorted);
 
-  TestFst tfst1_u(vfst1_u);
-  TestFst tfst2_u(vfst2_u);
+  const TestFst tfst1_u(vfst1_u);
+  const TestFst tfst2_u(vfst2_u);
 
-  s::FstClass cfst1_u(vfst1_u);
-  s::FstClass cfst2_u(vfst2_u);
+  const s::FstClass cfst1_u(vfst1_u);
+  const s::FstClass cfst2_u(vfst2_u);
 
   s::VectorFstClass ofst1(Arc::Type());
-  s::FstClass cfst1(tfst1);
-  s::FstClass cfst2(tfst2);
-  s::FstClass cfst3(tfst3);
+  const s::FstClass cfst1(tfst1);
+  const s::FstClass cfst2(tfst2);
+  const s::FstClass cfst3(tfst3);
 
   s::Compose(cfst1, cfst2, &ofst1);
-  ASSERT_TRUE(Equal(cfst3, ofst1));
+  EXPECT_TRUE(Equal(cfst3, ofst1));
 
   s::VectorFstClass ofst2(Arc::Type());
   s::Compose(cfst1_u, cfst2, &ofst2);
-  ASSERT_TRUE(Equal(cfst3, ofst2));
+  EXPECT_TRUE(Equal(cfst3, ofst2));
 
   s::VectorFstClass ofst3(Arc::Type());
   Compose(cfst1, cfst2_u, &ofst3);
-  ASSERT_TRUE(Equal(cfst3, ofst3));
+  EXPECT_TRUE(Equal(cfst3, ofst3));
 }
 
 TYPED_TEST_P(ComposeTest, ComposeFstWithEpsilons) {
   using Arc = typename TestFixture::Arc;
   using TestFst = typename TestFixture::TestFst;
 
-  TestFst tfst4(*this->cfst4_);
-  TestFst tfst5(*this->cfst5_);
+  const TestFst tfst4(*this->cfst4_);
+  const TestFst tfst5(*this->cfst5_);
 
-  ComposeFst<Arc> dfst1(tfst4, tfst5);
-  ASSERT_TRUE(Verify(dfst1));
-  ASSERT_TRUE(Equal(*this->cfst6_, dfst1));
+  const ComposeFst<Arc> dfst1(tfst4, tfst5);
+  EXPECT_TRUE(Verify(dfst1));
+  EXPECT_TRUE(Equal(*this->cfst6_, dfst1));
 
   for (const bool safe : {false, true}) {
-    ComposeFst<Arc> cfst(dfst1, safe);
-    ASSERT_TRUE(Verify(cfst));
-    ASSERT_TRUE(Equal(*this->cfst6_, cfst));
+    const ComposeFst<Arc> cfst(dfst1, safe);
+    EXPECT_TRUE(Verify(cfst));
+    EXPECT_TRUE(Equal(*this->cfst6_, cfst));
   }
 }
 
@@ -176,30 +176,33 @@ TYPED_TEST_P(ComposeTest, ComposeFstWithOptions) {
   using TestFst = typename TestFixture::TestFst;
   using M1 = Matcher<TestFst>;
   using M2 = Matcher<ConstFst<Arc>>;
-  TestFst tfst4(*this->cfst4_);
-  ConstFst<Arc> cfst5(*this->cfst5_);
+
+  const TestFst tfst4(*this->cfst4_);
+  const ConstFst<Arc> cfst5(*this->cfst5_);
 
   // Testing with the null composition filter.
-  ComposeFstImplOptions<M1, M2, NullComposeFilter<M1, M2>> opts;
-  ComposeFst<Arc> dfst1(tfst4, cfst5, opts);
-  ASSERT_TRUE(Verify(dfst1));
-  ASSERT_TRUE(Equal(*this->cfst7_, dfst1));
+  const ComposeFstImplOptions<M1, M2, NullComposeFilter<M1, M2>> opts;
+  const ComposeFst<Arc> dfst1(tfst4, cfst5, opts);
+  EXPECT_TRUE(Verify(dfst1));
+  EXPECT_TRUE(Equal(*this->cfst7_, dfst1));
 
   for (const bool safe : {false, true}) {
-    ComposeFst<Arc> cfst(dfst1, safe);
-    ASSERT_TRUE(Verify(cfst));
-    ASSERT_TRUE(Equal(*this->cfst7_, cfst));
+    const ComposeFst<Arc> cfst(dfst1, safe);
+    EXPECT_TRUE(Verify(cfst));
+    EXPECT_TRUE(Equal(*this->cfst7_, cfst));
   }
 }
 
 TYPED_TEST_P(ComposeTest, ComposeFstMatcherTest) {
   using Arc = typename TestFixture::Arc;
   using TestFst = typename TestFixture::TestFst;
-  TestFst tfst1(*this->cfst1_);
-  TestFst tfst2(*this->cfst2_);
-  TestFst tfst8(*this->cfst8_);
+
+  const TestFst tfst1(*this->cfst1_);
+  const TestFst tfst2(*this->cfst2_);
+  const TestFst tfst8(*this->cfst8_);
+
   // Creates the ComposeFst on which we are going to use the ComposeFstMatcher.
-  ComposeFst<Arc> cfst(
+  const ComposeFst<Arc> cfst(
       tfst1, tfst2,
       ComposeFstOptions<Arc>(CacheOptions(true, 0),
                              new Matcher<Fst<Arc>>(tfst1, MATCH_INPUT),
@@ -208,34 +211,35 @@ TYPED_TEST_P(ComposeTest, ComposeFstMatcherTest) {
   // Since 'tfst8' is not olabel-sorted, it cannot be matched on during
   // composition, hence 'cfst' is going to be matched on, which is possible
   // only by creating a ComposeFstMatcher since 'cfst' is a ComposeFst.
-  ComposeFst<Arc> ccfst(tfst8, cfst);
-  ASSERT_TRUE(Verify(ccfst));
-  ASSERT_TRUE(Equal(*this->cfst3_, ccfst));
+  const ComposeFst<Arc> ccfst(tfst8, cfst);
+  EXPECT_TRUE(Verify(ccfst));
+  EXPECT_TRUE(Equal(*this->cfst3_, ccfst));
   // The same test as above but this time explicitly creating the matchers.
-  ComposeFst<Arc> ccmfst(
+  const ComposeFst<Arc> ccmfst(
       tfst8, cfst,
       ComposeFstImplOptions<Matcher<Fst<Arc>>, Matcher<ComposeFst<Arc>>>(
           CacheOptions(true, 0), new Matcher<Fst<Arc>>(tfst8, MATCH_NONE),
           new Matcher<ComposeFst<Arc>>(cfst, MATCH_INPUT)));
-  ASSERT_TRUE(Verify(ccmfst));
-  ASSERT_TRUE(Equal(*this->cfst3_, ccmfst));
+  EXPECT_TRUE(Verify(ccmfst));
+  EXPECT_TRUE(Equal(*this->cfst3_, ccmfst));
 }
 
 TYPED_TEST_P(ComposeTest, CopyTest) {
   using Arc = typename TestFixture::Arc;
   using TestFst = typename TestFixture::TestFst;
 
-  TestFst tfst4(*this->cfst4_);
-  TestFst tfst5(*this->cfst5_);
+  const TestFst tfst4(*this->cfst4_);
+  const TestFst tfst5(*this->cfst5_);
 
-  std::unique_ptr<ComposeFst<Arc>> dfst1(
+  std::unique_ptr<const ComposeFst<Arc>> dfst1(
       new ComposeFst<Arc>(tfst4, tfst5, CacheOptions(true, 0)));
   Verify(*dfst1);
-  std::unique_ptr<ComposeFst<Arc>> dfst2(dfst1->Copy(true));
+  std::unique_ptr<const ComposeFst<Arc>> dfst2(dfst1->Copy(true));
   dfst1.reset();
-  std::unique_ptr<ComposeFst<Arc>> dfst3(new ComposeFst<Arc>(tfst4, tfst5));
+  std::unique_ptr<const ComposeFst<Arc>> dfst3(
+      new ComposeFst<Arc>(tfst4, tfst5));
   Verify(*dfst2);
-  ASSERT_TRUE(Equal(*dfst2, *dfst3));
+  EXPECT_TRUE(Equal(*dfst2, *dfst3));
 }
 
 REGISTER_TYPED_TEST_SUITE_P(ComposeTest, ComposeFstWithoutEpsilons,
