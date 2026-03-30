@@ -480,7 +480,7 @@ class PdtPrunedExpand {
   void ProcDestStates(StateId s, StackId si);
 
   // Input PDT.
-  std::unique_ptr<Fst<Arc>> ifst_;
+  std::unique_ptr<const Fst<Arc>> ifst_;
   // Reversed PDT.
   VectorFst<Arc> rfst_;
   // Keep parentheses in ofst?
