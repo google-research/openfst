@@ -57,6 +57,40 @@ class TestExpand {
   }
 };
 
+class CountingExpand {
+ public:
+  using Arc = StdArc;
+  using StateId = StdArc::StateId;
+
+  CountingExpand() = default;
+
+  const SymbolTable* InputSymbols() { return nullptr; }
+  const SymbolTable* OutputSymbols() { return nullptr; }
+
+  StateId NumStates() const { return 11; }
+  StateId Start() const { return 0; }
+
+  template <class State>
+  void Expand(StateId state_id, State* state) {
+    ++expansions_;
+    if (state_id < 9) {
+      state->AddArc(StdArc(0, 0, StdArc::Weight::One(), state_id + 1));
+    }
+    if (state_id < 10) {
+      state->AddArc(StdArc(0, 0, StdArc::Weight::One(), state_id + 2));
+    }
+    if (state_id == 10) {
+      state->SetFinal(StdArc::Weight(1.0f));
+    }
+  }
+
+  int expansions() const { return expansions_; }
+  void reset_expansions() { expansions_ = 0; }
+
+ private:
+  int expansions_ = 0;
+};
+
 TEST_F(ExpanderFstTest, SimpleExpander) {
   ExpanderFst<TestExpand> fst(std::make_shared<TestExpand>());
   ASSERT_EQ(11, CountStates(fst));
@@ -147,6 +181,40 @@ TEST_F(ExpanderFstTest, HashExpanderCache) {
       std::make_shared<TestExpand>());
   EXPECT_TRUE(Equal(fst, vfst));  // uncached
   EXPECT_TRUE(Equal(fst, vfst));  // cached
+}
+
+TEST_F(ExpanderFstTest, VectorExpanderCacheAssignment) {
+  auto expander = std::make_shared<CountingExpand>();
+  ExpanderFst<CountingExpand> fst_dense(expander);
+  VectorFst<StdArc> vfst_dense(fst_dense);
+  expander->reset_expansions();
+
+  VectorExpanderCache<StdArc> sparse_cache;
+  sparse_cache.FindOrExpand(*expander, 0);
+  sparse_cache.FindOrExpand(*expander, 2);
+  expander->reset_expansions();
+
+  // Assign sparse cache to dense fst.
+  *fst_dense.GetCache() = sparse_cache;
+  fst_dense.GetCache()->FindOrExpand(*expander, 1);
+  EXPECT_EQ(expander->expansions(), 1);
+}
+
+TEST_F(ExpanderFstTest, HashExpanderCacheAssignment) {
+  auto expander = std::make_shared<CountingExpand>();
+  ExpanderFst<CountingExpand, HashExpanderCache<StdArc>> fst_dense(expander);
+  VectorFst<StdArc> vfst_dense(fst_dense);
+  expander->reset_expansions();
+
+  HashExpanderCache<StdArc> sparse_cache;
+  sparse_cache.FindOrExpand(*expander, 0);
+  sparse_cache.FindOrExpand(*expander, 2);
+  expander->reset_expansions();
+
+  // Assign sparse cache to dense fst.
+  *fst_dense.GetCache() = sparse_cache;
+  fst_dense.GetCache()->FindOrExpand(*expander, 1);
+  EXPECT_EQ(expander->expansions(), 1);
 }
 
 TEST_F(ExpanderFstTest, WrapCacheStoreTest) {

@@ -172,6 +172,7 @@ class HashExpanderCache {
   HashExpanderCache(const HashExpanderCache& copy) { *this = copy; }
 
   HashExpanderCache& operator=(const HashExpanderCache& copy) {
+    cache_.clear();
     for (const auto& [id, state] : copy.cache_) {
       cache_[id] = std::make_unique<State>(*state);
     }
@@ -207,6 +208,8 @@ class VectorExpanderCache {
   VectorExpanderCache(const VectorExpanderCache& copy) { *this = copy; }
 
   VectorExpanderCache& operator=(const VectorExpanderCache& copy) {
+    states_.clear();
+    vec_.clear();
     vec_.resize(copy.vec_.size());
     for (StateId i = 0; i < copy.vec_.size(); ++i) {
       const auto* state = copy.vec_[i];
