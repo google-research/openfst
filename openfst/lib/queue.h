@@ -783,12 +783,11 @@ void AutoQueue<StateId>::SccQueueType(const Fst<Arc>& fst,
                                       std::vector<QueueType>* queue_type,
                                       ArcFilter filter, bool* all_trivial,
                                       bool* unweighted) {
-  using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   *all_trivial = true;
   *unweighted = true;
-  for (StateId i = 0; i < queue_type->size(); ++i) {
-    (*queue_type)[i] = TRIVIAL_QUEUE;
+  for (auto& type : *queue_type) {
+    type = TRIVIAL_QUEUE;
   }
   for (StateIterator<Fst<Arc>> sit(fst); !sit.Done(); sit.Next()) {
     const auto state = sit.Value();

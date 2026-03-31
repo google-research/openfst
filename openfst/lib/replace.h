@@ -153,6 +153,10 @@ class ReplaceStackPrefix {
     PrefixTuple(Label fst_id = kNoLabel, StateId nextstate = kNoStateId)
         : fst_id(fst_id), nextstate(nextstate) {}
 
+    bool operator==(const PrefixTuple& other) const {
+      return fst_id == other.fst_id && nextstate == other.nextstate;
+    }
+
     Label fst_id;
     StateId nextstate;
   };
@@ -180,14 +184,7 @@ class ReplaceStackPrefix {
 template <class Label, class StateId>
 inline bool operator==(const ReplaceStackPrefix<Label, StateId>& x,
                        const ReplaceStackPrefix<Label, StateId>& y) {
-  if (x.prefix_.size() != y.prefix_.size()) return false;
-  for (size_t i = 0; i < x.prefix_.size(); ++i) {
-    if (x.prefix_[i].fst_id != y.prefix_[i].fst_id ||
-        x.prefix_[i].nextstate != y.prefix_[i].nextstate) {
-      return false;
-    }
-  }
-  return true;
+  return x.prefix_ == y.prefix_;
 }
 
 // Hash function for stack prefix to prefix id.
@@ -1328,9 +1325,8 @@ class ReplaceFstMatcher : public MatcherBase<Arc> {
       if (fst_array[i]) {
         matcher_[i] = std::make_unique<LocalMatcher>(*fst_array[i], match_type_,
                                                      kMultiEpsList);
-        auto it = impl_->nonterminal_set_.begin();
-        for (; it != impl_->nonterminal_set_.end(); ++it) {
-          matcher_[i]->AddMultiEpsLabel(*it);
+        for (const auto label : impl_->nonterminal_set_) {
+          matcher_[i]->AddMultiEpsLabel(label);
         }
       }
     }

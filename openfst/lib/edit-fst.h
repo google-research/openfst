@@ -243,9 +243,8 @@ class EditFstData {
   // Prints out the map from external to internal state IDs (for debugging
   // purposes).
   void PrintMap() {
-    for (auto it = external_to_internal_ids_.begin(); it != NotInEditedMap();
-         ++it) {
-      LOG(INFO) << "(external,internal)=(" << it->first << "," << it->second
+    for (const auto& item : external_to_internal_ids_) {
+      LOG(INFO) << "(external,internal)=(" << item.first << "," << item.second
                 << ")";
     }
   }

@@ -203,13 +203,12 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
     line << symbols_.GetSymbol(i) << '\t' << i;
     labeled_check_sum.Update(line.str());
   }
-  using citer = absl::btree_map<int64_t, int64_t>::const_iterator;
-  for (citer it = key_map_.begin(); it != key_map_.end(); ++it) {
+  for (const auto& item : key_map_) {
     // TODO This line maintains a bug that ignores
     // negative labels in the checksum that too many tests rely on.
-    if (it->first < dense_key_limit_) continue;
+    if (item.first < dense_key_limit_) continue;
     std::ostringstream line;
-    line << symbols_.GetSymbol(it->second) << '\t' << it->first;
+    line << symbols_.GetSymbol(item.second) << '\t' << item.first;
     labeled_check_sum.Update(line.str());
   }
   labeled_check_sum_string_ = labeled_check_sum.Digest();

@@ -161,8 +161,8 @@ class SccVisitor {
   void FinishVisit() {
     // Numbers SCCs in topological order when acyclic.
     if (scc_) {
-      for (size_t s = 0; s < scc_->size(); ++s) {
-        (*scc_)[s] = nscc_ - 1 - (*scc_)[s];
+      for (auto& s : *scc_) {
+        s = nscc_ - 1 - s;
       }
     }
     if (coaccess_internal_) delete coaccess_;

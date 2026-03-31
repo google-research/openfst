@@ -85,7 +85,7 @@ class VectorIntervalStore {
 
   std::vector<Interval>* MutableIntervals() { return &intervals_; }
 
-  const Interval* Intervals() const { return intervals_.data(); }
+  const std::vector<Interval>& Intervals() const { return intervals_; }
 
   T Size() const { return intervals_.size(); }
 
@@ -136,7 +136,9 @@ class IntervalSet {
   }
 
   // Returns a pointer to an array of Size() elements.
-  const Interval* Intervals() const { return intervals_.Intervals(); }
+  const std::vector<Interval>& Intervals() const {
+    return intervals_.Intervals();
+  }
 
   bool Empty() const { return Size() == 0; }
 
@@ -402,12 +404,10 @@ bool IntervalSet<T, Store>::Contains(const IntervalSet<T, Store>& iset) const {
 template <typename T, class Store>
 std::ostream& operator<<(std::ostream& strm, const IntervalSet<T, Store>& s) {
   strm << "{";
-  for (T i = 0; i < s.Size(); ++i) {
-    if (i > 0) {
-      strm << ",";
-    }
-    const auto& interval = s.Intervals()[i];
-    strm << "[" << interval.begin << "," << interval.end << ")";
+  const char* separator = "";
+  for (const auto& interval : s.Intervals()) {
+    strm << separator << "[" << interval.begin << "," << interval.end << ")";
+    separator = ",";
   }
   strm << "}";
   return strm;

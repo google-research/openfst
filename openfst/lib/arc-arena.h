@@ -29,6 +29,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 
 namespace fst {
 
@@ -203,9 +204,9 @@ class ArcArenaStateStore {
     size_t narcs = builder.narcs_;
     size_t niepsilons = 0;
     size_t noepsilons = 0;
-    for (size_t i = 0; i < narcs; ++i) {
-      if (arcs[i].ilabel == 0) ++niepsilons;
-      if (arcs[i].olabel == 0) ++noepsilons;
+    for (const auto& arc : absl::MakeSpan(arcs, narcs)) {
+      if (arc.ilabel == 0) ++niepsilons;
+      if (arc.olabel == 0) ++noepsilons;
     }
     states_.emplace_back(
         State(builder.final_weight_, niepsilons, noepsilons, narcs, arcs));

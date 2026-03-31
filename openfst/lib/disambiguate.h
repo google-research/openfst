@@ -498,9 +498,9 @@ void Disambiguator<Arc>::FindAmbiguousPairs(const ExpandedFst<Arc>& fst,
 template <class Arc>
 void Disambiguator<Arc>::MarkAmbiguities() {
   if (!candidates_) return;
-  for (auto it = candidates_->begin(); it != candidates_->end(); ++it) {
-    const auto a = it->first;
-    const auto b = it->second;
+  for (const auto& candidate : *candidates_) {
+    const auto a = candidate.first;
+    const auto b = candidate.second;
     // If b is not to be removed, then a is.
     if (ambiguous_.count(b) == 0) ambiguous_.insert(a);
   }
@@ -541,16 +541,16 @@ void Disambiguator<Arc>::RemoveAmbiguities(MutableFst<Arc>* ofst) {
   if (ambiguous_.empty()) return;
   // Adds dead state to redirect ambiguous transitions to be removed.
   const auto dead = ofst->AddState();
-  for (auto it = ambiguous_.begin(); it != ambiguous_.end(); ++it) {
-    const auto pos = it->second;
+  for (const auto& amb : ambiguous_) {
+    const auto pos = amb.second;
     if (pos >= 0) {  // Actual transition.
-      MutableArcIterator<MutableFst<Arc>> aiter(ofst, it->first);
+      MutableArcIterator<MutableFst<Arc>> aiter(ofst, amb.first);
       aiter.Seek(pos);
       auto arc = aiter.Value();
       arc.nextstate = dead;
       aiter.SetValue(arc);
     } else {  // Super-final transition.
-      ofst->SetFinal(it->first, Weight::Zero());
+      ofst->SetFinal(amb.first, Weight::Zero());
     }
   }
   Connect(ofst);

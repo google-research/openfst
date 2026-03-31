@@ -130,7 +130,7 @@ class ReplaceUtil {
               const ReplaceUtilOptions& opts);
 
   ~ReplaceUtil() {
-    for (Label i = 0; i < fst_array_.size(); ++i) delete fst_array_[i];
+    for (const auto* fst : fst_array_) delete fst;
   }
 
   // True if the non-terminal dependencies are cyclic. Cyclic dependencies will
@@ -330,8 +330,8 @@ ReplaceUtil<Arc>::ReplaceUtil(
   for (size_t i = 1; i < fst_array.size(); ++i) {
     fst_array_.push_back(fst_array[i]->Copy());
   }
-  for (auto it = nonterminal_hash.begin(); it != nonterminal_hash.end(); ++it) {
-    nonterminal_array_[it->second] = it->first;
+  for (const auto& item : nonterminal_hash) {
+    nonterminal_array_[item.second] = item.first;
   }
   root_label_ = nonterminal_array_[root_fst_];
 }
@@ -393,29 +393,27 @@ void ReplaceUtil<Arc>::UpdateStats(Label j) {
     return;
   }
   if (j == root_fst_) return;  // Can't replace root.
-  for (auto in = stats_[j].inref.begin(); in != stats_[j].inref.end(); ++in) {
-    const auto i = in->first;
-    const auto ni = in->second;
+  for (const auto& in : stats_[j].inref) {
+    const auto i = in.first;
+    const auto ni = in.second;
     stats_[i].nstates += stats_[j].nstates * ni;
     stats_[i].narcs += (stats_[j].narcs + 1) * ni;
     stats_[i].nnonterms += (stats_[j].nnonterms - 1) * ni;
     stats_[i].outref.erase(j);
-    for (auto out = stats_[j].outref.begin(); out != stats_[j].outref.end();
-         ++out) {
-      const auto k = out->first;
-      const auto nk = out->second;
+    for (const auto& out : stats_[j].outref) {
+      const auto k = out.first;
+      const auto nk = out.second;
       stats_[i].outref[k] += ni * nk;
     }
   }
-  for (auto out = stats_[j].outref.begin(); out != stats_[j].outref.end();
-       ++out) {
-    const auto k = out->first;
-    const auto nk = out->second;
+  for (const auto& out : stats_[j].outref) {
+    const auto k = out.first;
+    const auto nk = out.second;
     stats_[k].nref -= nk;
     stats_[k].inref.erase(j);
-    for (auto in = stats_[j].inref.begin(); in != stats_[j].inref.end(); ++in) {
-      const auto i = in->first;
-      const auto ni = in->second;
+    for (const auto& in : stats_[j].inref) {
+      const auto i = in.first;
+      const auto ni = in.second;
       stats_[k].inref[i] += ni * nk;
       stats_[k].nref += ni * nk;
     }
