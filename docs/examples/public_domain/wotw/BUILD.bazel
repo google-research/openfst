@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 license(
     name = "license",
     package_name = "wotw",
+    tags = ["nowindows"],
 )
 
 licenses(["unencumbered"])
