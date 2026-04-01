@@ -482,7 +482,7 @@ void RunTest() {
 
   // Nested composite.
   first_nested_product_tester.Test(absl::GetFlag(FLAGS_repeat));
-  second_nested_product_tester.Test(5);
+  second_nested_product_tester.Test(absl::GetFlag(FLAGS_repeat));
   nested_product_cube_tester.Test(absl::GetFlag(FLAGS_repeat));
   sparse_nested_product_cube_tester.Test(absl::GetFlag(FLAGS_repeat));
   log_log_sparse_expectation_tester.Test(absl::GetFlag(FLAGS_repeat));
