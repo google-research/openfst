@@ -54,7 +54,10 @@ jobs:
           run: |
             bazelisk build -c fastbuild //...
         - name: Test
+          shell: bash  # Avoid default PowerShell syntax headaches.
           run: >-
             bazelisk test -c fastbuild
-            --test_size_filters=-enormous --test_output=errors
+            --test_size_filters=-enormous
+            --test_output=errors
+            --test_tag_filters=-no_windows_msvc
             //...

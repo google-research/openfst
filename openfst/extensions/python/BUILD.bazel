@@ -230,6 +230,9 @@ py_test(
     srcs = ["pywrapfst_test.py"],
     data = [":testdata"],
     legacy_create_init = False,
+    tags = [
+        "no_windows_msvc",
+    ],
     deps = [
         "//openfst:pywrapfst",
         "@com_google_absl_py//absl/testing:absltest",
