@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <memory>
 #include <stack>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -116,8 +117,8 @@ class RmEpsilonState {
   class ElementEqual {
    public:
     bool operator()(const Element& e1, const Element& e2) const {
-      return (e1.ilabel == e2.ilabel) && (e1.olabel == e2.olabel) &&
-             (e1.nextstate == e2.nextstate);
+      return std::forward_as_tuple(e1.ilabel, e1.olabel, e1.nextstate) ==
+             std::forward_as_tuple(e2.ilabel, e2.olabel, e2.nextstate);
     }
   };
 

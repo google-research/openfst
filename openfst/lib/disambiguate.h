@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -236,8 +237,8 @@ class Disambiguator {
   class ArcCompare {
    public:
     bool operator()(const Arc& arc1, const Arc& arc2) const {
-      return arc1.ilabel < arc2.ilabel ||
-             (arc1.ilabel == arc2.ilabel && arc1.nextstate < arc2.nextstate);
+      return std::forward_as_tuple(arc1.ilabel, arc1.nextstate) <
+             std::forward_as_tuple(arc2.ilabel, arc2.nextstate);
     }
 
     uint64_t Properties(uint64_t props) const {

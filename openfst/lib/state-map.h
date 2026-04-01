@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -519,20 +520,15 @@ class ArcSumMapper {
  private:
   struct Compare {
     bool operator()(const Arc& x, const Arc& y) const {
-      if (x.ilabel < y.ilabel) return true;
-      if (x.ilabel > y.ilabel) return false;
-      if (x.olabel < y.olabel) return true;
-      if (x.olabel > y.olabel) return false;
-      if (x.nextstate < y.nextstate) return true;
-      if (x.nextstate > y.nextstate) return false;
-      return false;
+      return std::forward_as_tuple(x.ilabel, x.olabel, x.nextstate) <
+             std::forward_as_tuple(y.ilabel, y.olabel, y.nextstate);
     }
   };
 
   struct Equal {
     bool operator()(const Arc& x, const Arc& y) const {
-      return (x.ilabel == y.ilabel && x.olabel == y.olabel &&
-              x.nextstate == y.nextstate);
+      return std::forward_as_tuple(x.ilabel, x.olabel, x.nextstate) ==
+             std::forward_as_tuple(y.ilabel, y.olabel, y.nextstate);
     }
   };
 
@@ -600,20 +596,15 @@ class ArcUniqueMapper {
  private:
   struct Compare {
     bool operator()(const Arc& x, const Arc& y) const {
-      if (x.ilabel < y.ilabel) return true;
-      if (x.ilabel > y.ilabel) return false;
-      if (x.olabel < y.olabel) return true;
-      if (x.olabel > y.olabel) return false;
-      if (x.nextstate < y.nextstate) return true;
-      if (x.nextstate > y.nextstate) return false;
-      return false;
+      return std::forward_as_tuple(x.ilabel, x.olabel, x.nextstate) <
+             std::forward_as_tuple(y.ilabel, y.olabel, y.nextstate);
     }
   };
 
   struct Equal {
     bool operator()(const Arc& x, const Arc& y) const {
-      return (x.ilabel == y.ilabel && x.olabel == y.olabel &&
-              x.nextstate == y.nextstate && x.weight == y.weight);
+      return std::forward_as_tuple(x.ilabel, x.olabel, x.nextstate, x.weight) ==
+             std::forward_as_tuple(y.ilabel, y.olabel, y.nextstate, y.weight);
     }
   };
 
