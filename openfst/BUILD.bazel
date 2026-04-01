@@ -20,6 +20,7 @@ package(default_visibility = ["//visibility:public"])
 license(
     name = "license",
     package_name = "openfst",
+    tags = ["nowindows"],
 )
 
 licenses(["notice"])
