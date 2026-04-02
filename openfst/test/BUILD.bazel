@@ -830,6 +830,10 @@ sh_test(
         "//openfst/bin:fstprint",
         "//openfst/bin:setup",
     ],
+    tags = [
+        "manual",
+        "no_windows_msvc",
+    ],
 )
 
 cc_test(
@@ -1098,6 +1102,10 @@ sh_test(
         "generic_register_dso.so",
         "generic_register_dso_test_helper",
         "//openfst/bin:setup",
+    ],
+    tags = [
+        "manual",
+        "no_windows_msvc",
     ],
 )
 

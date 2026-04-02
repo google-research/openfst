@@ -119,6 +119,7 @@ sh_test(
         "//openfst/extensions/so:output_phi-fst.so",
         "//openfst/extensions/so:phi-fst.so",
     ],
+    tags = ["no_windows_msvc"],
 )
 
 filegroup(
@@ -160,6 +161,7 @@ sh_test(
         "//openfst/extensions/so:input_rho-fst.so",
         "//openfst/extensions/so:rho-fst.so",
     ],
+    tags = ["no_windows_msvc"],
 )
 
 filegroup(
@@ -200,4 +202,5 @@ sh_test(
         "//openfst/extensions/so:input_sigma-fst.so",
         "//openfst/extensions/so:sigma-fst.so",
     ],
+    tags = ["no_windows_msvc"],
 )
