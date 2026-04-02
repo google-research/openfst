@@ -158,10 +158,21 @@ foreach(TEST_NAME ${TESTS})
     )
   endif()
 
-  gtest_discover_tests(
-    ${TEST_NAME}
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  )
+  # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
+  # then use gtest_discover_tests.
+  if(TEST_NAME STREQUAL "weight_test")
+    add_test(
+      NAME ${TEST_NAME}
+      COMMAND ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  else()
+    gtest_discover_tests(
+      ${TEST_NAME}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endif()
+
 endforeach()
 
 # algo_test variants

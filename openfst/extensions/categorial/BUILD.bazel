@@ -34,7 +34,6 @@ cc_test(
     size = "large",
     srcs = ["weight_test.cc"],
     linkstatic = True,
-    shard_count = 3,
     deps = [
         ":categorial-weight",
         "//openfst/lib:weight",

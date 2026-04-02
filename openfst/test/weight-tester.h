@@ -20,61 +20,51 @@
 #ifndef OPENFST_TEST_WEIGHT_TESTER_H_
 #define OPENFST_TEST_WEIGHT_TESTER_H_
 
-#include <cstdint>
 #include <sstream>
 #include <utility>
 
 #include "gtest/gtest.h"
-#include "absl/flags/declare.h"
-#include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "openfst/lib/weight.h"
 
-// These flags must be defined in the *test.cc including this file.
-ABSL_DECLARE_FLAG(uint64_t, seed);
-ABSL_DECLARE_FLAG(int32_t, repeat);
-
 namespace fst {
 
-// Traits class to control test behavior.  This may be specialized for weights
-// that require different implementations.
-template <class Weight>
-struct WeightTestTraits {
-  static WeightGenerate<Weight> Generator(uint64_t seed) {
-    return WeightGenerate<Weight>(seed);
-  }
-  static bool IoRequiresParens() { return false; }
-};
-
-template <class Weight>
-class WeightTest : public ::testing::Test {
+// This class tests a variety of identities and properties that must
+// hold for the Weight class to be well-defined. It calls function object
+// WEIGHT_GENERATOR to select weights that are used in the tests.
+template <class Weight, class WeightGenerator = WeightGenerate<Weight>>
+class WeightTester {
  public:
-  using WeightGenerator = WeightGenerate<Weight>;
+  explicit WeightTester(WeightGenerator generator)
+      : weight_generator_(std::move(generator)) {}
 
-  WeightTest()
-      : seed_(absl::GetFlag(FLAGS_seed)),
-        generate_(WeightTestTraits<Weight>::Generator(seed_)) {}
+  void Test(int iterations) {
+    for (int i = 0; i < iterations; ++i) {
+      // Selects the test weights.
+      const Weight w1(weight_generator_());
+      const Weight w2(weight_generator_());
+      const Weight w3(weight_generator_());
 
- protected:
-  const uint64_t seed_;
-  WeightGenerator generate_;
-};
+      VLOG(1) << "weight type = " << Weight::Type();
+      VLOG(1) << "w1 = " << w1;
+      VLOG(1) << "w2 = " << w2;
+      VLOG(1) << "w3 = " << w3;
 
-TYPED_TEST_SUITE_P(WeightTest);
+      TestSemiring(w1, w2, w3);
+      TestDivision(w1, w2);
+      TestReverse(w1, w2);
+      TestEquality(w1, w2, w3);
+      TestIO(w1);
+      TestCopy(w1);
+    }
+  }
 
-// Tests (Plus, Times, Zero, One) defines a commutative semiring.
-TYPED_TEST_P(WeightTest, Semiring) {
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w1(this->generate_());
-    const Weight w2(this->generate_());
-    const Weight w3(this->generate_());
+ private:
+  // Note in the tests below we use ApproxEqual rather than == and add
+  // kDelta to inequalities where the weights might be inexact.
 
-    VLOG(1) << "weight type = " << Weight::Type();
-    VLOG(1) << "w1 = " << w1;
-    VLOG(1) << "w2 = " << w2;
-    VLOG(1) << "w3 = " << w3;
-
+  // Tests (Plus, Times, Zero, One) defines a commutative semiring.
+  void TestSemiring(Weight w1, Weight w2, Weight w3) {
     // Checks that the operations are closed.
     EXPECT_TRUE(Plus(w1, w2).Member());
     EXPECT_TRUE(Times(w1, w2).Member());
@@ -146,13 +136,9 @@ TYPED_TEST_P(WeightTest, Semiring) {
       EXPECT_TRUE(Weight::Properties() & kSemiring);
     }
   }
-}
 
-TYPED_TEST_P(WeightTest, Division) {
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w1(this->generate_());
-    const Weight w2(this->generate_());
+  // Tests division operation.
+  void TestDivision(Weight w1, Weight w2) {
     Weight p = Times(w1, w2);
     VLOG(1) << "TestDivision: p = " << p;
 
@@ -185,14 +171,10 @@ TYPED_TEST_P(WeightTest, Division) {
       }
     }
   }
-}
 
-TYPED_TEST_P(WeightTest, Reverse) {
-  using Weight = TypeParam;
-  using ReverseWeight = typename Weight::ReverseWeight;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w1(this->generate_());
-    const Weight w2(this->generate_());
+  // Tests reverse operation.
+  void TestReverse(Weight w1, Weight w2) {
+    using ReverseWeight = typename Weight::ReverseWeight;
 
     const ReverseWeight rw1 = w1.Reverse();
     const ReverseWeight rw2 = w2.Reverse();
@@ -201,15 +183,9 @@ TYPED_TEST_P(WeightTest, Reverse) {
     EXPECT_EQ(Plus(w1, w2).Reverse(), Plus(rw1, rw2));
     EXPECT_EQ(Times(w1, w2).Reverse(), Times(rw2, rw1));
   }
-}
 
-TYPED_TEST_P(WeightTest, OperatorEqualsIsEquivalenceRelation) {
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w1(this->generate_());
-    const Weight w2(this->generate_());
-    const Weight w3(this->generate_());
-
+  // Tests == is an equivalence relation.
+  void TestEquality(Weight w1, Weight w2, Weight w3) {
     // Checks reflexivity.
     EXPECT_EQ(w1, w1);
 
@@ -237,60 +213,33 @@ TYPED_TEST_P(WeightTest, OperatorEqualsIsEquivalenceRelation) {
       EXPECT_NE(w1, w2);
     }
   }
-}
 
-TYPED_TEST_P(WeightTest, BinaryIO) {
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w(this->generate_());
-    std::ostringstream os;
-    w.Write(os);
-    os.flush();
-    std::istringstream is(os.str());
-    Weight v;
-    v.Read(is);
-    EXPECT_EQ(w, v);
-  }
-}
+  // Tests binary serialization and textual I/O.
+  void TestIO(Weight w) {
+    // Tests binary I/O
+    {
+      std::ostringstream os;
+      w.Write(os);
+      os.flush();
+      std::istringstream is(os.str());
+      Weight v;
+      v.Read(is);
+      EXPECT_EQ(w, v);
+    }
 
-TYPED_TEST_P(WeightTest, TextIOWithParens) {
-  absl::SetFlag(&FLAGS_fst_weight_parentheses, "()");
-
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w(this->generate_());
-    std::ostringstream os;
-    os << w;
-    std::istringstream is(os.str());
-    Weight v(Weight::One());
-    is >> v;
-    EXPECT_TRUE(ApproxEqual(w, v));
-  }
-}
-
-TYPED_TEST_P(WeightTest, TextIOWithoutParens) {
-  using Weight = TypeParam;
-  if (WeightTestTraits<Weight>::IoRequiresParens()) {
-    GTEST_SKIP() << "Parens required for I/O";
+    // Tests textual I/O.
+    {
+      std::ostringstream os;
+      os << w;
+      std::istringstream is(os.str());
+      Weight v(Weight::One());
+      is >> v;
+      EXPECT_TRUE(ApproxEqual(w, v));
+    }
   }
 
-  absl::SetFlag(&FLAGS_fst_weight_parentheses, "");
-
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w(this->generate_());
-    std::ostringstream os;
-    os << w;
-    std::istringstream is(os.str());
-    Weight v(Weight::One());
-    is >> v;
-    EXPECT_TRUE(ApproxEqual(w, v));
-  }
-}
-
-TYPED_TEST_P(WeightTest, Copy) {
-  using Weight = TypeParam;
-  for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    const Weight w(this->generate_());
+  // Tests copy constructor and assignment operator
+  void TestCopy(Weight w) {
     Weight x = w;
     EXPECT_EQ(w, x);
 
@@ -300,11 +249,10 @@ TYPED_TEST_P(WeightTest, Copy) {
     x.operator=(x);
     EXPECT_EQ(w, x);
   }
-}
 
-REGISTER_TYPED_TEST_SUITE_P(WeightTest, Semiring, Division, Reverse,
-                            OperatorEqualsIsEquivalenceRelation, BinaryIO,
-                            TextIOWithParens, TextIOWithoutParens, Copy);
+  // Generates weights used in testing.
+  WeightGenerator weight_generator_;
+};
 
 }  // namespace fst
 
