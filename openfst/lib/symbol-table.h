@@ -220,7 +220,12 @@ class SymbolTableImpl final : public MutableSymbolTableImpl {
       // considered a valid separator. Multi-byte separators are not permitted.
       // If empty, will use the value of `FLAGS_fst_field_separator` that by
       // the default is set to "\t " (accepts space and tab).
-      absl::string_view sep = "");
+      absl::string_view sep = "",
+      // If `split_on_last_sep_only` is true, then only the last occurrence of
+      // the separator will be used to split the line into symbol and symbol id.
+      // Other occurrences of the separator in the string making up the symbol
+      // will be ignored.
+      bool split_on_last_sep_only = false);
 
   // Reads a binary SymbolTable from stream, using source in error messages.
   static SymbolTableImpl* absl_nullable Read(std::istream& strm,
@@ -384,9 +389,10 @@ class SymbolTable {
   // Reads a text representation of the symbol table from an istream. Pass a
   // name to give the resulting SymbolTable.
   static SymbolTable* ReadText(std::istream& strm, absl::string_view name,
-                               absl::string_view sep = "") {
-    auto impl =
-        absl::WrapUnique(internal::SymbolTableImpl::ReadText(strm, name, sep));
+                               absl::string_view sep = "",
+                               bool split_on_last_sep_only = false) {
+    auto impl = absl::WrapUnique(internal::SymbolTableImpl::ReadText(
+        strm, name, sep, split_on_last_sep_only));
     return impl ? new SymbolTable(std::move(impl)) : nullptr;
   }
 
