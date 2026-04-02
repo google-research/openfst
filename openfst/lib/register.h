@@ -24,6 +24,7 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/generic-register.h"
 #include "openfst/lib/util.h"
@@ -80,8 +81,8 @@ class FstRegister : public GenericRegister<std::string, FstRegisterEntry<Arc>,
 };
 
 // This class registers an FST type for generic reading and creating.
-// The type must have a default constructor and a copy constructor from
-// Fst<Arc>.
+// The type must have a default constructor. If it also has a constructor from
+// Fst<Arc>, it will be possible to convert to it from arbitrary FST types.
 template <class FST>
 class FstRegisterer : public GenericRegisterer<FstRegister<typename FST::Arc>> {
  public:
@@ -104,7 +105,18 @@ class FstRegisterer : public GenericRegisterer<FstRegister<typename FST::Arc>> {
     return Entry(&ReadGeneric, &FstRegisterer<FST>::Convert);
   }
 
-  static Fst<Arc>* Convert(const Fst<Arc>& fst) { return new FST(fst); }
+  // Converts a generic Fst<Arc> into the registered FST type, as long as the
+  // registered type has such a constructor.
+  static Fst<Arc>* absl_nullable Convert(const Fst<Arc>& fst) {
+    if constexpr (std::is_constructible_v<FST, const Fst<Arc>&>) {
+      return new FST(fst);
+    } else {
+      FSTERROR() << "FstRegisterer::Convert: FST type " << FST().Type()
+                 << " (arc type " << Arc::Type()
+                 << ") cannot be converted into.";
+      return nullptr;
+    }
+  }
 };
 
 // Convenience macro to generate a static FstRegisterer instance.
