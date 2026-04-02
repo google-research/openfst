@@ -495,10 +495,8 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
                            CacheOptions opts = CacheOptions())
       : Base(std::make_shared<Impl>(data, isyms, osyms, opts)) {}
 
-  explicit LinearTaggerFst(const Fst<A>& fst) : Base(std::make_shared<Impl>()) {
-    LOG(FATAL)  // Crash OK.
-        << "LinearTaggerFst: no constructor from arbitrary FST.";
-  }
+  // Doesn't support construction from an arbitrary FST.
+  explicit LinearTaggerFst(const Fst<A>& fst) = delete;
 
   // See Fst<>::Copy() for doc.
   LinearTaggerFst(const LinearTaggerFst<A>& fst, bool safe = false)
@@ -948,11 +946,8 @@ class LinearClassifierFst
                                CacheOptions opts = CacheOptions())
       : Base(std::make_shared<Impl>(data, num_classes, isyms, osyms, opts)) {}
 
-  explicit LinearClassifierFst(const Fst<A>& fst)
-      : Base(std::make_shared<Impl>()) {
-    LOG(FATAL)  // Crash OK.
-        << "LinearClassifierFst: no constructor from arbitrary FST.";
-  }
+  // Doesn't support construction from an arbitrary FST.
+  explicit LinearClassifierFst(const Fst<A>& fst) = delete;
 
   // See Fst<>::Copy() for doc.
   LinearClassifierFst(const LinearClassifierFst<A>& fst, bool safe = false)
