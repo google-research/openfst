@@ -581,8 +581,10 @@ class MultiEpsFilter {
   }
 
  private:
+  MultiEpsFilter() = delete;
+
   Filter filter_;
-  bool keep_multi_eps_;
+  const bool keep_multi_eps_;
 };
 
 }  // namespace fst
