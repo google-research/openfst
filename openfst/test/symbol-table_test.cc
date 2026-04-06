@@ -339,6 +339,28 @@ TEST(SymbolTableReadTextTest, SpaceSymbolWithTabSeparatorParses) {
   EXPECT_EQ(symbols->Find("y"), 2);
 }
 
+TEST(SymbolTableReadTextTest, SplitOnLastSepOnly) {
+  std::istringstream strm("foo bar baz\t2\n");
+
+  auto* impl = internal::SymbolTableImpl::ReadText(
+      strm, /*name=*/"split on last sep input", "\t",
+      /*split_on_last_sep_only=*/true);
+  auto symbols = absl::WrapUnique(impl);
+  ASSERT_THAT(symbols, NotNull());
+  EXPECT_EQ(symbols->Find(2), "foo bar baz");
+}
+
+TEST(SymbolTableReadTextTest, SplitOnLastSepOnlyWithSpaces) {
+  std::istringstream strm("  foo bar baz  2\n");
+
+  auto* impl = internal::SymbolTableImpl::ReadText(
+      strm, /*name=*/"split on last sep input", " ",
+      /*split_on_last_sep_only=*/true);
+  auto symbols = absl::WrapUnique(impl);
+  ASSERT_THAT(symbols, NotNull());
+  EXPECT_EQ(symbols->Find(2), "foo bar baz");
+}
+
 TEST(SymbolTableReadTextTest, NegativeLabelPasses) {
   std::istringstream strm("negative_label -2\n");
 

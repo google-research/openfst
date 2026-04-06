@@ -147,7 +147,8 @@ void ConstSymbolTableImpl::AddTable(const SymbolTable& table) {
 }
 
 SymbolTableImpl* absl_nullable SymbolTableImpl::ReadText(
-    std::istream& strm, absl::string_view name, absl::string_view sep) {
+    std::istream& strm, absl::string_view name, absl::string_view sep,
+    const bool split_on_last_sep_only) {
   std::string input_separator = std::string(sep);
   if (sep.empty()) input_separator = absl::GetFlag(FLAGS_fst_field_separator);
   auto impl = std::make_unique<SymbolTableImpl>(name);
@@ -159,14 +160,28 @@ SymbolTableImpl* absl_nullable SymbolTableImpl::ReadText(
     const std::vector<absl::string_view> col =
         absl::StrSplit(line, absl::ByAnyChar(separator), absl::SkipEmpty());
     if (col.empty()) continue;  // Empty line.
-    if (col.size() != 2) {
+    absl::string_view symbol;
+    absl::string_view value;
+    if (col.size() == 2) {
+      symbol = col[0];
+      value = col[1];
+    } else if (split_on_last_sep_only && col.size() > 2) {
+      value = col.back();
+      const absl::string_view line_view(line);
+      // We know that the prefix before col.back() must contain at least one
+      // separator, so we can subtract 1 from the offset to get the correct
+      // end offset for the symbol.
+      const size_t end_offset = col.back().data() - line_view.data() - 1;
+      symbol = line_view.substr(0, end_offset);
+      LOG(WARNING) << "SymbolTable::ReadText: Found symbol (" << symbol
+                   << ") containing separator (" << sep << "), "
+                   << "file = " << name << ", line = " << nline << ": " << line;
+    } else {
       LOG(ERROR) << "SymbolTable::ReadText: Bad number of columns ("
                  << col.size() << "), "
                  << "file = " << name << ", line = " << nline << ": " << line;
       return nullptr;
     }
-    absl::string_view symbol = col[0];
-    absl::string_view value = col[1];
     const auto maybe_key = ParseInt64(value);
     if (!maybe_key.has_value() || *maybe_key == kNoSymbol) {
       LOG(ERROR) << "SymbolTable::ReadText: Bad label (" << value << "), "
