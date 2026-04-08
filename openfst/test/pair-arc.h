@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
@@ -39,7 +40,7 @@ struct PairArc : public ArcTpl<ProductWeight<TropicalWeight, TropicalWeight>> {
   using Base::Base;
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("pair");
+    static const absl::NoDestructor<std::string> type("pair");
     return *type;
   }
 };

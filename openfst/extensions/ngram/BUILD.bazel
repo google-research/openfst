@@ -101,6 +101,7 @@ cc_test(
         "//openfst/lib:file-util",
         "//openfst/lib:weight",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:die_if_null",
         "@com_google_googletest//:gtest",

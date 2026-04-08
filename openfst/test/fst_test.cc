@@ -26,6 +26,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
+#include "absl/base/no_destructor.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
@@ -56,7 +57,7 @@ struct CustomArc {
   CustomArc() = default;
 
   static const std::string& Type() {  // Arc type name
-    static const std::string* const type = new std::string("my");
+    static const absl::NoDestructor<std::string> type("my");
     return *type;
   }
 

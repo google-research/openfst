@@ -25,6 +25,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/base/no_destructor.h"
 #include "absl/flags/flag.h"
 #include "absl/log/die_if_null.h"
 #include "openfst/lib/arc-map.h"
@@ -75,7 +76,7 @@ struct CustomArc {
       : ilabel(i), olabel(o), weight(w), nextstate(s) {}
   CustomArc() = default;
   static const std::string& Type() {
-    static const std::string* const type = new std::string("CustomArc");
+    static const absl::NoDestructor<std::string> type("CustomArc");
     return *type;
   }
   Label ilabel;

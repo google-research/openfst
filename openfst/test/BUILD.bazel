@@ -253,6 +253,7 @@ cc_library(
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/base:no_destructor",
     ],
 )
 
@@ -2298,6 +2299,7 @@ cc_test(
         "//openfst/lib:fst-decl",
         "//openfst/lib:register",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
