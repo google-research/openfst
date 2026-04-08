@@ -105,18 +105,18 @@ class UnionWeight {
   }
 
   static const UnionWeight& Zero() {
-    static const auto* const zero = new UnionWeight;
+    static const absl::NoDestructor<UnionWeight> zero;
     return *zero;
   }
 
   static const UnionWeight& One() {
-    static const auto* const one = new UnionWeight(W::One());
+    static const absl::NoDestructor<UnionWeight> one(W::One());
     return *one;
   }
 
   static const UnionWeight& NoWeight() {
-    static const auto* const no_weight =
-        new UnionWeight(W::Zero(), W::NoWeight());
+    static const absl::NoDestructor<UnionWeight> no_weight(
+        UnionWeight(W::Zero(), W::NoWeight()));
     return *no_weight;
   }
 
