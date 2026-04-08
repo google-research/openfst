@@ -345,7 +345,7 @@ class AcyclicMinimizer {
     }
 
     // Invoked when tree arc examined (to undiscovered state).
-    bool TreeArc(StateId s, const Arc& arc) { return true; }
+    constexpr bool TreeArc(StateId s, const Arc& arc) const { return true; }
 
     // Invoked when back arc examined (to unfinished state).
     bool BackArc(StateId s, const Arc& arc) { return true; }
