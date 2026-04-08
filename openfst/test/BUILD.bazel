@@ -205,6 +205,7 @@ cc_library(
         "//openfst/compat:compat_memory",
         "//openfst/lib",
         "//openfst/lib:util",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/memory",
     ],
 )
@@ -2348,6 +2349,7 @@ cc_test(
         "//openfst/lib:fst-decl",
         "//openfst/lib:lib_lite",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",

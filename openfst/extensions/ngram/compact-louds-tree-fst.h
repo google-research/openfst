@@ -47,6 +47,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/extensions/ngram/louds-tree.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
@@ -77,7 +78,7 @@ class DefaultLoudsTreeElementCompactor {
   }
   Weight GetFinalWeight(const FinalElement& element) const { return element; }
   static const std::string& Type() {
-    static const std::string* const type = new std::string("default");
+    static const absl::NoDestructor<std::string> type("default");
     return *type;
   }
 
@@ -112,7 +113,7 @@ class UnweightedLoudsTreeElementCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("unweighted");
+    static const absl::NoDestructor<std::string> type("unweighted");
     return *type;
   }
 
@@ -144,7 +145,7 @@ class AcceptorLoudsTreeElementCompactor {
   Weight GetFinalWeight(const FinalElement& element) const { return element; }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("acceptor");
+    static const absl::NoDestructor<std::string> type("acceptor");
     return *type;
   }
   bool IsCompatible(const Fst<Arc>& fst) const {
@@ -176,8 +177,7 @@ class UnweightedAcceptorLoudsTreeElementCompactor {
     return element ? Weight::One() : Weight::Zero();
   }
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string("unweighted-acceptor");
+    static const absl::NoDestructor<std::string> type("unweighted-acceptor");
     return *type;
   }
 
@@ -299,8 +299,8 @@ class LoudsTreeCompactor {
   }
 
   static const std::string& Type() {
-    std::string out = LoudsTreeElementCompactor::Type() + "-compactor";
-    static const std::string* const type = new std::string(out);
+    static const absl::NoDestructor<std::string> type(
+        LoudsTreeElementCompactor::Type() + "-compactor");
     return *type;
   }
 

@@ -30,6 +30,7 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/base/no_destructor.h"
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
 #include "openfst/lib/arc.h"
@@ -72,8 +73,8 @@ class TrivialArcCompactor {
   bool Compatible(const Fst<A>& fst) const { return true; }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string("trival_arc_compactor_" + Arc::Type());
+    static const absl::NoDestructor<std::string> type("trival_arc_compactor_" +
+                                                      Arc::Type());
     return *type;
   }
 
@@ -143,8 +144,8 @@ class TrivialCompactor {
   uint64_t Properties(uint64_t props) const { return props; }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string("trivial_compactor_" + Arc::Type());
+    static const absl::NoDestructor<std::string> type("trivial_compactor_" +
+                                                      Arc::Type());
     return *type;
   }
 

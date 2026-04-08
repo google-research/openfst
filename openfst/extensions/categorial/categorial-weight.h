@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
@@ -626,7 +627,7 @@ class CategorialWeight {
   }
 
   static const std::string &Type() {
-    static const std::string *const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         C == CategoryType::LEFT ? "category" : "right_category");
     return *type;
   }

@@ -27,6 +27,7 @@
 #include <utility>
 
 #include "gtest/gtest.h"
+#include "absl/base/no_destructor.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/expanded-fst.h"
@@ -92,22 +93,20 @@ class Instrumented : public T {
   }
 
   static const std::string& Type() {
-    // Pointer cleanup policy: Never clean up.
-    static const std::string* const type = []() {
-      std::string* s = new std::string("instrumented_");
-      s->append(T::Type());
+    static const absl::NoDestructor<std::string> type([]() {
+      std::string s("instrumented_");
+      s.append(T::Type());
       return s;
-    }();
+    }());
     return *type;
   }
 
   void Log(absl::string_view msg) const {
-    // Pointer cleanup policy: Never clean up.
-    static const std::string* const name = []() {
-      std::string* name = new std::string("_Z");
-      name->append(typeid(T).name());
+    static const absl::NoDestructor<std::string> name([]() {
+      std::string name("_Z");
+      name.append(typeid(T).name());
       return name;
-    }();
+    }());
     VLOG(log_level) << *name << " " << msg << ": " << *this;
   }
 
@@ -190,12 +189,11 @@ struct MyArcTpl {
   StateId nextstate;
 
   static const std::string& Type() {
-    // Pointer cleanup policy: Never clean up.
-    static const std::string* const type = []() {
-      std::string* s = new std::string("my_arc_");
-      s->append(W::Type());
+    static const absl::NoDestructor<std::string> type([]() {
+      std::string s("my_arc_");
+      s.append(W::Type());
       return s;
-    }();
+    }());
     return *type;
   }
 

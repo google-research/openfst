@@ -52,6 +52,7 @@ cc_library(
     deps = [
         ":louds-tree",
         "//openfst/lib",
+        "@com_google_absl//absl/base:no_destructor",
     ],
 )
 

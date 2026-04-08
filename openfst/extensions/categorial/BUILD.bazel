@@ -25,6 +25,7 @@ cc_library(
     deps = [
         "//openfst/lib",
         "//openfst/lib:util",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/strings",
     ],
 )

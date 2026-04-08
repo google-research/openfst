@@ -27,6 +27,7 @@
 #include <string>
 
 #include "absl/base/casts.h"
+#include "absl/base/no_destructor.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/generic-register.h"
@@ -160,7 +161,7 @@ class WeightClass {
 
   const std::string& Type() const {
     if (impl_) return impl_->Type();
-    static const std::string* const no_type = new std::string("none");
+    static const absl::NoDestructor<std::string> no_type("none");
     return *no_type;
   }
 

@@ -26,6 +26,7 @@ fst_cc_library(
         "//openfst/lib:util",
         "//openfst/lib:weight",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -150,6 +151,7 @@ fst_cc_library(
         "//openfst/lib:weight",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/flags:flag",
