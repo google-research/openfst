@@ -84,17 +84,17 @@ class StringWeight {
   explicit StringWeight(Label label) { PushBack(label); }
 
   static const StringWeight& Zero() {
-    static const auto* const zero = new StringWeight(Label(kStringInfinity));
+    static const absl::NoDestructor<StringWeight> zero(Label{kStringInfinity});
     return *zero;
   }
 
   static const StringWeight& One() {
-    static const auto* const one = new StringWeight();
+    static const absl::NoDestructor<StringWeight> one;
     return *one;
   }
 
   static const StringWeight& NoWeight() {
-    static const auto* const no_weight = new StringWeight(Label(kStringBad));
+    static const absl::NoDestructor<StringWeight> no_weight(Label{kStringBad});
     return *no_weight;
   }
 
