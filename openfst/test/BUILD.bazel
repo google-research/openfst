@@ -226,6 +226,7 @@ cc_library(
     hdrs = ["weight-tester.h"],
     deps = [
         "//openfst/lib:weight",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_googletest//:gtest",
     ],
@@ -1463,6 +1464,7 @@ cc_test(
         ":test_main",
         ":weight_tester",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -2359,6 +2361,7 @@ cc_test(
     size = "large",
     srcs = ["weight_test.cc"],
     linkstatic = True,
+    shard_count = 4,
     deps = [
         ":weight_tester",
         "//openfst/lib:weight",
