@@ -165,8 +165,8 @@ class ReachableTest : public testing::Test {
     for (auto i = 0; i < 7; ++i) {
       afst_[i].reset(VectorFst<Arc>::Read(JoinPath(
           std::string("."),
-          "openfst/test/testdata/label-reachable/a" +
-              std::to_string(i) + ".fst")));
+          "openfst/test/testdata/label-reachable",
+          "a" + std::to_string(i) + ".fst")));
     }
     rand_.seed(absl::GetFlag(FLAGS_seed));
     LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
