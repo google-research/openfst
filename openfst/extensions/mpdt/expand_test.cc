@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
@@ -41,22 +42,21 @@ using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 using Level = Label;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/mpdt/testdata";
+
 class ExpandTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string expand1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/e1.fst");
-    const std::string expand2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/e2.fst");
-    const std::string expand3_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/e3.fst");
+    const std::string expand1_name =
+        JoinPath(std::string("."), kTestDir, "e1.fst");
+    const std::string expand2_name =
+        JoinPath(std::string("."), kTestDir, "e2.fst");
+    const std::string expand3_name =
+        JoinPath(std::string("."), kTestDir, "e3.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/eparen.triples");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "eparen.triples");
 
     efst1_.reset(VectorFst<Arc>::Read(expand1_name));
     // efst2_ = Expand(efst1_)

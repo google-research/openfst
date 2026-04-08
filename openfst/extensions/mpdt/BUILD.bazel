@@ -247,6 +247,7 @@ cc_test(
         "//openfst/extensions/pdt:compose",
         "//openfst/lib",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -268,6 +269,7 @@ cc_test(
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -301,6 +303,7 @@ cc_test(
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )

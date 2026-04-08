@@ -27,6 +27,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
@@ -42,19 +43,19 @@ using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 using Level = Label;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/mpdt/testdata";
+
 class ReverseTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string reverse1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/v1.fst");
-    const std::string reverse2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/v2.fst");
+    const std::string reverse1_name =
+        JoinPath(std::string("."), kTestDir, "v1.fst");
+    const std::string reverse2_name =
+        JoinPath(std::string("."), kTestDir, "v2.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/vparen.triples");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "vparen.triples");
 
     rfst1_.reset(VectorFst<Arc>::Read(reverse1_name));
     // rfst2_ = PdtReverse(rfst1_)

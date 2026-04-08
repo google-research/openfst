@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/extensions/pdt/compose.h"
 #include "openfst/lib/arc.h"
@@ -42,22 +43,21 @@ using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 using Level = Label;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/mpdt/testdata";
+
 class ComposeTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string compose1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/c1.fst");
-    const std::string compose2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/c2.fst");
-    const std::string compose3_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/c3.fst");
+    const std::string compose1_name =
+        JoinPath(std::string("."), kTestDir, "c1.fst");
+    const std::string compose2_name =
+        JoinPath(std::string("."), kTestDir, "c2.fst");
+    const std::string compose3_name =
+        JoinPath(std::string("."), kTestDir, "c3.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/mpdt/testdata/eparen.triples");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "eparen.triples");
 
     cfst1_.reset(VectorFst<Arc>::Read(compose1_name));
     cfst2_.reset(VectorFst<Arc>::Read(compose2_name));
