@@ -130,7 +130,7 @@ class SccVisitor {
 
   bool InitState(StateId s, StateId root);
 
-  bool TreeArc(StateId s, const Arc& arc) { return true; }
+  constexpr bool TreeArc(StateId s, const Arc& arc) const { return true; }
 
   bool BackArc(StateId s, const Arc& arc) {
     const auto t = arc.nextstate;
@@ -165,7 +165,6 @@ class SccVisitor {
         s = nscc_ - 1 - s;
       }
     }
-    if (coaccess_internal_) delete coaccess_;
   }
 
  private:
@@ -177,7 +176,7 @@ class SccVisitor {
   StateId start_;
   StateId nstates_;  // State count.
   StateId nscc_;     // SCC count.
-  bool coaccess_internal_;
+  std::vector<bool> coaccess_internal_;  // Fallback storage for coaccess.
   std::vector<StateId> dfnumber_;  // State discovery times.
   std::vector<StateId>
       lowlink_;                // lowlink[state] == dfnumber[state] => SCC root
@@ -191,10 +190,9 @@ inline void SccVisitor<Arc>::InitVisit(const Fst<Arc>& fst) {
   if (access_) access_->clear();
   if (coaccess_) {
     coaccess_->clear();
-    coaccess_internal_ = false;
   } else {
-    coaccess_ = new std::vector<bool>;
-    coaccess_internal_ = true;
+    coaccess_internal_.clear();
+    coaccess_ = &coaccess_internal_;
   }
   *props_ |= kAcyclic | kInitialAcyclic | kAccessible | kCoAccessible;
   *props_ &= ~(kCyclic | kInitialCyclic | kNotAccessible | kNotCoAccessible);
