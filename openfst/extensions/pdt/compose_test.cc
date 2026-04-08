@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/util.h"
@@ -40,22 +41,21 @@ using Label = Arc::Label;
 using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/pdt/testdata";
+
 class ComposeTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string compose1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/c1.fst");
-    const std::string compose2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/c2.fst");
-    const std::string compose3_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/c3.fst");
+    const std::string compose1_name =
+        JoinPath(std::string("."), kTestDir, "c1.fst");
+    const std::string compose2_name =
+        JoinPath(std::string("."), kTestDir, "c2.fst");
+    const std::string compose3_name =
+        JoinPath(std::string("."), kTestDir, "c3.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/cparen.pairs");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "cparen.pairs");
 
     cfst1_.reset(VectorFst<Arc>::Read(compose1_name));
     cfst2_.reset(VectorFst<Arc>::Read(compose2_name));

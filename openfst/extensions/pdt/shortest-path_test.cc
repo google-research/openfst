@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/util.h"
@@ -40,25 +41,23 @@ using Label = Arc::Label;
 using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/pdt/testdata";
+
 class ShortestPathTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string shortest_path1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/sp1.fst");
-    const std::string shortest_path2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/sp2.fst");
-    const std::string shortest_path3_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/sp3.fst");
-    const std::string shortest_path4_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/sp4.fst");
+    const std::string shortest_path1_name =
+        JoinPath(std::string("."), kTestDir, "sp1.fst");
+    const std::string shortest_path2_name =
+        JoinPath(std::string("."), kTestDir, "sp2.fst");
+    const std::string shortest_path3_name =
+        JoinPath(std::string("."), kTestDir, "sp3.fst");
+    const std::string shortest_path4_name =
+        JoinPath(std::string("."), kTestDir, "sp4.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/spparen.pairs");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "spparen.pairs");
 
     spfst1_.reset(VectorFst<Arc>::Read(shortest_path1_name));
     spfst2_.reset(VectorFst<Arc>::Read(shortest_path2_name));

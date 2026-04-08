@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
@@ -39,16 +40,16 @@ using Label = StdArc::Label;
 using StateId = StdArc::StateId;
 using Weight = StdArc::Weight;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/pdt/testdata";
+
 class ParenTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string paren_fst1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/p1.fst");
-
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/pparen.pairs");
+    const std::string paren_fst1_name =
+        JoinPath(std::string("."), kTestDir, "p1.fst");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "pparen.pairs");
 
     pfst1_.reset(VectorFst<Arc>::Read(paren_fst1_name));
 

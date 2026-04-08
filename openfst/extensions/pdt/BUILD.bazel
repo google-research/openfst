@@ -362,6 +362,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -399,6 +400,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -433,6 +435,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -463,6 +466,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -500,6 +504,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -536,6 +541,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",
     ],
 )

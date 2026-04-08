@@ -26,6 +26,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
@@ -43,49 +44,39 @@ using Label = Arc::Label;
 using StateId = Arc::StateId;
 using Weight = Arc::Weight;
 
+constexpr absl::string_view kTestDir =
+    "openfst/extensions/pdt/testdata";
+
 class ReplaceTest : public testing::Test {
  protected:
   void SetUp() override {
-    const std::string replace1_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r1.fst");
-    const std::string replace2_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r2.fst");
-    const std::string replace3_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r3.fst");
-    const std::string replace4_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r4.fst");
-    const std::string replace5_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r5.fst");
-    const std::string replace6_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r6.fst");
-    const std::string replace7_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r7.fst");
-    const std::string replace8_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r8.fst");
-    const std::string replace9_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r9.fst");
-    const std::string replace10_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r10.fst");
-    const std::string replace11_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r11.fst");
-    const std::string replace12_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/r12.fst");
+    const std::string replace1_name =
+        JoinPath(std::string("."), kTestDir, "r1.fst");
+    const std::string replace2_name =
+        JoinPath(std::string("."), kTestDir, "r2.fst");
+    const std::string replace3_name =
+        JoinPath(std::string("."), kTestDir, "r3.fst");
+    const std::string replace4_name =
+        JoinPath(std::string("."), kTestDir, "r4.fst");
+    const std::string replace5_name =
+        JoinPath(std::string("."), kTestDir, "r5.fst");
+    const std::string replace6_name =
+        JoinPath(std::string("."), kTestDir, "r6.fst");
+    const std::string replace7_name =
+        JoinPath(std::string("."), kTestDir, "r7.fst");
+    const std::string replace8_name =
+        JoinPath(std::string("."), kTestDir, "r8.fst");
+    const std::string replace9_name =
+        JoinPath(std::string("."), kTestDir, "r9.fst");
+    const std::string replace10_name =
+        JoinPath(std::string("."), kTestDir, "r10.fst");
+    const std::string replace11_name =
+        JoinPath(std::string("."), kTestDir, "r11.fst");
+    const std::string replace12_name =
+        JoinPath(std::string("."), kTestDir, "r12.fst");
 
-    const std::string parens_name = JoinPath(
-        std::string("."),
-        "openfst/extensions/pdt/testdata/rparen.pairs");
+    const std::string parens_name =
+        JoinPath(std::string("."), kTestDir, "rparen.pairs");
 
     rfst1_.reset(VectorFst<Arc>::Read(replace1_name));
     rfst2_.reset(VectorFst<Arc>::Read(replace2_name));
