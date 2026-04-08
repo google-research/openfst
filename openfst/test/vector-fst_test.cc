@@ -87,8 +87,7 @@ template <class T, int log_level>
 class Instrumented : public T {
  public:
   static MethodCounters& Counters() {
-    // Pointer cleanup policy: Never clean up.
-    static MethodCounters* const counters = new MethodCounters();
+    static absl::NoDestructor<MethodCounters> counters;
     return *counters;
   }
 
@@ -165,14 +164,12 @@ class Instrumented : public T {
   }
 
   static const Instrumented& Zero() {
-    // Pointer cleanup policy: Never clean up.
-    static const Instrumented* const zero = new Instrumented(T::Zero());
+    static const absl::NoDestructor<Instrumented> zero(T::Zero());
     return *zero;
   }
 
   static const Instrumented& One() {
-    // Pointer cleanup policy: Never clean up.
-    static const Instrumented* const one = new Instrumented(T::One());
+    static const absl::NoDestructor<Instrumented> one(T::One());
     return *one;
   }
 };
