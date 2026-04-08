@@ -27,6 +27,7 @@
 #include <random>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -82,13 +83,13 @@ class SparsePowerWeight : public SparseTupleWeight<W, K> {
   // Overide this: Overwrite the Type method to reflect the key type if using
   // a non-default key type.
   static const std::string& Type() {
-    static const std::string* const type = [] {
+    static const absl::NoDestructor<std::string> type([] {
       std::string type = W::Type() + "_^n";
       if (sizeof(K) != sizeof(uint32_t)) {
         type += "_" + std::to_string(CHAR_BIT * sizeof(K));
       }
-      return new std::string(type);
-    }();
+      return type;
+    }());
     return *type;
   }
 

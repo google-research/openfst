@@ -28,6 +28,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/error-weight.h"
 #include "openfst/lib/expectation-weight.h"
 #include "openfst/lib/float-weight.h"
@@ -70,7 +71,7 @@ struct FST_LTO_VISIBILITY_PUBLIC ArcTpl {
       : ArcTpl(ilabel, olabel, Weight::One(), nextstate) {}
 
   static const std::string& Type() {
-    static const auto* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         Weight::Type() == "tropical" ? "standard" : Weight::Type());
     return *type;
   }
@@ -102,7 +103,7 @@ struct StringArc : public ArcTpl<StringWeight<int, S>> {
   using Base::Base;
 
   static const std::string& Type() {
-    static const auto* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         S == STRING_LEFT ? "left_standard_string"
                          : (S == STRING_RIGHT ? "right_standard_string"
                                               : "restricted_standard_string"));
@@ -126,7 +127,7 @@ struct GallicArc : public ArcTpl<GallicWeight<int, typename A::Weight, G>,
              arc.nextstate) {}
 
   static const std::string& Type() {
-    static const auto* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         (G == GALLIC_LEFT
              ? "left_gallic_"
              : (G == GALLIC_RIGHT
@@ -150,7 +151,7 @@ struct ReverseArc : public ArcTpl<typename A::Weight::ReverseWeight,
   using Base::Base;
 
   static const std::string& Type() {
-    static const auto* const type = new std::string("reverse_" + Arc::Type());
+    static const absl::NoDestructor<std::string> type("reverse_" + Arc::Type());
     return *type;
   }
 };
@@ -176,8 +177,8 @@ struct PowerArc : public ArcTpl<PowerWeight<typename A::Weight, n>,
   using Base::Base;
 
   static const std::string& Type() {
-    static const auto* const type =
-        new std::string(Arc::Type() + "_^" + std::to_string(n));
+    static const absl::NoDestructor<std::string> type(Arc::Type() + "_^" +
+                                                      std::to_string(n));
     return *type;
   }
 };
@@ -194,13 +195,13 @@ struct SparsePowerArc : public ArcTpl<SparsePowerWeight<typename A::Weight, K>,
   using Base::Base;
 
   static const std::string& Type() {
-    static const std::string* const type = [] {
+    static const absl::NoDestructor<std::string> type([] {
       std::string type = Arc::Type() + "_^n";
       if (sizeof(K) != sizeof(uint32_t)) {
         type += "_" + std::to_string(CHAR_BIT * sizeof(K));
       }
-      return new std::string(type);
-    }();
+      return type;
+    }());
     return *type;
   }
 };
@@ -219,8 +220,8 @@ struct ExpectationArc : public ArcTpl<ExpectationWeight<typename A::Weight, X2>,
   using Base::Base;
 
   static const std::string& Type() {
-    static const auto* const type =
-        new std::string("expectation_" + Arc::Type() + "_" + X2::Type());
+    static const absl::NoDestructor<std::string> type(
+        "expectation_" + Arc::Type() + "_" + X2::Type());
     return *type;
   }
 };

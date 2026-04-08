@@ -33,6 +33,7 @@
 #include <random>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/pair-weight.h"
 #include "openfst/lib/product-weight.h"
@@ -76,8 +77,8 @@ class SignedLogWeightTpl : public PairWeight<TropicalWeight, LogWeightTpl<T>> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string("signed_log_" + W1::Type() + "_" + W2::Type());
+    static const absl::NoDestructor<std::string> type(
+        "signed_log_" + W1::Type() + "_" + W2::Type());
     return *type;
   }
 

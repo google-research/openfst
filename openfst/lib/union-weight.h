@@ -34,6 +34,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/weight.h"
 
@@ -120,8 +121,7 @@ class UnionWeight {
   }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string(W::Type() + "_union");
+    static const absl::NoDestructor<std::string> type(W::Type() + "_union");
     return *type;
   }
 

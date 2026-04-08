@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/product-weight.h"
@@ -98,7 +99,7 @@ class StringWeight {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         S == STRING_LEFT
             ? "left_string"
             : (S == STRING_RIGHT ? "right_string" : "restricted_string"));
@@ -609,7 +610,7 @@ struct GallicWeight
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         G == GALLIC_LEFT
             ? "left_gallic"
             : (G == GALLIC_RIGHT
@@ -763,7 +764,7 @@ struct GallicWeight<Label, W, GALLIC>
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("gallic");
+    static const absl::NoDestructor<std::string> type("gallic");
     return *type;
   }
 

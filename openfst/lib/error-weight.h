@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/util.h"
 
 namespace fst {
@@ -42,7 +43,7 @@ struct ErrorWeight {
   static ErrorWeight NoWeight() { return ErrorWeight(); }
 
   static const std::string& Type() {
-    static const auto* const type = new std::string("error");
+    static const absl::NoDestructor<std::string> type("error");
     return *type;
   }
 };

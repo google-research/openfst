@@ -35,6 +35,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
@@ -128,14 +129,14 @@ class SetWeight {
   }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string(S == SET_UNION_INTERSECT
-                            ? "union_intersect_set"
-                            : (S == SET_INTERSECT_UNION
-                                   ? "intersect_union_set"
-                                   : (S == SET_INTERSECT_UNION_RESTRICT
-                                          ? "restricted_set_intersect_union"
-                                          : "boolean_set")));
+    static const absl::NoDestructor<std::string> type(
+        S == SET_UNION_INTERSECT
+            ? "union_intersect_set"
+            : (S == SET_INTERSECT_UNION
+                   ? "intersect_union_set"
+                   : (S == SET_INTERSECT_UNION_RESTRICT
+                          ? "restricted_set_intersect_union"
+                          : "boolean_set")));
     return *type;
   }
 

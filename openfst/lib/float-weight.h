@@ -34,6 +34,7 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/base/no_destructor.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -271,7 +272,7 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         absl::StrCat("tropical", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
@@ -482,7 +483,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         absl::StrCat("log", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
@@ -726,7 +727,7 @@ class RealWeightTpl : public FloatWeightTpl<T> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         absl::StrCat("real", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
@@ -931,7 +932,7 @@ class MinMaxWeightTpl : public FloatWeightTpl<T> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string(
+    static const absl::NoDestructor<std::string> type(
         absl::StrCat("minmax", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }

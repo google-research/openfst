@@ -36,6 +36,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/no_destructor.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
@@ -515,7 +516,7 @@ bool CompactArcStore<Element, Unsigned>::Write(
 
 template <class Element, class Unsigned>
 const std::string& CompactArcStore<Element, Unsigned>::Type() {
-  static const std::string* const type = new std::string("compact");
+  static const absl::NoDestructor<std::string> type("compact");
   return *type;
 }
 
@@ -660,7 +661,7 @@ class CompactArcCompactor {
   bool HasFixedOutdegree() const { return arc_compactor_->Size() != -1; }
 
   static const std::string& Type() {
-    static const std::string* const type = [] {
+    static const absl::NoDestructor<std::string> type([] {
       std::string type = "compact";
       if (sizeof(U) != sizeof(uint32_t)) type += std::to_string(8 * sizeof(U));
       type += "_";
@@ -669,8 +670,8 @@ class CompactArcCompactor {
         type += "_";
         type += CompactStore::Type();
       }
-      return new std::string(type);
-    }();
+      return type;
+    }());
     return *type;
   }
 
@@ -1414,7 +1415,7 @@ class StringCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("string");
+    static const absl::NoDestructor<std::string> type("string");
     return *type;
   }
 
@@ -1456,7 +1457,7 @@ class WeightedStringCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("weighted_string");
+    static const absl::NoDestructor<std::string> type("weighted_string");
     return *type;
   }
 
@@ -1497,8 +1498,7 @@ class UnweightedAcceptorCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string("unweighted_acceptor");
+    static const absl::NoDestructor<std::string> type("unweighted_acceptor");
     return *type;
   }
 
@@ -1540,7 +1540,7 @@ class AcceptorCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("acceptor");
+    static const absl::NoDestructor<std::string> type("acceptor");
     return *type;
   }
 
@@ -1582,7 +1582,7 @@ class UnweightedCompactor {
   }
 
   static const std::string& Type() {
-    static const std::string* const type = new std::string("unweighted");
+    static const absl::NoDestructor<std::string> type("unweighted");
     return *type;
   }
 

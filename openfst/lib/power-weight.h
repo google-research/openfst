@@ -25,6 +25,7 @@
 #include <random>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "openfst/lib/tuple-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -74,8 +75,8 @@ class PowerWeight : public TupleWeight<W, n> {
   }
 
   static const std::string& Type() {
-    static const std::string* const type =
-        new std::string(W::Type() + "_^" + std::to_string(n));
+    static const absl::NoDestructor<std::string> type(W::Type() + "_^" +
+                                                      std::to_string(n));
     return *type;
   }
 
