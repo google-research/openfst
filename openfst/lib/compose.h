@@ -102,10 +102,9 @@ struct ComposeFstImplOptions : public CacheImplOptions<CacheStore> {
   M1* matcher1;    // FST1 matcher (see matcher.h)....
   M2* matcher2;    // FST2 matcher.
   Filter* filter;  // Composition filter (see compose-filter.h).
-  StateTable*
-      state_table;       // Composition state table (see compose-state-table.h).
-  bool own_state_table;  // ComposeFstImpl takes ownership of 'state_table'?
-  bool allow_noncommute;  // Allow non-commutative weights
+  StateTable* state_table;  // Composition state table (see state-table.h).
+  bool own_state_table;     // ComposeFstImpl takes ownership of 'state_table'?
+  bool allow_noncommute;    // Allow non-commutative weights
 
   explicit ComposeFstImplOptions(const CacheOptions& opts,
                                  M1* matcher1 = nullptr, M2* matcher2 = nullptr,
@@ -233,7 +232,7 @@ class ComposeFstImplBase
 
 // Implementation of delayed composition templated on the matchers (see
 // matcher.h), composition filter (see compose-filter.h) and the composition
-// state table (see compose-state-table.h).
+// state table (see state-table.h).
 template <class CacheStore, class Filter, class StateTable>
 class ComposeFstImpl
     : public ComposeFstImplBase<typename CacheStore::Arc, CacheStore> {
