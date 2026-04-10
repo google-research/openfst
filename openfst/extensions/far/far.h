@@ -101,18 +101,19 @@ FarReader<Arc>* FarReader<Arc>::Open(absl::string_view source) {
 
 template <class Arc>
 FarReader<Arc>* FarReader<Arc>::Open(absl::Span<const std::string> sources) {
-  if (!sources.empty() && sources[0].empty())
+  if (!sources.empty() && sources[0].empty()) {
     return STListFarReader<Arc>::Open(
         std::vector<std::string>(sources.begin(), sources.end()));
-  else if (!sources.empty() && IsSTTable(sources[0]))
+  } else if (!sources.empty() && IsSTTable(sources[0])) {
     return STTableFarReader<Arc>::Open(
         std::vector<std::string>(sources.begin(), sources.end()));
-  else if (!sources.empty() && IsSTList(sources[0]))
+  } else if (!sources.empty() && IsSTList(sources[0])) {
     return STListFarReader<Arc>::Open(
         std::vector<std::string>(sources.begin(), sources.end()));
-  else if (!sources.empty() && IsFst(sources[0]))
+  } else if (!sources.empty() && IsFst(sources[0])) {
     return FstFarReader<Arc>::Open(
         std::vector<std::string>(sources.begin(), sources.end()));
+  }
   return nullptr;
 }
 

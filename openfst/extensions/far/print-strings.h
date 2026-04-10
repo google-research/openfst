@@ -82,8 +82,9 @@ void PrintStrings(FarReader<Arc>& reader, FarEntryType entry_type,
                                      /*omit_epsilon=*/false);
     printer(*fst, &str);
     if (entry_type == FarEntryType::LINE) {
-      if (print_key)
+      if (print_key) {
         std::cout << key << absl::GetFlag(FLAGS_far_field_separator)[0];
+      }
       std::cout << str;
       if (print_weight) {
         std::cout << absl::GetFlag(FLAGS_far_field_separator)[0]

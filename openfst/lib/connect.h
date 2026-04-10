@@ -81,8 +81,9 @@ void Condense(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
     const auto c = (*scc)[s];
     if (s == ifst.Start()) ofst->SetStart(c);
     const auto weight = ifst.Final(s);
-    if (weight != Arc::Weight::Zero())
+    if (weight != Arc::Weight::Zero()) {
       ofst->SetFinal(c, Plus(ofst->Final(c), weight));
+    }
     for (ArcIterator<Fst<Arc>> aiter(ifst, s); !aiter.Done(); aiter.Next()) {
       const auto& arc = aiter.Value();
       const auto nextc = (*scc)[arc.nextstate];

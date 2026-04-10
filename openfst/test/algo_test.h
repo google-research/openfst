@@ -861,10 +861,12 @@ TYPED_TEST_P(MapTest, EncodeDestructive) {
     VectorFst<Arc> T;
     CHECK_OK(this->MakeRandFst(&T));
     uint8_t encode_props = 0;
-    if (std::bernoulli_distribution(.5)(this->rand_))
+    if (std::bernoulli_distribution(.5)(this->rand_)) {
       encode_props |= kEncodeLabels;
-    if (std::bernoulli_distribution(.5)(this->rand_))
+    }
+    if (std::bernoulli_distribution(.5)(this->rand_)) {
       encode_props |= kEncodeWeights;
+    }
     VLOG(1) << "Check encoding/decoding (destructive).";
     VectorFst<Arc> D(T);
     EncodeMapper<Arc> encoder(encode_props, ENCODE);
@@ -880,10 +882,12 @@ TYPED_TEST_P(MapTest, EncodeDelayed) {
     VectorFst<Arc> T;
     CHECK_OK(this->MakeRandFst(&T));
     uint8_t encode_props = 0;
-    if (std::bernoulli_distribution(.5)(this->rand_))
+    if (std::bernoulli_distribution(.5)(this->rand_)) {
       encode_props |= kEncodeLabels;
-    if (std::bernoulli_distribution(.5)(this->rand_))
+    }
+    if (std::bernoulli_distribution(.5)(this->rand_)) {
       encode_props |= kEncodeWeights;
+    }
     VLOG(1) << "Check encoding/decoding (delayed).";
     EncodeMapper<Arc> encoder(encode_props, ENCODE);
     EncodeFst<Arc> E(T, &encoder);

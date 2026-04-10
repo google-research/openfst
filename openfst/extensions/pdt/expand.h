@@ -145,10 +145,11 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
     if (!HasFinal(s)) {
       const auto& tuple = state_table_->Tuple(s);
       const auto weight = fst_->Final(tuple.state_id);
-      if (weight != Weight::Zero() && tuple.stack_id == 0)
+      if (weight != Weight::Zero() && tuple.stack_id == 0) {
         SetFinal(s, weight);
-      else
+      } else {
         SetFinal(s, Weight::Zero());
+      }
     }
     return CacheImpl<Arc>::Final(s);
   }
@@ -803,8 +804,9 @@ bool PdtPrunedExpand<Arc>::ProcOpenParen(StateId s, const Arc& arc, StackId si,
     if (less_(nd, Distance(arc.nextstate))) SetDistance(arc.nextstate, nd);
     // FinalDistance not necessary for source state since pruning decided using
     // meta-arcs above. But this is a problem with A*, hence the following.
-    if (less_(fd, FinalDistance(arc.nextstate)))
+    if (less_(fd, FinalDistance(arc.nextstate))) {
       SetFinalDistance(arc.nextstate, fd);
+    }
     SetFlags(arc.nextstate, kSourceState, kSourceState);
   }
   return proc_arc;

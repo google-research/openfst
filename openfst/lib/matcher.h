@@ -1536,9 +1536,10 @@ class Matcher {
   // This makes a copy of the FST.
   Matcher(const FST& fst, MatchType match_type)
       : owned_fst_(fst.Copy()), base_(owned_fst_->InitMatcher(match_type)) {
-    if (!base_)
+    if (!base_) {
       base_ =
           std::make_unique<SortedMatcher<FST>>(owned_fst_.get(), match_type);
+    }
   }
 
   // This doesn't copy the FST.

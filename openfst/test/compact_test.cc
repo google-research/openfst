@@ -60,17 +60,19 @@ template <class Arc, class Container, class Compactor>
 void Fill(Container* container, Compactor compactor, const Fst<Arc>& fst) {
   container->clear();
   typename Arc::StateId s = fst.Start();
-  if ((compactor.Size() == -1) || (fst.Final(s) != Arc::Weight::Zero()))
+  if ((compactor.Size() == -1) || (fst.Final(s) != Arc::Weight::Zero())) {
     container->push_back(compactor.Compact(
         s, Arc(kNoLabel, kNoLabel, fst.Final(s), kNoStateId)));
+  }
   for (ArcIterator<Fst<Arc>> ait(fst, s); !ait.Done(); ait.Next())
     container->push_back(compactor.Compact(s, ait.Value()));
   for (StateIterator<Fst<Arc>> sit(fst); !sit.Done(); sit.Next()) {
     s = sit.Value();
     if (s == fst.Start()) continue;
-    if ((compactor.Size() == -1) || (fst.Final(s) != Arc::Weight::Zero()))
+    if ((compactor.Size() == -1) || (fst.Final(s) != Arc::Weight::Zero())) {
       container->push_back(compactor.Compact(
           s, Arc(kNoLabel, kNoLabel, fst.Final(s), kNoStateId)));
+    }
     for (ArcIterator<Fst<Arc>> ait(fst, s); !ait.Done(); ait.Next())
       container->push_back(compactor.Compact(s, ait.Value()));
   }

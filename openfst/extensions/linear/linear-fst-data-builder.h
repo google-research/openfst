@@ -479,10 +479,12 @@ bool LinearFstDataBuilder<A>::AddWeight(size_t group,
   {
     bool non_first_start = false, non_last_end = false;
     for (int i = 1; i < output.size(); ++i) {
-      if (output[i] == LinearFstData<A>::kStartOfSentence)
+      if (output[i] == LinearFstData<A>::kStartOfSentence) {
         non_first_start = true;
-      if (output[i - 1] == LinearFstData<A>::kEndOfSentence)
+      }
+      if (output[i - 1] == LinearFstData<A>::kEndOfSentence) {
         non_last_end = true;
+      }
     }
     if (non_first_start) {
       LOG(WARNING) << "Ignored: start-of-sentence not appearing "
@@ -773,8 +775,9 @@ bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label>& input,
          oend = output.size() - num_output_end;
   // Further, when output is empty, keep at most `future_size_`
   // end-of-sentence marks on input.
-  if (output.empty() && num_input_end > future_size_)
+  if (output.empty() && num_input_end > future_size_) {
     iend = input.size() - num_input_end + future_size_;
+  }
 
   // Actual feature context is (input[ipos:iend], output[opos:oend]).
 
@@ -800,10 +803,11 @@ bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label>& input,
   // `LinearFstImpl<>::ShiftBuffer()`. `LinearFstImpl<>::Expand()`
   // and `LinearFstImpl<>::MatchInput()` ensures no other
   // transition takes place after consuming the padding.
-  if (num_output_end > 0 || (output.empty() && num_input_end > future_size_))
+  if (num_output_end > 0 || (output.empty() && num_input_end > future_size_)) {
     trie_[cur].final_weight = Times(trie_[cur].final_weight, weight);
-  else
+  } else {
     trie_[cur].weight = Times(trie_[cur].weight, weight);
+  }
 
   return true;
 }
@@ -1008,10 +1012,11 @@ std::string FeatureGroupBuilder<A>::TriePath(int node,
            labels.begin();
        it != labels.end(); ++it) {
     InputOutputLabel i = *it;
-    if (first)
+    if (first) {
       first = false;
-    else
+    } else {
       strm << ", ";
+    }
     strm << "(" << TranslateLabel(i.input, fsyms_) << ", "
          << TranslateLabel(i.output, osyms_) << ")";
   }
@@ -1035,10 +1040,11 @@ std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable* syms) {
   std::ostringstream strm;
   bool first = true;
   for (Iterator it = begin; it != end; ++it) {
-    if (first)
+    if (first) {
       first = false;
-    else
+    } else {
       strm << '|';
+    }
     strm << TranslateLabel(*it, syms);
   }
   return strm.str();

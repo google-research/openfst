@@ -588,8 +588,9 @@ struct WeightConvert<SetWeight<Label, S1>, SetWeight<Label, S2>> {
   SetWeight<Label, S2> operator()(const SetWeight<Label, S1>& w1) const {
     using Iterator = SetWeightIterator<SetWeight<Label, S1>>;
     SetWeight<Label, S2> w2;
-    for (Iterator iter(w1); !iter.Done(); iter.Next())
+    for (Iterator iter(w1); !iter.Done(); iter.Next()) {
       w2.PushBack(iter.Value());
+    }
     return w2;
   }
 };

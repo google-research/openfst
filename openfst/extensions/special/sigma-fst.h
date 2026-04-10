@@ -142,8 +142,9 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
  private:
   static Label SigmaLabel(MatchType match_type, Label label) {
     if (match_type == MATCH_INPUT && flags & kSigmaFstMatchInput) return label;
-    if (match_type == MATCH_OUTPUT && flags & kSigmaFstMatchOutput)
+    if (match_type == MATCH_OUTPUT && flags & kSigmaFstMatchOutput) {
       return label;
+    }
     return kNoLabel;
   }
 

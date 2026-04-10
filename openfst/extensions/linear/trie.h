@@ -120,10 +120,11 @@ class NestedTrieTopology {
     }
 
     void SetProperCurEdge() {
-      if (cur_node_ < ptr_->NumNodes())
+      if (cur_node_ < ptr_->NumNodes()) {
         cur_edge_ = ptr_->nodes_[cur_node_]->begin();
-      else
+      } else {
         cur_edge_ = ptr_->nodes_[0]->begin();
+      }
     }
 
     void UpdateStub() {

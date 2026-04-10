@@ -202,12 +202,13 @@ inline std::pair<typename std::vector<typename A::Label>::const_iterator,
                  typename std::vector<typename A::Label>::const_iterator>
 LinearFstData<A>::PossibleOutputLabels(Label word) const {
   const InputAttribute& attrib = input_attribs_[word];
-  if (attrib.output_length == 0)
+  if (attrib.output_length == 0) {
     return std::make_pair(output_set_.begin(), output_set_.end());
-  else
+  } else {
     return std::make_pair(
         output_pool_.begin() + attrib.output_begin,
         output_pool_.begin() + attrib.output_begin + attrib.output_length);
+  }
 }
 
 template <class A>
@@ -254,10 +255,11 @@ template <class A>
 typename A::Label LinearFstData<A>::FindFeature(size_t group,
                                                 Label word) const {
   DCHECK(word > 0 || word == kStartOfSentence || word == kEndOfSentence);
-  if (word == kStartOfSentence || word == kEndOfSentence)
+  if (word == kStartOfSentence || word == kEndOfSentence) {
     return word;
-  else
+  } else {
     return group_feat_map_.Find(group, word);
+  }
 }
 
 template <class A>
@@ -449,10 +451,12 @@ int FeatureGroup<A>::Walk(int cur, Label ilabel, Label olabel,
     // First, try exact match
     next = FindFirstMatch(InputOutputLabel(ilabel, olabel), cur);
     // Then try with don't cares
-    if (next == kNoTrieNodeId)
+    if (next == kNoTrieNodeId) {
       next = FindFirstMatch(InputOutputLabel(ilabel, kNoLabel), cur);
-    if (next == kNoTrieNodeId)
+    }
+    if (next == kNoTrieNodeId) {
       next = FindFirstMatch(InputOutputLabel(kNoLabel, olabel), cur);
+    }
     // All failed, go to empty context
     if (next == kNoTrieNodeId) next = trie_.Root();
     *weight = Times(*weight, trie_[next].weight);
@@ -464,8 +468,9 @@ int FeatureGroup<A>::Walk(int cur, Label ilabel, Label olabel,
 template <class A>
 inline int FeatureGroup<A>::FindFirstMatch(InputOutputLabel label,
                                            int parent) const {
-  if (label.input == kNoLabel && label.output == kNoLabel)
+  if (label.input == kNoLabel && label.output == kNoLabel) {
     return kNoTrieNodeId;  // very important; see class doc.
+  }
   for (; parent != kNoTrieNodeId; parent = trie_[parent].back_link) {
     int next = trie_.Find(parent, label);
     if (next != kNoTrieNodeId) return next;

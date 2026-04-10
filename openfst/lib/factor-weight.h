@@ -348,8 +348,9 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
   StateId FindState(const Element& element) {
     if (!(mode_ & kFactorArcWeights) && element.weight == Weight::One() &&
         element.state != kNoStateId) {
-      while (unfactored_.size() <= element.state)
+      while (unfactored_.size() <= element.state) {
         unfactored_.push_back(kNoStateId);
+      }
       if (unfactored_[element.state] == kNoStateId) {
         unfactored_[element.state] = elements_.size();
         elements_.push_back(element);

@@ -131,11 +131,12 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
     if (!HasFinal(s)) {
       state_stub_.clear();
       FillState(s, &state_stub_);
-      if (CanBeFinal(state_stub_))
+      if (CanBeFinal(state_stub_)) {
         SetFinal(s, data_->FinalWeight(InternalBegin(state_stub_),
                                        InternalEnd(state_stub_)));
-      else
+      } else {
         SetFinal(s, Weight::Zero());
+      }
     }
     return CacheImpl<A>::Final(s);
   }
@@ -402,13 +403,15 @@ void LinearTaggerFstImpl<A>::Expand(StateId s) {
   // next states, which are identical for different input/output.
   next_stub_.clear();
   next_stub_.resize(delay_);
-  if (delay_ > 0)
+  if (delay_ > 0) {
     std::copy(BufferBegin(state_stub_) + 1, BufferEnd(state_stub_),
               next_stub_.begin());
+  }
 
   // Epsilon transition for flushing out the next observed input
-  if (!IsEmptyBuffer(BufferBegin(state_stub_), BufferEnd(state_stub_)))
+  if (!IsEmptyBuffer(BufferBegin(state_stub_), BufferEnd(state_stub_))) {
     ExpandArcs(s, state_stub_, LinearFstData<A>::kEndOfSentence, &next_stub_);
+  }
 
   // Non-epsilon input when we haven't flushed
   if (delay_ == 0 ||
@@ -432,15 +435,17 @@ void LinearTaggerFstImpl<A>::MatchInput(StateId s, Label ilabel,
   // next states, which are identical for different input/output.
   next_stub_.clear();
   next_stub_.resize(delay_);
-  if (delay_ > 0)
+  if (delay_ > 0) {
     std::copy(BufferBegin(state_stub_) + 1, BufferEnd(state_stub_),
               next_stub_.begin());
+  }
 
   if (ilabel == 0) {
     // Epsilon transition for flushing out the next observed input
-    if (!IsEmptyBuffer(BufferBegin(state_stub_), BufferEnd(state_stub_)))
+    if (!IsEmptyBuffer(BufferBegin(state_stub_), BufferEnd(state_stub_))) {
       AppendArcs(s, state_stub_, LinearFstData<A>::kEndOfSentence, &next_stub_,
                  arcs);
+    }
   } else {
     // Non-epsilon input when we haven't flushed
     if (delay_ == 0 ||

@@ -1087,8 +1087,9 @@ class CacheBaseImpl : public FstImpl<typename State::Arc> {
     if (s < min_unexpanded_state_id_) return;
     if (s == min_unexpanded_state_id_) ++min_unexpanded_state_id_;
     if (cache_gc_ || cache_limit_ == 0) {
-      if (expanded_states_.size() <= static_cast<size_t>(s))
+      if (expanded_states_.size() <= static_cast<size_t>(s)) {
         expanded_states_.resize(s + 1, false);
+      }
       expanded_states_[s] = true;
     }
   }

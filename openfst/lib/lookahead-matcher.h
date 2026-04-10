@@ -412,8 +412,9 @@ bool ArcLookAheadMatcher<M, flags>::LookAheadFst(const Fst<Arc>& fst,
           SetLookAheadWeight(Plus(LookAheadWeight(),
                                   Times(arc.weight, matcher_.Value().weight)));
         }
-        if ((kFlags & kLookAheadPrefix) && nprefix == 1)
+        if ((kFlags & kLookAheadPrefix) && nprefix == 1) {
           SetLookAheadPrefix(arc);
+        }
       }
       result = true;
     }
@@ -771,9 +772,10 @@ class LookAheadMatcher {
       : owned_fst_(fst.Copy()),
         base_(owned_fst_->InitMatcher(match_type)),
         lookahead_(false) {
-    if (!base_)
+    if (!base_) {
       base_ =
           std::make_unique<SortedMatcher<FST>>(owned_fst_.get(), match_type);
+    }
   }
 
   // This doesn't copy the FST.

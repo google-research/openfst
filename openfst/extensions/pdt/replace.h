@@ -293,8 +293,9 @@ void PdtParser<Arc>::CreateFst(
            aiter.Next()) {
         auto arc = aiter.Value();
         arc.nextstate += soff;
-        if (max_label == kNoLabel || arc.olabel > max_label)
+        if (max_label == kNoLabel || arc.olabel > max_label) {
           max_label = arc.olabel;
+        }
         const auto nfst_id = Label2Id(arc.olabel);
         if (nfst_id != kNoStateId) {
           if (fst_array_[nfst_id].second->Start() == kNoStateId) continue;
@@ -490,8 +491,9 @@ size_t PdtLeftParser<Arc>::AssignParenIds(const Fst<Arc>& ofst,
         if (it == paren_map->end()) {
           // Assigns new paren ID for this (FST, dest state) pair.
           (*paren_map)[paren_key] = nparens[nfst_id]++;
-          if (nparens[nfst_id] > total_nparens)
+          if (nparens[nfst_id] > total_nparens) {
             total_nparens = nparens[nfst_id];
+          }
         }
       }
     }

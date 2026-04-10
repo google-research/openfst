@@ -90,17 +90,13 @@ class LinearTaggerFstTest : public Test {
   }
 
   Weight EmissionWeight(Label ilabel, Label olabel) const {
-    if ((ilabel + olabel) % 2)
-      return Weight(ilabel - olabel);
-    else
-      return Weight::One();
+    if ((ilabel + olabel) % 2) return Weight(ilabel - olabel);
+    return Weight::One();
   }
 
   Weight TransitionWeight(Label olabel1, Label olabel2) const {
-    if (olabel2 < olabel1)
-      return Weight(olabel2 - olabel1);
-    else
-      return Weight::One();
+    if (olabel2 < olabel1) return Weight(olabel2 - olabel1);
+    return Weight::One();
   }
 
   bool InterestingWeight(Weight weight) const {
@@ -198,10 +194,11 @@ TEST_F(LinearTaggerFstTest, FlushOnlyOnce) {
   for (StateIterator<StdVectorFst> siter(composed); !siter.Done();
        siter.Next()) {
     StateId state = siter.Value();
-    if (composed.Final(state) == Weight::Zero())
+    if (composed.Final(state) == Weight::Zero()) {
       EXPECT_EQ(1, composed.NumArcs(state));
-    else
+    } else {
       EXPECT_EQ(0, composed.NumArcs(state));
+    }
   }
 }
 

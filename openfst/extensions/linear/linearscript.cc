@@ -93,10 +93,11 @@ int ScanNumClasses(char** models, int models_len) {
       ++num_line;
       std::vector<std::string> fields;
       SplitByWhitespace(line, &fields);
-      if (fields.size() != 3)
+      if (fields.size() != 3) {
         LOG(FATAL)  // Crash OK.
             << "Wrong number of fields in source " << models[i] << ", line "
             << num_line;
+      }
       preds.insert(fields[1]);
     }
   }

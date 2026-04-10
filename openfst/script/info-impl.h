@@ -308,8 +308,9 @@ class FstInfo {
 
  private:
   void CheckLong() const {
-    if (!long_info_)
+    if (!long_info_) {
       FSTERROR() << "FstInfo: Method only available with long info signature";
+    }
   }
 
   std::string fst_type_;

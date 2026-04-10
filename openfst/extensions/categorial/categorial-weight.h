@@ -144,10 +144,11 @@ class Category {
   }
 
   void PushBack(T t) {
-    if (!first_)
+    if (!first_) {
       first_ = t;
-    else
+    } else {
       rest_.push_back(t);
+    }
   }
 
  private:
@@ -382,19 +383,21 @@ std::vector<T> Reduction(std::vector<T> cat, std::set<int> dashes,
                 // This is before the reduced area, so we add this to
                 // new_dashes_slashes without change
                 new_dashes_slashes.push_back(n_d);
-                if (dashes.count(n_d))
+                if (dashes.count(n_d)) {
                   new_dashes.insert(n_d);
-                else
+                } else {
                   new_slashes.insert(n_d);
+                }
               } else if (n_d >= to_end) {
                 // This after the reduced area, so we must subtract the
                 // reduction length from the dash or slash position, and then
                 // add to new_dashes_slashes.
                 new_dashes_slashes.push_back(n_d - reduction_len);
-                if (dashes.count(n_d))
+                if (dashes.count(n_d)) {
                   new_dashes.insert(n_d - reduction_len);
-                else
+                } else {
                   new_slashes.insert(n_d - reduction_len);
+                }
               }
             }
             // If reduced_cat is between <>, remove <>, we find potential
@@ -434,8 +437,9 @@ std::vector<T> Reduction(std::vector<T> cat, std::set<int> dashes,
 // Matcher for categories
 template <class T>
 bool Match(Category<T> first, Category<T> second) {
-  if (first.Size() != second.Size() || first.one() != second.one())
+  if (first.Size() != second.Size() || first.one() != second.one()) {
     return false;
+  }
   CategoryIterator<T> iter1(first);
   CategoryIterator<T> iter2(second);
   for (; !iter1.Done(); iter1.Next(), iter2.Next())
@@ -458,22 +462,24 @@ template <class T>
 Category<T> ReverseCat(Category<T> c) {
   Category<T> reverse;
   for (CategoryIterator<T> iter(c); !iter.Done(); iter.Next()) {
-    if (iter.Value() == kLeftAngleBracket)
+    if (iter.Value() == kLeftAngleBracket) {
       reverse.PushFront(kRightAngleBracket);
-    else if (iter.Value() == kRightAngleBracket)
+    } else if (iter.Value() == kRightAngleBracket) {
       reverse.PushFront(kLeftAngleBracket);
-    else if (iter.Value() == kRightDivision)
+    } else if (iter.Value() == kRightDivision) {
       reverse.PushFront(kLeftDivision);
-    else if (iter.Value() == kLeftDivision)
+    } else if (iter.Value() == kLeftDivision) {
       reverse.PushFront(kRightDivision);
-    else
+    } else {
       reverse.PushFront(iter.Value());
+    }
   }
   if (c.one()) reverse.set_one(true);
-  if (c.direction_ == kLeftDivision)
+  if (c.direction_ == kLeftDivision) {
     reverse.set_direction(kRightDivision);
-  else
+  } else {
     reverse.set_direction(kLeftDivision);
+  }
   return reverse;
 }
 
@@ -492,17 +498,19 @@ class CategoryIterator {
   const bool Value_One() const { return one_; }
 
   bool Done() const {
-    if (init_)
+    if (init_) {
       return first_ == 0;
-    else
+    } else {
       return iter_ == rest_.end();
+    }
   }
 
   void Next() {
-    if (init_)
+    if (init_) {
       init_ = false;
-    else
+    } else {
       ++iter_;
+    }
   }
 
   void Reset() {
@@ -533,10 +541,11 @@ class CategoryReverseIterator {
   const T &Value() const { return iter_ == rest_.rend() ? first_ : *iter_; }
 
   void Next() {
-    if (iter_ == rest_.rend())
+    if (iter_ == rest_.rend()) {
       fin_ = true;
-    else
+    } else {
       ++iter_;
+    }
   }
 
   void Reset() {
@@ -830,10 +839,12 @@ inline CategorialWeight<T, C> Times(const CategorialWeight<T, C> &w1,
   if (!w1.Member() || !w2.Member()) return CategorialWeight<T, C>::NoWeight();
   if (w1 == CategorialWeight<T, C>::One()) return w2;
   if (w2 == CategorialWeight<T, C>::One()) return w1;
-  if (w1 == CategorialWeight<T, C>::Zero())
+  if (w1 == CategorialWeight<T, C>::Zero()) {
     return CategorialWeight<T, C>::Zero();
-  if (w2 == CategorialWeight<T, C>::Zero())
+  }
+  if (w2 == CategorialWeight<T, C>::Zero()) {
     return CategorialWeight<T, C>::Zero();
+  }
   if (C == CategoryType::LEFT) {
     w1_value.set_direction(kLeftDivision);
     w2_value.set_direction(kLeftDivision);
@@ -900,12 +911,13 @@ class WeightGenerate<CategorialWeight<L, C>> {
     Category<L> w_cat(v[0].begin(), v[0].end(), dir);
     for (int j = 1; j < n_op; j++) {
       // Random operation to perform is concatenation.
-      if (rand_operation[j] == 0)
+      if (rand_operation[j] == 0) {
         w_cat = Concat(w_cat, Category<L>(v[j].begin(), v[j].end(), dir));
-      // Random operation to perform is division, but we must first check to see
-      // if we'd be dividing by zero.
-      else if (!v[j].empty())
+      } else if (!v[j].empty()) {
+        // Random operation to perform is division, but we must first check
+        // to see if we'd be dividing by zero.
         w_cat = Division(w_cat, Category<L>(v[j].begin(), v[j].end(), dir));
+      }
     }
     return Weight(w_cat);
   }

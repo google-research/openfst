@@ -68,18 +68,20 @@ class LinearFstDataTest : public Test {
   }
 
   Weight UnigramFeature(Label ilabel, Label olabel) {
-    if ((ilabel + olabel) % 2)
+    if ((ilabel + olabel) % 2) {
       return Weight(-(ilabel + olabel + 1));
-    else
+    } else {
       return Weight::One();
+    }
   }
 
   Weight StartUnigramFeature(Label ilabel, Label olabel, int power = 1) {
     Weight base;
-    if ((ilabel + olabel) % 2)
+    if ((ilabel + olabel) % 2) {
       base = Weight::One();
-    else
+    } else {
       base = Weight(-(ilabel + olabel + 1));
+    }
     Weight ret = Weight::One();
     while (power-- > 0) ret = Times(ret, base);
     return ret;
@@ -93,17 +95,16 @@ class LinearFstDataTest : public Test {
   }
 
   Weight BigramFeature(Label ilabel1, Label ilabel2, Label olabel) {
-    if ((ilabel1 + ilabel2 + olabel) % 2)
+    if ((ilabel1 + ilabel2 + olabel) % 2) {
       return Weight(-(ilabel1 + ilabel2 + olabel));
-    else
+    } else {
       return Weight::One();
+    }
   }
 
   Weight TransitionFeature(Label olabel1, Label olabel2) {
-    if ((olabel1 + olabel2) % 2)
-      return Weight(-(olabel2 + olabel1));
-    else
-      return Weight::One();
+    if ((olabel1 + olabel2) % 2) return Weight(-(olabel2 + olabel1));
+    return Weight::One();
   }
 
   void AddUnigramFeatures(size_t group, StdLinearFstDataBuilder* builder) {
@@ -167,8 +168,9 @@ class LinearFstDataTest : public Test {
           std::vector<Label> output1(2, olabel);
           output1[1] = StdLinearFstData::kEndOfSentence;
 
-          if (future_size > 0)
+          if (future_size > 0) {
             builder->AddWeight(group, feature0, output0, weight);
+          }
           builder->AddWeight(group, feature1, output1, weight);
         }
       }
@@ -439,11 +441,12 @@ TEST_F(LinearFstDataTest, BigramNoDelay) {
     for (Label ilabel = 1; ilabel <= kNumWords; ++ilabel) {
       auto range = data.PossibleOutputLabels(ilabel);
       std::vector<Label> possible(range.first, range.second);
-      for (Label olabel = 1; olabel <= kNumWords; ++olabel)
+      for (Label olabel = 1; olabel <= kNumWords; ++olabel) {
         if (olabel >= ilabel)
           EXPECT_THAT(possible, Contains(olabel));
         else
           EXPECT_THAT(possible, Not(Contains(olabel)));
+      }
     }
   }
 
@@ -531,11 +534,12 @@ TEST_F(LinearFstDataTest, Bigram1Delay) {
     for (Label ilabel = 1; ilabel <= kNumWords; ++ilabel) {
       auto range = data.PossibleOutputLabels(ilabel);
       std::vector<Label> possible(range.first, range.second);
-      for (Label olabel = 1; olabel <= kNumWords; ++olabel)
+      for (Label olabel = 1; olabel <= kNumWords; ++olabel) {
         if (olabel >= ilabel)
           EXPECT_THAT(possible, Contains(olabel));
         else
           EXPECT_THAT(possible, Not(Contains(olabel)));
+      }
     }
   }
 
@@ -729,13 +733,15 @@ TEST_F(LinearFstDataTest, Unigram0DelayBigram1Delay) {
         Label prev_ilabel = input[i - 1];
         expected_weight =
             Times(expected_weight, UnigramFeature(prev_ilabel, olabel));
-        if (UnigramFeature(prev_ilabel, olabel) != Weight::One())
+        if (UnigramFeature(prev_ilabel, olabel) != Weight::One()) {
           ++interesting_unigram;
+        }
         if (i < kNumWords * 2) {
           expected_weight = Times(expected_weight,
                                   BigramFeature(prev_ilabel, ilabel, olabel));
-          if (BigramFeature(prev_ilabel, ilabel, olabel) != Weight::One())
+          if (BigramFeature(prev_ilabel, ilabel, olabel) != Weight::One()) {
             ++interesting_bigram;
+          }
         }
       }
       EXPECT_EQ(expected_weight, weight);

@@ -33,12 +33,14 @@ std::pair<std::string_view, std::string_view> SplitPath(std::string_view path) {
   size_t pos = path.find_last_of(kPathSeparator[0]);
 
   // Handle the case with no '/' in 'path'.
-  if (pos == std::string_view::npos)
+  if (pos == std::string_view::npos) {
     return std::make_pair(path.substr(0, 0), path);
+  }
 
   // Handle the case with a single leading '/' in 'path'.
-  if (pos == 0)
+  if (pos == 0) {
     return std::make_pair(path.substr(0, 1), absl::ClippedSubstr(path, 1));
+  }
 
   return std::make_pair(path.substr(0, pos),
                         absl::ClippedSubstr(path, pos + 1));

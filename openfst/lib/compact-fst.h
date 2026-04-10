@@ -1037,8 +1037,9 @@ class CompactFstImpl
   void Expand(StateId s) {
     compactor_->SetState(s, &state_);
     const size_t num_arcs = state_.NumArcs();
-    for (size_t i = 0; i < num_arcs; ++i)
+    for (size_t i = 0; i < num_arcs; ++i) {
       PushArc(s, state_.GetArc(i, kArcValueFlags));
+    }
     SetArcs(s);
     if (!HasFinal(s)) SetFinal(s, state_.Final());
   }
