@@ -633,8 +633,8 @@ inline bool LabelLookAheadMatcher<M, flags, Accumulator,
   if (!label_reachable_) return true;
   label_reachable_->SetState(state_, s);
   reach_set_state_ = true;
-  bool compute_weight = kFlags & kLookAheadWeight;
-  constexpr bool kComputePrefix = kFlags & kLookAheadPrefix;
+  bool compute_weight = (kFlags & kLookAheadWeight) != 0;
+  constexpr bool kComputePrefix = (kFlags & kLookAheadPrefix) != 0;
   ArcIterator<LFST> aiter(fst, s);
   aiter.SetFlags(kArcNoCache, kArcNoCache);  // Makes caching optional.
   const bool reach_arc = label_reachable_->Reach(
