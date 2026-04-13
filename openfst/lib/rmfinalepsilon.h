@@ -73,7 +73,7 @@ void RmFinalEpsilon(MutableFst<Arc>* fst) {
       if (finals.find(arc.nextstate) != finals.end()) {
         // Sums up all epsilon arcs.
         if (arc.ilabel == 0 && arc.olabel == 0) {
-          weight = Plus(Times(fst->Final(arc.nextstate), arc.weight), weight);
+          weight = Plus(Times(arc.weight, fst->Final(arc.nextstate)), weight);
         } else {
           arcs.push_back(arc);
         }
