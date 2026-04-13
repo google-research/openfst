@@ -255,6 +255,7 @@ class VectorFstBaseImpl : public FstImpl<typename S::Arc> {
   }
 
   void DeleteStates(const std::vector<StateId>& dstates) {
+    if (dstates.empty()) return;
     std::vector<StateId> newid(states_.size(), 0);
     for (const auto& dstate : dstates) newid[dstate] = kNoStateId;
     StateId nstates = 0;
