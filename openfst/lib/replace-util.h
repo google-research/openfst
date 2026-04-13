@@ -211,10 +211,10 @@ class ReplaceUtil {
     size_t narcs;     // Number of arcs.
     Label nnonterms;  // Number of non-terminals in FST.
     size_t nref;      // Number of non-terminal instances referring to this FST.
-    // Number of times that ith FST references this FST
-    std::map<Label, size_t> inref;
-    // Number of times that this FST references the ith FST
-    std::map<Label, size_t> outref;
+    // Number of times that ith FST references this FST.
+    absl::flat_hash_map<Label, size_t> inref;
+    // Number of times that this FST references the ith FST.
+    absl::flat_hash_map<Label, size_t> outref;
 
     ReplaceStats() : nstates(0), nfinal(0), narcs(0), nnonterms(0), nref(0) {}
   };
