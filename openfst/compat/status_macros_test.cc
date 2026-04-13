@@ -166,20 +166,6 @@ TEST(ExternalStatusTest, AssertOkAndAssign) {
       "Expected error");
 }
 
-TEST(ExternalStatusTest, AssertOk) {
-  ABSL_ASSERT_OK(ReturnOk());
-  ABSL_ASSERT_OK(ReturnStatusOrValue(1));
-  EXPECT_FATAL_FAILURE(ABSL_ASSERT_OK(ReturnStatusOrError("Expected error")),
-                       "Expected error");
-}
-
-TEST(ExternalStatusTest, ExpectOk) {
-  ABSL_EXPECT_OK(ReturnOk());
-  ABSL_EXPECT_OK(ReturnStatusOrValue(1));
-  EXPECT_NONFATAL_FAILURE(ABSL_EXPECT_OK(ReturnStatusOrError("Expected error")),
-                          "Expected error");
-}
-
 TEST(ExternalStatusTest, SetPrepend) {
   auto func = []() -> absl::Status {
     RETURN_IF_ERROR(ReturnError("EXPECTED")).SetPrepend() << "ALSO ";

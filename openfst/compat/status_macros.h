@@ -22,6 +22,7 @@
 #include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -155,10 +156,6 @@ class StatusBuilder {
   OPENFST_STATUS_IMPL_UNPARENTHESIZE_IF_PARENTHESIZED(lhs) =            \
       (*std::move(_statusor))
 
-#define ABSL_EXPECT_OK(value) \
-  EXPECT_TRUE((value).ok()) << ::fst::internal::GetStatusMessage(value)
-#define ABSL_ASSERT_OK(value) \
-  ASSERT_TRUE((value).ok()) << ::fst::internal::GetStatusMessage(value)
 #define ABSL_ASSERT_OK_AND_ASSIGN(lhs, rexpr)                                  \
   ASSERT_OK_AND_ASSIGN_IMPL(OPENFST_STATUS_IMPL_CONCAT(statusor, __COUNTER__), \
                             lhs, rexpr)
