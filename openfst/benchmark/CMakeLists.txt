@@ -62,6 +62,7 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
             absl::check
             absl::memory
             absl::strings
+            absl::random_random
   )
 
   if(BENCHMARK_SRC STREQUAL "fst_test" OR BENCHMARK_SRC STREQUAL "compose_test")

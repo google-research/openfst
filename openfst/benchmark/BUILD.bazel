@@ -257,8 +257,10 @@ cc_binary(
     deps = [
         ":benchmark_main",
         "//openfst/lib:weight",
-        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/numeric:bits",
+        "@com_google_absl//absl/random",
         "@com_google_benchmark//:benchmark",
     ],
 )
