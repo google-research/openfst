@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/properties.h"
@@ -43,7 +44,7 @@ enum ReweightType { REWEIGHT_TO_INITIAL, REWEIGHT_TO_FINAL };
 // reweighting towards the final states.
 template <class Arc>
 void Reweight(MutableFst<Arc>* fst,
-              const std::vector<typename Arc::Weight>& potential,
+              absl::Span<const typename Arc::Weight> potential,
               ReweightType type) {
   using Weight = typename Arc::Weight;
   if (fst->NumStates() == 0) return;
