@@ -31,6 +31,7 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace fst {
 
@@ -90,7 +91,7 @@ bool UTF8StringToLabels(absl::string_view str, std::vector<Label>* labels) {
 }
 
 template <class Label>
-bool LabelsToByteString(const std::vector<Label>& labels, std::string* str) {
+bool LabelsToByteString(absl::Span<const Label> labels, std::string* str) {
   std::ostringstream ostrm;
   for (const char label : labels) {
     if (label != 0) ostrm << label;
@@ -100,7 +101,7 @@ bool LabelsToByteString(const std::vector<Label>& labels, std::string* str) {
 }
 
 template <class Label>
-bool LabelsToUTF8String(const std::vector<Label>& labels, std::string* str) {
+bool LabelsToUTF8String(absl::Span<const Label> labels, std::string* str) {
   std::ostringstream ostrm;
   for (const int32_t label : labels) {
     if (label < 0) {

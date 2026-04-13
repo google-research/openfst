@@ -20,6 +20,7 @@
 #ifndef OPENFST_LIB_STRING_H_
 #define OPENFST_LIB_STRING_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -35,6 +36,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/fst.h"
@@ -123,7 +125,7 @@ bool ConvertStringToLabels(
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
-bool LabelsToSymbolString(const std::vector<Label>& labels, std::string* str,
+bool LabelsToSymbolString(absl::Span<const Label> labels, std::string* str,
                           const SymbolTable& syms, absl::string_view sep,
                           bool omit_epsilon) {
   std::stringstream ostrm;
@@ -150,7 +152,7 @@ bool LabelsToSymbolString(const std::vector<Label>& labels, std::string* str,
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
-bool LabelsToNumericString(const std::vector<Label>& labels, std::string* str,
+bool LabelsToNumericString(absl::Span<const Label> labels, std::string* str,
                            absl::string_view sep, bool omit_epsilon) {
   std::stringstream ostrm;
   sep.remove_prefix(sep.size() - 1);  // We only respect the final char of sep.
@@ -211,7 +213,7 @@ class StringCompiler {
   }
 
  private:
-  void Compile(const std::vector<Label>& labels, MutableFst<Arc>* fst,
+  void Compile(absl::Span<const Label> labels, MutableFst<Arc>* fst,
                Weight weight = Weight::One()) const {
     fst->DeleteStates();
     auto state = fst->AddState();
@@ -226,7 +228,7 @@ class StringCompiler {
   }
 
   template <class Unsigned>
-  void Compile(const std::vector<Label>& labels,
+  void Compile(absl::Span<const Label> labels,
                CompactStringFst<Arc, Unsigned>* fst) const {
     using Compactor = typename CompactStringFst<Arc, Unsigned>::Compactor;
     fst->SetCompactor(
@@ -234,12 +236,12 @@ class StringCompiler {
   }
 
   template <class Unsigned>
-  void Compile(const std::vector<Label>& labels,
+  void Compile(absl::Span<const Label> labels,
                CompactWeightedStringFst<Arc, Unsigned>* fst,
                Weight weight = Weight::One()) const {
     std::vector<std::pair<Label, Weight>> compacts;
     compacts.reserve(labels.size() + 1);
-    for (StateId i = 0; i < static_cast<StateId>(labels.size()) - 1; ++i) {
+    for (size_t i = 0; i + 1 < labels.size(); ++i) {
       compacts.emplace_back(labels[i], Weight::One());
     }
     compacts.emplace_back(!labels.empty() ? labels.back() : kNoLabel, weight);
@@ -345,7 +347,7 @@ bool StringFstToOutputLabels(const Fst<Arc>& fst,
 // is false. Returns true on success.
 template <class Label>
 bool LabelsToString(
-    const std::vector<Label>& labels, std::string* str,
+    absl::Span<const Label> labels, std::string* str,
     TokenType ttype = TokenType::BYTE, const SymbolTable* syms = nullptr,
     absl::string_view sep = absl::GetFlag(FLAGS_fst_field_separator),
     bool omit_epsilon = true) {
@@ -385,7 +387,8 @@ class StringPrinter {
       absl::string_view sep = absl::GetFlag(FLAGS_fst_field_separator)) const {
     std::vector<Label> labels;
     return StringFstToOutputLabels(fst, &labels) &&
-           LabelsToString(labels, str, token_type_, syms_, sep, omit_epsilon_);
+           LabelsToString<Label>(labels, str, token_type_, syms_, sep,
+                                 omit_epsilon_);
   }
 
   // Same as above but also computes the path weight. The output weight
@@ -395,7 +398,8 @@ class StringPrinter {
       absl::string_view sep = absl::GetFlag(FLAGS_fst_field_separator)) const {
     std::vector<Label> labels;
     return StringFstToOutputLabels(fst, &labels, weight) &&
-           LabelsToString(labels, str, token_type_, syms_, sep, omit_epsilon_);
+           LabelsToString<Label>(labels, str, token_type_, syms_, sep,
+                                 omit_epsilon_);
   }
 
  private:

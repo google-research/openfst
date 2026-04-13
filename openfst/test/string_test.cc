@@ -203,6 +203,17 @@ TEST(StringTest, ConvertStringToLabelsTruncatedUTF8) {
   EXPECT_FALSE(sc("\xbf", &fst));
 }
 
+TEST(StringTest, ConvertStringToLabelsEmptyString) {
+  for (auto token_type :
+       {TokenType::UTF8, TokenType::BYTE, TokenType::SYMBOL}) {
+    const StringCompiler<StdArc> sc(token_type);
+    VectorFst<StdArc> fst;
+    EXPECT_TRUE(sc("", &fst)) << " fails for type `" << token_type << "`";
+    EXPECT_EQ(1, fst.NumStates()) << " fails for type `" << token_type << "`";
+    EXPECT_EQ(0, fst.Start()) << " fails for type `" << token_type << "`";
+  }
+}
+
 TEST(StringTest, ConvertStringToLabelsWithNegativeLabels) {
   using StateId = StdArc::StateId;
   VectorFst<StdArc> fst;
@@ -272,14 +283,14 @@ TEST(StringTest, ConvertStringToNumericSymbols) {
 TEST(StringTest, LabelsToByteString) {
   std::vector<char> labels{0, 'a', 'b', 0, 'c', 0, 'd', 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::BYTE);
+  LabelsToString<char>(labels, &str, /*ttype=*/TokenType::BYTE);
   EXPECT_STREQ(str.data(), "abcd");
 }
 
 TEST(StringTest, LabelsToUTF8String) {
   std::vector<int32_t> labels{0, U'क', U'ख', 0, U'ग', 0, U'घ', 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::UTF8);
+  LabelsToString<int32_t>(labels, &str, /*ttype=*/TokenType::UTF8);
   EXPECT_STREQ(str.data(), "कखगघ");
 }
 
@@ -292,16 +303,18 @@ TEST(StringTest, LabelsToSymbolString) {
   syms.AddSymbol("d", 4);
   std::vector<int32_t> labels{0, 1, 2, 0, 3, 0, 4, 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::SYMBOL,
-                 /*syms=*/&syms);
+  LabelsToString<int32_t>(labels, &str,
+                          /*ttype=*/TokenType::SYMBOL,
+                          /*syms=*/&syms);
   EXPECT_STREQ(str.data(), "a b c d");
 }
 
 TEST(StringTest, LabelsToNumericString) {
   std::vector<int32_t> labels{0, 1, 2, 0, 3, 0, 4, 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::SYMBOL,
-                 /*syms=*/nullptr);
+  LabelsToString<int32_t>(labels, &str,
+                          /*ttype=*/TokenType::SYMBOL,
+                          /*syms=*/nullptr);
   EXPECT_STREQ(str.data(), "1 2 3 4");
 }
 
@@ -316,18 +329,22 @@ TEST(StringTest, LabelsToSymbolStringWithEpsilons) {
   syms.AddSymbol("d", 4);
   std::vector<int32_t> labels{0, 1, 2, 0, 3, 0, 4, 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::SYMBOL,
-                 /*syms=*/&syms, absl::GetFlag(FLAGS_fst_field_separator),
-                 /*omit_epsilon=*/false);
+  LabelsToString<int32_t>(labels, &str,
+                          /*ttype=*/TokenType::SYMBOL,
+                          /*syms=*/&syms,
+                          absl::GetFlag(FLAGS_fst_field_separator),
+                          /*omit_epsilon=*/false);
   EXPECT_STREQ(str.data(), "<epsilon> a b <epsilon> c <epsilon> d <epsilon>");
 }
 
 TEST(StringTest, LabelsToNumericStringWithEpsilons) {
   std::vector<int32_t> labels{0, 1, 2, 0, 3, 0, 4, 0};
   std::string str;
-  LabelsToString(labels, &str, /*ttype=*/TokenType::SYMBOL,
-                 /*syms=*/nullptr, absl::GetFlag(FLAGS_fst_field_separator),
-                 /*omit_epsilon=*/false);
+  LabelsToString<int32_t>(labels, &str,
+                          /*ttype=*/TokenType::SYMBOL,
+                          /*syms=*/nullptr,
+                          absl::GetFlag(FLAGS_fst_field_separator),
+                          /*omit_epsilon=*/false);
   EXPECT_STREQ(str.data(), "0 1 2 0 3 0 4 0");
 }
 
