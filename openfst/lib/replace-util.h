@@ -211,10 +211,10 @@ class ReplaceUtil {
     size_t narcs;     // Number of arcs.
     Label nnonterms;  // Number of non-terminals in FST.
     size_t nref;      // Number of non-terminal instances referring to this FST.
-    // Number of times that ith FST references this FST
-    std::map<Label, size_t> inref;
-    // Number of times that this FST references the ith FST
-    std::map<Label, size_t> outref;
+    // Number of times that ith FST references this FST.
+    absl::flat_hash_map<Label, size_t> inref;
+    // Number of times that this FST references the ith FST.
+    absl::flat_hash_map<Label, size_t> outref;
 
     ReplaceStats() : nstates(0), nfinal(0), narcs(0), nnonterms(0), nref(0) {}
   };
@@ -358,24 +358,26 @@ void ReplaceUtil<Arc>::GetDependencies(bool stats) const {
   for (Label ilabel = 0; ilabel < fst_array_.size(); ++ilabel) {
     const auto* ifst = fst_array_[ilabel];
     if (!ifst) continue;
+    ReplaceStats* ilabel_stats = have_stats_ ? &stats_[ilabel] : nullptr;
     for (StateIterator<Fst<Arc>> siter(*ifst); !siter.Done(); siter.Next()) {
       const auto s = siter.Value();
       if (have_stats_) {
-        ++stats_[ilabel].nstates;
-        if (ifst->Final(s) != Weight::Zero()) ++stats_[ilabel].nfinal;
+        ++ilabel_stats->nstates;
+        if (ifst->Final(s) != Weight::Zero()) ++ilabel_stats->nfinal;
       }
       for (ArcIterator<Fst<Arc>> aiter(*ifst, s); !aiter.Done(); aiter.Next()) {
-        if (have_stats_) ++stats_[ilabel].narcs;
+        if (have_stats_) ++ilabel_stats->narcs;
         const auto& arc = aiter.Value();
         if (auto it = nonterminal_hash_.find(arc.olabel);
             it != nonterminal_hash_.end()) {
           const auto nextstate = it->second;
           depfst_.EmplaceArc(ilabel, arc.olabel, arc.olabel, nextstate);
           if (have_stats_) {
-            ++stats_[ilabel].nnonterms;
-            ++stats_[nextstate].nref;
-            ++stats_[nextstate].inref[ilabel];
-            ++stats_[ilabel].outref[nextstate];
+            auto& nextstate_stats = stats_[nextstate];
+            ++ilabel_stats->nnonterms;
+            ++nextstate_stats.nref;
+            ++nextstate_stats.inref[ilabel];
+            ++ilabel_stats->outref[nextstate];
           }
         }
       }
