@@ -345,6 +345,7 @@ class ImplToMutableFst : public ImplToExpandedFst<I, FST> {
   }
 
   void DeleteStates(const std::vector<StateId>& dstates) override {
+    if (dstates.empty()) return;
     MutateCheck();
     GetMutableImpl()->DeleteStates(dstates);
   }
