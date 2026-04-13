@@ -14,11 +14,14 @@
 
 // Benchmark for FST weight classes.
 
+#include <climits>
+#include <cstddef>
 #include <type_traits>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "benchmark/benchmark.h"
+#include "openfst/lib/pair-weight.h"
 #include "openfst/lib/set-weight.h"
 #include "openfst/lib/signed-log-weight.h"
 
@@ -70,6 +73,32 @@ static void BM_SignedLogWeight(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_SignedLogWeight)->Range(1, 1 << 21);
+
+// Benchmark for PairWeight::Hash
+static void BM_PairWeightHash_New(benchmark::State& state) {
+  PairWeight<SignedLog64Weight, SignedLog64Weight> w(
+      SignedLog64Weight(SignedLog64Weight::W1(-1), SignedLog64Weight::W2(1)),
+      SignedLog64Weight(SignedLog64Weight::W1(1), SignedLog64Weight::W2(2)));
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(w.Hash());
+  }
+}
+BENCHMARK(BM_PairWeightHash_New);
+
+static void BM_PairWeightHash_Old(benchmark::State& state) {
+  PairWeight<SignedLog64Weight, SignedLog64Weight> w(
+      SignedLog64Weight(SignedLog64Weight::W1(-1), SignedLog64Weight::W2(1)),
+      SignedLog64Weight(SignedLog64Weight::W1(1), SignedLog64Weight::W2(2)));
+  for (auto _ : state) {
+    const auto h1 = w.Value1().Hash();
+    const auto h2 = w.Value2().Hash();
+    static constexpr int lshift = 5;
+    static constexpr int rshift = CHAR_BIT * sizeof(size_t) - 5;
+    size_t h = h1 << lshift ^ h1 >> rshift ^ h2;
+    benchmark::DoNotOptimize(h);
+  }
+}
+BENCHMARK(BM_PairWeightHash_Old);
 
 }  // namespace
 }  // namespace fst
