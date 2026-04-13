@@ -29,6 +29,7 @@
 #include <random>
 #include <utility>
 
+#include "absl/hash/hash.h"
 #include "openfst/lib/weight.h"
 
 namespace fst {
@@ -70,13 +71,7 @@ class PairWeight {
 
   bool Member() const { return value1_.Member() && value2_.Member(); }
 
-  size_t Hash() const {
-    const auto h1 = value1_.Hash();
-    const auto h2 = value2_.Hash();
-    static constexpr int lshift = 5;
-    static constexpr int rshift = CHAR_BIT * sizeof(size_t) - 5;
-    return h1 << lshift ^ h1 >> rshift ^ h2;
-  }
+  size_t Hash() const { return absl::HashOf(value1_.Hash(), value2_.Hash()); }
 
   PairWeight<W1, W2> Quantize(float delta = kDelta) const {
     return PairWeight<W1, W2>(value1_.Quantize(delta), value2_.Quantize(delta));
