@@ -25,7 +25,6 @@
 #define OPENFST_LIB_ICU_H_
 
 #include <cstdint>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -92,17 +91,18 @@ bool UTF8StringToLabels(absl::string_view str, std::vector<Label>* labels) {
 
 template <class Label>
 bool LabelsToByteString(absl::Span<const Label> labels, std::string* str) {
-  std::ostringstream ostrm;
+  str->clear();
+  str->reserve(labels.size());
   for (const char label : labels) {
-    if (label != 0) ostrm << label;
+    if (label != 0) str->push_back(label);
   }
-  *str = ostrm.str();
-  return !!ostrm;
+  return true;
 }
 
 template <class Label>
 bool LabelsToUTF8String(absl::Span<const Label> labels, std::string* str) {
-  std::ostringstream ostrm;
+  str->clear();
+  str->reserve(labels.size());
   for (const int32_t label : labels) {
     if (label < 0) {
       LOG(ERROR) << "LabelsToUTF8String: Invalid character found: " << label;
@@ -110,36 +110,35 @@ bool LabelsToUTF8String(absl::Span<const Label> labels, std::string* str) {
     } else if (label == 0) {
       continue;
     } else if (label < 0x80) {
-      ostrm << static_cast<char>(label);
+      str->push_back(static_cast<char>(label));
     } else if (label < 0x800) {
-      ostrm << static_cast<char>((label >> 6) | 0xc0);
-      ostrm << static_cast<char>((label & 0x3f) | 0x80);
+      str->push_back(static_cast<char>((label >> 6) | 0xc0));
+      str->push_back(static_cast<char>((label & 0x3f) | 0x80));
     } else if (label < 0x10000) {
-      ostrm << static_cast<char>((label >> 12) | 0xe0);
-      ostrm << static_cast<char>(((label >> 6) & 0x3f) | 0x80);
-      ostrm << static_cast<char>((label & 0x3f) | 0x80);
+      str->push_back(static_cast<char>((label >> 12) | 0xe0));
+      str->push_back(static_cast<char>(((label >> 6) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>((label & 0x3f) | 0x80));
     } else if (label < 0x200000) {
-      ostrm << static_cast<char>((label >> 18) | 0xf0);
-      ostrm << static_cast<char>(((label >> 12) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 6) & 0x3f) | 0x80);
-      ostrm << static_cast<char>((label & 0x3f) | 0x80);
+      str->push_back(static_cast<char>((label >> 18) | 0xf0));
+      str->push_back(static_cast<char>(((label >> 12) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 6) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>((label & 0x3f) | 0x80));
     } else if (label < 0x4000000) {
-      ostrm << static_cast<char>((label >> 24) | 0xf8);
-      ostrm << static_cast<char>(((label >> 18) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 12) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 6) & 0x3f) | 0x80);
-      ostrm << static_cast<char>((label & 0x3f) | 0x80);
+      str->push_back(static_cast<char>((label >> 24) | 0xf8));
+      str->push_back(static_cast<char>(((label >> 18) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 12) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 6) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>((label & 0x3f) | 0x80));
     } else {
-      ostrm << static_cast<char>((label >> 30) | 0xfc);
-      ostrm << static_cast<char>(((label >> 24) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 18) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 12) & 0x3f) | 0x80);
-      ostrm << static_cast<char>(((label >> 6) & 0x3f) | 0x80);
-      ostrm << static_cast<char>((label & 0x3f) | 0x80);
+      str->push_back(static_cast<char>((label >> 30) | 0xfc));
+      str->push_back(static_cast<char>(((label >> 24) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 18) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 12) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>(((label >> 6) & 0x3f) | 0x80));
+      str->push_back(static_cast<char>((label & 0x3f) | 0x80));
     }
   }
-  *str = ostrm.str();
-  return !!ostrm;
+  return true;
 }
 
 }  // namespace fst
