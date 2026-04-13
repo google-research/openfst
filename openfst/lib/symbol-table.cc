@@ -199,17 +199,14 @@ void SymbolTableImpl::MaybeRecomputeCheckSum() const {
   // Calculates the safer, label-dependent checksum.
   CheckSummer labeled_check_sum;
   for (int64_t i = 0; i < dense_key_limit_; ++i) {
-    std::ostringstream line;
-    line << symbols_.GetSymbol(i) << '\t' << i;
-    labeled_check_sum.Update(line.str());
+    labeled_check_sum.Update(absl::StrCat(symbols_.GetSymbol(i), "\t", i));
   }
   for (const auto& item : key_map_) {
     // TODO This line maintains a bug that ignores
     // negative labels in the checksum that too many tests rely on.
     if (item.first < dense_key_limit_) continue;
-    std::ostringstream line;
-    line << symbols_.GetSymbol(item.second) << '\t' << item.first;
-    labeled_check_sum.Update(line.str());
+    labeled_check_sum.Update(
+        absl::StrCat(symbols_.GetSymbol(item.second), "\t", item.first));
   }
   labeled_check_sum_string_ = labeled_check_sum.Digest();
   check_sum_finalized_ = true;
