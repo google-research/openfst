@@ -137,8 +137,11 @@ Option                | Description
 `OPENFST_ENABLE_FSTS` | Enable all FST extensions (Compact, Const, Linear, LookAhead, NGram, Special, Compress)
 `OPENFST_ENABLE_GRM`  | Enable all dependencies of OpenGrm (FAR, PDT, MPDT, NGram)
 
-Example usage: `bash cmake -S . -B build -DOPENFST_ENABLE_FAR=ON
--DOPENFST_ENABLE_PYTHON=ON`
+Example usage:
+
+```bash
+cmake -S . -B build -DOPENFST_ENABLE_FAR=ON -DOPENFST_ENABLE_PYTHON=ON
+```
 
 ### Python with Bazel
 
@@ -188,7 +191,7 @@ ctest --test-dir build -R pywrapfst_test --output-on-failure
 
 If you would like to reference OpenFst in a publication, please use:
 
-```txt
+```bibtex
 @inproceedings{allauzen2007openfst,
   author    = {Allauzen, Cyril and Riley, Michael and Schalkwyk, Johan and Skut, Wojciech and Mohri, Mehryar},
   title     = {{OpenFst}: A General and Efficient Weighted Finite-State Transducer Library},
