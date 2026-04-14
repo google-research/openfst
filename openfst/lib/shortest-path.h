@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/connect.h"
@@ -80,6 +81,23 @@ struct ShortestPathOptions
 namespace internal {
 
 inline constexpr size_t kNoArc = -1;
+
+// A read-only view that simulates prepending an element to a sequence
+// without actually copying or modifying the original sequence (usually
+// a vector). Useful for avoiding expensive O(N) shifts when prepending
+// distances.
+template <typename T>
+class PrependView {
+ public:
+  PrependView(T val, absl::Span<const T> span)
+      : val_(std::move(val)), span_(span) {}
+  size_t size() const { return span_.size() + 1; }
+  const T& operator[](size_t i) const { return i == 0 ? val_ : span_[i - 1]; }
+
+ private:
+  T val_;
+  absl::Span<const T> span_;
+};
 
 // Helper function for SingleShortestPath building the shortest path as a left-
 // to-right machine backwards from the best final state. It takes the input
@@ -238,11 +256,12 @@ bool SingleShortestPath(
   return true;
 }
 
-template <class StateId, class Weight>
+template <class StateId, class Weight,
+          class DistanceContainer = std::vector<Weight>>
 class ShortestPathCompare {
  public:
   ShortestPathCompare(const std::vector<std::pair<StateId, Weight>>& pairs,
-                      const std::vector<Weight>& distance, StateId superfinal,
+                      const DistanceContainer& distance, StateId superfinal,
                       float delta)
       : pairs_(pairs),
         distance_(distance),
@@ -274,7 +293,7 @@ class ShortestPathCompare {
   }
 
   const std::vector<std::pair<StateId, Weight>>& pairs_;
-  const std::vector<Weight>& distance_;
+  const DistanceContainer& distance_;
   const StateId superfinal_;
   const float delta_;
   NaturalLess<Weight> less_;
@@ -312,10 +331,10 @@ class ShortestPathCompare {
 // IMPLEMENTATION NOTE: The input FST can be a delayed FST and at any state in
 // its expansion the values of distance vector need only be defined at that time
 // for the states that are known to exist.
-template <class Arc, class RevArc>
+template <class Arc, class RevArc, class DistanceContainer>
 void NShortestPath(const Fst<RevArc>& ifst, MutableFst<Arc>* ofst,
-                   const std::vector<typename Arc::Weight>& distance,
-                   int32_t nshortest, float delta = kShortestDelta,
+                   const DistanceContainer& distance, int32_t nshortest,
+                   float delta = kShortestDelta,
                    typename Arc::Weight weight_threshold = Arc::Weight::Zero(),
                    typename Arc::StateId state_threshold = kNoStateId) {
   using StateId = typename Arc::StateId;
@@ -337,8 +356,8 @@ void NShortestPath(const Fst<RevArc>& ifst, MutableFst<Arc>* ofst,
   // The superfinal state is denoted by kNoStateId. The distance from the
   // superfinal state to the final state is semiring One, so
   // `distance[kNoStateId]` is not needed.
-  const ShortestPathCompare<StateId, Weight> compare(pairs, distance,
-                                                     kNoStateId, delta);
+  const ShortestPathCompare<StateId, Weight, DistanceContainer> compare(
+      pairs, distance, kNoStateId, delta);
   const NaturalLess<Weight> less;
   if (ifst.Start() == kNoStateId || distance.size() <= ifst.Start() ||
       distance[ifst.Start()] == Weight::Zero() ||
@@ -479,20 +498,27 @@ void ShortestPath(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
       d = Plus(d, Times(arc.weight.Reverse(), (*distance)[state]));
     }
   }
-  // TODO: Avoid this expensive vector operation.
-  distance->insert(distance->begin(), d);
   if (!opts.unique) {
-    internal::NShortestPath(rfst, ofst, *distance, opts.nshortest, opts.delta,
-                            opts.weight_threshold, opts.state_threshold);
+    const internal::PrependView<Weight> shifted_distance(d, *distance);
+    internal::NShortestPath(rfst, ofst, shifted_distance, opts.nshortest,
+                            opts.delta, opts.weight_threshold,
+                            opts.state_threshold);
   } else {
+    // DeterminizeFst requires a std::vector pointer, so we must create a
+    // new vector with the prepended element instead of using PrependView.
+    // This avoids modifying the caller's vector in place.
+    std::vector<Weight> shifted_distance;
+    shifted_distance.reserve(distance->size() + 1);
+    shifted_distance.push_back(d);
+    shifted_distance.insert(shifted_distance.end(), distance->begin(),
+                            distance->end());
     std::vector<Weight> ddistance;
     const DeterminizeFstOptions<RevArc> dopts(opts.delta);
-    const DeterminizeFst<RevArc> dfst(rfst, distance, &ddistance, dopts);
+    const DeterminizeFst<RevArc> dfst(rfst, &shifted_distance, &ddistance,
+                                      dopts);
     internal::NShortestPath(dfst, ofst, ddistance, opts.nshortest, opts.delta,
                             opts.weight_threshold, opts.state_threshold);
   }
-  // TODO: Avoid this expensive vector operation.
-  distance->erase(distance->begin());
 }
 
 // Shortest-path algorithm: simplified interface. See above for a version that
