@@ -1483,8 +1483,6 @@ TYPED_TEST_P(OptimizeTest, DisambiguateUnambiguous) {
       VLOG(1) << "Check disambiguated FSA is unambiguous";
       EXPECT_TRUE(this->Unambiguous(D));
 
-#if 0
-      // TODO: find out why this fails
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
         VLOG(1) << "Check pruning in disambiguation";
         VectorFst<Arc> P;
@@ -1495,7 +1493,6 @@ TYPED_TEST_P(OptimizeTest, DisambiguateUnambiguous) {
         EXPECT_TRUE(this->Unambiguous(P));
         EXPECT_TRUE(this->PruneEquiv(A, P, threshold));
       }
-#endif
     }
   }
 }

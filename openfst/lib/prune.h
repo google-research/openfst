@@ -223,11 +223,13 @@ void Prune(MutableFst<Arc>* fst, typename Arc::Weight weight_threshold,
 template <class Arc, class ArcFilter>
 void Prune(
     const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
-    const PruneOptions<Arc, ArcFilter>& opts = PruneOptions<Arc, ArcFilter>()) {
+    const PruneOptions<Arc, ArcFilter>& opts = PruneOptions<Arc, ArcFilter>(),
+    std::vector<typename Arc::StateId>* state_map = nullptr) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   static_assert(IsPath<Weight>::value, "Weight must have path property.");
   using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
+
   ofst->DeleteStates();
   ofst->SetInputSymbols(ifst.InputSymbols());
   ofst->SetOutputSymbols(ifst.OutputSymbols());
@@ -247,7 +249,14 @@ void Prune(
   }
   internal::PruneCompare<StateId, Weight> compare(idistance, *fdistance);
   StateHeap heap(compare);
-  std::vector<StateId> copy;
+
+  // If state_map is provided, we use it to return the mapping from input
+  // state IDs to output state IDs. Otherwise, we use a local map. This map
+  // is essential for the algorithm to map transition destinations correctly.
+  std::vector<StateId> local_state_map;
+  auto& copy = state_map ? *state_map : local_state_map;
+  copy.clear();
+
   std::vector<size_t> enqueued;
   std::vector<bool> visited;
   auto s = ifst.Start();

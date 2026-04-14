@@ -22,10 +22,12 @@
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <list>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <tuple>
 #include <utility>
@@ -402,23 +404,24 @@ void Disambiguator<Arc>::PreDisambiguate(const ExpandedFst<Arc>& ifst,
   nopts.filter = new Filter(ifst, std::move(common_future), &head_);
   // Determinization takes ownership of the filter itself.
   nopts.gc_limit = 0;  // Cache only the last state for fastest copy.
+  std::vector<StateId> state_map;
   if (opts.weight_threshold != Weight::Zero() ||
       opts.state_threshold != kNoStateId) {
     if constexpr (IsPath<Weight>::value) {
-      /* TODO: fails regression test; understand why
       if (ifst.Properties(kAcceptor, true)) {
         std::vector<Weight> idistance, odistance;
         ShortestDistance(ifst, &idistance, true);
-        DeterminizeFst<Arc> dfst(ifst, &idistance, &odistance, nopts);
+        const DeterminizeFst<Arc> dfst(ifst, &idistance, &odistance, nopts);
         PruneOptions< Arc, AnyArcFilter<Arc>> popts(opts.weight_threshold,
                                                      opts.state_threshold,
                                                      AnyArcFilter<Arc>(),
                                                      &odistance);
-        Prune(dfst, ofst, popts);
-        } else */
-      {
-        *ofst = DeterminizeFst<Arc>(ifst, nopts);
-        Prune(ofst, opts.weight_threshold, opts.state_threshold);
+        Prune(dfst, ofst, popts, &state_map);
+      } else {
+        const VectorFst<Arc> dfst{DeterminizeFst<Arc>(ifst, nopts)};
+        PruneOptions<Arc, AnyArcFilter<Arc>> popts(
+            opts.weight_threshold, opts.state_threshold, AnyArcFilter<Arc>());
+        Prune(dfst, ofst, popts, &state_map);
       }
     } else {
       FSTERROR() << "Disambiguate: Weight must have path property to use "
@@ -427,8 +430,30 @@ void Disambiguator<Arc>::PreDisambiguate(const ExpandedFst<Arc>& ifst,
     }
   } else {
     *ofst = DeterminizeFst<Arc>(ifst, nopts);
+    state_map.resize(ofst->NumStates());
+    std::iota(state_map.begin(), state_map.end(), 0);
   }
-  head_.resize(ofst->NumStates(), kNoStateId);
+
+  if (!error_) {
+    // Pruning reindexes the states of the FST. We need to remap the head_
+    // vector so that it correctly maps the new state IDs to their corresponding
+    // head states.
+    const auto max_new_s =
+        state_map.empty()
+            ? kNoStateId
+            : *std::max_element(state_map.begin(), state_map.end());
+    std::vector<StateId> remapped_head(ofst->NumStates(), kNoStateId);
+    if (max_new_s >= remapped_head.size()) {
+      remapped_head.resize(max_new_s + 1, kNoStateId);
+    }
+    for (StateId s = 0; s < state_map.size(); ++s) {
+      const auto new_s = state_map[s];
+      if (new_s != kNoStateId) {
+        remapped_head[new_s] = s < head_.size() ? head_[s] : kNoStateId;
+      }
+    }
+    head_ = std::move(remapped_head);
+  }
 }
 
 template <class Arc>
