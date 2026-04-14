@@ -30,6 +30,9 @@
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
+#include "openfst/compat/seed_sequences.h"
 #include "openfst/extensions/compress/compress.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/determinize.h"
@@ -42,7 +45,6 @@
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/weight.h"
 
-ABSL_FLAG(int32_t, seed, -1, "Random seed");
 ABSL_FLAG(int32_t, repeat, 25, "number of test repetitions");
 
 using ::fst::Isomorphic;
@@ -56,32 +58,31 @@ using ::fst::WeightGenerate;
 namespace fst {
 namespace {
 
-class RandModTest : public testing::Test {
- protected:
-  using TropicalWeightGenerate = WeightGenerate<TropicalWeight>;
-
-  void SetUp() override {
-    int num_states = (rand() % 100) + 1;
-    int num_classes = (rand() % 5) + 1;
-    int num_labels = (rand() % 10) + 1;
-    rand_mod_ = std::make_unique<RandMod<StdArc, TropicalWeightGenerate>>(
-        num_states, num_classes, num_labels, false, nullptr);
-  }
-
-  std::unique_ptr<RandMod<StdArc, TropicalWeightGenerate>> rand_mod_;
-};
-
 // Testing if the output after decode and encode is isomorphic to
 // the original unweighted fst
-TEST_F(RandModTest, UnweightedRandMod) {
+TEST(RandModTest, UnweightedRandMod) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNWEIGHTED_RAND_MOD"));
+
+  int num_states =
+      absl::Uniform<int>(absl::IntervalClosedClosed, bit_gen, 1, 100);
+  int num_classes =
+      absl::Uniform<int>(absl::IntervalClosedClosed, bit_gen, 1, 5);
+  int num_labels =
+      absl::Uniform<int>(absl::IntervalClosedClosed, bit_gen, 1, 10);
+  using TropicalWeightGenerate = WeightGenerate<TropicalWeight>;
+  RandMod<StdArc, TropicalWeightGenerate> rand_mod(
+      num_states, num_classes, num_labels, false, nullptr, bit_gen);
+
   const std::string unweighted_output =
       JoinPath(::testing::TempDir(), "unweight_output.fstz");
+
   StdVectorFst input_fst;
   StdVectorFst output_fst;
   StdVectorFst input_dfa;
   StdVectorFst output_dfa;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
-    rand_mod_->Generate(&input_fst);
+    rand_mod.Generate(&input_fst, bit_gen);
     ASSERT_TRUE(Compress(input_fst, unweighted_output));
     ASSERT_TRUE(Decompress(unweighted_output, &output_fst));
     EXPECT_EQ(CountStates(input_fst), CountStates(output_fst));
@@ -98,9 +99,5 @@ TEST_F(RandModTest, UnweightedRandMod) {
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
   ::testing::InitGoogleTest(&argc, argv);
-  int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
-                                            : time(nullptr);
-  srand(seed);
-  LOG(INFO) << "Seed = " << seed;
   return RUN_ALL_TESTS();
 }

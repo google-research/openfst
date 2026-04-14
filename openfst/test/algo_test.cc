@@ -26,12 +26,13 @@
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/cache.h"
 #include "openfst/lib/fst-decl.h"
 #include "openfst/lib/test-properties.h"
 
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
 ABSL_FLAG(int32_t, repeat, 25, "number of test repetitions");
 
 namespace fst {
@@ -81,15 +82,13 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
   static const int kCacheGcLimit = 20;
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("ALGO_TEST"));
 
-  LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
-
-  std::mt19937_64 rand(absl::GetFlag(FLAGS_seed));
-
-  absl::SetFlag(&FLAGS_fst_default_cache_gc,
-                std::bernoulli_distribution(.5)(rand));
-  absl::SetFlag(&FLAGS_fst_default_cache_gc_limit,
-                std::uniform_int_distribution<>(0, kCacheGcLimit)(rand));
+  absl::SetFlag(&FLAGS_fst_default_cache_gc, absl::Bernoulli(bit_gen, .5));
+  absl::SetFlag(
+      &FLAGS_fst_default_cache_gc_limit,
+      absl::Uniform(absl::IntervalClosedClosed, bit_gen, 0, kCacheGcLimit));
   VLOG(1) << "default_cache_gc:" << absl::GetFlag(FLAGS_fst_default_cache_gc);
   VLOG(1) << "default_cache_gc_limit:"
           << absl::GetFlag(FLAGS_fst_default_cache_gc_limit);

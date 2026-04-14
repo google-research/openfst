@@ -35,6 +35,8 @@
 #include <utility>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/weight.h"
 
@@ -492,30 +494,27 @@ class WeightGenerate<UnionWeight<W, O>> {
   using Weight = UnionWeight<W, O>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : allow_zero_(allow_zero),
         num_random_weights_(num_random_weights),
-        generate_(seed, false) {}
+        generate_(false) {}
 
-  Weight operator()() const {
-    const int sample = std::uniform_int_distribution<>(
-        0, num_random_weights_ + allow_zero_ - 1)(rand_);
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    const int sample = absl::Uniform(
+        bit_gen, 0, static_cast<int>(num_random_weights_ + allow_zero_));
     if (allow_zero_ && sample == num_random_weights_) {
       return Weight::Zero();
-    } else if (std::bernoulli_distribution(.5)(rand_)) {
-      return Weight(generate_());
+    } else if (absl::Bernoulli(bit_gen, .5)) {
+      return Weight(generate_(bit_gen));
     } else {
-      return Plus(Weight(generate_()), Weight(generate_()));
+      return Plus(Weight(generate_(bit_gen)), Weight(generate_(bit_gen)));
     }
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
-  const size_t num_random_weights_;
+  const int64_t num_random_weights_;
   const Generate generate_;
 };
 

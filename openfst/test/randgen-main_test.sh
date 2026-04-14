@@ -27,9 +27,7 @@ DAT="$FST/test/testdata/randgen"
 
 source "$BIN"/setup.sh
 
-echo "SKIPPING due to b/476053592: Fails due to std::uniform_int_distribution."
-exit 0
-
+# Note: Seed must match randgen_test.cc.
 "$BIN"/fstrandgen --seed 2 "$DAT"/r1.fst "$TST"/r2.fst
 "$BIN"/fstequal -v 1 "$DAT"/r2.fst "$TST"/r2.fst
 

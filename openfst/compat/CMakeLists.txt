@@ -18,6 +18,7 @@ set(COMPAT_HEADERS
     compat_memory.h
     file_path.h
     init.h
+    seed_sequences.h
     status_macros.h
     unaligned.h
 )

@@ -32,6 +32,8 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/product-weight.h"
@@ -516,30 +518,33 @@ class WeightGenerate<StringWeight<Label, S>> {
  public:
   using Weight = StringWeight<Label, S>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
+  explicit WeightGenerate(bool allow_zero = true,
                           size_t alphabet_size = kNumRandomWeights,
                           size_t max_string_length = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
+      : allow_zero_(allow_zero),
         alphabet_size_(alphabet_size),
         max_string_length_(max_string_length) {}
 
-  Weight operator()() const {
-    const int n = std::uniform_int_distribution<>(
-        0, max_string_length_ + allow_zero_)(rand_);
-    if (allow_zero_ && n == max_string_length_) return Weight::Zero();
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    int n;
+    if (allow_zero_) {
+      n = absl::Uniform(absl::IntervalClosedClosed, bit_gen, 0,
+                        static_cast<int>(max_string_length_));
+      if (n == max_string_length_) return Weight::Zero();
+    } else {
+      n = absl::Uniform(bit_gen, 0, static_cast<int>(max_string_length_));
+    }
     std::vector<Label> labels;
     labels.reserve(n);
     for (int i = 0; i < n; ++i) {
-      labels.push_back(
-          std::uniform_int_distribution<>(1, alphabet_size_)(rand_));
+      labels.push_back(absl::Uniform(absl::IntervalClosedClosed, bit_gen,
+                                     static_cast<Label>(1),
+                                     static_cast<Label>(alphabet_size_)));
     }
     return Weight(labels.begin(), labels.end());
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
   const size_t alphabet_size_;
   const size_t max_string_length_;
@@ -673,14 +678,11 @@ class WeightGenerate<GallicWeight<Label, W, G>>
   using Generate = WeightGenerate<
       ProductWeight<StringWeight<Label, GallicStringType(G)>, W>>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true)
-      : generate_(seed, allow_zero) {}
+  explicit WeightGenerate(bool allow_zero = true) : Generate(allow_zero) {}
 
-  Weight operator()() const { return Weight(generate_()); }
-
- private:
-  const Generate generate_;
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(Generate::operator()(bit_gen));
+  }
 };
 
 // Union weight options for (general) GALLIC type.
@@ -821,14 +823,11 @@ class WeightGenerate<GallicWeight<Label, W, GALLIC>>
       WeightGenerate<UnionWeight<GallicWeight<Label, W, GALLIC_RESTRICT>,
                                  GallicUnionWeightOptions<Label, W>>>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true)
-      : generate_(seed, allow_zero) {}
+  explicit WeightGenerate(bool allow_zero = true) : Generate(allow_zero) {}
 
-  Weight operator()() const { return Weight(generate_()); }
-
- private:
-  const Generate generate_;
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(Generate::operator()(bit_gen));
+  }
 };
 
 }  // namespace fst

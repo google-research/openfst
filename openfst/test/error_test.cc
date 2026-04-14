@@ -23,6 +23,8 @@
 
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcsort.h"
@@ -369,26 +371,30 @@ TEST_F(ErrorTest, ProjectErrorTest) {
 
 TEST_F(ErrorTest, RandEquivalentErrorTest) {
   bool error;
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "ErrorTest_RandEquivalentErrorTest"));
 
-  ASSERT_FALSE(RandEquivalent(empty_nosyms_error_, empty_nosyms_, 1, kDelta, 1,
-                              1, &error));
+  ASSERT_FALSE(RandEquivalent(empty_nosyms_error_, empty_nosyms_, 1, bit_gen,
+                              kDelta, 1, &error));
   ASSERT_TRUE(error);
 
   // Missing symbol table (OK).
   ASSERT_TRUE(RandEquivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, 1,
-                             kDelta, 1, 1, &error));
+                             bit_gen, kDelta, 1, &error));
   ASSERT_FALSE(error);
 
   // Non-matching symbol tables (not OK).
   ASSERT_FALSE(RandEquivalent(trans_ilabeluns_cyc_nondeterm_,
-                              accept_ilabeluns_cyc_nondeterm_, 1, kDelta, 1, 1,
-                              &error));
+                              accept_ilabeluns_cyc_nondeterm_, 1, bit_gen,
+                              kDelta, 1, &error));
   ASSERT_TRUE(error);
 }
 
 TEST_F(ErrorTest, RandGenErrorTest) {
   VectorFst<Arc> ofst;
-  RandGen(empty_nosyms_error_, &ofst);
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RAND_GEN_ERROR_TEST"));
+  RandGen(empty_nosyms_error_, &ofst, bit_gen);
   ASSERT_TRUE(ofst.Properties(kError, false));
 }
 

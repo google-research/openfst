@@ -31,8 +31,9 @@
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
 ABSL_FLAG(int32_t, repeat, 1000, "number of test repetitions");
 
 namespace fst {
@@ -45,11 +46,6 @@ class IntervalSetTest : public testing::Test {
   using Interval = IntervalSet<T>::Interval;
 
  protected:
-  void SetUp() override {
-    rand_.seed(absl::GetFlag(FLAGS_seed));
-    LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
-  }
-
   void TearDown() override {
     iset1_.MutableIntervals()->clear();
     iset2_.MutableIntervals()->clear();
@@ -93,7 +89,7 @@ class IntervalSetTest : public testing::Test {
     std::cerr << "iset " << &s << " " << s << std::endl;
   }
 
-  std::mt19937_64 rand_;
+  absl::BitGen rand_{fst::MakeTaggedSeedSeq("INTERVAL_SET_TEST")};
   IntervalSet<T> iset0_ = IntervalSet<T>{};
   IntervalSet<T> iset1_ = {{0, 2}, {4, 7}, {9, 10}};
   IntervalSet<T> iset2_ = {{1, 2}, {3, 5}, {6, 10}};
@@ -198,26 +194,24 @@ TEST_F(IntervalSetTest, ContainsTest) {
 }
 
 TEST_F(IntervalSetTest, RandomTest) {
-  std::uniform_int_distribution<int> rn_insertions(1, kNumInsertions);
-  std::uniform_int_distribution<int> rn_elements(1, kNumElements);
   for (T i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     std::set<T> set1;
     std::set<T> set2;
     IntervalSet<T> iset1;
     IntervalSet<T> iset2;
 
-    const int num_insertions = rn_insertions(rand_);
-    const int num_elements = rn_elements(rand_);
-    std::uniform_int_distribution<int> r_elements(0, num_elements - 1);
-    std::bernoulli_distribution coin(.5);
+    const int num_insertions =
+        absl::Uniform(absl::IntervalClosedClosed, rand_, 1, kNumInsertions);
+    const int num_elements =
+        absl::Uniform(absl::IntervalClosedClosed, rand_, 1, kNumElements);
     for (T j = 0; j < num_insertions; ++j) {
-      if (coin(rand_)) {
-        T k1 = r_elements(rand_);
+      if (absl::Bernoulli(rand_, .5)) {
+        T k1 = absl::Uniform(rand_, 0, num_elements);
         set1.insert(k1);
         iset1.MutableIntervals()->push_back(Interval(k1, k1 + 1));
       }
-      if (coin(rand_)) {
-        T k2 = r_elements(rand_);
+      if (absl::Bernoulli(rand_, .5)) {
+        T k2 = absl::Uniform(rand_, 0, num_elements);
         set2.insert(k2);
         iset2.MutableIntervals()->push_back(Interval(k2, k2 + 1));
       }

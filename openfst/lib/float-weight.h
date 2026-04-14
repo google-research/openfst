@@ -36,6 +36,8 @@
 
 #include "absl/base/no_destructor.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
@@ -969,23 +971,20 @@ template <class Weight>
 class FloatWeightGenerate {
  public:
   explicit FloatWeightGenerate(
-      uint64_t seed = std::random_device()(), bool allow_zero = true,
-      const size_t num_random_weights = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
-        num_random_weights_(num_random_weights) {}
+      bool allow_zero = true,
+      const int64_t num_random_weights = kNumRandomWeights)
+      : allow_zero_(allow_zero), num_random_weights_(num_random_weights) {}
 
-  Weight operator()() const {
-    const int sample = std::uniform_int_distribution<>(
-        0, num_random_weights_ + allow_zero_ - 1)(rand_);
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    const int sample = absl::Uniform(
+        bit_gen, 0, static_cast<int>(num_random_weights_ + allow_zero_));
     if (allow_zero_ && sample == num_random_weights_) return Weight::Zero();
     return Weight(sample);
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
-  const size_t num_random_weights_;
+  const int64_t num_random_weights_;
 };
 
 template <class T>
@@ -995,12 +994,13 @@ class WeightGenerate<TropicalWeightTpl<T>>
   using Weight = TropicalWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : Generate(seed, allow_zero, num_random_weights) {}
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : Generate(allow_zero, num_random_weights) {}
 
-  Weight operator()() const { return Weight(Generate::operator()()); }
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(Generate::operator()(bit_gen));
+  }
 };
 
 template <class T>
@@ -1010,12 +1010,13 @@ class WeightGenerate<LogWeightTpl<T>>
   using Weight = LogWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : Generate(seed, allow_zero, num_random_weights) {}
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : Generate(allow_zero, num_random_weights) {}
 
-  Weight operator()() const { return Weight(Generate::operator()()); }
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(Generate::operator()(bit_gen));
+  }
 };
 
 template <class T>
@@ -1025,12 +1026,13 @@ class WeightGenerate<RealWeightTpl<T>>
   using Weight = RealWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : Generate(seed, allow_zero, num_random_weights) {}
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : Generate(allow_zero, num_random_weights) {}
 
-  Weight operator()() const { return Weight(Generate::operator()()); }
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(Generate::operator()(bit_gen));
+  }
 };
 
 // This function object returns random integers chosen from [0,
@@ -1042,29 +1044,25 @@ class WeightGenerate<MinMaxWeightTpl<T>> {
  public:
   using Weight = MinMaxWeightTpl<T>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
-        num_random_weights_(num_random_weights) {}
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : allow_zero_(allow_zero), num_random_weights_(num_random_weights) {}
 
-  Weight operator()() const {
-    const int sample = std::uniform_int_distribution<>(
-        -num_random_weights_, num_random_weights_ + allow_zero_)(rand_);
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    const int sample =
+        absl::Uniform(bit_gen, -static_cast<int>(num_random_weights_),
+                      static_cast<int>(num_random_weights_ + allow_zero_));
     if (allow_zero_ && sample == 0) {
       return Weight::Zero();
     } else if (sample == -num_random_weights_) {
       return Weight::One();
-    } else {
-      return Weight(sample);
     }
+    return Weight(sample);
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
-  const size_t num_random_weights_;
+  const int64_t num_random_weights_;
 };
 
 }  // namespace fst

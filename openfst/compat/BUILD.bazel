@@ -125,6 +125,17 @@ cc_library(
     hdrs = ["unaligned.h"],
 )
 
+cc_library(
+    name = "seed_sequences",
+    srcs = ["seed_sequences.cc"],
+    hdrs = ["seed_sequences.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_test(
     name = "unaligned_test",
     srcs = ["unaligned_test.cc"],

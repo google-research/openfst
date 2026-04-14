@@ -24,10 +24,10 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <random>
 #include <string>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
 #include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -208,14 +208,13 @@ class WeightGenerate<SparsePowerWeight<W, K>> {
   using Weight = SparsePowerWeight<W, K>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true, size_t sparse_power_rank = 3)
-      : generate_(seed, allow_zero), sparse_power_rank_(sparse_power_rank) {}
+  explicit WeightGenerate(bool allow_zero = true, size_t sparse_power_rank = 3)
+      : generate_(allow_zero), sparse_power_rank_(sparse_power_rank) {}
 
-  Weight operator()() const {
+  Weight operator()(absl::BitGenRef bit_gen) const {
     Weight weight;
     for (size_t i = 1; i <= sparse_power_rank_; ++i) {
-      weight.PushBack(i, generate_(), true);
+      weight.PushBack(i, generate_(bit_gen), true);
     }
     return weight;
   }

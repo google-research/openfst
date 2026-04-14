@@ -40,6 +40,8 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
@@ -878,17 +880,18 @@ class WeightGenerate<CategorialWeight<L, C>> {
   using Weight = CategorialWeight<L, C>;
 
   explicit WeightGenerate(bool allow_zero = true,
-                          size_t alphabet_size = kNumRandomWeights,
-                          size_t max_string_length = kNumRandomWeights,
-                          size_t max_operations = kNumRandomWeights)
+                          int alphabet_size = kNumRandomWeights,
+                          int max_string_length = kNumRandomWeights,
+                          int max_operations = kNumRandomWeights)
       : allow_zero_(allow_zero),
         alphabet_size_(alphabet_size),
         max_string_length_(max_string_length),
         max_operations_(max_operations) {}
 
-  Weight operator()() const {
-    int n = rand() % (max_string_length_ + allow_zero_);
-    int n_op = rand() % (max_operations_) + 1;
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    int n = absl::Uniform(bit_gen, 0, max_string_length_ + allow_zero_);
+    int n_op =
+        absl::Uniform(absl::IntervalClosedClosed, bit_gen, 1, max_operations_);
     if (allow_zero_ && n == max_string_length_) return Weight::Zero();
     // Vector of random operations, filled in as below.
     std::vector<int> rand_operation(n_op);
@@ -898,9 +901,10 @@ class WeightGenerate<CategorialWeight<L, C>> {
     for (int j = 0; j < n_op; j++) {
       // rand_operation[k] = 0 -> Concat()
       // rand_operation[k] = 1 -> Division()
-      rand_operation[j] = rand() % 2;
+      rand_operation[j] = absl::Bernoulli(bit_gen, 0.5);
       for (int i = 0; i < n; ++i) {
-        v[j].push_back(rand() % alphabet_size_ + 1);
+        v[j].push_back(absl::Uniform<L>(absl::IntervalClosedClosed, bit_gen, 1,
+                                        alphabet_size_));
       }
     }
     int dir = kLeftDivision;
@@ -925,11 +929,11 @@ class WeightGenerate<CategorialWeight<L, C>> {
   // Permits Zero() and zero divisors.
   bool allow_zero_;
   // Alphabet size for random weights.
-  const size_t alphabet_size_;
+  const int alphabet_size_;
   // Alphabet size for random weights.
-  const size_t max_string_length_;
+  const int max_string_length_;
   // Number of alternative random operations.
-  const size_t max_operations_;
+  const int max_operations_;
 };
 
 }  // namespace fst

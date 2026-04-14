@@ -44,8 +44,6 @@
 namespace fst {
 namespace script {
 
-inline constexpr uint64_t kDefaultSeed = std::numeric_limits<uint64_t>::max();
-
 bool GetArcFilterType(absl::string_view str, ArcFilterType* arc_filter_type);
 
 bool GetArcSortType(absl::string_view str, ArcSortType* sort_type);
@@ -84,8 +82,6 @@ bool GetReplaceLabelType(absl::string_view str, bool epsilon_on_replace,
                          ReplaceLabelType* rlt);
 
 bool GetReweightType(absl::string_view str, ReweightType* reweight_type);
-
-uint64_t GetSeed(uint64_t seed);
 
 bool GetTokenType(absl::string_view str, TokenType* token_type);
 

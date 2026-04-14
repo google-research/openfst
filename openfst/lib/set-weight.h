@@ -36,6 +36,8 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
@@ -603,23 +605,23 @@ class WeightGenerate<SetWeight<Label, S>> {
  public:
   using Weight = SetWeight<Label, S>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
+  explicit WeightGenerate(bool allow_zero = true,
                           size_t alphabet_size = kNumRandomWeights,
                           size_t max_set_length = kNumRandomWeights)
       : allow_zero_(allow_zero),
         alphabet_size_(alphabet_size),
         max_set_length_(max_set_length) {}
 
-  Weight operator()() const {
-    const int n = std::uniform_int_distribution<>(
-        0, max_set_length_ + allow_zero_ - 1)(rand_);
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    const int n = absl::Uniform(
+        bit_gen, 0, static_cast<int>(max_set_length_ + allow_zero_));
     if (allow_zero_ && n == max_set_length_) return Weight::Zero();
     std::vector<Label> labels;
     labels.reserve(n);
     for (int i = 0; i < n; ++i) {
-      labels.push_back(
-          std::uniform_int_distribution<>(0, alphabet_size_)(rand_));
+      labels.push_back(absl::Uniform(absl::IntervalClosedClosed, bit_gen,
+                                     static_cast<Label>(0),
+                                     static_cast<Label>(alphabet_size_)));
     }
     std::sort(labels.begin(), labels.end());
     const auto labels_end = std::unique(labels.begin(), labels.end());
@@ -628,7 +630,6 @@ class WeightGenerate<SetWeight<Label, S>> {
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
   const size_t alphabet_size_;
   const size_t max_set_length_;

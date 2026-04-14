@@ -18,6 +18,7 @@
 #include "openfst/script/randgen.h"
 
 #include <cstdint>
+#include <optional>
 
 #include "openfst/lib/properties.h"
 #include "openfst/lib/randgen.h"
@@ -28,13 +29,19 @@ namespace fst {
 namespace script {
 
 void RandGen(const FstClass& ifst, MutableFstClass* ofst,
-             const RandGenOptions<RandArcSelection>& opts, uint64_t seed) {
+             const RandGenOptions<RandArcSelection>& opts,
+             std::optional<uint64_t> seed) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "RandGen")) {
     ofst->SetProperties(kError, kError);
     return;
   }
   FstRandGenArgs args{ifst, ofst, opts, seed};
   Apply<Operation<FstRandGenArgs>>("RandGen", ifst.ArcType(), &args);
+}
+
+void RandGen(const FstClass& ifst, MutableFstClass* ofst,
+             const RandGenOptions<RandArcSelection>& opts) {
+  RandGen(ifst, ofst, opts, std::nullopt);
 }
 
 REGISTER_FST_OPERATION_3ARCS(RandGen, FstRandGenArgs);
