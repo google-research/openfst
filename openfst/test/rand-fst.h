@@ -110,7 +110,9 @@ absl::Status RandFst(const int num_random_states, const int num_random_arcs,
     fst->SetFinal(s, generate());
   }
   VLOG(1) << "Check FST for sanity (including property bits).";
-  CHECK(Verify(*fst));  // Crash OK
+  if (!Verify(*fst)) {
+    return absl::InternalError("FST verification failed");
+  }
 
   // Get/compute all properties.
   const uint64_t props = fst->Properties(kFstProperties, true);
