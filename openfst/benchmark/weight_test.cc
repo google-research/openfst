@@ -95,9 +95,8 @@ W MakeRandomWeight(absl::BitGen& bitgen) {
 
 template <>
 SignedLog64Weight MakeRandomWeight<SignedLog64Weight>(absl::BitGen& bitgen) {
-  return SignedLog64Weight(
-      TropicalWeight(absl::Uniform(bitgen, -10.0, 10.0)),
-      LogWeightTpl<double>(absl::Uniform(bitgen, -10.0, 10.0)));
+  return SignedLog64Weight(TropicalWeight(absl::Uniform(bitgen, -10.0, 10.0)),
+                           Log64Weight(absl::Uniform(bitgen, -10.0, 10.0)));
 }
 
 template <typename W>
@@ -114,7 +113,7 @@ static void BM_PairWeightHash_Vector(benchmark::State& state) {
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeWeight<W>(i), MakeWeight<W>(i + 1));
   }
-  for (auto _ : state) {
+  while (state.KeepRunningBatch(size)) {
     for (const auto& w : weights) {
       benchmark::DoNotOptimize(Hash<W>()(w));
     }
@@ -132,7 +131,7 @@ static void BM_PairWeightHash_Random(benchmark::State& state) {
     weights.emplace_back(MakeRandomWeight<W>(bitgen),
                          MakeRandomWeight<W>(bitgen));
   }
-  for (auto _ : state) {
+  while (state.KeepRunningBatch(size)) {
     for (const auto& w : weights) {
       benchmark::DoNotOptimize(Hash<W>()(w));
     }
@@ -266,18 +265,23 @@ static void BM_PairWeightHash_SAC(benchmark::State& state) {
   state.counters["max_deviation"] = max_deviation;
 }
 
-// Measures time to hash a single pair with specific values.
+// Measures time to hash pairs with swapped elements, using a vector to simulate
+// memory access.
 template <typename W>
-static void BM_PairWeightHash_Swapped(benchmark::State& state) {
+static void BM_PairWeightHash_SwappedElements(benchmark::State& state) {
   const int size = state.range(0);
-  const W w1 = MakeWeight<W>(1);
-  const W w2 = MakeWeight<W>(2);
-  const PairWeight<W, W> p1(w1, w2);
-  const PairWeight<W, W> p2(w2, w1);
-  for (auto _ : state) {
-    for (int i = 0; i < size; ++i) {
-      benchmark::DoNotOptimize(Hash<W>()(p1));
-      benchmark::DoNotOptimize(Hash<W>()(p2));
+  std::vector<PairWeight<W, W>> weights;
+  weights.reserve(size * 2);
+  absl::BitGen bitgen;
+  for (int i = 0; i < size; ++i) {
+    const W w1 = MakeRandomWeight<W>(bitgen);
+    const W w2 = MakeRandomWeight<W>(bitgen);
+    weights.emplace_back(w1, w2);
+    weights.emplace_back(w2, w1);
+  }
+  while (state.KeepRunningBatch(2 * size)) {
+    for (const auto& w : weights) {
+      benchmark::DoNotOptimize(Hash<W>()(w));
     }
   }
 }
@@ -291,7 +295,7 @@ static void BM_PairWeightHash_HashSet(benchmark::State& state) {
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeWeight<W>(i), MakeWeight<W>(i + 1));
   }
-  for (auto _ : state) {
+  while (state.KeepRunningBatch(size)) {
     absl::flat_hash_set<PairWeight<W, W>, Hash<W>> my_set;
     for (const auto& w : weights) {
       my_set.insert(w);
@@ -322,7 +326,7 @@ static void BM_PairWeightHash_Lookup(benchmark::State& state) {
     }
   }
 
-  for (auto _ : state) {
+  while (state.KeepRunningBatch(size)) {
     for (const auto& w : lookup_keys) {
       benchmark::DoNotOptimize(my_set.contains(w));
     }
@@ -355,11 +359,11 @@ BENCHMARK_TEMPLATE(BM_PairWeightHash_SAC, SignedLog64Weight);
 BENCHMARK_TEMPLATE(BM_PairWeightHash_SAC, LogWeight);
 BENCHMARK_TEMPLATE(BM_PairWeightHash_SAC, TropicalWeight);
 
-BENCHMARK_TEMPLATE(BM_PairWeightHash_Swapped, SignedLog64Weight)
+BENCHMARK_TEMPLATE(BM_PairWeightHash_SwappedElements, SignedLog64Weight)
     ->Range(1 << 10, 1 << 16);
-BENCHMARK_TEMPLATE(BM_PairWeightHash_Swapped, LogWeight)
+BENCHMARK_TEMPLATE(BM_PairWeightHash_SwappedElements, LogWeight)
     ->Range(1 << 10, 1 << 16);
-BENCHMARK_TEMPLATE(BM_PairWeightHash_Swapped, TropicalWeight)
+BENCHMARK_TEMPLATE(BM_PairWeightHash_SwappedElements, TropicalWeight)
     ->Range(1 << 10, 1 << 16);
 
 BENCHMARK_TEMPLATE(BM_PairWeightHash_HashSet, SignedLog64Weight)
