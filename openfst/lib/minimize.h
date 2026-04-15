@@ -289,7 +289,7 @@ class CyclicMinimizer {
   }
 
  private:
-  // Partioning of states into equivalence classes.
+  // Partitioning of states into equivalence classes.
   Partition<StateId> P_;
   // Set of active classes to be processed in partition P.
   Queue L_;
