@@ -164,34 +164,10 @@ constexpr bool operator==(const FloatWeightTpl<T>& w1,
   return w1.Value() == w2.Value();
 }
 
-// These seemingly unnecessary overloads are actually needed to make
-// comparisons like FloatWeightTpl<float> == float compile. If only the
-// templated version exists, the FloatWeightTpl<float>(float) conversion
-// won't be found.
-constexpr bool operator==(const FloatWeightTpl<float>& w1,
-                          const FloatWeightTpl<float>& w2) {
-  return operator== <float>(w1, w2);
-}
-
-constexpr bool operator==(const FloatWeightTpl<double>& w1,
-                          const FloatWeightTpl<double>& w2) {
-  return operator== <double>(w1, w2);
-}
-
 template <class T>
 constexpr bool operator!=(const FloatWeightTpl<T>& w1,
                           const FloatWeightTpl<T>& w2) {
   return !(w1 == w2);
-}
-
-constexpr bool operator!=(const FloatWeightTpl<float>& w1,
-                          const FloatWeightTpl<float>& w2) {
-  return operator!= <float>(w1, w2);
-}
-
-constexpr bool operator!=(const FloatWeightTpl<double>& w1,
-                          const FloatWeightTpl<double>& w2) {
-  return operator!= <double>(w1, w2);
 }
 
 template <class T>
@@ -314,18 +290,6 @@ constexpr TropicalWeightTpl<T> Plus(const TropicalWeightTpl<T>& w1,
                                         : w2;
 }
 
-// See comment at operator==(FloatWeightTpl<float>, FloatWeightTpl<float>)
-// for why these overloads are present.
-constexpr TropicalWeightTpl<float> Plus(const TropicalWeightTpl<float>& w1,
-                                        const TropicalWeightTpl<float>& w2) {
-  return Plus<float>(w1, w2);
-}
-
-constexpr TropicalWeightTpl<double> Plus(const TropicalWeightTpl<double>& w1,
-                                         const TropicalWeightTpl<double>& w2) {
-  return Plus<double>(w1, w2);
-}
-
 template <class T>
 constexpr TropicalWeightTpl<T> Times(const TropicalWeightTpl<T>& w1,
                                      const TropicalWeightTpl<T>& w2) {
@@ -349,16 +313,6 @@ constexpr TropicalWeightTpl<T> Times(const TropicalWeightTpl<T>& w1,
   //   since -inf was not a Member to begin with, returning a non-Member result
   //   is fine as well.
   return TropicalWeightTpl<T>(w1.Value() + w2.Value());
-}
-
-constexpr TropicalWeightTpl<float> Times(const TropicalWeightTpl<float>& w1,
-                                         const TropicalWeightTpl<float>& w2) {
-  return Times<float>(w1, w2);
-}
-
-constexpr TropicalWeightTpl<double> Times(const TropicalWeightTpl<double>& w1,
-                                          const TropicalWeightTpl<double>& w2) {
-  return Times<double>(w1, w2);
 }
 
 template <class T>
@@ -390,18 +344,6 @@ constexpr TropicalWeightTpl<T> Divide(const TropicalWeightTpl<T>& w1,
   //   division by Zero results in a non-Member result.
   using Weight = TropicalWeightTpl<T>;
   return w2.Member() ? Weight(w1.Value() - w2.Value()) : Weight::NoWeight();
-}
-
-constexpr TropicalWeightTpl<float> Divide(const TropicalWeightTpl<float>& w1,
-                                          const TropicalWeightTpl<float>& w2,
-                                          DivideType typ = DIVIDE_ANY) {
-  return Divide<float>(w1, w2, typ);
-}
-
-constexpr TropicalWeightTpl<double> Divide(const TropicalWeightTpl<double>& w1,
-                                           const TropicalWeightTpl<double>& w2,
-                                           DivideType typ = DIVIDE_ANY) {
-  return Divide<double>(w1, w2, typ);
 }
 
 // Power(w, n) calculates the n-th power of w with respect to semiring Times.
@@ -571,16 +513,6 @@ inline LogWeightTpl<T> Plus(const LogWeightTpl<T>& w1,
   }
 }
 
-inline LogWeightTpl<float> Plus(const LogWeightTpl<float>& w1,
-                                const LogWeightTpl<float>& w2) {
-  return Plus<float>(w1, w2);
-}
-
-inline LogWeightTpl<double> Plus(const LogWeightTpl<double>& w1,
-                                 const LogWeightTpl<double>& w2) {
-  return Plus<double>(w1, w2);
-}
-
 // Returns NoWeight if w1 < w2 (w1.Value() > w2.Value()).
 template <class T>
 inline LogWeightTpl<T> Minus(const LogWeightTpl<T>& w1,
@@ -595,31 +527,11 @@ inline LogWeightTpl<T> Minus(const LogWeightTpl<T>& w1,
   return LogWeightTpl<T>(f1 - internal::LogNegExp(d));
 }
 
-inline LogWeightTpl<float> Minus(const LogWeightTpl<float>& w1,
-                                 const LogWeightTpl<float>& w2) {
-  return Minus<float>(w1, w2);
-}
-
-inline LogWeightTpl<double> Minus(const LogWeightTpl<double>& w1,
-                                  const LogWeightTpl<double>& w2) {
-  return Minus<double>(w1, w2);
-}
-
 template <class T>
 constexpr LogWeightTpl<T> Times(const LogWeightTpl<T>& w1,
                                 const LogWeightTpl<T>& w2) {
   // The comments for Times(Tropical...) above apply here unchanged.
   return LogWeightTpl<T>(w1.Value() + w2.Value());
-}
-
-constexpr LogWeightTpl<float> Times(const LogWeightTpl<float>& w1,
-                                    const LogWeightTpl<float>& w2) {
-  return Times<float>(w1, w2);
-}
-
-constexpr LogWeightTpl<double> Times(const LogWeightTpl<double>& w1,
-                                     const LogWeightTpl<double>& w2) {
-  return Times<double>(w1, w2);
 }
 
 template <class T>
@@ -629,18 +541,6 @@ constexpr LogWeightTpl<T> Divide(const LogWeightTpl<T>& w1,
   // The comments for Divide(Tropical...) above apply here unchanged.
   using Weight = LogWeightTpl<T>;
   return w2.Member() ? Weight(w1.Value() - w2.Value()) : Weight::NoWeight();
-}
-
-constexpr LogWeightTpl<float> Divide(const LogWeightTpl<float>& w1,
-                                     const LogWeightTpl<float>& w2,
-                                     DivideType typ = DIVIDE_ANY) {
-  return Divide<float>(w1, w2, typ);
-}
-
-constexpr LogWeightTpl<double> Divide(const LogWeightTpl<double>& w1,
-                                      const LogWeightTpl<double>& w2,
-                                      DivideType typ = DIVIDE_ANY) {
-  return Divide<double>(w1, w2, typ);
 }
 
 // The comments for Power<>(Tropical...) above apply here unchanged.
@@ -781,16 +681,6 @@ inline RealWeightTpl<T> Plus(const RealWeightTpl<T>& w1,
   return RealWeightTpl<T>(f1 + f2);
 }
 
-inline RealWeightTpl<float> Plus(const RealWeightTpl<float>& w1,
-                                 const RealWeightTpl<float>& w2) {
-  return Plus<float>(w1, w2);
-}
-
-inline RealWeightTpl<double> Plus(const RealWeightTpl<double>& w1,
-                                  const RealWeightTpl<double>& w2) {
-  return Plus<double>(w1, w2);
-}
-
 template <class T>
 inline RealWeightTpl<T> Minus(const RealWeightTpl<T>& w1,
                               const RealWeightTpl<T>& w2) {
@@ -800,31 +690,11 @@ inline RealWeightTpl<T> Minus(const RealWeightTpl<T>& w1,
   return RealWeightTpl<T>(f1 - f2);
 }
 
-inline RealWeightTpl<float> Minus(const RealWeightTpl<float>& w1,
-                                  const RealWeightTpl<float>& w2) {
-  return Minus<float>(w1, w2);
-}
-
-inline RealWeightTpl<double> Minus(const RealWeightTpl<double>& w1,
-                                   const RealWeightTpl<double>& w2) {
-  return Minus<double>(w1, w2);
-}
-
 // The comments for Times(Tropical...) above apply here similarly.
 template <class T>
 constexpr RealWeightTpl<T> Times(const RealWeightTpl<T>& w1,
                                  const RealWeightTpl<T>& w2) {
   return RealWeightTpl<T>(w1.Value() * w2.Value());
-}
-
-constexpr RealWeightTpl<float> Times(const RealWeightTpl<float>& w1,
-                                     const RealWeightTpl<float>& w2) {
-  return Times<float>(w1, w2);
-}
-
-constexpr RealWeightTpl<double> Times(const RealWeightTpl<double>& w1,
-                                      const RealWeightTpl<double>& w2) {
-  return Times<double>(w1, w2);
 }
 
 template <class T>
@@ -833,18 +703,6 @@ constexpr RealWeightTpl<T> Divide(const RealWeightTpl<T>& w1,
                                   DivideType typ = DIVIDE_ANY) {
   using Weight = RealWeightTpl<T>;
   return w2.Member() ? Weight(w1.Value() / w2.Value()) : Weight::NoWeight();
-}
-
-constexpr RealWeightTpl<float> Divide(const RealWeightTpl<float>& w1,
-                                      const RealWeightTpl<float>& w2,
-                                      DivideType typ = DIVIDE_ANY) {
-  return Divide<float>(w1, w2, typ);
-}
-
-constexpr RealWeightTpl<double> Divide(const RealWeightTpl<double>& w1,
-                                       const RealWeightTpl<double>& w2,
-                                       DivideType typ = DIVIDE_ANY) {
-  return Divide<double>(w1, w2, typ);
 }
 
 // The comments for Power<>(Tropical...) above apply here unchanged.
@@ -969,16 +827,6 @@ constexpr MinMaxWeightTpl<T> Plus(const MinMaxWeightTpl<T>& w1,
                                         : w2;
 }
 
-constexpr MinMaxWeightTpl<float> Plus(const MinMaxWeightTpl<float>& w1,
-                                      const MinMaxWeightTpl<float>& w2) {
-  return Plus<float>(w1, w2);
-}
-
-constexpr MinMaxWeightTpl<double> Plus(const MinMaxWeightTpl<double>& w1,
-                                       const MinMaxWeightTpl<double>& w2) {
-  return Plus<double>(w1, w2);
-}
-
 // Max.
 template <class T>
 constexpr MinMaxWeightTpl<T> Times(const MinMaxWeightTpl<T>& w1,
@@ -988,34 +836,12 @@ constexpr MinMaxWeightTpl<T> Times(const MinMaxWeightTpl<T>& w1,
                                         : w2;
 }
 
-constexpr MinMaxWeightTpl<float> Times(const MinMaxWeightTpl<float>& w1,
-                                       const MinMaxWeightTpl<float>& w2) {
-  return Times<float>(w1, w2);
-}
-
-constexpr MinMaxWeightTpl<double> Times(const MinMaxWeightTpl<double>& w1,
-                                        const MinMaxWeightTpl<double>& w2) {
-  return Times<double>(w1, w2);
-}
-
 // Defined only for special cases.
 template <class T>
 constexpr MinMaxWeightTpl<T> Divide(const MinMaxWeightTpl<T>& w1,
                                     const MinMaxWeightTpl<T>& w2,
                                     DivideType typ = DIVIDE_ANY) {
   return w1.Value() >= w2.Value() ? w1 : MinMaxWeightTpl<T>::NoWeight();
-}
-
-constexpr MinMaxWeightTpl<float> Divide(const MinMaxWeightTpl<float>& w1,
-                                        const MinMaxWeightTpl<float>& w2,
-                                        DivideType typ = DIVIDE_ANY) {
-  return Divide<float>(w1, w2, typ);
-}
-
-constexpr MinMaxWeightTpl<double> Divide(const MinMaxWeightTpl<double>& w1,
-                                         const MinMaxWeightTpl<double>& w2,
-                                         DivideType typ = DIVIDE_ANY) {
-  return Divide<double>(w1, w2, typ);
 }
 
 // Converts to tropical.
