@@ -108,8 +108,42 @@ static void BM_DeterminizeFstTrans(benchmark::State& state) {
   }
 }
 
+// Tests determinization of a highly non-deterministic transducer with many
+// parallel arcs sharing the same input label but different output labels.
+// It chains arcs to generate longer output strings, stressing weight
+// accumulation and move semantics in the state table.
+static void BM_DeterminizeTransHighlyNonDeterministic(benchmark::State& state) {
+  using Arc = StdArc;
+  VectorFst<Arc> f;
+  Arc::StateId start = f.AddState();
+  f.SetStart(start);
+
+  constexpr int kNumParallelArcs = 1000;
+  constexpr int kStringLength = 10;
+  for (int i = 0; i < kNumParallelArcs; ++i) {
+    Arc::StateId s = f.AddState();
+    f.AddArc(start, Arc(1, i + 1, 0.0, s));
+
+    Arc::StateId current = s;
+    for (int j = 0; j < kStringLength; ++j) {
+      Arc::StateId next = f.AddState();
+      f.AddArc(current, Arc(2, j + 1, 0.0, next));
+      current = next;
+    }
+    f.SetFinal(current, Arc::Weight::One());
+  }
+
+  for (auto _ : state) {
+    VectorFst<Arc> det;
+    DeterminizeOptions<Arc> opts;
+    opts.type = DETERMINIZE_NONFUNCTIONAL;
+    Determinize(f, &det, opts);
+  }
+}
+
 BENCHMARK(BM_DeterminizeAccept);
 BENCHMARK(BM_DeterminizeTrans);
+BENCHMARK(BM_DeterminizeTransHighlyNonDeterministic);
 
 BENCHMARK(BM_DeterminizeFstAccept);
 BENCHMARK(BM_DeterminizeFstTrans);

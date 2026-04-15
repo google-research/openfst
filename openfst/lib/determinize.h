@@ -334,30 +334,25 @@ class DefaultDeterminizeStateTable {
   DefaultDeterminizeStateTable(const DefaultDeterminizeStateTable& table)
       : table_size_(table.table_size_), tuples_(table_size_) {}
 
-  ~DefaultDeterminizeStateTable() {
-    for (StateId s = 0; s < tuples_.Size(); ++s) delete tuples_.FindEntry(s);
-  }
+  ~DefaultDeterminizeStateTable() = default;
 
   // Finds the state corresponding to a state tuple. Only creates a new state if
   // the tuple is not found. FindState takes ownership of the tuple argument so
   // that it doesn't have to copy it if it creates a new state.
   StateId FindState(std::unique_ptr<StateTuple> tuple) {
-    StateTuple* raw_tuple = tuple.release();
-    const StateId ns = tuples_.Size();
-    // TODO: Make CompactHashBiTable support move semantics so we
-    // can store a `std::unique_ptr` in `tuples_`.
-    const auto s = tuples_.FindId(raw_tuple);
-    if (s != ns) delete raw_tuple;  // Tuple found.
-    return s;
+    return tuples_.FindId(std::move(tuple));
   }
 
-  const StateTuple* Tuple(StateId s) { return tuples_.FindEntry(s); }
+  const StateTuple* Tuple(StateId s) const {
+    return tuples_.FindEntry(s).get();
+  }
 
  private:
   // Comparison object for StateTuples.
   class StateTupleEqual {
    public:
-    bool operator()(const StateTuple* tuple1, const StateTuple* tuple2) const {
+    bool operator()(const std::unique_ptr<StateTuple>& tuple1,
+                    const std::unique_ptr<StateTuple>& tuple2) const {
       return *tuple1 == *tuple2;
     }
   };
@@ -365,9 +360,9 @@ class DefaultDeterminizeStateTable {
   // Hash function for StateTuples.
   class StateTupleKey {
    public:
-    size_t operator()(const StateTuple* tuple) const {
+    size_t operator()(const std::unique_ptr<StateTuple>& tuple) const {
       size_t h = tuple->filter_state.Hash();
-      for (auto& element : tuple->subset) {
+      for (const auto& element : tuple->subset) {
         const size_t h1 = element.state_id;
         static constexpr auto lshift = 5;
         static constexpr auto rshift = CHAR_BIT * sizeof(size_t) - 5;
@@ -378,8 +373,8 @@ class DefaultDeterminizeStateTable {
   };
 
   size_t table_size_;
-  CompactHashBiTable<StateId, StateTuple*, StateTupleKey, StateTupleEqual,
-                     HS_STL>
+  CompactHashBiTable<StateId, std::unique_ptr<StateTuple>, StateTupleKey,
+                     StateTupleEqual, HS_STL>
       tuples_;
 
   DefaultDeterminizeStateTable& operator=(const DefaultDeterminizeStateTable&) =
@@ -639,10 +634,13 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   }
 
   StateId FindState(std::unique_ptr<StateTuple> tuple) {
-    const auto& subset = tuple->subset;
+    Weight distance = Weight::Zero();
+    if (in_dist_) {
+      distance = ComputeDistance(tuple->subset);
+    }
     const auto s = state_table_->FindState(std::move(tuple));
     if (in_dist_ && out_dist_->size() <= s) {
-      out_dist_->push_back(ComputeDistance(subset));
+      out_dist_->push_back(distance);
     }
     return s;
   }

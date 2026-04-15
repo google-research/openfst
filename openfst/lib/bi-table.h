@@ -169,19 +169,21 @@ class CompactHashBiTable {
               compact_hash_func_, compact_hash_equal_) {}
 
   I FindId(const T& entry, bool insert = true) {
-    current_entry_ = &entry;
     if (insert) {
-      auto [iter, was_inserted] = keys_.insert(kCurrentKey);
-      if (!was_inserted) return *iter;  // Already exists.
-      // Overwrites kCurrentKey with a new key value; this is safe because it
-      // doesn't affect hashing or equality testing.
-      I key = id2entry_.size();
-      const_cast<I&>(*iter) = key;
-      id2entry_.push_back(entry);
-      return key;
+      return FindIdInternal<true>(entry);
+    } else {
+      return FindIdInternal<false>(entry);
     }
-    const auto it = keys_.find(kCurrentKey);
-    return it == keys_.end() ? -1 : *it;
+  }
+
+  template <typename U,
+            typename = std::enable_if_t<std::is_convertible_v<U, T>>>
+  I FindId(U&& entry, bool insert = true) {
+    if (insert) {
+      return FindIdInternal<true>(std::forward<U>(entry));
+    } else {
+      return FindIdInternal<false>(std::forward<U>(entry));
+    }
   }
 
   const T& FindEntry(I s) const { return id2entry_[s]; }
@@ -199,6 +201,25 @@ class CompactHashBiTable {
   // TODO: (1) don't use >= for key comparison, (2) allow unsigned key
   // types.
   static constexpr I kCurrentKey = -1;
+
+  template <bool insert, typename U>
+  I FindIdInternal(U&& entry) {
+    const T& entry_ref = entry;
+    current_entry_ = &entry_ref;
+    if constexpr (insert) {
+      auto [iter, was_inserted] = keys_.insert(kCurrentKey);
+      if (!was_inserted) return *iter;  // Already exists.
+      // Overwrites kCurrentKey with a new key value; this is safe because it
+      // doesn't affect hashing or equality testing.
+      I key = id2entry_.size();
+      const_cast<I&>(*iter) = key;
+      id2entry_.push_back(std::forward<U>(entry));
+      return key;
+    } else {
+      const auto it = keys_.find(kCurrentKey);
+      return it == keys_.end() ? -1 : *it;
+    }
+  }
 
   class HashFunc {
    public:
