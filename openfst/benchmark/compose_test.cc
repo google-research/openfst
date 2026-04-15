@@ -75,8 +75,9 @@ using StdNGramFst = NGramFst<StdArc>;
 // Loads fst of type F from file and computes its properties.
 template <class F>
 std::unique_ptr<const F> LoadFst(absl::string_view filename) {
-  auto fst = std::make_unique<F>(
-      *ABSL_DIE_IF_NULL(Fst<typename F::Arc>::Read(filename)));
+  std::unique_ptr<Fst<typename F::Arc>> raw_fst(
+      Fst<typename F::Arc>::Read(filename));
+  auto fst = std::make_unique<F>(*ABSL_DIE_IF_NULL(raw_fst.get()));
   fst->Properties(kFstProperties, true);  // compute properties
   return fst;
 }
@@ -84,20 +85,17 @@ std::unique_ptr<const F> LoadFst(absl::string_view filename) {
 // Returns the (static) instance of ConstFst<Arc> read from FLAGS_fst1.
 template <class Arc>
 const ConstFst<Arc>& GetFst1() {
-  static const ConstFst<Arc>* const fst =
-      LoadFst<ConstFst<Arc>>(
-          JoinPathRespectAbsolute(std::string("."),
-                                        absl::GetFlag(FLAGS_fst1)))
-          .release();
+  static const auto fst = LoadFst<ConstFst<Arc>>(JoinPathRespectAbsolute(
+      std::string("."), absl::GetFlag(FLAGS_fst1)));
   return *fst;
 }
 
 // Returns the (static) instance of Fst<Arc> read from FLAGS_fst2.
 template <class Arc>
 const Fst<Arc>& GetFst2() {
-  static const Fst<Arc>* const fst =
+  static const std::unique_ptr<const Fst<Arc>> fst(
       Fst<Arc>::Read(JoinPathRespectAbsolute(std::string("."),
-                                                   absl::GetFlag(FLAGS_fst2)));
+                                                   absl::GetFlag(FLAGS_fst2))));
   CHECK(fst != nullptr) << absl::GetFlag(FLAGS_fst2);
   return *fst;
 }
@@ -105,11 +103,9 @@ const Fst<Arc>& GetFst2() {
 // Returns the (static) instance of StdOLabelLookAheadFstread from
 // FLAGS_lookahead_fst.
 const StdOLabelLookAheadFst& GetLookAheadFst() {
-  static const StdOLabelLookAheadFst* const fst =
-      LoadFst<StdOLabelLookAheadFst>(
-          JoinPathRespectAbsolute(std::string("."),
-                                        absl::GetFlag(FLAGS_lookahead_fst)))
-          .release();
+  static const auto fst =
+      LoadFst<StdOLabelLookAheadFst>(JoinPathRespectAbsolute(
+          std::string("."), absl::GetFlag(FLAGS_lookahead_fst)));
   return *fst;
 }
 
@@ -232,9 +228,9 @@ template <typename F>
 void BM_StringCompose(benchmark::State& bm_state) {
   using Arc = typename F::Arc;
 
-  ConstFst<Arc> f1(
-      *ABSL_DIE_IF_NULL(Fst<Arc>::Read(JoinPathRespectAbsolute(
-          std::string("."), absl::GetFlag(FLAGS_string_fst)))));
+  std::unique_ptr<Fst<Arc>> f1_ptr(Fst<Arc>::Read(JoinPathRespectAbsolute(
+      std::string("."), absl::GetFlag(FLAGS_string_fst))));
+  ConstFst<Arc> f1(*ABSL_DIE_IF_NULL(f1_ptr.get()));
   F f2(GetFst2<Arc>());
   f1.Properties(kFstProperties, true);
   f2.Properties(kFstProperties, true);
