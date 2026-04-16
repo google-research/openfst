@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 #include "openfst/lib/arc.h"
 #include "openfst/lib/fst.h"
@@ -212,8 +213,7 @@ class ArcIterator<ComplementFst<Arc>> : public ArcIteratorBase<Arc> {
 
   ArcIterator(const ComplementFst<Arc>& fst, StateId s) : s_(s), pos_(0) {
     if (s_ != 0) {
-      aiter_ =
-          std::make_unique<ArcIterator<Fst<Arc>>>(*fst.GetImpl()->fst_, s - 1);
+      aiter_.emplace(*fst.GetImpl()->fst_, s - 1);
     }
   }
 
@@ -266,7 +266,7 @@ class ArcIterator<ComplementFst<Arc>> : public ArcIteratorBase<Arc> {
   void SetFlags(uint8_t, uint8_t) final {}
 
  private:
-  std::unique_ptr<ArcIterator<Fst<Arc>>> aiter_;
+  std::optional<ArcIterator<Fst<Arc>>> aiter_;
   StateId s_;
   size_t pos_;
   mutable Arc arc_;

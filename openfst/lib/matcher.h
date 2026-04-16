@@ -536,7 +536,7 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
   Arc loop_;           // The implicit loop itself.
   bool current_loop_;  // Is the current arc the implicit loop?
   bool error_;         // Error encountered?
-  std::unique_ptr<ArcIterator<FST>> aiter_;
+  mutable std::optional<ArcIterator<FST>> aiter_;
   std::shared_ptr<StateTable> state_table_;  // Table from state to label table.
   LabelTable* label_table_;  // Pointer to current state's label table.
   typename LabelTable::iterator label_it_;   // Position for label.
@@ -549,7 +549,7 @@ void HashMatcher<FST>::SetState(typename FST::Arc::StateId s) {
   // Resets everything for the state.
   state_ = s;
   loop_.nextstate = state_;
-  aiter_ = std::make_unique<ArcIterator<FST>>(fst_, state_);
+  aiter_.emplace(fst_, state_);
   if (match_type_ == MATCH_NONE) {
     FSTERROR() << "HashMatcher: Bad match type";
     error_ = true;

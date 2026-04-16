@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -778,8 +779,7 @@ class ReplaceAccumulator {
       offset_ = 0;
       offset_weight_ = Weight::Zero();
     }
-    aiter_ = std::make_unique<ArcIterator<Fst<Arc>>>(*data_->GetFst(fst_id_),
-                                                     tuple.fst_state);
+    aiter_.emplace(*data_->GetFst(fst_id_), tuple.fst_state);
   }
 
   Weight Sum(Weight w, Weight v) const {
@@ -792,7 +792,7 @@ class ReplaceAccumulator {
     if (error_) return Weight::NoWeight();
     auto sum = begin == end ? Weight::Zero()
                             : data_->GetAccumulator(fst_id_)->Sum(
-                                  w, aiter_.get(), begin ? begin - offset_ : 0,
+                                  w, &*aiter_, begin ? begin - offset_ : 0,
                                   end - offset_);
     if (begin == 0 && end != 0 && offset_ > 0) sum = Sum(offset_weight_, sum);
     return sum;
@@ -806,7 +806,7 @@ class ReplaceAccumulator {
   Label fst_id_;
   size_t offset_;
   Weight offset_weight_;
-  std::unique_ptr<ArcIterator<Fst<Arc>>> aiter_;
+  mutable std::optional<ArcIterator<Fst<Arc>>> aiter_;
   bool error_;
 };
 
@@ -896,13 +896,13 @@ class SafeReplaceAccumulator {
     ArcIteratorPtr(const ArcIteratorPtr& copy) {}
 
     void Set(const Fst<Arc>& fst, StateId state_id) {
-      ptr_ = std::make_unique<ArcIterator<Fst<Arc>>>(fst, state_id);
+      ptr_.emplace(fst, state_id);
     }
 
-    ArcIterator<Fst<Arc>>* get() { return ptr_.get(); }
+    ArcIterator<Fst<Arc>>* get() { return &*ptr_; }
 
    private:
-    std::unique_ptr<ArcIterator<Fst<Arc>>> ptr_;
+    std::optional<ArcIterator<Fst<Arc>>> ptr_;
   };
 
   Accumulator* GetAccumulator(size_t i) { return &accumulators_[i]; }

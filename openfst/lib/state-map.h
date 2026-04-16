@@ -430,9 +430,7 @@ class IdentityStateMapper {
 
   Weight Final(StateId state) const { return fst_.Final(state); }
 
-  void SetState(StateId state) {
-    aiter_ = std::make_unique<ArcIterator<Fst<Arc>>>(fst_, state);
-  }
+  void SetState(StateId state) { aiter_.emplace(fst_, state); }
 
   bool Done() const { return aiter_->Done(); }
 
@@ -452,7 +450,7 @@ class IdentityStateMapper {
 
  private:
   const Fst<Arc>& fst_;
-  std::unique_ptr<ArcIterator<Fst<Arc>>> aiter_;
+  std::optional<ArcIterator<Fst<Arc>>> aiter_;
 };
 
 template <class Arc>
