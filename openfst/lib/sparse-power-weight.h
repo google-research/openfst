@@ -85,7 +85,7 @@ class SparsePowerWeight : public SparseTupleWeight<W, K> {
   static const std::string& Type() {
     static const absl::NoDestructor<std::string> type([] {
       std::string type = W::Type() + "_^n";
-      if (sizeof(K) != sizeof(uint32_t)) {
+      if constexpr (sizeof(K) != sizeof(uint32_t)) {
         type += "_" + std::to_string(CHAR_BIT * sizeof(K));
       }
       return type;

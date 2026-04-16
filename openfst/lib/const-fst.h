@@ -69,7 +69,7 @@ class ConstFstImpl : public FstImpl<A> {
 
   ConstFstImpl() {
     std::string type = "const";
-    if (sizeof(Unsigned) != sizeof(uint32_t)) {
+    if constexpr (sizeof(Unsigned) != sizeof(uint32_t)) {
       type += std::to_string(CHAR_BIT * sizeof(Unsigned));
     }
     SetType(type);
@@ -148,7 +148,7 @@ class ConstFstImpl : public FstImpl<A> {
 template <class Arc, class Unsigned>
 ConstFstImpl<Arc, Unsigned>::ConstFstImpl(const Fst<Arc>& fst) {
   std::string type = "const";
-  if (sizeof(Unsigned) != sizeof(uint32_t)) {
+  if constexpr (sizeof(Unsigned) != sizeof(uint32_t)) {
     type += std::to_string(CHAR_BIT * sizeof(Unsigned));
   }
   SetType(type);
@@ -351,7 +351,7 @@ bool ConstFst<Arc, Unsigned>::WriteFst(const FST& fst, std::ostream& strm,
   hdr.SetNumStates(num_states);
   hdr.SetNumArcs(num_arcs);
   std::string type = "const";
-  if (sizeof(Unsigned) != sizeof(uint32_t)) {
+  if constexpr (sizeof(Unsigned) != sizeof(uint32_t)) {
     type += std::to_string(CHAR_BIT * sizeof(Unsigned));
   }
   const auto properties =
