@@ -56,7 +56,7 @@ TEST(CategorialWeight, RightTest) {
 }  // namespace
 }  // namespace fst
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
                                             : time(nullptr);

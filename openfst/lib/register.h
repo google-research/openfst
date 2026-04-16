@@ -42,8 +42,7 @@ class FstRegisterer;
 // This class represents a single entry in a FstRegister
 template <class Arc>
 struct FstRegisterEntry {
-  using Reader = Fst<Arc>* (*)(std::istream & istrm,
-                               const FstReadOptions& opts);
+  using Reader = Fst<Arc>* (*)(std::istream& istrm, const FstReadOptions& opts);
   using Converter = Fst<Arc>* (*)(const Fst<Arc>& fst);
 
   Reader reader;

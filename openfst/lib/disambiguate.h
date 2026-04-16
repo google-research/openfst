@@ -412,10 +412,9 @@ void Disambiguator<Arc>::PreDisambiguate(const ExpandedFst<Arc>& ifst,
         std::vector<Weight> idistance, odistance;
         ShortestDistance(ifst, &idistance, true);
         const DeterminizeFst<Arc> dfst(ifst, &idistance, &odistance, nopts);
-        PruneOptions< Arc, AnyArcFilter<Arc>> popts(opts.weight_threshold,
-                                                     opts.state_threshold,
-                                                     AnyArcFilter<Arc>(),
-                                                     &odistance);
+        PruneOptions<Arc, AnyArcFilter<Arc>> popts(
+            opts.weight_threshold, opts.state_threshold, AnyArcFilter<Arc>(),
+            &odistance);
         Prune(dfst, ofst, popts, &state_map);
       } else {
         const VectorFst<Arc> dfst{DeterminizeFst<Arc>(ifst, nopts)};

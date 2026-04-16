@@ -99,9 +99,9 @@ template <class M1, class M2, class Filter = SequenceComposeFilter<M1, M2>,
               typename M1::Arc, typename Filter::FilterState>,
           class CacheStore = DefaultCacheStore<typename M1::Arc>>
 struct ComposeFstImplOptions : public CacheImplOptions<CacheStore> {
-  M1* matcher1;    // FST1 matcher (see matcher.h)....
-  M2* matcher2;    // FST2 matcher.
-  Filter* filter;  // Composition filter (see compose-filter.h).
+  M1* matcher1;             // FST1 matcher (see matcher.h)....
+  M2* matcher2;             // FST2 matcher.
+  Filter* filter;           // Composition filter (see compose-filter.h).
   StateTable* state_table;  // Composition state table (see state-table.h).
   bool own_state_table;     // ComposeFstImpl takes ownership of 'state_table'?
   bool allow_noncommute;    // Allow non-commutative weights

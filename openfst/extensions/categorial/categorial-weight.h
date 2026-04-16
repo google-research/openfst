@@ -118,7 +118,7 @@ class Category {
 
   // A category derived from a slice of another category
   template <typename Iter>
-  Category(const Iter &begin, const Iter &end, int dir = kLeftDivision) {
+  Category(const Iter& begin, const Iter& end, int dir = kLeftDivision) {
     first_ = 0;
     one_ = false;
     direction_ = dir;
@@ -231,8 +231,8 @@ Category<T> Division(Category<T> first, Category<T> second) {
 // structures.
 template <class T>
 void BuildSlashesDashes(size_t c_size, std::vector<T> cat,
-                        std::list<int> *dashes_slashes, std::set<int> *dashes,
-                        std::set<int> *slashes) {
+                        std::list<int>* dashes_slashes, std::set<int>* dashes,
+                        std::set<int>* slashes) {
   std::vector<int> matching_paren(c_size);
   // Stack of matching brackets.
   std::stack<int> brackets;
@@ -376,7 +376,7 @@ std::vector<T> Reduction(std::vector<T> cat, std::set<int> dashes,
             std::list<int> new_dashes_slashes;
             std::set<int> new_dashes;
             std::set<int> new_slashes;
-            for (const int &n_d : dashes_slashes) {
+            for (const int& n_d : dashes_slashes) {
               if (n_d > end_first - reduction_length && n_d < to_end) {
                 // Here we do nothing: we are inside an already reduced area.
               } else if (n_d < end_first - reduction_length) {
@@ -487,14 +487,14 @@ Category<T> ReverseCat(Category<T> c) {
 template <typename T>
 class CategoryIterator {
  public:
-  explicit CategoryIterator(const Category<T> &w)
+  explicit CategoryIterator(const Category<T>& w)
       : first_(w.first_),
         rest_(w.rest_),
         one_(w.one_),
         init_(true),
         iter_(rest_.begin()) {}
 
-  const T &Value() const { return init_ ? first_ : *iter_; }
+  const T& Value() const { return init_ ? first_ : *iter_; }
   const bool Value_One() const { return one_; }
 
   bool Done() const {
@@ -519,8 +519,8 @@ class CategoryIterator {
   }
 
  private:
-  const T &first_;
-  const std::list<T> &rest_;
+  const T& first_;
+  const std::list<T>& rest_;
   const bool one_;
   bool init_;  // Is it in the initialized state?
   typename std::list<T>::const_iterator iter_;
@@ -530,7 +530,7 @@ class CategoryIterator {
 template <typename T>
 class CategoryReverseIterator {
  public:
-  explicit CategoryReverseIterator(const Category<T> &w)
+  explicit CategoryReverseIterator(const Category<T>& w)
       : first_(w.first_),
         rest_(w.rest_),
         fin_(first_ == 0),
@@ -538,7 +538,7 @@ class CategoryReverseIterator {
 
   bool Done() const { return fin_; }
 
-  const T &Value() const { return iter_ == rest_.rend() ? first_ : *iter_; }
+  const T& Value() const { return iter_ == rest_.rend() ? first_ : *iter_; }
 
   void Next() {
     if (iter_ == rest_.rend()) {
@@ -554,8 +554,8 @@ class CategoryReverseIterator {
   }
 
  private:
-  const T &first_;
-  const std::list<T> &rest_;
+  const T& first_;
+  const std::list<T>& rest_;
   bool fin_;  // Is it in the initialized state?
   typename std::list<T>::const_reverse_iterator iter_;
 };  // class CategoryReverseIterator
@@ -598,8 +598,8 @@ template <typename T, CategoryType C = CategoryType::LEFT>
 class CategorialWeight;
 
 template <typename T, CategoryType C>
-bool operator==(const CategorialWeight<T, C> &w1,
-                const CategorialWeight<T, C> &w2);
+bool operator==(const CategorialWeight<T, C>& w1,
+                const CategorialWeight<T, C>& w2);
 
 template <typename T, CategoryType C>
 class CategorialWeight {
@@ -607,7 +607,7 @@ class CategorialWeight {
   using ReverseWeight = CategorialWeight<T, ReverseCategoryType(C)>;
 
   friend bool operator==
-      <>(const CategorialWeight<T, C> &w1, const CategorialWeight<T, C> &w2);
+      <>(const CategorialWeight<T, C>& w1, const CategorialWeight<T, C>& w2);
 
   explicit CategorialWeight(bool free = false) : value_(Category<T>()) {
     if (free) value_.set_one(true);
@@ -619,31 +619,31 @@ class CategorialWeight {
   CategorialWeight(Category<T> category, Category<T> history)
       : value_(category), history_(history) {}
 
-  static const CategorialWeight<T, C> &NoWeight() {
+  static const CategorialWeight<T, C>& NoWeight() {
     Category<T> no_weight_cat(kCategoryBad);
     static const CategorialWeight<T, C> no_weight(no_weight_cat);
     return no_weight;
   }
 
-  static const CategorialWeight<T, C> &Zero() {
+  static const CategorialWeight<T, C>& Zero() {
     static const CategorialWeight<T, C> zero;
     return zero;
   }
 
-  static const CategorialWeight<T, C> &One() {
+  static const CategorialWeight<T, C>& One() {
     static const CategorialWeight<T, C> one(true);
     return one;
   }
 
-  static const std::string &Type() {
+  static const std::string& Type() {
     static const absl::NoDestructor<std::string> type(
         C == CategoryType::LEFT ? "category" : "right_category");
     return *type;
   }
 
   bool Member() const;
-  std::istream &Read(std::istream &strm);
-  std::ostream &Write(std::ostream &strm) const;
+  std::istream& Read(std::istream& strm);
+  std::ostream& Write(std::ostream& strm) const;
   size_t Hash() const;
   ReverseWeight Reverse() const;
 
@@ -666,7 +666,7 @@ class CategorialWeight {
 };  // class CategorialWeight
 
 template <typename L, CategoryType S>
-inline std::istream &CategorialWeight<L, S>::Read(std::istream &strm) {
+inline std::istream& CategorialWeight<L, S>::Read(std::istream& strm) {
   value_.Clear();
   int32_t size;
   bool isone;
@@ -682,7 +682,7 @@ inline std::istream &CategorialWeight<L, S>::Read(std::istream &strm) {
 }
 
 template <typename L, CategoryType S>
-inline std::ostream &CategorialWeight<L, S>::Write(std::ostream &strm) const {
+inline std::ostream& CategorialWeight<L, S>::Write(std::ostream& strm) const {
   bool isone = value_.one();
   WriteType(strm, isone);
   int32_t size = value_.Size();
@@ -721,30 +721,30 @@ inline size_t CategorialWeight<T, C>::Hash() const {
 }
 
 template <typename T, CategoryType C>
-inline bool operator==(const CategorialWeight<T, C> &w1,
-                       const CategorialWeight<T, C> &w2) {
+inline bool operator==(const CategorialWeight<T, C>& w1,
+                       const CategorialWeight<T, C>& w2) {
   return Match(w1.Value(), w2.Value());
 }
 
 template <typename T, CategoryType C>
-inline bool operator!=(const CategorialWeight<T, C> &w1,
-                       const CategorialWeight<T, C> &w2) {
+inline bool operator!=(const CategorialWeight<T, C>& w1,
+                       const CategorialWeight<T, C>& w2) {
   return !(w1 == w2);
 }
 
 // TODO: Check why on very rare occasions the test fails here with a right
 // categorial weight.
 template <typename T, CategoryType C>
-inline bool ApproxEqual(const CategorialWeight<T, C> &w1,
-                        const CategorialWeight<T, C> &w2,
+inline bool ApproxEqual(const CategorialWeight<T, C>& w1,
+                        const CategorialWeight<T, C>& w2,
                         float delta = kDelta) {
   return w1 == w2;
 }
 
 // The stream operations are modeled closely on the StringWeight operations.
 template <typename T, CategoryType C>
-inline std::ostream &operator<<(std::ostream &strm,
-                                const CategorialWeight<T, C> &w) {
+inline std::ostream& operator<<(std::ostream& strm,
+                                const CategorialWeight<T, C>& w) {
   Category<T> v = w.Value();
   CategoryIterator<T> iter(v);
   if (w == CategorialWeight<T, C>::Zero()) {
@@ -763,7 +763,7 @@ inline std::ostream &operator<<(std::ostream &strm,
 }
 
 template <typename T, CategoryType C>
-inline std::istream &operator>>(std::istream &strm, CategorialWeight<T, C> &w) {
+inline std::istream& operator>>(std::istream& strm, CategorialWeight<T, C>& w) {
   std::string s;
   strm >> s;
   if (s == "Zero") {
@@ -796,8 +796,8 @@ inline std::istream &operator>>(std::istream &strm, CategorialWeight<T, C> &w) {
 // depending on the linearization of the weights. As described above, it uses
 // history_ for comparison
 template <typename T, CategoryType C>
-inline CategorialWeight<T, C> Plus(const CategorialWeight<T, C> &w1,
-                                   const CategorialWeight<T, C> &w2) {
+inline CategorialWeight<T, C> Plus(const CategorialWeight<T, C>& w1,
+                                   const CategorialWeight<T, C>& w2) {
   if (!w1.Member() || !w2.Member()) return CategorialWeight<T, C>::NoWeight();
   if (w1 == CategorialWeight<T, C>::Zero()) return w2;
   if (w2 == CategorialWeight<T, C>::Zero()) return w1;
@@ -830,8 +830,8 @@ inline CategorialWeight<T, C> Plus(const CategorialWeight<T, C> &w1,
 
 // As described above, this reduces values, but concatenates histories.
 template <typename T, CategoryType C>
-inline CategorialWeight<T, C> Times(const CategorialWeight<T, C> &w1,
-                                    const CategorialWeight<T, C> &w2) {
+inline CategorialWeight<T, C> Times(const CategorialWeight<T, C>& w1,
+                                    const CategorialWeight<T, C>& w2) {
   Category<T> w1_value = w1.Value();
   Category<T> w2_value = w2.Value();
   Category<T> w1_hist = w1.History();
@@ -859,8 +859,8 @@ inline CategorialWeight<T, C> Times(const CategorialWeight<T, C> &w1,
 // Division calls the underlying category division so it knows the inherent
 // direction.
 template <typename T, CategoryType C>
-inline CategorialWeight<T, C> Divide(const CategorialWeight<T, C> &w1,
-                                     const CategorialWeight<T, C> &w2,
+inline CategorialWeight<T, C> Divide(const CategorialWeight<T, C>& w1,
+                                     const CategorialWeight<T, C>& w2,
                                      DivideType typ) {
   Category<T> w1_value = w1.Value();
   Category<T> w2_value = w2.Value();

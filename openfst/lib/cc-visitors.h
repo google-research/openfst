@@ -174,10 +174,10 @@ class SccVisitor {
   uint64_t* props_;
   const Fst<Arc>* fst_;
   StateId start_;
-  StateId nstates_;  // State count.
-  StateId nscc_;     // SCC count.
+  StateId nstates_;                      // State count.
+  StateId nscc_;                         // SCC count.
   std::vector<bool> coaccess_internal_;  // Fallback storage for coaccess.
-  std::vector<StateId> dfnumber_;  // State discovery times.
+  std::vector<StateId> dfnumber_;        // State discovery times.
   std::vector<StateId>
       lowlink_;                // lowlink[state] == dfnumber[state] => SCC root
   std::vector<bool> onstack_;  // Is a state on the SCC stack?
