@@ -674,16 +674,16 @@ inline double KahanRealSum(double a, double b, double* c) {
 
 // The comments for Times(Tropical...) above apply here unchanged.
 template <class T>
-inline RealWeightTpl<T> Plus(const RealWeightTpl<T>& w1,
-                             const RealWeightTpl<T>& w2) {
+constexpr RealWeightTpl<T> Plus(const RealWeightTpl<T>& w1,
+                                const RealWeightTpl<T>& w2) {
   const T f1 = w1.Value();
   const T f2 = w2.Value();
   return RealWeightTpl<T>(f1 + f2);
 }
 
 template <class T>
-inline RealWeightTpl<T> Minus(const RealWeightTpl<T>& w1,
-                              const RealWeightTpl<T>& w2) {
+constexpr RealWeightTpl<T> Minus(const RealWeightTpl<T>& w1,
+                                 const RealWeightTpl<T>& w2) {
   // The comments for Divide(Tropical...) above apply here unchanged.
   const T f1 = w1.Value();
   const T f2 = w2.Value();
