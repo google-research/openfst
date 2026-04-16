@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/random.h"
 #include "benchmark/benchmark.h"

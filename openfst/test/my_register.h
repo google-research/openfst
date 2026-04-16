@@ -23,7 +23,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/generic-register.h"
-#include "openfst/lib/register.h"
 
 namespace fst {
 

@@ -32,6 +32,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "openfst/extensions/far/far-reader.h"
 #include "openfst/extensions/far/far.h"
 #include "openfst/extensions/far/getters.h"
 #include "openfst/lib/fst.h"

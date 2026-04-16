@@ -17,6 +17,7 @@
 #ifndef OPENFST_COMPAT_CHECKSUMMER_H_
 #define OPENFST_COMPAT_CHECKSUMMER_H_
 
+#include <cstddef>
 #include <string>
 
 #include "absl/strings/string_view.h"

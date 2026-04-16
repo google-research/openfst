@@ -36,6 +36,7 @@
 #include "openfst/extensions/far/far-type.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 

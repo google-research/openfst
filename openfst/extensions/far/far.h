@@ -31,8 +31,6 @@
 #include "openfst/extensions/far/far-writer.h"
 #include "openfst/extensions/far/fst-far-reader.h"
 #include "openfst/extensions/far/fst-far-writer.h"
-#include "openfst/extensions/far/fst-reader.h"
-#include "openfst/extensions/far/fst-writer.h"
 #include "openfst/extensions/far/stlist-far-reader.h"
 #include "openfst/extensions/far/stlist-far-writer.h"
 #include "openfst/extensions/far/stlist.h"

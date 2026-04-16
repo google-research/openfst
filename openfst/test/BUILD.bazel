@@ -318,7 +318,6 @@ cc_library(
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "//openfst/lib:util",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
@@ -333,7 +332,6 @@ cc_library(
     deps = [
         "//openfst/lib",
         "//openfst/lib:util",
-        "//openfst/lib:weight",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
     ],
@@ -2302,7 +2300,6 @@ cc_test(
         "//openfst/lib:weight",
         "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
         "@com_google_googletest//:gtest",
     ],

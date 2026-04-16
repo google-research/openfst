@@ -65,6 +65,7 @@ cc_library(
         "//openfst/lib:lib_lite",
         "//openfst/lib:util",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -124,6 +125,7 @@ cc_binary(
         "//openfst/test:test_main",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_benchmark//:benchmark",
         "@com_google_googletest//:gtest",
     ],

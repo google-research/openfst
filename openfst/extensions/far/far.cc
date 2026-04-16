@@ -22,6 +22,7 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/stlist.h"
 #include "openfst/extensions/far/sttable.h"
 #include "openfst/lib/arc.h"

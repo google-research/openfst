@@ -22,7 +22,6 @@
 
 #include <cstdint>
 
-#include "absl/base/attributes.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/fst.h"

@@ -31,7 +31,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-reader.h"
 #include "openfst/lib/fst.h"
 
 namespace fst {

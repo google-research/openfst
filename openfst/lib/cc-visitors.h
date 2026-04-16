@@ -20,7 +20,6 @@
 #ifndef OPENFST_LIB_CC_VISITORS_H_
 #define OPENFST_LIB_CC_VISITORS_H_
 
-#include <cstddef>
 #include <cstdint>
 #include <vector>
 

@@ -15,6 +15,8 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include "absl/flags/usage.h"
 #include "openfst/compat/init.h"
 #include "absl/flags/declare.h"

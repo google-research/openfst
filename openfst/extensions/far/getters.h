@@ -24,7 +24,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-type.h"
 
 namespace fst {
 namespace script {

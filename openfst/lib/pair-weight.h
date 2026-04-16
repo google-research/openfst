@@ -21,7 +21,6 @@
 #ifndef OPENFST_LIB_PAIR_WEIGHT_H_
 #define OPENFST_LIB_PAIR_WEIGHT_H_
 
-#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <istream>

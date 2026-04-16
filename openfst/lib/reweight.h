@@ -21,7 +21,6 @@
 #define OPENFST_LIB_REWEIGHT_H_
 
 #include <cstdint>
-#include <vector>
 
 #include "absl/types/span.h"
 #include "openfst/lib/fst.h"

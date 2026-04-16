@@ -18,6 +18,7 @@
 #include "openfst/extensions/special/sigma-fst.h"
 
 #include <cstdint>
+#include <string>
 
 #include "absl/flags/flag.h"
 #include "openfst/lib/arc.h"

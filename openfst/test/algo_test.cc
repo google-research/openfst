@@ -28,13 +28,8 @@
 #include "absl/log/log.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/cache.h"
-#include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
-#include "openfst/lib/lexicographic-weight.h"
-#include "openfst/lib/power-weight.h"
-#include "openfst/lib/string-weight.h"
 #include "openfst/lib/test-properties.h"
-#include "openfst/lib/weight.h"
 
 ABSL_FLAG(uint64_t, seed, 403, "random seed");
 ABSL_FLAG(int32_t, repeat, 25, "number of test repetitions");

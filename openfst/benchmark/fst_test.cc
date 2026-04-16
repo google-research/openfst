@@ -35,7 +35,6 @@
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/expanded-fst.h"
-#include "openfst/lib/matcher-fst.h"
 #include "openfst/lib/matcher.h"
 #include "openfst/lib/memory.h"
 #include "openfst/lib/properties.h"

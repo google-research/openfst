@@ -22,7 +22,8 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-reader.h"
+#include "openfst/extensions/far/far-writer.h"
 
 namespace fst {
 namespace internal {

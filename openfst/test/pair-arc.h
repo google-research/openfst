@@ -22,7 +22,6 @@
 #define OPENFST_TEST_PAIR_ARC_H_
 
 #include <string>
-#include <utility>
 
 #include "absl/base/no_destructor.h"
 #include "openfst/lib/arc.h"

@@ -25,7 +25,6 @@
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "openfst/extensions/far/farscript.h"
-#include "openfst/extensions/far/getters.h"
 #include "openfst/extensions/far/script-impl.h"
 
 ABSL_DECLARE_FLAG(std::string, begin_key);

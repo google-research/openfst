@@ -28,7 +28,7 @@
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
 #include "openfst/extensions/far/far-class.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/farscript.h"
 #include "openfst/extensions/far/getters.h"
 #include "openfst/lib/util.h"

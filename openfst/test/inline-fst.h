@@ -37,9 +37,7 @@
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
 #include "openfst/lib/fst.h"
-#include "openfst/lib/vector-fst.h"
 #include "openfst/script/compile-impl.h"
-#include "openfst/script/compile.h"
 
 namespace fst {
 template <class A>

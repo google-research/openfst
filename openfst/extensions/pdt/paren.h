@@ -32,6 +32,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "openfst/extensions/pdt/collection.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/util.h"

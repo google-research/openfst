@@ -18,7 +18,7 @@
 #include "openfst/extensions/ngram/ngram-fst.h"
 
 #include <cstdint>
-#include <fstream>
+#include <ios>
 #include <memory>
 #include <string>
 #include <vector>

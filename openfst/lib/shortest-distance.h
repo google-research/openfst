@@ -24,6 +24,7 @@
 #include <optional>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/equal.h"

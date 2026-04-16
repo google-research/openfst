@@ -25,6 +25,7 @@
 #include "absl/base/nullability.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/far.h"
 #include "openfst/extensions/far/script-impl.h"
 #include "openfst/lib/arc.h"

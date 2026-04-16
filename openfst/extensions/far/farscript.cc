@@ -26,6 +26,7 @@
 
 #include "absl/strings/string_view.h"
 #include "openfst/extensions/far/far-class.h"
+#include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/far.h"
 #include "openfst/extensions/far/info.h"
 #include "openfst/lib/arc.h"

@@ -20,7 +20,7 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-reader.h"
 #include "openfst/extensions/far/map-reduce.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"

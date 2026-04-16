@@ -27,7 +27,6 @@
 #include "openfst/extensions/far/fst-far-writer.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
-#include "openfst/lib/util.h"
 
 using ::testing::IsNull;
 

@@ -24,6 +24,7 @@
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "openfst/extensions/ngram/ngram-fst.h"
 #include "openfst/lib/arc.h"

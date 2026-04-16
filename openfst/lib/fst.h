@@ -39,6 +39,7 @@
 #include "absl/base/nullability.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"

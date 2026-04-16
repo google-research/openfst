@@ -20,6 +20,7 @@
 #include "openfst/lib/weight.h"
 
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <ostream>
 

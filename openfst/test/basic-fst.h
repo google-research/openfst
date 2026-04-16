@@ -32,8 +32,6 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
-#include "openfst/lib/expanded-fst.h"
-#include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/properties.h"

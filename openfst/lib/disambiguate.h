@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+#include "openfst/lib/arcfilter.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/cc-visitors.h"
 #include "openfst/lib/compose-filter.h"

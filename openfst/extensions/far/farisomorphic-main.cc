@@ -28,7 +28,6 @@
 #include "absl/log/log.h"
 #include "openfst/extensions/far/far-class.h"
 #include "openfst/extensions/far/farscript.h"
-#include "openfst/extensions/far/getters.h"
 #include "openfst/lib/util.h"
 
 ABSL_DECLARE_FLAG(std::string, begin_key);

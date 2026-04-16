@@ -170,8 +170,8 @@ fst_cc_library(
         ":far-reader",
         ":far-type",
         "//openfst/lib",
-        "//openfst/lib:file-stream-status",
         "//openfst/lib:file-util",
+        "//openfst/lib:util",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
     ],
@@ -204,8 +204,6 @@ fst_cc_library(
         ":far-writer",
         ":fst-far-reader",
         ":fst-far-writer",
-        ":fst-reader",
-        ":fst-writer",
         ":stlist-far-reader",
         ":stlist-far-writer",
         ":sttable",
@@ -242,6 +240,9 @@ cc_library(
         "script-impl.h",
     ],
     deps = [
+        ":far-reader",
+        ":far-type",
+        ":far-writer",
         ":lib",
         "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
@@ -266,6 +267,7 @@ cc_library(
     name = "farcreate-main",
     srcs = ["farcreate-main.cc"],
     deps = [
+        ":far-type",
         ":lib",
         ":script",
         "//openfst/compat:init",
@@ -282,6 +284,7 @@ cc_library(
     name = "farcompilestrings-main",
     srcs = ["farcompilestrings-main.cc"],
     deps = [
+        ":far-type",
         ":lib",
         ":script",
         "//openfst/compat:init",
@@ -299,6 +302,7 @@ cc_library(
     name = "farconvert-main",
     srcs = ["farconvert-main.cc"],
     deps = [
+        ":far-type",
         ":lib",
         ":script",
         "//openfst/compat:init",
@@ -314,6 +318,7 @@ cc_library(
     name = "farencode-main",
     srcs = ["farencode-main.cc"],
     deps = [
+        ":far-type",
         ":lib",
         ":script",
         "//openfst/compat:init",
@@ -330,7 +335,6 @@ cc_library(
     name = "farequal-main",
     srcs = ["farequal-main.cc"],
     deps = [
-        ":lib",
         ":script",
         "//openfst/compat:init",
         "//openfst/lib:util",
@@ -345,7 +349,6 @@ cc_library(
     name = "farextract-main",
     srcs = ["farextract-main.cc"],
     deps = [
-        ":lib",
         ":script",
         "//openfst/compat:init",
         "//openfst/lib:util",
@@ -358,7 +361,6 @@ cc_library(
     name = "farinfo-main",
     srcs = ["farinfo-main.cc"],
     deps = [
-        ":lib",
         ":script",
         "//openfst/compat:init",
         "@com_google_absl//absl/flags:flag",
@@ -370,7 +372,6 @@ cc_library(
     name = "farisomorphic-main",
     srcs = ["farisomorphic-main.cc"],
     deps = [
-        ":lib",
         ":script",
         "//openfst/compat:init",
         "//openfst/lib:util",
@@ -385,6 +386,7 @@ cc_library(
     name = "farprintstrings-main",
     srcs = ["farprintstrings-main.cc"],
     deps = [
+        ":far-type",
         ":lib",
         ":script",
         "//openfst/compat:init",
@@ -521,6 +523,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -544,6 +547,7 @@ cc_test(
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -565,7 +569,6 @@ cc_test(
         ":fst-far-writer",
         "//openfst/compat:file_path",
         "//openfst/lib",
-        "//openfst/lib:util",
         "//openfst/test:test_main",
         "@com_google_googletest//:gtest",
     ],

@@ -21,7 +21,6 @@
 #include <fcntl.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <new>
 
 #include "absl/base/nullability.h"

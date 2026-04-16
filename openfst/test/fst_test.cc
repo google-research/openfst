@@ -21,15 +21,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
-#include <ostream>
 #include <string>
 
 #include "gtest/gtest.h"
 #include "absl/base/no_destructor.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
-#include "absl/log/log.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"

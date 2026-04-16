@@ -19,7 +19,6 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "compat",
     hdrs = ["compat.h"],
-    deps = [":compat_memory"],
 )
 
 cc_library(

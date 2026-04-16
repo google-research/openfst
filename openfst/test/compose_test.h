@@ -25,7 +25,6 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
-#include "openfst/lib/arcsort.h"
 #include "openfst/lib/cache.h"
 #include "openfst/lib/compose-filter.h"
 #include "openfst/lib/compose.h"
@@ -39,7 +38,6 @@
 #include "openfst/script/compose.h"
 #include "openfst/script/equal.h"
 #include "openfst/script/fst-class.h"
-#include "openfst/script/weight-class.h"
 
 namespace fst {
 

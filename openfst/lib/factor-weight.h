@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "openfst/lib/cache.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/impl-to-fst.h"

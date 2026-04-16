@@ -28,7 +28,7 @@
 
 #include "openfst/compat/file_path.h"
 #include "absl/types/span.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-writer.h"
 #include "openfst/lib/fst.h"
 
 namespace fst {

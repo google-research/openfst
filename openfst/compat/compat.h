@@ -19,21 +19,9 @@
 #define OPENFST_COMPAT_COMPAT_H_
 
 #include <algorithm>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
 #include <cstring>
 #include <iterator>
-#include <memory>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <type_traits>
 #include <utility>
-
-#include "openfst/compat/compat_memory.h"
 
 namespace fst {
 

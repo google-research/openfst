@@ -18,7 +18,8 @@
 #include <memory>
 
 #include "absl/strings/string_view.h"
-#include "openfst/extensions/far/far.h"
+#include "openfst/extensions/far/far-reader.h"
+#include "openfst/extensions/far/far-writer.h"
 #include "openfst/extensions/far/map-reduce.h"
 #include "openfst/lib/encode.h"
 #include "openfst/lib/fst.h"

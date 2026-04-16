@@ -21,7 +21,7 @@
 #define OPENFST_TEST_FST_TEST_H_
 
 #include <cstddef>
-#include <fstream>
+#include <ios>
 #include <memory>
 #include <string>
 
