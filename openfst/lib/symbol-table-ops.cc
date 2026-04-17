@@ -27,7 +27,9 @@
 #include <vector>
 
 #include "absl/base/nullability.h"
+#include "absl/container/btree_map.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/symbol-table.h"
@@ -40,8 +42,8 @@ SymbolTable* MergeSymbolTable(const SymbolTable& left, const SymbolTable& right,
   // MergeSymbolTable detects several special cases  It will return a reference
   // copied version of SymbolTable of left or right if either symbol table is
   // a superset of the other.
-  std::unique_ptr<SymbolTable> merged(
-      new SymbolTable("merge_" + left.Name() + "_" + right.Name()));
+  auto merged = std::make_unique<SymbolTable>(
+      absl::StrCat("merge_", left.Name(), "_", right.Name()));
   // Copies everything from the left symbol table.
   bool left_has_all = true;
   bool right_has_all = true;
@@ -88,7 +90,7 @@ SymbolTable* MergeSymbolTable(const SymbolTable& left, const SymbolTable& right,
 }
 
 SymbolTable* CompactSymbolTable(const SymbolTable& syms) {
-  std::map<int64_t, std::string> sorted;
+  absl::btree_map<int64_t, std::string> sorted;
   for (const auto& stitem : syms) {
     sorted[stitem.Label()] = stitem.Symbol();
   }
@@ -137,7 +139,7 @@ bool AddAuxiliarySymbols(const std::string& prefix, int64_t start_label,
                          int64_t nlabels, SymbolTable* syms) {
   for (int64_t i = 0; i < nlabels; ++i) {
     auto index = i + start_label;
-    if (index != syms->AddSymbol(prefix + std::to_string(i), index)) {
+    if (index != syms->AddSymbol(absl::StrCat(prefix, i), index)) {
       FSTERROR() << "AddAuxiliarySymbols: Symbol table clash";
       return false;
     }
