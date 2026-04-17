@@ -3,6 +3,7 @@
 # OpenFst Library
 
 [![GitHub license](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/google-research/nisaba/blob/main/LICENSE)
+[![C++ version](https://img.shields.io/badge/C++17-blue.svg?style=flat&logo=c%2B%2B)](https://en.cppreference.com/w/cpp/17)
 [![Bazel (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml)
 [![CMake (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml)
 [![Bazel (arm64 macOS)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml)
