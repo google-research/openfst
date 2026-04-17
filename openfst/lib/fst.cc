@@ -28,6 +28,7 @@
 #include "absl/base/nullability.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/util.h"
@@ -100,13 +101,11 @@ bool FstHeader::Write(std::ostream& strm, absl::string_view) const {
 }
 
 std::string FstHeader::DebugString() const {
-  std::ostringstream ostrm;
-  ostrm << "fsttype: \"" << fsttype_ << "\" arctype: \"" << arctype_
-        << "\" version: \"" << version_ << "\" flags: \"" << flags_
-        << "\" properties: \"" << properties_ << "\" start: \"" << start_
-        << "\" numstates: \"" << numstates_ << "\" numarcs: \"" << numarcs_
-        << "\"";
-  return ostrm.str();
+  return absl::StrCat("fsttype: \"", fsttype_, "\" arctype: \"", arctype_,
+                      "\" version: \"", version_, "\" flags: \"", flags_,
+                      "\" properties: \"", properties_, "\" start: \"", start_,
+                      "\" numstates: \"", numstates_, "\" numarcs: \"",
+                      numarcs_, "\"");
 }
 
 FstReadOptions::FstReadOptions(const absl::string_view source,
@@ -135,15 +134,13 @@ FstReadOptions::FileReadMode FstReadOptions::ReadMode(absl::string_view mode) {
 }
 
 std::string FstReadOptions::DebugString() const {
-  std::ostringstream ostrm;
-  ostrm << "source: \"" << source << "\" mode: \""
-        << (mode == READ ? "READ" : "MAP") << "\" read_isymbols: \""
-        << (read_isymbols ? "true" : "false") << "\" read_osymbols: \""
-        << (read_osymbols ? "true" : "false") << "\" header: \""
-        << (header ? "set" : "null") << "\" isymbols: \""
-        << (isymbols ? "set" : "null") << "\" osymbols: \""
-        << (osymbols ? "set" : "null") << "\"";
-  return ostrm.str();
+  return absl::StrCat(
+      "source: \"", source, "\" mode: \"", (mode == READ ? "READ" : "MAP"),
+      "\" read_isymbols: \"", (read_isymbols ? "true" : "false"),
+      "\" read_osymbols: \"", (read_osymbols ? "true" : "false"),
+      "\" header: \"", (header ? "set" : "null"), "\" isymbols: \"",
+      (isymbols ? "set" : "null"), "\" osymbols: \"",
+      (osymbols ? "set" : "null"), "\"");
 }
 
 }  // namespace fst
