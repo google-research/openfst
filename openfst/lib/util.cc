@@ -19,7 +19,6 @@
 
 #include "openfst/lib/util.h"
 
-#include <cctype>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
@@ -33,6 +32,7 @@
 #include "absl/base/nullability.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/string_view.h"
 
 // Utility flag definitions
@@ -74,9 +74,9 @@ int64_t StrToInt64(absl::string_view s, absl::string_view source, size_t nline,
 }
 
 void ConvertToLegalCSymbol(std::string* s) {
-  for (auto it = s->begin(); it != s->end(); ++it) {
-    if (!isalnum(*it)) {
-      *it = '_';
+  for (auto& c : *s) {
+    if (!absl::ascii_isalnum(c)) {
+      c = '_';
     }
   }
 }
