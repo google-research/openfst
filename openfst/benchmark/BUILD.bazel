@@ -175,7 +175,6 @@ cc_binary(
     name = "memory_test",
     testonly = True,
     srcs = ["memory_test.cc"],
-    data = [],
     linkstatic = True,
     deps = [
         ":benchmark_main",
@@ -192,6 +191,7 @@ cc_binary(
     testonly = True,
     srcs = ["minimize_test.cc"],
     data = [
+        "testdata/lattice.fst",
         "testdata/lexicon_disamb.fst",
     ],
     linkstatic = True,

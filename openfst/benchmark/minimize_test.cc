@@ -33,9 +33,13 @@
 #include "openfst/lib/properties.h"
 #include "openfst/lib/vector-fst.h"
 
-ABSL_FLAG(std::string, input_fst,
+ABSL_FLAG(std::string, cyclic_fst,
           "openfst/benchmark/testdata/lexicon_disamb.fst",
-          "FST to minimize");
+          "Cyclic FST to minimize.");
+
+ABSL_FLAG(std::string, acyclic_fst,
+          "openfst/benchmark/testdata/lattice.fst",
+          "Acyclic FST to minimize.");
 
 namespace fst {
 namespace {
@@ -43,14 +47,9 @@ namespace {
 using Arc = StdArc;
 using FstType = StdFst;
 
-// Tests minimization of cyclic transducer.
-static void BM_MinimizeCyclicTransducer(benchmark::State& state) {
-  std::unique_ptr<const FstType> disamb(
-      FstType::Read(JoinPathRespectAbsolute(
-          std::string("."), absl::GetFlag(FLAGS_input_fst))));
-  CHECK(disamb != nullptr);
+void MinimizeTransducer(const StdFst& fst, benchmark::State& state) {
   VectorFst<Arc> det;
-  Determinize(*disamb, &det);
+  Determinize(fst, &det);
   det.Properties(kFstProperties, true);
   for (auto _ : state) {
     VectorFst<Arc> min(det);
@@ -58,7 +57,30 @@ static void BM_MinimizeCyclicTransducer(benchmark::State& state) {
   }
 }
 
+// Tests minimization of cyclic transducer.
+static void BM_MinimizeCyclicTransducer(benchmark::State& state) {
+  std::unique_ptr<const FstType> cyclic(
+      FstType::Read(JoinPathRespectAbsolute(
+          std::string("."), absl::GetFlag(FLAGS_cyclic_fst))));
+  CHECK(cyclic != nullptr);
+  const int64_t props = cyclic->Properties(kFstProperties, true);
+  CHECK(props & kCyclic);
+  MinimizeTransducer(*cyclic, state);
+}
+
+// Tests minimization of acyclic transducer.
+static void BM_MinimizeAcyclicTransducer(benchmark::State& state) {
+  std::unique_ptr<const FstType> acyclic(
+      FstType::Read(JoinPathRespectAbsolute(
+          std::string("."), absl::GetFlag(FLAGS_acyclic_fst))));
+  CHECK(acyclic != nullptr);
+  const int64_t props = acyclic->Properties(kFstProperties, true);
+  CHECK(props & kAcyclic);
+  MinimizeTransducer(*acyclic, state);
+}
+
 BENCHMARK(BM_MinimizeCyclicTransducer);
+BENCHMARK(BM_MinimizeAcyclicTransducer);
 
 }  // namespace
 }  // namespace fst
