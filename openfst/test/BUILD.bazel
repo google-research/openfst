@@ -2429,6 +2429,19 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "verify_test",
+    srcs = ["verify_test.cc"],
+    linkstatic = True,
+    deps = [
+        "//openfst/lib:lib_lite",
+        "//openfst/lib:symbol-table",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 # Helper for generic_register_dso_test.sh.
 
 cc_binary(
