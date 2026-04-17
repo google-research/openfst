@@ -90,6 +90,7 @@ TEST(FstTest, VectorFstStdArc) {
     std_vector_tester.TestCopy();
     std_vector_tester.TestIO();
     std_vector_tester.TestMutable();
+    std_vector_tester.TestArcIteratorMove();
   }
 }
 
@@ -115,6 +116,7 @@ TEST(FstTest, ConstFstStdArc) {
   std_const_tester.TestExpanded();
   std_const_tester.TestCopy();
   std_const_tester.TestIO();
+  std_const_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, CompactArcFstStdArcTrivialArcCompactor) {
@@ -124,6 +126,7 @@ TEST(FstTest, CompactArcFstStdArcTrivialArcCompactor) {
   std_compact_tester.TestExpanded();
   std_compact_tester.TestCopy();
   std_compact_tester.TestIO();
+  std_compact_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, CompactFstStdArcTrivialCompactor) {
@@ -134,6 +137,7 @@ TEST(FstTest, CompactFstStdArcTrivialCompactor) {
     std_compact_tester.TestExpanded();
     std_compact_tester.TestCopy();
     std_compact_tester.TestIO();
+    std_compact_tester.TestArcIteratorMove();
   }
 }
 
@@ -157,6 +161,7 @@ TEST(FstTest, VectorFstCustomArc) {
   std_vector_tester.TestCopy();
   std_vector_tester.TestIO();
   std_vector_tester.TestMutable();
+  std_vector_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, ConstFstCustomArc) {
@@ -165,6 +170,7 @@ TEST(FstTest, ConstFstCustomArc) {
   std_const_tester.TestExpanded();
   std_const_tester.TestCopy();
   std_const_tester.TestIO();
+  std_const_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, CompactArcFstCustomArcTrivialArcCompactor) {
@@ -175,6 +181,7 @@ TEST(FstTest, CompactArcFstCustomArcTrivialArcCompactor) {
     std_compact_tester.TestExpanded();
     std_compact_tester.TestCopy();
     std_compact_tester.TestIO();
+    std_compact_tester.TestArcIteratorMove();
   }
 }
 
@@ -198,6 +205,7 @@ TEST(FstTest, CompactFstCustomArcTrivialCompactor) {
     std_compact_tester.TestExpanded();
     std_compact_tester.TestCopy();
     std_compact_tester.TestIO();
+    std_compact_tester.TestArcIteratorMove();
   }
 
   // TODO: Add tests on default-constructed Fst.
@@ -209,6 +217,7 @@ TEST(FstTest, ConstFstStdArcUint16) {
   std_const_tester.TestExpanded();
   std_const_tester.TestCopy();
   std_const_tester.TestIO();
+  std_const_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, CompactArcFstStdArcTrivialArcCompactorUint16) {
@@ -218,6 +227,7 @@ TEST(FstTest, CompactArcFstStdArcTrivialArcCompactorUint16) {
   std_compact_tester.TestExpanded();
   std_compact_tester.TestCopy();
   std_compact_tester.TestIO();
+  std_compact_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, StdArcLookAheadFst) {
@@ -225,6 +235,7 @@ TEST(FstTest, StdArcLookAheadFst) {
   std_matcher_tester.TestBase();
   std_matcher_tester.TestExpanded();
   std_matcher_tester.TestCopy();
+  std_matcher_tester.TestArcIteratorMove();
 }
 
 TEST(FstTest, EditFstStdArc) {
@@ -234,6 +245,7 @@ TEST(FstTest, EditFstStdArc) {
   std_edit_tester.TestAssign();
   std_edit_tester.TestCopy();
   std_edit_tester.TestMutable();
+  std_edit_tester.TestArcIteratorMove();
 }
 
 }  // namespace

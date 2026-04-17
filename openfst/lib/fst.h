@@ -35,6 +35,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "absl/base/nullability.h"
 #include "absl/flags/declare.h"
@@ -491,8 +492,24 @@ struct ArcIteratorData {
   ArcIteratorData() = default;
 
   ArcIteratorData(const ArcIteratorData&) = delete;
-
   ArcIteratorData& operator=(const ArcIteratorData&) = delete;
+
+  ArcIteratorData(ArcIteratorData&& other) noexcept
+      : base(std::move(other.base)),
+        arcs(std::exchange(other.arcs, nullptr)),
+        narcs(std::exchange(other.narcs, 0)),
+        ref_count(std::exchange(other.ref_count, nullptr)) {}
+
+  ArcIteratorData& operator=(ArcIteratorData&& other) noexcept {
+    if (ref_count) {
+      --(*ref_count);
+    }
+    base = std::move(other.base);
+    arcs = std::exchange(other.arcs, nullptr);
+    narcs = std::exchange(other.narcs, 0);
+    ref_count = std::exchange(other.ref_count, nullptr);
+    return *this;
+  }
 
   std::unique_ptr<ArcIteratorBase<Arc>>
       base;                   // Specialized iterator if non-null.
@@ -524,6 +541,9 @@ class ArcIterator {
   ArcIterator(const FST& fst, StateId s) { fst.InitArcIterator(s, &data_); }
 
   explicit ArcIterator(const ArcIteratorData<Arc>& data) = delete;
+
+  ArcIterator(ArcIterator&& other) noexcept = default;
+  ArcIterator& operator=(ArcIterator&& other) noexcept = default;
 
   ~ArcIterator() {
     if (data_.ref_count) {

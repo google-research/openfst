@@ -303,6 +303,42 @@ class FstTester {
 
   void TestIO() const { TestIO(*testfst_); }
 
+  // Verifies the movable properties of arc iterator.
+  template <class G>
+  void TestArcIteratorMove(const G& fst) const {
+    // This test supports FSTs with at least 2 states.
+    if (fst.NumStates() < 2) return;
+
+    StateId s = kNoStateId;
+    for (StateIterator<G> siter(fst); !siter.Done(); siter.Next()) {
+      if (fst.NumArcs(siter.Value()) >= 2) {
+        s = siter.Value();
+        break;
+      }
+    }
+    ASSERT_NE(s, kNoStateId) << "No state with at least 2 arcs found";
+
+    ArcIterator<G> iter1(fst, s);
+    ASSERT_FALSE(iter1.Done());
+    EXPECT_EQ(iter1.Value().ilabel, 1);
+
+    // Tests move constructor.
+    ArcIterator<G> iter2(std::move(iter1));
+    ASSERT_FALSE(iter2.Done());
+    EXPECT_EQ(iter2.Value().ilabel, 1);
+    iter2.Next();
+    ASSERT_FALSE(iter2.Done());
+    EXPECT_EQ(iter2.Value().ilabel, 2);
+
+    // Tests move assignment.
+    ArcIterator<G> iter3(fst, s);
+    iter3 = std::move(iter2);
+    ASSERT_FALSE(iter3.Done());
+    EXPECT_EQ(iter3.Value().ilabel, 2);
+  }
+
+  void TestArcIteratorMove() const { TestArcIteratorMove(*testfst_); }
+
  private:
   // This constructs test FSTs. Given a mutable FST, will leave
   // the FST as follows:
