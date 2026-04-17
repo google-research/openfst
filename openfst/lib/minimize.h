@@ -127,9 +127,6 @@ class CyclicMinimizer {
   using Weight = typename Arc::Weight;
   using RevArc = ReverseArc<Arc>;
   using RevArcIter = ArcIterator<Fst<RevArc>>;
-  // TODO: Consider storing ArcIterator<> directly rather than in
-  // unique_ptr when ArcIterator<Fst<>> is made movable.
-  using RevArcIterPtr = std::unique_ptr<RevArcIter>;
 
   explicit CyclicMinimizer(const ExpandedFst<Arc>& fst) {
     Initialize(fst);
@@ -173,16 +170,15 @@ class CyclicMinimizer {
   class ArcIterCompare {
    public:
     // Compares two iterators based on their input labels.
-    bool operator()(const RevArcIterPtr& x, const RevArcIterPtr& y) const {
-      const auto& xarc = x->Value();
-      const auto& yarc = y->Value();
+    bool operator()(const RevArcIter& x, const RevArcIter& y) const {
+      const auto& xarc = x.Value();
+      const auto& yarc = y.Value();
       return xarc.ilabel > yarc.ilabel;
     }
   };
 
   using ArcIterQueue =
-      std::priority_queue<RevArcIterPtr, std::vector<RevArcIterPtr>,
-                          ArcIterCompare>;
+      std::priority_queue<RevArcIter, std::vector<RevArcIter>, ArcIterCompare>;
 
  private:
   // Prepartitions the space into equivalence classes. We ensure that final and
@@ -250,7 +246,7 @@ class CyclicMinimizer {
     for (PartitionIterator<StateId> siter(P_, C); !siter.Done(); siter.Next()) {
       const auto s = siter.Value();
       if (Tr_.NumArcs(s + 1)) {
-        aiter_queue_->push(std::make_unique<RevArcIter>(Tr_, s + 1));
+        aiter_queue_->push(RevArcIter(Tr_, s + 1));
       }
     }
     // Now pops arc iterator from queue, splits entering equivalence class, and
@@ -258,22 +254,22 @@ class CyclicMinimizer {
     Label prev_label = -1;
     while (!aiter_queue_->empty()) {
       // NB: There is no way to "move" out of a std::priority_queue given that
-      // the `top` accessor is a const ref. We const-cast to move out the
-      // unique_ptr out of the priority queue. This is fine and doesn't cause an
+      // the `top` accessor is a const ref. We const-cast to move the
+      // element out of the priority queue. This is fine and doesn't cause an
       // issue with the invariants of the pqueue since we immediately pop after.
-      RevArcIterPtr aiter =
-          std::move(const_cast<RevArcIterPtr&>(aiter_queue_->top()));
+      RevArcIter aiter =
+          std::move(const_cast<RevArcIter&>(aiter_queue_->top()));
       aiter_queue_->pop();
-      if (aiter->Done()) continue;
-      const auto& arc = aiter->Value();
-      auto from_state = aiter->Value().nextstate - 1;
+      if (aiter.Done()) continue;
+      const auto& arc = aiter.Value();
+      auto from_state = aiter.Value().nextstate - 1;
       auto from_label = arc.ilabel;
       if (prev_label != from_label) P_.FinalizeSplit(&L_);
       auto from_class = P_.ClassId(from_state);
       if (P_.ClassSize(from_class) > 1) P_.SplitOn(from_state);
       prev_label = from_label;
-      aiter->Next();
-      if (!aiter->Done()) aiter_queue_->push(std::move(aiter));
+      aiter.Next();
+      if (!aiter.Done()) aiter_queue_->push(std::move(aiter));
     }
     P_.FinalizeSplit(&L_);
   }
