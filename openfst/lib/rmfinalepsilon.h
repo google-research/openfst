@@ -71,8 +71,12 @@ void RmFinalEpsilon(MutableFst<Arc>* fst) {
       const auto& arc = aiter.Value();
       // Next state is in the list of finals.
       if (finals.find(arc.nextstate) != finals.end()) {
-        // Sums up all epsilon arcs.
-        if (arc.ilabel == 0 && arc.olabel == 0) {
+        // Sums up all epsilon arcs if the semiring is left distributive.
+        // When left distributivity does not hold, at most one arc can be
+        // removed.
+        if (arc.ilabel == 0 && arc.olabel == 0 &&
+            (weight == Weight::Zero() ||
+             (Weight::Properties() & kLeftSemiring))) {
           weight = Plus(Times(arc.weight, fst->Final(arc.nextstate)), weight);
         } else {
           arcs.push_back(arc);
