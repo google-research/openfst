@@ -26,13 +26,13 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
-#include <map>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/fixed_array.h"
 #include "absl/types/span.h"
 #include "openfst/lib/accumulator.h"
@@ -259,8 +259,8 @@ class ArcSampler {
   const int32_t max_length_;
 
   // Stores (N, K) as described for Value().
-  std::map<size_t, size_t> sample_map_;
-  std::map<size_t, size_t>::const_iterator sample_iter_;
+  absl::btree_map<size_t, size_t> sample_map_;
+  absl::btree_map<size_t, size_t>::const_iterator sample_iter_;
 
   ArcSampler<Arc, Selector>& operator=(const ArcSampler&) = delete;
 };
@@ -382,8 +382,8 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
   const int32_t max_length_;
 
   // Stores (N, K) for Value().
-  std::map<size_t, size_t> sample_map_;
-  std::map<size_t, size_t>::const_iterator sample_iter_;
+  absl::btree_map<size_t, size_t> sample_map_;
+  absl::btree_map<size_t, size_t>::const_iterator sample_iter_;
 
   std::unique_ptr<Accumulator> accumulator_;
   RNG rng_;                // Random number generator.
