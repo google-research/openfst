@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "openfst/lib/arc-map.h"
@@ -394,7 +395,8 @@ class AcyclicMinimizer {
 
   // Refines states based on arc sort (out degree, arc equivalence).
   void Refine(const Fst<Arc>& fst) {
-    using EquivalenceMap = std::map<StateId, StateId, StateComparator<Arc>>;
+    using EquivalenceMap =
+        absl::btree_map<StateId, StateId, StateComparator<Arc>>;
     StateComparator<Arc> comp(fst, partition_);
     // Starts with tail (height = 0).
     auto height = partition_.NumClasses();
