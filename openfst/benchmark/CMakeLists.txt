@@ -25,6 +25,7 @@ set(BENCHMARKS
     fst_test
     memory_test
     minimize_test
+    replace_test
     serialize_test
     shortest_path_test
     symbol-table_test

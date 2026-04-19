@@ -264,3 +264,26 @@ cc_binary(
         "@com_google_benchmark//:benchmark",
     ],
 )
+
+cc_binary(
+    name = "replace_test",
+    testonly = True,
+    srcs = ["replace_test.cc"],
+    data = [
+        "//openfst/test:testdata/replace/g1.fst",
+        "//openfst/test:testdata/replace/g2.fst",
+        "//openfst/test:testdata/replace/g3.fst",
+        "//openfst/test:testdata/replace/g4.fst",
+    ],
+    linkstatic = True,
+    deps = [
+        ":benchmark_main",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+    ],
+)
