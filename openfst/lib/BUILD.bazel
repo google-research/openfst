@@ -376,6 +376,7 @@ fst_cc_library(
         ":file-util",
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",

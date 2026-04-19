@@ -42,6 +42,7 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/base/nullability.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
@@ -441,15 +442,15 @@ void ConvertToLegalCSymbol(std::string* s);
 bool AlignInput(std::istream& strm, size_t align = MappedFile::kArchAlignment);
 bool AlignOutput(std::ostream& strm, size_t align = MappedFile::kArchAlignment);
 
-// An associative container for which testing membership is faster than an STL
-// set if members are restricted to an interval that excludes most non-members.
-// A Key must have ==, !=, and < operators defined. Element NoKey should be a
-// key that marks an uninitialized key and is otherwise unused. Find() returns
-// an STL const_iterator to the match found, otherwise it equals End().
+// An associative container for which testing membership is faster than a set if
+// members are restricted to an interval that excludes most non-members. A Key
+// must have ==, !=, and < operators defined. Element NoKey should be a key that
+// marks an uninitialized key and is otherwise unused. Find() returns a
+// const_iterator to the match found, otherwise it equals End().
 template <class Key, Key NoKey>
 class CompactSet {
  public:
-  using const_iterator = typename std::set<Key>::const_iterator;
+  using const_iterator = typename absl::btree_set<Key>::const_iterator;
 
   CompactSet() : min_key_(NoKey), max_key_(NoKey) {}
 
@@ -506,7 +507,7 @@ class CompactSet {
   Key UpperBound() const { return max_key_; }
 
  private:
-  std::set<Key> set_;
+  absl::btree_set<Key> set_;
   Key min_key_;
   Key max_key_;
 
