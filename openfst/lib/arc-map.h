@@ -31,6 +31,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/cache.h"
 #include "openfst/lib/expanded-fst.h"
@@ -1157,8 +1158,7 @@ class GallicToNewSymbolsMapper {
         n = i == w1.Size() - 1 ? state_ : fst_->AddState();
         fst_->AddArc(p, ToArc(i ? 0 : l, iter1.Value(), n));
         if (isymbols_) {
-          if (i) s = s + "_";
-          s = s + osymbols_->Find(iter1.Value());
+          absl::StrAppend(&s, i ? "_" : "", osymbols_->Find(iter1.Value()));
         }
       }
       if (isymbols_) isymbols_->AddSymbol(s, l);
