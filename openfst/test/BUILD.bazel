@@ -1623,6 +1623,21 @@ cc_test(
 )
 
 cc_test(
+    name = "rand-fst_test",
+    size = "small",
+    srcs = ["rand-fst_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":rand-fst",
+        ":test_main",
+        "//openfst/lib",
+        "//openfst/lib:weight",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "randgen_test",
     size = "medium",
     srcs = ["randgen_test.cc"],

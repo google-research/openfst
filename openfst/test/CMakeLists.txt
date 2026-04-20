@@ -84,6 +84,7 @@ set(TESTS
     prune_test
     push_test
     queue_test
+    rand-fst_test
     randgen_test
     relabel_test
     replace_test

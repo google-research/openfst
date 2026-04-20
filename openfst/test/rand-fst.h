@@ -28,6 +28,8 @@
 namespace fst {
 
 // Generates a random FST.
+// If acyclic_prob is 1.0, the FST is guaranteed to be acyclic.
+// If acyclic_prob is 0.0, the FST is likely to be cyclic.
 template <class Arc, class Generate>
 absl::Status RandFst(const int num_random_states, const int num_random_arcs,
                      const int num_random_labels, const float acyclic_prob,
@@ -71,7 +73,7 @@ absl::Status RandFst(const int num_random_states, const int num_random_arcs,
   fst->SetStart(start);
 
   ArcDirection arc_direction = ANY_DIRECTION;
-  if (!std::bernoulli_distribution(acyclic_prob)(rand)) {
+  if (std::bernoulli_distribution(acyclic_prob)(rand)) {
     arc_direction = std::bernoulli_distribution(.5)(rand) ? FORWARD_DIRECTION
                                                           : REVERSE_DIRECTION;
   }
