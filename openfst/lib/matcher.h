@@ -28,7 +28,6 @@
 #include <memory>
 #include <optional>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 
 #include "absl/base/attributes.h"
@@ -495,12 +494,12 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
 
   bool Done() const final {
     if (current_loop_) return false;
-    return label_it_ == label_end_;
+    return current_label_matches_.empty();
   }
 
   const Arc& Value() const final {
     if (current_loop_) return loop_;
-    aiter_->Seek(label_it_->second);
+    aiter_->Seek(current_label_matches_[0]);
     return aiter_->Value();
   }
 
@@ -508,7 +507,7 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
     if (current_loop_) {
       current_loop_ = false;
     } else {
-      ++label_it_;
+      current_label_matches_.remove_prefix(1);
     }
   }
 
@@ -526,7 +525,7 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
 
   bool Search(Label match_label);
 
-  using LabelTable = std::unordered_multimap<Label, size_t>;
+  using LabelTable = absl::flat_hash_map<Label, std::vector<size_t>>;
   using StateTable = absl::flat_hash_map<StateId, std::unique_ptr<LabelTable>>;
 
   std::unique_ptr<const FST> owned_fst_;  // ptr to FST if owned.
@@ -539,8 +538,8 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
   mutable std::optional<ArcIterator<FST>> aiter_;
   std::shared_ptr<StateTable> state_table_;  // Table from state to label table.
   LabelTable* label_table_;  // Pointer to current state's label table.
-  typename LabelTable::iterator label_it_;   // Position for label.
-  typename LabelTable::iterator label_end_;  // Position for last label + 1.
+  absl::Span<const size_t>
+      current_label_matches_;  // Span of arc positions for matched label.
 };
 
 template <class FST>
@@ -568,17 +567,29 @@ void HashMatcher<FST>::SetState(typename FST::Arc::StateId s) {
       (match_type_ == MATCH_INPUT ? kArcILabelValue : kArcOLabelValue) |
       kArcNoCache;
   aiter_->SetFlags(aiter_flags, kArcFlags);
+  Label last_label = kNoLabel;
+  std::vector<size_t>* current_vec = nullptr;
   for (; !aiter_->Done(); aiter_->Next()) {
-    label_table_->emplace(GetLabel(), aiter_->Position());
+    // Avoid redundant table lookups.
+    const Label label = GetLabel();
+    if (label != last_label || current_vec == nullptr) {
+      current_vec = &(*label_table_)[label];
+      last_label = label;
+    }
+    current_vec->push_back(aiter_->Position());
   }
   aiter_->SetFlags(kArcValueFlags, kArcValueFlags);
 }
 
 template <class FST>
 inline bool HashMatcher<FST>::Search(typename FST::Arc::Label match_label) {
-  std::tie(label_it_, label_end_) = label_table_->equal_range(match_label);
-  if (label_it_ == label_end_) return false;
-  aiter_->Seek(label_it_->second);
+  const auto it = label_table_->find(match_label);
+  if (it == label_table_->end()) {
+    current_label_matches_ = {};
+    return false;
+  }
+  current_label_matches_ = absl::MakeConstSpan(it->second);
+  aiter_->Seek(current_label_matches_[0]);
   return true;
 }
 
