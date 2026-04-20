@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/relabel.h"
 #include "openfst/lib/symbol-table.h"
@@ -47,9 +48,8 @@ void Relabel(FstRelabelArgs1* args) {
 }
 
 using FstRelabelArgs2 =
-    std::tuple<MutableFstClass*,
-               const std::vector<std::pair<int64_t, int64_t>>&,
-               const std::vector<std::pair<int64_t, int64_t>>&>;
+    std::tuple<MutableFstClass*, absl::Span<const std::pair<int64_t, int64_t>>,
+               absl::Span<const std::pair<int64_t, int64_t>>>;
 
 template <class Arc>
 void Relabel(FstRelabelArgs2* args) {
@@ -73,8 +73,8 @@ void Relabel(MutableFstClass* ofst, const SymbolTable* old_isymbols,
              const std::string& unknown_osymbol, bool attach_new_osymbols);
 
 void Relabel(MutableFstClass* ofst,
-             const std::vector<std::pair<int64_t, int64_t>>& ipairs,
-             const std::vector<std::pair<int64_t, int64_t>>& opairs);
+             absl::Span<const std::pair<int64_t, int64_t>> ipairs,
+             absl::Span<const std::pair<int64_t, int64_t>> opairs);
 
 }  // namespace script
 }  // namespace fst
