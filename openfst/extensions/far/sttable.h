@@ -16,10 +16,6 @@
 // finite-state transducer library.
 //
 // A generic string-to-type table file format.
-//
-// This is not meant as a generalization of SSTable. This is more of a simple
-// replacement for SSTable in order to provide an open-source implementation
-// of the FAR format for the external version of the FST library.
 
 #ifndef OPENFST_EXTENSIONS_FAR_STTABLE_H_
 #define OPENFST_EXTENSIONS_FAR_STTABLE_H_
@@ -243,6 +239,7 @@ class STTableReader {
 
   // Positions the stream at the position corresponding to the lower bound for
   // the specified key.
+  // TODO: No stream error checking here.
   void LowerBound(size_t id, absl::string_view find_key) {
     auto* strm = streams_[id].get();
     const auto& positions = positions_[id];
