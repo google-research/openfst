@@ -23,6 +23,7 @@ set(BENCHMARKS
     connect_test
     determinize_test
     fst_test
+    matcher_test
     memory_test
     minimize_test
     replace_test

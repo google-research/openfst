@@ -73,6 +73,27 @@ cc_binary(
 )
 
 cc_binary(
+    name = "matcher_test",
+    testonly = True,
+    srcs = ["matcher_test.cc"],
+    data = [
+        "testdata/wotw.lm.fst",
+    ],
+    linkstatic = True,
+    deps = [
+        ":benchmark_main",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_binary(
     name = "compose_test",
     testonly = True,
     srcs = ["compose_test.cc"],
