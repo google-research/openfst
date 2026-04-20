@@ -88,5 +88,86 @@ TEST(WriteReadTest, Array) {
   WriteRead(a, &b);
   EXPECT_EQ(a, b);
 }
+
+TEST(CompactSetTest, DefaultConstructor) {
+  CompactSet<int, -1> values;
+  EXPECT_TRUE(values.Begin() == values.End());
+  EXPECT_EQ(values.LowerBound(), -1);
+  EXPECT_EQ(values.UpperBound(), -1);
+}
+
+TEST(CompactSetTest, InsertAndMember) {
+  CompactSet<int, -1> values;
+  values.Insert(5);
+  EXPECT_FALSE(values.Begin() == values.End());
+  EXPECT_TRUE(values.Member(5));
+  EXPECT_FALSE(values.Member(4));
+  EXPECT_EQ(values.LowerBound(), 5);
+  EXPECT_EQ(values.UpperBound(), 5);
+
+  values.Insert(3);
+  EXPECT_TRUE(values.Member(3));
+  EXPECT_EQ(values.LowerBound(), 3);
+  EXPECT_EQ(values.UpperBound(), 5);
+
+  values.Insert(7);
+  EXPECT_TRUE(values.Member(7));
+  EXPECT_EQ(values.LowerBound(), 3);
+  EXPECT_EQ(values.UpperBound(), 7);
+}
+
+TEST(CompactSetTest, Find) {
+  CompactSet<int, -1> values;
+  values.Insert(5);
+  auto it = values.Find(5);
+  EXPECT_NE(it, values.End());
+  EXPECT_EQ(*it, 5);
+
+  it = values.Find(4);
+  EXPECT_EQ(it, values.End());
+}
+
+TEST(CompactSetTest, Erase) {
+  CompactSet<int, -1> values;
+  values.Insert(3);
+  values.Insert(5);
+  values.Insert(7);
+
+  values.Erase(3);
+  EXPECT_FALSE(values.Member(3));
+  EXPECT_EQ(values.LowerBound(), 4);
+
+  values.Erase(7);
+  EXPECT_FALSE(values.Member(7));
+  EXPECT_EQ(values.UpperBound(), 6);
+
+  values.Erase(5);
+  EXPECT_FALSE(values.Member(5));
+  EXPECT_EQ(values.LowerBound(), -1);
+  EXPECT_EQ(values.UpperBound(), -1);
+}
+
+TEST(CompactSetTest, Clear) {
+  CompactSet<int, -1> values;
+  values.Insert(3);
+  values.Insert(5);
+  values.Clear();
+  EXPECT_TRUE(values.Begin() == values.End());
+  EXPECT_EQ(values.LowerBound(), -1);
+  EXPECT_EQ(values.UpperBound(), -1);
+}
+
+TEST(CompactSetTest, DenseRange) {
+  CompactSet<int, -1> values;
+  values.Insert(3);
+  values.Insert(4);
+  values.Insert(5);
+  EXPECT_TRUE(values.Member(3));
+  EXPECT_TRUE(values.Member(4));
+  EXPECT_TRUE(values.Member(5));
+  EXPECT_FALSE(values.Member(2));
+  EXPECT_FALSE(values.Member(6));
+}
+
 }  // namespace
 }  // namespace fst
