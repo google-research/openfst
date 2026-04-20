@@ -38,8 +38,9 @@ target_include_directories(
 )
 
 set(TESTS
-    accumulator_test
     a-star_test
+    accumulator_test
+    add-on_test
     arc-arena_test
     arc-map_test
     arcsort_test

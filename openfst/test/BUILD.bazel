@@ -367,6 +367,19 @@ cc_test(
 )
 
 cc_test(
+    name = "add-on_test",
+    size = "small",
+    srcs = ["add-on_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":test_main",
+        "//openfst/lib",
+        "//openfst/lib:util",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "arcsort_test",
     size = "medium",
     srcs = ["arcsort_test.cc"],
