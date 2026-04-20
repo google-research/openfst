@@ -28,11 +28,11 @@
 #include <map>
 #include <memory>
 #include <numeric>
-#include <set>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/cc-visitors.h"
@@ -315,7 +315,7 @@ class Disambiguator {
     // States s1 and s2 resp. are in this relation iff they there is a
     // path from s1 to a final state that has the same label as some
     // path from s2 to a final state.
-    std::set<std::pair<StateId, StateId>> related_;
+    absl::flat_hash_set<std::pair<StateId, StateId>> related_;
   };
 
   using ArcIdMap = std::multimap<ArcId, ArcId, ArcIdCompare>;
@@ -363,7 +363,7 @@ class Disambiguator {
   // States s1 and s2 are in this relation iff there is a path from the initial
   // state to s1 that has the same label as some path from the initial state to
   // s2. We store only state pairs s1, s2 such that s1 <= s2.
-  std::set<std::pair<StateId, StateId>> coreachable_;
+  absl::flat_hash_set<std::pair<StateId, StateId>> coreachable_;
 
   // Queue of disambiguation-related states to be processed. We store only
   // state pairs s1, s2 such that s1 <= s2.
@@ -378,7 +378,7 @@ class Disambiguator {
   std::unique_ptr<ArcIdMap> candidates_;
 
   // Set of ambiguous transitions to be removed.
-  std::set<ArcId> ambiguous_;
+  absl::flat_hash_set<ArcId> ambiguous_;
 
   // States to merge due to quantization issues.
   std::unique_ptr<UnionFind<StateId>> merge_;
