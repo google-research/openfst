@@ -249,10 +249,10 @@ class STTableReader {
     if (positions.empty()) return;
     size_t low = 0;
     size_t high = positions.size() - 1;
+    std::string key;
     while (low < high) {
-      size_t mid = (low + high) / 2;
+      const size_t mid = (low + high) / 2;
       strm->seekg(positions[mid]);
-      std::string key;
       ReadType(*strm, &key);
       if (key > find_key) {
         high = mid;
