@@ -235,8 +235,8 @@ class RelabelFstImpl : public CacheImpl<Arc> {
   friend class StateIterator<RelabelFst<Arc>>;
 
   RelabelFstImpl(const Fst<Arc>& fst,
-                 const std::vector<std::pair<Label, Label>>& ipairs,
-                 const std::vector<std::pair<Label, Label>>& opairs,
+                 absl::Span<const std::pair<Label, Label>> ipairs,
+                 absl::Span<const std::pair<Label, Label>> opairs,
                  const RelabelFstOptions& opts)
       : CacheImpl<Arc>(opts),
         fst_(fst.Copy()),
@@ -380,8 +380,8 @@ class RelabelFst : public ImplToFst<internal::RelabelFstImpl<A>> {
   friend class StateIterator<RelabelFst<A>>;
 
   RelabelFst(const Fst<Arc>& fst,
-             const std::vector<std::pair<Label, Label>>& ipairs,
-             const std::vector<std::pair<Label, Label>>& opairs,
+             absl::Span<const std::pair<Label, Label>> ipairs,
+             absl::Span<const std::pair<Label, Label>> opairs,
              const RelabelFstOptions& opts = RelabelFstOptions())
       : Base(std::make_shared<Impl>(fst, ipairs, opairs, opts)) {}
 
