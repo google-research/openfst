@@ -24,8 +24,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -518,11 +518,14 @@ class ReplaceFstImpl
       SetOutputSymbols(fst_list[0].second->OutputSymbols());
     }
     fst_array_.push_back(nullptr);
+    min_nonterminal_ = std::numeric_limits<Label>::max();
+    max_nonterminal_ = std::numeric_limits<Label>::min();
     for (Label i = 0; i < fst_list.size(); ++i) {
       const auto label = fst_list[i].first;
       const auto* fst = fst_list[i].second;
       nonterminal_hash_[label] = fst_array_.size();
-      nonterminal_set_.insert(label);
+      if (label < min_nonterminal_) min_nonterminal_ = label;
+      if (label > max_nonterminal_) max_nonterminal_ = label;
       fst_array_.emplace_back(opts.take_ownership ? fst : fst->Copy());
       if (i) {
         if (!CompatSymbols(InputSymbols(), fst->InputSymbols())) {
@@ -562,7 +565,8 @@ class ReplaceFstImpl
         return_label_(impl.return_label_),
         always_cache_(impl.always_cache_),
         state_table_(new StateTable(*(impl.state_table_))),
-        nonterminal_set_(impl.nonterminal_set_),
+        min_nonterminal_(impl.min_nonterminal_),
+        max_nonterminal_(impl.max_nonterminal_),
         nonterminal_hash_(impl.nonterminal_hash_),
         root_(impl.root_) {
     SetType("replace");
@@ -633,8 +637,7 @@ class ReplaceFstImpl
 
   // Returns whether a given label is a non-terminal.
   bool IsNonTerminal(Label label) const {
-    if (label < *nonterminal_set_.begin() ||
-        label > *nonterminal_set_.rbegin()) {
+    if (label < min_nonterminal_ || label > max_nonterminal_) {
       return false;
     } else {
       return nonterminal_hash_.count(label);
@@ -820,8 +823,8 @@ class ReplaceFstImpl
     // NB: These redundant parentheses are necessary to avoid a compiler warning
     // in GCC where `arc.olabel <...>` is interpreted to be a template usage:
     // https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wmissing-template-keyword
-    if (arc.olabel == 0 || (arc.olabel < *nonterminal_set_.begin()) ||
-        (arc.olabel > *nonterminal_set_.rbegin())) {  // Expands local FST.
+    if (arc.olabel == 0 || arc.olabel < min_nonterminal_ ||
+        arc.olabel > max_nonterminal_) {  // Expands local FST.
       const auto nextstate =
           flags & kArcNextStateValue
               ? state_table_->FindState(
@@ -921,7 +924,8 @@ class ReplaceFstImpl
   std::unique_ptr<StateTable> state_table_;
 
   // Replace components.
-  std::set<Label> nonterminal_set_;
+  Label min_nonterminal_;
+  Label max_nonterminal_;
   NonTerminalHash nonterminal_hash_;
   std::vector<std::unique_ptr<const Fst<Arc>>> fst_array_;
   Label root_;
@@ -1325,7 +1329,7 @@ class ReplaceFstMatcher : public MatcherBase<Arc> {
       if (fst_array[i]) {
         matcher_[i] = std::make_unique<LocalMatcher>(*fst_array[i], match_type_,
                                                      kMultiEpsList);
-        for (const auto label : impl_->nonterminal_set_) {
+        for (const auto& [label, unused_id] : impl_->nonterminal_hash_) {
           matcher_[i]->AddMultiEpsLabel(label);
         }
       }
