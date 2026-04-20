@@ -37,6 +37,7 @@
 #include "absl/base/casts.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/file-util.h"
@@ -88,7 +89,7 @@ class MutableFst : public ExpandedFst<A> {
   virtual void AddArc(StateId state, Arc&& arc) { AddArc(state, arc); }
 
   // Deletes some states, preserving original StateId ordering.
-  virtual void DeleteStates(const std::vector<StateId>&) = 0;
+  virtual void DeleteStates(absl::Span<const StateId>) = 0;
 
   // Delete all states.
   virtual void DeleteStates() = 0;
@@ -344,7 +345,7 @@ class ImplToMutableFst : public ImplToExpandedFst<I, FST> {
     GetMutableImpl()->AddArc(s, std::forward<Arc>(arc));
   }
 
-  void DeleteStates(const std::vector<StateId>& dstates) override {
+  void DeleteStates(absl::Span<const StateId> dstates) override {
     if (dstates.empty()) return;
     MutateCheck();
     GetMutableImpl()->DeleteStates(dstates);
@@ -417,7 +418,8 @@ class ImplToMutableFst : public ImplToExpandedFst<I, FST> {
   using Base::SetImpl;
   using Base::Unique;
 
-  explicit ImplToMutableFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit ImplToMutableFst(std::shared_ptr<Impl> impl)
+      : Base(std::move(impl)) {}
 
   ImplToMutableFst(const ImplToMutableFst& fst, bool safe) : Base(fst, safe) {}
 

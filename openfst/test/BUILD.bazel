@@ -334,6 +334,7 @@ cc_library(
         "//openfst/lib:util",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

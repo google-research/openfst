@@ -36,6 +36,7 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/fst-decl.h"  // For optional argument declarations
@@ -254,7 +255,7 @@ class VectorFstBaseImpl : public FstImpl<typename S::Arc> {
     states_[state]->EmplaceArc(std::forward<T>(ctor_args)...);
   }
 
-  void DeleteStates(const std::vector<StateId>& dstates) {
+  void DeleteStates(absl::Span<const StateId> dstates) {
     if (dstates.empty()) return;
     std::vector<StateId> newid(states_.size(), 0);
     for (const auto& dstate : dstates) newid[dstate] = kNoStateId;
@@ -412,7 +413,7 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
     UpdatePropertiesAfterAddArc(state);
   }
 
-  void DeleteStates(const std::vector<StateId>& dstates) {
+  void DeleteStates(absl::Span<const StateId> dstates) {
     BaseImpl::DeleteStates(dstates);
     SetProperties(DeleteStatesProperties(Properties()));
   }
@@ -615,7 +616,7 @@ class VectorFst : public ImplToMutableFst<internal::VectorFstImpl<S>> {
   using Base::MutateCheck;
   using Base::SetImpl;
 
-  explicit VectorFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit VectorFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 };
 
 template <class Arc, class State>

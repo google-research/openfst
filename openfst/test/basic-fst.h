@@ -31,6 +31,7 @@
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
@@ -98,7 +99,7 @@ class BasicFstImpl : public VectorFstBaseImpl<VectorState<A>> {
     SetProperties(Properties() & kAddArcProperties);
   }
 
-  void DeleteStates(const std::vector<StateId>& dstates) {
+  void DeleteStates(absl::Span<const StateId> dstates) {
     BaseImpl::DeleteStates(dstates);
     SetProperties(Properties() & kDeleteStatesProperties);
   }

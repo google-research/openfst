@@ -53,6 +53,7 @@
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
@@ -509,7 +510,7 @@ class EditFstImpl : public FstImpl<A> {
         AddArcProperties(FstImpl<Arc>::Properties(), s, arc, prev_arc));
   }
 
-  void DeleteStates(const std::vector<StateId>& dstates) {
+  void DeleteStates(absl::Span<const StateId> dstates) {
     FSTERROR() << ": EditFstImpl::DeleteStates(const std::vector<StateId>&): "
                << " not implemented";
     SetProperties(kError, kError);
@@ -712,7 +713,7 @@ class EditFst : public ImplToMutableFst<
   }
 
  private:
-  explicit EditFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit EditFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 
   using Base::GetImpl;
   using Base::GetMutableImpl;
