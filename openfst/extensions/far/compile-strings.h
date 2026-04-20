@@ -29,6 +29,7 @@
 #include "openfst/compat/file_path.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far-type.h"
@@ -90,8 +91,7 @@ class StringReader {
       std::string line;
       while (std::getline(istrm_, line)) {
         ++nline_;
-        content_.append(line);
-        content_.append("\n");
+        absl::StrAppend(&content_, line, "\n");
       }
     }
     if (!istrm_ && content_.empty())  // We're also done if we read off all the
@@ -247,11 +247,10 @@ void CompileStrings(absl::Span<const std::string> sources,
       } else {
         key = Basename(in_source);
         if (entry_type != FarEntryType::FILE) {
-          key += "-";
-          key += keybuf.str();
+          absl::StrAppend(&key, "-", keybuf.str());
         }
       }
-      writer.Add(key_prefix + key + key_suffix, *fst);
+      writer.Add(absl::StrCat(key_prefix, key, key_suffix), *fst);
     }
     if (generate_keys == 0) n = 0;
   }

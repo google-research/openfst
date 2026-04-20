@@ -27,6 +27,7 @@
 #include <string>
 
 #include "openfst/compat/file_path.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far-writer.h"
 #include "openfst/lib/fst.h"
@@ -50,7 +51,7 @@ void Create(absl::Span<const std::string> sources, FarWriter<Arc>& writer,
     } else {
       key = Basename(sources[i]);
     }
-    writer.Add(key_prefix + key + key_suffix, *ifst);
+    writer.Add(absl::StrCat(key_prefix, key, key_suffix), *ifst);
   }
 }
 

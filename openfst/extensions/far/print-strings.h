@@ -32,6 +32,7 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "openfst/extensions/far/far-reader.h"
 #include "openfst/extensions/far/far-type.h"
 #include "openfst/lib/file-util.h"
@@ -102,7 +103,7 @@ void PrintStrings(FarReader<Arc>& reader, FarEntryType entry_type,
         if (nrep > 0) sstrm << "." << nrep;
       }
       std::string source;
-      source = source_prefix + sstrm.str() + source_suffix;
+      source = absl::StrCat(source_prefix, sstrm.str(), source_suffix);
       file::FileOutStream ostrm(source);
       if (!ostrm) {
         LOG(ERROR) << "PrintStrings: Can't open file: " << source;
