@@ -301,7 +301,7 @@ class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
   }
 
  private:
-  explicit ConstFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit ConstFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 
   using Base::GetImpl;
 

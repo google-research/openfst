@@ -153,7 +153,8 @@ class ImplToExpandedFst : public ImplToFst<I, FST> {
  protected:
   using Base::GetImpl;
 
-  explicit ImplToExpandedFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit ImplToExpandedFst(std::shared_ptr<Impl> impl)
+      : Base(std::move(impl)) {}
 
   ImplToExpandedFst(const ImplToExpandedFst& fst, bool safe)
       : Base(fst, safe) {}

@@ -566,7 +566,8 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
   using Base::GetImpl;
   using Base::GetMutableImpl;
 
-  explicit LinearTaggerFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit LinearTaggerFst(std::shared_ptr<Impl> impl)
+      : Base(std::move(impl)) {}
 
   void operator=(const LinearTaggerFst<A>& fst) = delete;
 };
@@ -1018,7 +1019,8 @@ class LinearClassifierFst
   using Base::GetImpl;
   using Base::GetMutableImpl;
 
-  explicit LinearClassifierFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit LinearClassifierFst(std::shared_ptr<Impl> impl)
+      : Base(std::move(impl)) {}
 
   void operator=(const LinearClassifierFst<A>& fst) = delete;
 };

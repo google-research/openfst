@@ -114,7 +114,7 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
             SigmaLabel(match_type,
                        data ? data->SigmaLabel() : MatcherData().SigmaLabel()),
             data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This doesn't copy the FST.
   SigmaFstMatcher(
@@ -125,7 +125,7 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
             SigmaLabel(match_type,
                        data ? data->SigmaLabel() : MatcherData().SigmaLabel()),
             data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This makes a copy of the FST.
   SigmaFstMatcher(const SigmaFstMatcher<M, flags>& matcher, bool safe = false)

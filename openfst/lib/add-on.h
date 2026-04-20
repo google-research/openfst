@@ -80,7 +80,7 @@ class AddOnPair {
 
     bool have_addon2 = false;
     ReadType(istrm, &have_addon2);
-    std::unique_ptr<A1> a2;
+    std::unique_ptr<A2> a2;
     if (have_addon2) a2 = absl::WrapUnique(A2::Read(istrm, opts));
 
     return new AddOnPair(std::move(a1), std::move(a2));
@@ -233,7 +233,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
 
   std::shared_ptr<T> GetSharedAddOn() const { return t_; }
 
-  void SetAddOn(std::shared_ptr<T> t) { t_ = t; }
+  void SetAddOn(std::shared_ptr<T> t) { t_ = std::move(t); }
 
  private:
   explicit AddOnImpl(absl::string_view type) : t_() {

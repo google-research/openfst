@@ -125,7 +125,7 @@ class PhiFstMatcher : public PhiMatcher<M> {
                                                 : MatcherData().PhiLabel()),
                       data ? data->PhiLoop() : MatcherData().PhiLoop(),
                       data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This doesn't copy the FST.
   PhiFstMatcher(
@@ -136,7 +136,7 @@ class PhiFstMatcher : public PhiMatcher<M> {
                                                 : MatcherData().PhiLabel()),
                       data ? data->PhiLoop() : MatcherData().PhiLoop(),
                       data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This makes a copy of the FST.
   PhiFstMatcher(const PhiFstMatcher<M, flags>& matcher, bool safe = false)

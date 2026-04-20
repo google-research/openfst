@@ -223,7 +223,7 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
     return impl;
   }
 
-  explicit MatcherFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit MatcherFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 
  private:
   MatcherFst& operator=(const MatcherFst&) = delete;

@@ -113,7 +113,7 @@ class RhoFstMatcher : public RhoMatcher<M> {
                       RhoLabel(match_type, data ? data->RhoLabel()
                                                 : MatcherData().RhoLabel()),
                       data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This doesn't copy the FST.
   RhoFstMatcher(
@@ -123,7 +123,7 @@ class RhoFstMatcher : public RhoMatcher<M> {
                       RhoLabel(match_type, data ? data->RhoLabel()
                                                 : MatcherData().RhoLabel()),
                       data ? data->RewriteMode() : MatcherData().RewriteMode()),
-        data_(data) {}
+        data_(std::move(data)) {}
 
   // This makes a copy of the FST.
   RhoFstMatcher(const RhoFstMatcher<M, flags>& matcher, bool safe = false)

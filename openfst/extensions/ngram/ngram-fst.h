@@ -477,7 +477,7 @@ class NGramFst : public ImplToExpandedFst<internal::NGramFstImpl<A>> {
   using Base::GetImpl;
   using Base::GetMutableImpl;
 
-  explicit NGramFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit NGramFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 
   mutable NGramFstInst<A> inst_;
 };

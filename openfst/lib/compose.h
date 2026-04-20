@@ -640,7 +640,7 @@ class ComposeFst
   using Base::GetImpl;
   using Base::GetMutableImpl;
 
-  explicit ComposeFst(std::shared_ptr<Impl> impl) : Base(impl) {}
+  explicit ComposeFst(std::shared_ptr<Impl> impl) : Base(std::move(impl)) {}
 
   // Create compose implementation specifying two matcher types.
   template <class Matcher1, class Matcher2, class Filter, class StateTuple>
