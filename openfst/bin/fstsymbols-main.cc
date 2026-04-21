@@ -49,6 +49,7 @@ ABSL_DECLARE_FLAG(bool, verify);
 int fstsymbols_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
+  using fst::RelabelSymbolTable;
   using fst::SymbolTable;
   using fst::script::MutableFstClass;
 
@@ -116,14 +117,14 @@ int fstsymbols_main(int argc, char** argv) {
     std::vector<std::pair<Label, Label>> ipairs;
     ReadLabelPairs(absl::GetFlag(FLAGS_relabel_ipairs), &ipairs);
     std::unique_ptr<SymbolTable> isyms_relabel(
-        RelabelSymbolTable(fst->InputSymbols(), ipairs));
+        RelabelSymbolTable<Label>(fst->InputSymbols(), ipairs));
     fst->SetInputSymbols(isyms_relabel.get());
   }
   if (!absl::GetFlag(FLAGS_relabel_opairs).empty()) {
     std::vector<std::pair<Label, Label>> opairs;
     ReadLabelPairs(absl::GetFlag(FLAGS_relabel_opairs), &opairs);
     std::unique_ptr<SymbolTable> osyms_relabel(
-        RelabelSymbolTable(fst->OutputSymbols(), opairs));
+        RelabelSymbolTable<Label>(fst->OutputSymbols(), opairs));
     fst->SetOutputSymbols(osyms_relabel.get());
   }
 

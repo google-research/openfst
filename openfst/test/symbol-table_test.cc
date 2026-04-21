@@ -264,7 +264,7 @@ TEST_F(SymbolTableTest, Relabel) {
       std::make_pair(79, 72),
   };
   std::unique_ptr<SymbolTable> new_syms(
-      RelabelSymbolTable(pphoneset_.get(), relabel));
+      RelabelSymbolTable<int64_t>(pphoneset_.get(), relabel));
 
   // Should only include explicitly-mentioned pairs.
   EXPECT_EQ(3, new_syms->NumSymbols());

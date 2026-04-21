@@ -45,8 +45,10 @@
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/windows_defs.inc"
 
@@ -588,11 +590,9 @@ SymbolTableIterator {
 // identity relabeling.
 template <class Label>
 SymbolTable* RelabelSymbolTable(
-    const SymbolTable* table,
-    const std::vector<std::pair<Label, Label>>& pairs) {
+    const SymbolTable* table, absl::Span<const std::pair<Label, Label>> pairs) {
   auto new_table = std::make_unique<SymbolTable>(
-      table->Name().empty() ? std::string()
-                            : (std::string("relabeled_") + table->Name()));
+      table->Name().empty() ? "" : absl::StrCat("relabeled_", table->Name()));
   for (const auto& [old_label, new_label] : pairs) {
     new_table->AddSymbol(table->Find(old_label), new_label);
   }
