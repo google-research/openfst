@@ -149,6 +149,14 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
   }
   while (!heap.Empty()) {
     s = heap.Top();
+    const auto estimated_total = Times(
+        idistance[s], s < fdistance->size() ? (*fdistance)[s] : Weight::Zero());
+    if (less(limit, estimated_total)) {
+      // The heap is ordered by the estimated total distance. If the current
+      // best state exceeds the limit, then all remaining states in the heap
+      // will also exceed the limit.
+      break;
+    }
     heap.Pop();
     enqueued[s] = StateHeap::kNoKey;
     visited[s] = true;
@@ -275,6 +283,14 @@ void Prune(
   enqueued[s] = heap.Insert(s);
   while (!heap.Empty()) {
     s = heap.Top();
+    const auto estimated_total = Times(
+        idistance[s], s < fdistance->size() ? (*fdistance)[s] : Weight::Zero());
+    if (less(limit, estimated_total)) {
+      // The heap is ordered by the estimated total distance. If the current
+      // best state exceeds the limit, then all remaining states in the heap
+      // will also exceed the limit.
+      break;
+    }
     heap.Pop();
     enqueued[s] = StateHeap::kNoKey;
     visited[s] = true;
