@@ -26,6 +26,7 @@ set(BENCHMARKS
     matcher_test
     memory_test
     minimize_test
+    prune_test
     replace_test
     serialize_test
     shortest_path_test
