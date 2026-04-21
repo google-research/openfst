@@ -23,7 +23,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <string>
 
 #include "absl/strings/string_view.h"
 #include "openfst/lib/compose.h"       // For ComposeFilter.
