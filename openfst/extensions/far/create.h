@@ -23,11 +23,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <sstream>
 #include <string>
 
 #include "openfst/compat/file_path.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far-writer.h"
 #include "openfst/lib/fst.h"
@@ -43,11 +43,7 @@ void Create(absl::Span<const std::string> sources, FarWriter<Arc>& writer,
     if (!ifst) return;
     std::string key;
     if (generate_keys > 0) {
-      std::ostringstream keybuf;
-      keybuf.width(generate_keys);
-      keybuf.fill('0');
-      keybuf << i + 1;
-      key = keybuf.str();
+      key = absl::StrFormat("%0*d", generate_keys, i + 1);
     } else {
       key = Basename(sources[i]);
     }
