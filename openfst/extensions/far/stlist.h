@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/util.h"
@@ -291,7 +292,7 @@ bool ReadSTListHeader(const std::string& source, Header* header) {
   }
   // Empty key is written last, so this is an empty STList.
   if (key.empty()) return true;
-  if (!header->Read(strm, source + ":" + key)) {
+  if (!header->Read(strm, absl::StrCat(source, ":", key))) {
     LOG(ERROR) << "ReadSTListHeader: Error reading FstHeader: " << source;
     return false;
   }

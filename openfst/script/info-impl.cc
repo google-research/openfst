@@ -23,6 +23,7 @@
 #include <ostream>
 #include <string>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
@@ -85,19 +86,24 @@ void FstInfo::Info() const {
       break;
     }
   }
-  const auto accessible_label = "# of " + arc_type + "accessible states";
+  const auto accessible_label =
+      absl::StrCat("# of ", arc_type, "accessible states");
   ostrm.width(kWidth);
   ostrm << accessible_label << NumAccessible() << std::endl;
-  const auto coaccessible_label = "# of " + arc_type + "coaccessible states";
+  const auto coaccessible_label =
+      absl::StrCat("# of ", arc_type, "coaccessible states");
   ostrm.width(kWidth);
   ostrm << coaccessible_label << NumCoAccessible() << std::endl;
-  const auto connected_label = "# of " + arc_type + "connected states";
+  const auto connected_label =
+      absl::StrCat("# of ", arc_type, "connected states");
   ostrm.width(kWidth);
   ostrm << connected_label << NumConnected() << std::endl;
-  const auto numcc_label = "# of " + arc_type + "connected components";
+  const auto numcc_label =
+      absl::StrCat("# of ", arc_type, "connected components");
   ostrm.width(kWidth);
   ostrm << numcc_label << NumCc() << std::endl;
-  const auto numscc_label = "# of " + arc_type + "strongly conn components";
+  const auto numscc_label =
+      absl::StrCat("# of ", arc_type, "strongly conn components");
   ostrm.width(kWidth);
   ostrm << numscc_label << NumScc() << std::endl;
   ostrm.width(kWidth);

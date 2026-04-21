@@ -418,7 +418,7 @@ bool ReadSTTableHeader(const std::string& source, Header* header) {
   strm.seekg(i);
   std::string key;
   ReadType(strm, &key);
-  if (!header->Read(strm, source + ":" + key)) {
+  if (!header->Read(strm, absl::StrCat(source, ":", key))) {
     LOG(ERROR) << "ReadSTTableHeader: Error reading FstHeader: " << source;
     return false;
   }
