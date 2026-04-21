@@ -53,13 +53,12 @@ class Heap {
 
   // Inserts a value into the heap.
   int Insert(const Value& value) {
-    if (size_ < values_.size()) {
-      values_[size_] = value;
-      pos_[key_[size_]] = size_;
+    if (size_ < elements_.size()) {
+      elements_[size_].value = value;
+      pos_[elements_[size_].key] = size_;
     } else {
-      values_.push_back(value);
+      elements_.push_back({value, size_});
       pos_.push_back(size_);
-      key_.push_back(size_);
     }
     ++size_;
     return Insert(value, size_ - 1);
@@ -71,8 +70,8 @@ class Heap {
   // to calculate the parent and child positions.
   void Update(int key, const Value& value) {
     const auto i = pos_[key];
-    const bool is_better = comp_(value, values_[Parent(i)]);
-    values_[i] = value;
+    const bool is_better = comp_(value, elements_[Parent(i)].value);
+    elements_[i].value = value;
     if (is_better) {
       Insert(value, i);
     } else {
@@ -83,7 +82,7 @@ class Heap {
   // Returns the least value.
   Value Pop() {
     DCHECK(!Empty());
-    Value top = values_.front();
+    const Value top = elements_.front().value;
     Swap(0, size_ - 1);
     size_--;
     Heapify(0);
@@ -94,13 +93,13 @@ class Heap {
   // heap.
   const Value& Top() const {
     DCHECK(!Empty());
-    return values_.front();
+    return elements_.front().value;
   }
 
   // Returns the element for the given key.
   const Value& Get(int key) const {
     DCHECK_LT(key, pos_.size());
-    return values_[pos_[key]];
+    return elements_[pos_[key]].value;
   }
 
   // Checks if the heap is empty.
@@ -111,9 +110,8 @@ class Heap {
   int Size() const { return size_; }
 
   void Reserve(int size) {
-    values_.reserve(size);
+    elements_.reserve(size);
     pos_.reserve(size);
-    key_.reserve(size);
   }
 
   const Compare& GetCompare() const { return comp_; }
@@ -144,41 +142,51 @@ class Heap {
   // - the associated keys
   // - the position of the value in the heap
   void Swap(int j, int k) {
-    const auto tkey = key_[j];
-    pos_[key_[j] = key_[k]] = j;
-    pos_[key_[k] = tkey] = k;
-    using std::swap;
-    swap(values_[j], values_[k]);
+    if (j == k) return;
+    pos_[elements_[j].key] = k;
+    pos_[elements_[k].key] = j;
+    std::swap(elements_[j], elements_[k]);
   }
 
   // Heapifies the subtree rooted at index i.
   void Heapify(int i) {
-    const auto l = Left(i);
-    const auto r = Right(i);
-    auto largest = (l < size_ && comp_(values_[l], values_[i])) ? l : i;
-    if (r < size_ && comp_(values_[r], values_[largest])) largest = r;
-    if (largest != i) {
-      Swap(i, largest);
-      Heapify(largest);
+    while (true) {
+      const auto l = Left(i);
+      const auto r = Right(i);
+      auto largest =
+          (l < size_ && comp_(elements_[l].value, elements_[i].value)) ? l : i;
+      if (r < size_ && comp_(elements_[r].value, elements_[largest].value)) {
+        largest = r;
+      }
+      if (largest != i) {
+        Swap(i, largest);
+        i = largest;
+      } else {
+        break;
+      }
     }
   }
 
   // Inserts (updates) element at subtree rooted at index i.
   int Insert(const Value& value, int i) {
     int p;
-    while (i > 0 && !comp_(values_[p = Parent(i)], value)) {
+    while (i > 0 && !comp_(elements_[p = Parent(i)].value, value)) {
       Swap(i, p);
       i = p;
     }
-    return key_[i];
+    return elements_[i].key;
   }
 
  private:
+  struct Node {
+    Value value;
+    int key;
+  };
+
   const Compare comp_;
 
   std::vector<int> pos_;
-  std::vector<int> key_;
-  std::vector<Value> values_;
+  std::vector<Node> elements_;
   int size_;
 };
 
