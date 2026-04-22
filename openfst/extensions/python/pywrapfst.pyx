@@ -4318,10 +4318,10 @@ cpdef bool randequivalent(Fst ifst1,
                           float delta=fst.kDelta,
                           select="uniform",
                           int32_t max_length=numeric_limits[int32_t].max(),
-                          uint64_t seed=fst.kDefaultSeed) except *:
+                          seed=None) except *:
   """
   randequivalent(ifst1, ifst2, npath=1, delta=0.0009765625, select="uniform",
-                 max_length=2147483647, seed=-1)
+                 max_length=2147483647, seed=1)
 
   Are two acceptors stochastically equivalent?
 
@@ -4336,11 +4336,11 @@ cpdef bool randequivalent(Fst ifst1,
     ifst2: The second input FST.
     npath: The number of random paths to generate.
     delta: Comparison/quantization delta.
-    seed: An optional seed value for random path generation; if not specified,
-        the current time is used.
     select: A string matching a known random arc selection type; one of:
         "uniform", "log_prob", "fast_log_prob".
     max_length: The maximum length of each random path.
+    seed: An optional seed value for random path generation; if not specified,
+        it is non-deterministically seeded.
 
   Returns:
     True if the two transducers satisfy the above condition, else False.
@@ -4354,7 +4354,9 @@ cpdef bool randequivalent(Fst ifst1,
                                                     1,
                                                     False,
                                                     False))
-  cdef uint64_t _seed = fst.GetSeed(seed)
+  cdef optional[uint64_t] _seed
+  if seed is not None:
+    _seed = <uint64_t>seed
   with nogil:
     return fst.RandEquivalent(deref(ifst1._fst),
                               deref(ifst2._fst),
@@ -4370,10 +4372,10 @@ cpdef MutableFst randgen(Fst ifst,
                          int32_t max_length=numeric_limits[int32_t].max(),
                          bool weighted=False,
                          bool remove_total_weight=False,
-                         uint64_t seed=fst.kDefaultSeed):
+                         seed=None):
   """
-  randgen(ifst, npath=1, seed=0, select="uniform", max_length=2147483647,
-          weighted=False, remove_total_weight=False, seed=-1)
+  randgen(ifst, npath=1, select="uniform", max_length=2147483647,
+          weighted=False, remove_total_weight=False, seed=1)
 
   Randomly generate successful paths in an FST.
 
@@ -4388,14 +4390,14 @@ cpdef MutableFst randgen(Fst ifst,
   Args:
     ifst: The input FST.
     npath: The number of random paths to generate.
-    seed: An optional seed value for random path generation; if not specified,
-        the current time is used.
     select: A string matching a known random arc selection type; one of:
         "uniform", "log_prob", "fast_log_prob".
     max_length: The maximum length of each random path.
     weighted: Should the output be weighted by path count?
     remove_total_weight: Should the total weight be removed (ignored when
         `weighted` is False)?
+    seed: An optional seed value for random path generation; if not specified,
+        it is non-deterministically seeded.
 
   Returns:
     An FST containing one or more random paths.
@@ -4410,7 +4412,9 @@ cpdef MutableFst randgen(Fst ifst,
                                                    remove_total_weight))
   cdef unique_ptr[fst.VectorFstClass] _tfst
   _tfst.reset(new fst.VectorFstClass(ifst.arc_type()))
-  cdef uint64_t _seed = fst.GetSeed(seed)
+  cdef optional[uint64_t] _seed
+  if seed is not None:
+    _seed = <uint64_t>seed
   with nogil:
     fst.RandGen(deref(ifst._fst), _tfst.get(), deref(_opts), _seed)
   return _init_MutableFst(_tfst.release())

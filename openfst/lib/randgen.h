@@ -34,6 +34,8 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/fixed_array.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "openfst/lib/accumulator.h"
 #include "openfst/lib/cache.h"
@@ -70,17 +72,15 @@ class UniformArcSelector {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  explicit UniformArcSelector(uint64_t seed = std::random_device()())
-      : rand_(seed) {}
+  UniformArcSelector() = default;
 
-  size_t operator()(const Fst<Arc>& fst, StateId s) const {
+  size_t operator()(absl::BitGenRef bit_gen, const Fst<Arc>& fst,
+                    StateId s) const {
     const auto n = fst.NumArcs(s) + (fst.Final(s) != Weight::Zero());
-    return static_cast<size_t>(
-        std::uniform_int_distribution<>(0, n - 1)(rand_));
+    return absl::Uniform(bit_gen, static_cast<size_t>(0), n);
   }
 
  private:
-  mutable std::mt19937_64 rand_;
 };
 
 // Randomly selects a transition w.r.t. the weights treated as negative log
@@ -94,13 +94,10 @@ class LogProbArcSelector {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  // Constructs a selector with a non-deterministic seed.
-  LogProbArcSelector() : seed_(std::random_device()()), rand_(seed_) {}
+  LogProbArcSelector() = default;
 
-  // Constructs a selector with a given seed.
-  explicit LogProbArcSelector(uint64_t seed) : seed_(seed), rand_(seed) {}
-
-  size_t operator()(const Fst<Arc>& fst, StateId s) const {
+  size_t operator()(absl::BitGenRef bit_gen, const Fst<Arc>& fst,
+                    StateId s) const {
     // Finds total weight leaving state.
     auto sum = Log64Weight::Zero();
     ArcIterator<Fst<Arc>> aiter(fst, s);
@@ -109,8 +106,7 @@ class LogProbArcSelector {
       sum = Plus(sum, to_log_weight_(arc.weight));
     }
     sum = Plus(sum, to_log_weight_(fst.Final(s)));
-    const double threshold =
-        std::uniform_real_distribution<double>(0, 1.0)(rand_);
+    const double threshold = absl::Uniform(bit_gen, 0.0, 1.0);
     const double log_threshold = -log(threshold) + sum.Value();
     auto p = Log64Weight::Zero();
     size_t n = 0;
@@ -121,18 +117,12 @@ class LogProbArcSelector {
     return n;
   }
 
-  uint64_t Seed() const { return seed_; }
-
  protected:
   Log64Weight ToLogWeight(const Weight& weight) const {
     return to_log_weight_(weight);
   }
 
-  std::mt19937_64& MutableRand() const { return rand_; }
-
  private:
-  const uint64_t seed_;
-  mutable std::mt19937_64 rand_;
   const WeightConvert<Weight, Log64Weight> to_log_weight_{};
 };
 
@@ -144,17 +134,12 @@ class FastLogProbArcSelector : public LogProbArcSelector<Arc> {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  using LogProbArcSelector<Arc>::MutableRand;
   using LogProbArcSelector<Arc>::ToLogWeight;
   using LogProbArcSelector<Arc>::operator();
 
-  // Constructs a selector with a non-deterministic seed.
-  FastLogProbArcSelector() : LogProbArcSelector<Arc>() {}
-  // Constructs a selector with a given seed.
-  explicit FastLogProbArcSelector(uint64_t seed)
-      : LogProbArcSelector<Arc>(seed) {}
+  FastLogProbArcSelector() = default;
 
-  size_t operator()(const Fst<Arc>& fst, StateId s,
+  size_t operator()(absl::BitGenRef bit_gen, const Fst<Arc>& fst, StateId s,
                     CacheLogAccumulator<Arc>* accumulator) const {
     accumulator->SetState(s);
     ArcIterator<Fst<Arc>> aiter(fst, s);
@@ -162,8 +147,7 @@ class FastLogProbArcSelector : public LogProbArcSelector<Arc> {
     const double sum =
         ToLogWeight(accumulator->Sum(fst.Final(s), &aiter, 0, fst.NumArcs(s)))
             .Value();
-    const double r =
-        -log(std::uniform_real_distribution<>(0, 1)(MutableRand()));
+    const double r = -log(absl::Uniform(bit_gen, 0.0, 1.0));
     Weight w = from_log_weight_(Log64Weight(r + sum));
     aiter.Reset();
     return accumulator->LowerBound(w, &aiter);
@@ -226,7 +210,7 @@ class ArcSampler {
   // transitions leaving the state and the state is non-final, or if the path
   // length has been exceeded. Iterator members are provided to read the samples
   // in the order in which they were collected.
-  bool Sample(const RandState<Arc>& rstate) {
+  bool Sample(absl::BitGenRef bit_gen, const RandState<Arc>& rstate) {
     sample_map_.clear();
     if ((fst_.NumArcs(rstate.state_id) == 0 &&
          fst_.Final(rstate.state_id) == Weight::Zero()) ||
@@ -235,7 +219,7 @@ class ArcSampler {
       return false;
     }
     for (size_t i = 0; i < rstate.nsamples; ++i) {
-      ++sample_map_[selector_(fst_, rstate.state_id)];
+      ++sample_map_[selector_(bit_gen, fst_, rstate.state_id)];
     }
     Reset();
     return true;
@@ -272,7 +256,7 @@ class ArcSampler {
 // probs.size()).
 template <class Result, class RNG>
 void OneMultinomialSample(absl::Span<const double> probs, size_t num_to_sample,
-                          Result* result, RNG* rng) {
+                          Result* result, RNG&& rng) {
   using distribution = std::binomial_distribution<size_t>;
   // Left-over probability mass. Keep an array of the partial sums because
   // keeping a scalar and modifying norm -= probs[i] in the loop will result
@@ -281,14 +265,20 @@ void OneMultinomialSample(absl::Span<const double> probs, size_t num_to_sample,
   std::partial_sum(probs.rbegin(), probs.rend(), norm.rbegin());
   // Left-over number of samples needed.
   for (size_t i = 0; i < probs.size(); ++i) {
-    distribution::result_type num_sampled = 0;
+    size_t num_sampled = 0;
     if (probs[i] > 0) {
       distribution d(num_to_sample, probs[i] / norm[i]);
-      num_sampled = d(*rng);
+      num_sampled = d(rng);
     }
     if (num_sampled != 0) (*result)[i] = num_sampled;
     num_to_sample -= std::min(num_sampled, num_to_sample);
   }
+}
+
+template <class Result, class RNG>
+void OneMultinomialSample(absl::Span<const double> probs, size_t num_to_sample,
+                          Result* result, RNG* rng) {
+  OneMultinomialSample(probs, num_to_sample, result, *rng);
 }
 
 // Specialization for FastLogProbArcSelector.
@@ -308,7 +298,6 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
         max_length_(max_length),
         accumulator_(new Accumulator()) {
     accumulator_->Init(fst);
-    rng_.seed(selector_.Seed());
   }
 
   ArcSampler(const ArcSampler<Arc, Selector>& sampler,
@@ -324,7 +313,7 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
     }
   }
 
-  bool Sample(const RandState<Arc>& rstate) {
+  bool Sample(absl::BitGenRef bit_gen, const RandState<Arc>& rstate) {
     sample_map_.clear();
     if ((fst_.NumArcs(rstate.state_id) == 0 &&
          fst_.Final(rstate.state_id) == Weight::Zero()) ||
@@ -333,12 +322,13 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
       return false;
     }
     if (fst_.NumArcs(rstate.state_id) + 1 < rstate.nsamples) {
-      MultinomialSample(rstate);
+      MultinomialSample(bit_gen, rstate);
       Reset();
       return true;
     }
     for (size_t i = 0; i < rstate.nsamples; ++i) {
-      ++sample_map_[selector_(fst_, rstate.state_id, accumulator_.get())];
+      ++sample_map_[selector_(bit_gen, fst_, rstate.state_id,
+                              accumulator_.get())];
     }
     Reset();
     return true;
@@ -355,11 +345,10 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
   bool Error() const { return accumulator_->Error(); }
 
  private:
-  using RNG = std::mt19937;
-
   // Sample according to the multinomial distribution of rstate.nsamples draws
   // from p_.
-  void MultinomialSample(const RandState<Arc>& rstate) {
+  void MultinomialSample(absl::BitGenRef bit_gen,
+                         const RandState<Arc>& rstate) {
     p_.clear();
     for (ArcIterator<Fst<Arc>> aiter(fst_, rstate.state_id); !aiter.Done();
          aiter.Next()) {
@@ -368,13 +357,7 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
     if (fst_.Final(rstate.state_id) != Weight::Zero()) {
       p_.push_back(exp(-to_log_weight_(fst_.Final(rstate.state_id)).Value()));
     }
-    if (rstate.nsamples < std::numeric_limits<RNG::result_type>::max()) {
-      OneMultinomialSample(p_, rstate.nsamples, &sample_map_, &rng_);
-    } else {
-      for (size_t i = 0; i < p_.size(); ++i) {
-        sample_map_[i] = ceil(p_[i] * rstate.nsamples);
-      }
-    }
+    OneMultinomialSample(p_, rstate.nsamples, &sample_map_, bit_gen);
   }
 
   const Fst<Arc>& fst_;
@@ -386,7 +369,6 @@ class ArcSampler<Arc, FastLogProbArcSelector<Arc>> {
   absl::btree_map<size_t, size_t>::const_iterator sample_iter_;
 
   std::unique_ptr<Accumulator> accumulator_;
-  RNG rng_;                // Random number generator.
   std::vector<double> p_;  // Multinomial parameters.
   const WeightConvert<Weight, Log64Weight> to_log_weight_{};
 };
@@ -438,14 +420,16 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
   using ToWeight = typename ToArc::Weight;
 
   RandGenFstImpl(const Fst<FromArc>& fst,
-                 const RandGenFstOptions<Sampler>& opts)
+                 const RandGenFstOptions<Sampler>& opts,
+                 absl::BitGenRef bit_gen)
       : CacheImpl<ToArc>(opts),
         fst_(fst.Copy()),
         sampler_(opts.sampler),
         npath_(opts.npath),
         weighted_(opts.weighted),
         remove_total_weight_(opts.remove_total_weight),
-        superfinal_(kNoLabel) {
+        superfinal_(kNoLabel),
+        bit_gen_(bit_gen) {
     SetType("randgen");
     SetProperties(
         RandGenProperties(fst.Properties(kFstProperties, false), weighted_),
@@ -460,7 +444,8 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
         sampler_(new Sampler(*impl.sampler_, fst_.get())),
         npath_(impl.npath_),
         weighted_(impl.weighted_),
-        superfinal_(kNoLabel) {
+        superfinal_(kNoLabel),
+        bit_gen_(impl.bit_gen_) {
     SetType("randgen");
     SetProperties(impl.Properties(), kCopyProperties);
     SetInputSymbols(impl.InputSymbols());
@@ -524,7 +509,7 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
     }
     SetFinal(s, ToWeight::Zero());
     const auto& rstate = *state_table_[s];
-    sampler_->Sample(rstate);
+    sampler_->Sample(bit_gen_, rstate);
     ArcIterator<Fst<FromArc>> aiter(*fst_, rstate.state_id);
     const auto narcs = fst_->NumArcs(rstate.state_id);
     for (; !sampler_->Done(); sampler_->Next()) {
@@ -570,6 +555,7 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
   const bool weighted_;
   bool remove_total_weight_;
   StateId superfinal_;
+  mutable absl::BitGenRef bit_gen_;
   const WeightConvert<Log64Weight, ToWeight> to_weight_{};
 };
 
@@ -595,8 +581,9 @@ class RandGenFst
   friend class ArcIterator<RandGenFst<FromArc, ToArc, Sampler>>;
   friend class StateIterator<RandGenFst<FromArc, ToArc, Sampler>>;
 
-  RandGenFst(const Fst<FromArc>& fst, const RandGenFstOptions<Sampler>& opts)
-      : Base(std::make_shared<Impl>(fst, opts)) {}
+  RandGenFst(const Fst<FromArc>& fst, const RandGenFstOptions<Sampler>& opts,
+             absl::BitGenRef bit_gen)
+      : Base(std::make_shared<Impl>(fst, opts, bit_gen)) {}
 
   // See Fst<>::Copy() for doc.
   RandGenFst(const RandGenFst& fst, bool safe = false) : Base(fst, safe) {}
@@ -750,14 +737,14 @@ class RandGenVisitor {
 // RandGenOptions.
 template <class FromArc, class ToArc, class Selector>
 void RandGen(const Fst<FromArc>& ifst, MutableFst<ToArc>* ofst,
-             const RandGenOptions<Selector>& opts) {
+             const RandGenOptions<Selector>& opts, absl::BitGenRef bit_gen) {
   using Sampler = ArcSampler<FromArc, Selector>;
   auto sampler =
       std::make_unique<Sampler>(ifst, opts.selector, opts.max_length);
   RandGenFstOptions<Sampler> fopts(CacheOptions(true, 0), sampler.release(),
                                    opts.npath, opts.weighted,
                                    opts.remove_total_weight);
-  RandGenFst<FromArc, ToArc, Sampler> rfst(ifst, fopts);
+  RandGenFst<FromArc, ToArc, Sampler> rfst(ifst, fopts, bit_gen);
   if (opts.weighted) {
     *ofst = rfst;
   } else {
@@ -766,14 +753,41 @@ void RandGen(const Fst<FromArc>& ifst, MutableFst<ToArc>* ofst,
   }
 }
 
+template <class FromArc, class ToArc, class Selector>
+[[deprecated("Use overload with absl::BitGenRef.")]]
+void RandGen(const Fst<FromArc>& ifst, MutableFst<ToArc>* ofst,
+             const RandGenOptions<Selector>& opts,
+             std::optional<uint64_t> seed = std::nullopt) {
+  if (seed.has_value()) {
+    std::mt19937_64 bit_gen(*seed);
+    return RandGen(ifst, ofst, opts, bit_gen);
+  } else {
+    absl::BitGen bit_gen;
+    return RandGen(ifst, ofst, opts, bit_gen);
+  }
+}
+
 // Randomly generate a path through an FST with the uniform distribution
 // over the transitions.
 template <class FromArc, class ToArc>
 void RandGen(const Fst<FromArc>& ifst, MutableFst<ToArc>* ofst,
-             uint64_t seed = std::random_device()()) {
-  const UniformArcSelector<FromArc> uniform_selector(seed);
+             absl::BitGenRef bit_gen) {
+  const UniformArcSelector<FromArc> uniform_selector;
   RandGenOptions<UniformArcSelector<ToArc>> opts(uniform_selector);
-  RandGen(ifst, ofst, opts);
+  RandGen(ifst, ofst, opts, bit_gen);
+}
+
+template <class FromArc, class ToArc>
+[[deprecated("Use overload with absl::BitGenRef.")]]
+void RandGen(const Fst<FromArc>& ifst, MutableFst<ToArc>* ofst,
+             std::optional<uint64_t> seed = std::nullopt) {
+  if (seed.has_value()) {
+    std::mt19937_64 bit_gen(*seed);
+    return RandGen(ifst, ofst, bit_gen);
+  } else {
+    absl::BitGen bit_gen;
+    return RandGen(ifst, ofst, bit_gen);
+  }
 }
 
 }  // namespace fst

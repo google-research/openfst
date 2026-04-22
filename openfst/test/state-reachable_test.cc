@@ -31,14 +31,14 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/cc-visitors.h"
 #include "openfst/lib/dfs-visit.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/vector-fst.h"
-
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
 
 namespace fst {
 namespace {
@@ -50,19 +50,20 @@ using Label = Arc::Label;
 
 class TestStateReachable {
  public:
-  TestStateReachable(const Fst<Arc>& fst, StateId s) { Visit(fst, s); }
+  TestStateReachable(const fst::Fst<Arc>& fst, StateId s) { Visit(fst, s); }
 
   bool Reach(StateId s) { return state_set_.count(s) > 0; }
 
  private:
-  void Visit(const Fst<Arc>& fst, StateId s) {
+  void Visit(const fst::Fst<Arc>& fst, StateId s) {
     while (visited_.size() <= s) visited_.push_back(false);
     if (visited_[s]) return;
     visited_[s] = true;
 
     if (fst.Final(s) != Weight::Zero()) state_set_.insert(s);
 
-    for (ArcIterator<Fst<Arc>> aiter(fst, s); !aiter.Done(); aiter.Next()) {
+    for (ArcIterator<fst::Fst<Arc>> aiter(fst, s); !aiter.Done();
+         aiter.Next()) {
       const Arc& arc = aiter.Value();
       Visit(fst, arc.nextstate);
     }
@@ -82,16 +83,13 @@ class ReachableTest : public testing::Test {
           "openfst/test/testdata/state-reachable",
           "a" + std::to_string(i) + ".fst")));
     }
-    rand_.seed(absl::GetFlag(FLAGS_seed));
-    LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
   }
 
-  void TestReachableState(const VectorFst<Arc>& fst, int i,
-                          StateReachable<Arc>* state_reachable) {
+  void TestReachableState(absl::BitGen& bit_gen, const VectorFst<Arc>& fst,
+                          int i, StateReachable<Arc>* state_reachable) {
     if (fst.NumStates() == 0) return;
     for (auto j = 0; j < kNumRandomStates; ++j) {
-      const StateId s =
-          std::uniform_int_distribution<>(0, fst.NumStates() - 1)(rand_);
+      const StateId s = absl::Uniform(bit_gen, 0, fst.NumStates());
       TestStateReachable test_reachable(fst, s);
       state_reachable->SetState(s);
       for (StateId d = 0; d < fst.NumStates(); ++d) {
@@ -110,7 +108,7 @@ class ReachableTest : public testing::Test {
     }
   }
 
-  void GetSccs(const Fst<Arc>& fst) {
+  void GetSccs(const fst::Fst<Arc>& fst) {
     // Gets SCCs
     uint64_t props = 0;
     SccVisitor<Arc> scc_visitor(&scc_, nullptr, nullptr, &props);
@@ -125,7 +123,6 @@ class ReachableTest : public testing::Test {
     }
   }
 
-  std::mt19937_64 rand_;
   std::vector<std::unique_ptr<const VectorFst<Arc>>> afst_;
   std::vector<StateId> scc_;
   std::vector<size_t> nscc_;
@@ -133,18 +130,20 @@ class ReachableTest : public testing::Test {
 };
 
 TEST_F(ReachableTest, ReachStateTest) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "REACH_STATE_TEST"));
   for (int i = 0; i < afst_.size(); ++i) {
     VectorFst<Arc> fst(*afst_[i]);
     GetSccs(fst);
     for (StateId s = 0; s < fst.NumStates(); ++s) {
-      if (std::bernoulli_distribution(.5)(rand_) && nscc_[scc_[s]] == 1) {
+      if (absl::Bernoulli(bit_gen, .5) && nscc_[scc_[s]] == 1) {
         fst.SetFinal(s);
       } else {
         fst.SetFinal(s, Weight::Zero());
       }
     }
     StateReachable<Arc> state_reachable(fst);
-    TestReachableState(fst, i, &state_reachable);
+    TestReachableState(bit_gen, fst, i, &state_reachable);
   }
 }
 

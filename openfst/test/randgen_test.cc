@@ -26,6 +26,9 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
+#include "openfst/compat/seed_sequences.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/vector-fst.h"
@@ -63,19 +66,23 @@ TEST_F(RandGenTest, UniformRandGenEmpty) {
   VectorFst<Arc> empty_fst;
 
   VectorFst<Arc> path;
-  RandGen(empty_fst, &path);
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("EMPTY"));
+  RandGen(empty_fst, &path, bit_gen);
 
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(empty_fst, path));
 }
 
 TEST_F(RandGenTest, UniformRandGenNonEmpty) {
-  GTEST_SKIP() << "b/476053592: Fails due to std::uniform_int_distribution.";
-  const UniformArcSelector<Arc> uniform_selector(2);
+  // Note: The seed here must match the seed used in the corresponding
+  // Python test (pywrapfst_test.py) and shell test (randgen-main_test.sh).
+  std::mt19937_64 bit_gen(2);
+  const UniformArcSelector<Arc> uniform_selector;
   const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector);
 
   VectorFst<Arc> path;
-  RandGen(*rfst1_, &path, opts);
+  RandGen(*rfst1_, &path, opts, bit_gen);
 
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(*rfst2_, path));
@@ -84,9 +91,10 @@ TEST_F(RandGenTest, UniformRandGenNonEmpty) {
 TEST_F(RandGenTest, LogRandGen) {
   VectorFst<Arc> path;
 
-  const LogProbArcSelector<Arc> std_selector(1);
+  std::mt19937_64 bit_gen;
+  const LogProbArcSelector<Arc> std_selector;
   const RandGenOptions<LogProbArcSelector<Arc>> opts(std_selector);
-  RandGen(*rfst1_, &path, opts);
+  RandGen(*rfst1_, &path, opts, bit_gen);
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(*rfst3_, path));
 }
@@ -94,9 +102,10 @@ TEST_F(RandGenTest, LogRandGen) {
 TEST_F(RandGenTest, FastLogRandGen) {
   VectorFst<Arc> path;
 
-  const FastLogProbArcSelector<Arc> fastlog_selector(1);
+  std::mt19937_64 bit_gen;
+  const FastLogProbArcSelector<Arc> fastlog_selector;
   const RandGenOptions<FastLogProbArcSelector<Arc>> opts(fastlog_selector);
-  RandGen(*rfst1_, &path, opts);
+  RandGen(*rfst1_, &path, opts, bit_gen);
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(*rfst3_, path));
 }
@@ -104,12 +113,13 @@ TEST_F(RandGenTest, FastLogRandGen) {
 TEST_F(RandGenTest, WeightedRandGen) {
   VectorFst<Arc> path;
 
-  const LogProbArcSelector<Arc> std_selector(1);
+  std::mt19937_64 bit_gen;
+  const LogProbArcSelector<Arc> std_selector;
   const RandGenOptions<LogProbArcSelector<Arc>> opts(
       std_selector,
       /*max_length=*/std::numeric_limits<int32_t>::max(),
       /*npath=*/2, /*weighted=*/true);
-  RandGen(*rfst1_, &path, opts);
+  RandGen(*rfst1_, &path, opts, bit_gen);
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(*rfst4_, path));
 }
@@ -133,9 +143,11 @@ TYPED_TEST(RandGenLogTest, HighWeights) {
   };
 
   VectorFst<Arc> path;
-  const TypeParam fastlog_selector(1);
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "HIGH_WEIGHTS"));
+  const TypeParam fastlog_selector;
   const RandGenOptions<TypeParam> opts(fastlog_selector);
-  RandGen(create_fst(1000.0f), &path, opts);
+  RandGen(create_fst(1000.0f), &path, opts, bit_gen);
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(create_fst(0.0f), path));
 }

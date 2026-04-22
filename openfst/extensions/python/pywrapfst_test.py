@@ -21,6 +21,7 @@ import itertools
 import os
 import pathlib
 import pickle
+
 import unittest
 
 from absl.testing import absltest
@@ -34,12 +35,12 @@ class PywrapFstTest(parameterized.TestCase):
     super().setUp()
     self.tempdir = absltest.TEST_TMPDIR.value
     self.far_testdir = (
-        pathlib.Path(".") /
-        "openfst/extensions/far/testdata"
+        pathlib.Path(".")
+        / "openfst/extensions/far/testdata"
     )
     self.fst_testdir = (
-        pathlib.Path(".") /
-        "openfst/test/testdata"
+        pathlib.Path(".")
+        / "openfst/test/testdata"
     )
     # This FST is used anywhere any ole FST would do.
     self.f = fst.MutableFst.read(self.fst_testdir / "compile/fst.compiled")
@@ -82,15 +83,15 @@ class PywrapFstTest(parameterized.TestCase):
     # Tests whether a Python Unicode string can be passed as an argument, a
     # necessary but not sufficient condition for Python 3 support.
     with self.assertRaises(fst.FstIOError):
-      unused_f = fst.MutableFst.read(u"*Иöñéχıßþęη✝File*")
+      unused_f = fst.MutableFst.read("*Иöñéχıßþęη✝File*")
 
   def testFstFileSerializationRoundTrip(self):
     cases = {
         "fst-file/compact1.fst": "compact_acceptor",
         "fst-file/const1.fst": "const",
-        "fst-file/vector1.fst": "vector"
+        "fst-file/vector1.fst": "vector",
     }
-    for (source, expected_type) in cases.items():
+    for source, expected_type in cases.items():
       f = fst.Fst.read(self.fst_testdir / source)
       # Fsts FST type.
       self.assertEqual(f.fst_type(), expected_type)
@@ -106,9 +107,9 @@ class PywrapFstTest(parameterized.TestCase):
     cases = {
         "fst-file/compact1.fst": "compact_acceptor",
         "fst-file/const1.fst": "const",
-        "fst-file/vector1.fst": "vector"
+        "fst-file/vector1.fst": "vector",
     }
-    for (source, expected_type) in cases.items():
+    for source, expected_type in cases.items():
       with open(self.fst_testdir / source, "rb") as source:
         string = source.read()
         f = fst.Fst.read_from_string(string)
@@ -122,9 +123,9 @@ class PywrapFstTest(parameterized.TestCase):
     cases = {
         "fst-file/compact1.fst": "compact_acceptor",
         "fst-file/const1.fst": "const",
-        "fst-file/vector1.fst": "vector"
+        "fst-file/vector1.fst": "vector",
     }
-    for (source, expected_type) in cases.items():
+    for source, expected_type in cases.items():
       f = fst.Fst.read(self.fst_testdir / source)
       self.assertEqual(f.fst_type(), expected_type)
       g = pickle.loads(pickle.dumps(f))
@@ -263,12 +264,8 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertEqual("neg", symbols.find(-2))
     self.assertEqual(-2, symbols.find("neg"))
     # Manually merges two symbol tables (with conflicts) into another.
-    t1 = fst.SymbolTable.read_text(
-        self.fst_testdir / "symbol-table-ops/t1.map"
-    )
-    t2 = fst.SymbolTable.read_text(
-        self.fst_testdir / "symbol-table-ops/t2.map"
-    )
+    t1 = fst.SymbolTable.read_text(self.fst_testdir / "symbol-table-ops/t1.map")
+    t2 = fst.SymbolTable.read_text(self.fst_testdir / "symbol-table-ops/t2.map")
     t1.add_table(t2)
     self.assertEqual(t1.num_symbols(), 6)
     self.assertEqual(t1.find("a"), 2)
@@ -322,31 +319,27 @@ class PywrapFstTest(parameterized.TestCase):
   def testSymbolTableOps(self):
     """Cf. symbol-table-ops_test."""
     # Merges a symbol table
-    t1 = fst.SymbolTable.read_text(
-        self.fst_testdir / "symbol-table-ops/t1.map"
-    )
-    t2 = fst.SymbolTable.read_text(
-        self.fst_testdir / "symbol-table-ops/t2.map"
-    )
+    t1 = fst.SymbolTable.read_text(self.fst_testdir / "symbol-table-ops/t1.map")
+    t2 = fst.SymbolTable.read_text(self.fst_testdir / "symbol-table-ops/t2.map")
     merged = fst.merge_symbol_table(t1, t2)
     self.assertEqual(merged.find("a"), 2)
     self.assertEqual(merged.find("b"), 3)
     self.assertEqual(merged.find("z"), 5)
     # Compacts a symbol table.
     t1_res = fst.compact_symbol_table(
-        fst.SymbolTable.read_text(
-            self.fst_testdir / "symbol-table-ops/t1.map"
-        )
+        fst.SymbolTable.read_text(self.fst_testdir / "symbol-table-ops/t1.map")
     )
     self.assertEqual(t1_res.find("a"), 1)
     self.assertEqual(t1_res.find("b"), 2)
     self.assertEqual(t1_res.find("c"), 3)
     # Reads a symbol table from an on-disk FST.
-    t3 = fst.SymbolTable.read_fst(self.fst_testdir / "symbol-table-ops/t3.fst",
-                                  True)
+    t3 = fst.SymbolTable.read_fst(
+        self.fst_testdir / "symbol-table-ops/t3.fst", True
+    )
     self.assertEqual(t3.find("a"), 1)
-    t3 = fst.SymbolTable.read_fst(self.fst_testdir / "symbol-table-ops/t3.fst",
-                                  False)
+    t3 = fst.SymbolTable.read_fst(
+        self.fst_testdir / "symbol-table-ops/t3.fst", False
+    )
     self.assertEqual(t3.find("z"), 1)
 
   def testSymbolTableAccess(self):
@@ -387,7 +380,8 @@ class PywrapFstTest(parameterized.TestCase):
     isyms = fst.SymbolTable.read_text(self.fst_testdir / "compile/isyms.map")
     osyms = fst.SymbolTable.read_text(self.fst_testdir / "compile/osyms.map")
     compiler = fst.Compiler(
-        isymbols=isyms, osymbols=osyms, keep_isymbols=True, keep_osymbols=True)
+        isymbols=isyms, osymbols=osyms, keep_isymbols=True, keep_osymbols=True
+    )
     with open(self.fst_testdir / "compile/fst.txt", "r") as source:
       compiler.write(source.read())
     f_res = compiler.compile()
@@ -537,7 +531,7 @@ class PywrapFstTest(parameterized.TestCase):
       arc.nextstate = 0
       it.set_value(arc)
       it.next()
-    for (orig_a, new_a) in zip(orig_arcs, self.f.arcs(self.f.start())):
+    for orig_a, new_a in zip(orig_arcs, self.f.arcs(self.f.start())):
       self.assertEqual(new_a.nextstate, 0)
       self.assertEqual(new_a.ilabel, orig_a.ilabel)
       self.assertEqual(new_a.olabel, orig_a.olabel)
@@ -566,7 +560,8 @@ class PywrapFstTest(parameterized.TestCase):
     pairs = {"1": f1, "2": f2, "3": f3}
     # STTable.
     writer = fst.FarWriter.create(
-        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="sttable")
+        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="sttable"
+    )
     self.assertStartsWith(repr(writer), "<sttable FarWriter at")
     writer.add("1", f1)
     writer.add("2", f2)
@@ -596,17 +591,19 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertEqual(reader.get_key(), "2")
     # STTable with Pythonic API.
     writer = fst.FarWriter.create(
-        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="sttable")
-    for (k, f) in sorted(pairs.items()):
+        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="sttable"
+    )
+    for k, f in sorted(pairs.items()):
       writer[k] = f
     del writer
     reader = fst.FarReader.open(self.tempdir + "/test.far")
     self.assertEqual(reader.far_type(), "sttable")
-    for (k, f) in reader:
+    for k, f in reader:
       self.assertTrue(fst.equal(pairs[k], f))
     # STList.
     writer = fst.FarWriter.create(
-        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="stlist")
+        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="stlist"
+    )
     self.assertStartsWith(repr(writer), "<stlist FarWriter at")
     writer.add("1", f1)
     writer.add("2", f2)
@@ -630,13 +627,14 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(reader.done())
     # STList with Pythonic API.
     writer = fst.FarWriter.create(
-        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="stlist")
-    for (k, f) in sorted(pairs.items()):
+        self.tempdir + "/test.far", arc_type=f1.arc_type(), far_type="stlist"
+    )
+    for k, f in sorted(pairs.items()):
       writer[k] = f
     del writer
     reader = fst.FarReader.open(self.tempdir + "/test.far")
     self.assertEqual(reader.far_type(), "stlist")
-    for (k, f) in reader:
+    for k, f in reader:
       self.assertTrue(fst.equal(pairs[k], f))
 
   # Tests core FST operations.
@@ -669,7 +667,7 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(fst.equal(m14, m14_res))
     # Power mapping.
     m15 = fst.MutableFst.read(self.fst_testdir / "arc-map/m15.fst")
-    m15_res = fst.arcmap(m1, map_type="power", power=.5)
+    m15_res = fst.arcmap(m1, map_type="power", power=0.5)
     self.assertTrue(fst.equal(m15, m15_res))
     m16 = fst.MutableFst.read(self.fst_testdir / "arc-map/m16.fst")
     m16_res = fst.arcmap(m1, map_type="power", power=2)
@@ -734,8 +732,14 @@ class PywrapFstTest(parameterized.TestCase):
     c1 = fst.MutableFst.read(self.fst_testdir / "compose/c1.fst")
     c2 = fst.MutableFst.read(self.fst_testdir / "compose/c2.fst")
     c3 = fst.MutableFst.read(self.fst_testdir / "compose/c3.fst")
-    for cfilter in ("alt_sequence", "match", "no_match", "null", "sequence",
-                    "trivial"):
+    for cfilter in (
+        "alt_sequence",
+        "match",
+        "no_match",
+        "null",
+        "sequence",
+        "trivial",
+    ):
       c3_res = fst.compose(c1, c2, compose_filter=cfilter)
       self.assertTrue(fst.equal(c3, c3_res))
     # Composition with non-existent filter.
@@ -786,7 +790,7 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(fst.equal(d4_res, d4))
     # Pruned determinization.
     d5 = fst.MutableFst.read(self.fst_testdir / "determinize/d5.fst")
-    d5_res = fst.determinize(d5, weight=.5, nstate=10, subsequential_label=0)
+    d5_res = fst.determinize(d5, weight=0.5, nstate=10, subsequential_label=0)
     self.assertTrue(fst.equal(d5, d5_res))
     # Determinization of non-existent type.
     with self.assertRaises(fst.FstArgError):
@@ -827,7 +831,8 @@ class PywrapFstTest(parameterized.TestCase):
     # Label and weight encoding.
     e1_res = e1.copy()
     encoder = fst.EncodeMapper(
-        e1_res.arc_type(), encode_labels=True, encode_weights=True)
+        e1_res.arc_type(), encode_labels=True, encode_weights=True
+    )
     self.assertEqual(
         encoder.flags(),
         fst.EncodeMapperFlags.ENCODE_LABELS
@@ -855,7 +860,7 @@ class PywrapFstTest(parameterized.TestCase):
     e1 = fst.MutableFst.read(self.fst_testdir / "equivalent/e1.fst")
     e2 = fst.MutableFst.read(self.fst_testdir / "equivalent/e2.fst")
     e3 = fst.MutableFst.read(self.fst_testdir / "equivalent/e3.fst")
-    for (a, b) in itertools.combinations((e1, e2, e3), 2):
+    for a, b in itertools.combinations((e1, e2, e3), 2):
       self.assertTrue(fst.equivalent(a, b))
     e4 = fst.MutableFst.read(self.fst_testdir / "equivalent/e4.fst")
     for a in (e1, e2, e3):
@@ -958,25 +963,29 @@ class PywrapFstTest(parameterized.TestCase):
     m3 = fst.MutableFst.read(self.fst_testdir / "minimize/m3.fst")
     m3.minimize()
     weighted_acyclic_min = fst.MutableFst.read(
-        self.fst_testdir / "minimize/weighted_acyclic_min.fst")
+        self.fst_testdir / "minimize/weighted_acyclic_min.fst"
+    )
     self.assertTrue(fst.equal(m3, weighted_acyclic_min))
     # Minimization of weighted cyclic acceptor.
     m4 = fst.MutableFst.read(self.fst_testdir / "minimize/m4.fst")
     m4.minimize()
     weighted_cyclic_min = fst.MutableFst.read(
-        self.fst_testdir / "minimize/weighted_cyclic_min.fst")
+        self.fst_testdir / "minimize/weighted_cyclic_min.fst"
+    )
     self.assertTrue(fst.equal(m4, weighted_cyclic_min))
     # Minimization of weighted acyclic transducer.
     m5 = fst.MutableFst.read(self.fst_testdir / "minimize/m5.fst")
     m5.minimize()
     transducer_acyclic_min = fst.MutableFst.read(
-        self.fst_testdir / "minimize/transducer_acyclic_min.fst")
+        self.fst_testdir / "minimize/transducer_acyclic_min.fst"
+    )
     self.assertTrue(fst.equal(m5, transducer_acyclic_min))
     # Minimization of weighted cyclic transducer.
     m6 = fst.MutableFst.read(self.fst_testdir / "minimize/m6.fst")
     m6.minimize()
     transducer_cyclic_min = fst.MutableFst.read(
-        self.fst_testdir / "minimize/transducer_cyclic_min.fst")
+        self.fst_testdir / "minimize/transducer_cyclic_min.fst"
+    )
     self.assertTrue(fst.equal(m6, transducer_cyclic_min))
 
   def testProject(self):
@@ -996,7 +1005,7 @@ class PywrapFstTest(parameterized.TestCase):
     """Cf. prune-main_test."""
     p1 = fst.MutableFst.read(self.fst_testdir / "prune/p1.fst")
     p2 = fst.MutableFst.read(self.fst_testdir / "prune/p2.fst")
-    p2_res = fst.prune(p1, weight=.5)
+    p2_res = fst.prune(p1, weight=0.5)
     self.assertTrue(fst.equal(p2, p2_res))
 
   def testPush(self):
@@ -1031,15 +1040,12 @@ class PywrapFstTest(parameterized.TestCase):
     e6 = fst.MutableFst.read(self.fst_testdir / "equivalent/e6.fst")
     self.assertTrue(fst.randequivalent(e5, e6, npath=25, seed=218))
 
-  # TODO: Investigate.
-  # OSS notes: Below we expect the test to fail, which is the current behavior
-  # on Linux. But on macOS machines the test actually passes.
-  # b/476053592: Fails due to std::uniform_int_distribution.
-  @unittest.expectedFailure
   def testRandGen(self):
     """Cf. randgen_test."""
     r1 = fst.MutableFst.read(self.fst_testdir / "randgen/r1.fst")
     r2 = fst.MutableFst.read(self.fst_testdir / "randgen/r2.fst")
+    # Note: The seed here must match the seed used in the corresponding
+    # C++ test (openfst/test/randgen_test.cc).
     r2_res = fst.randgen(r1, seed=2)
     self.assertTrue(fst.equal(r2, r2_res))
 
@@ -1085,7 +1091,7 @@ class PywrapFstTest(parameterized.TestCase):
     """Cf. reweight-main_test."""
     # These weights will be interpreted as tropical, given the arc and weight
     # types of the FSTs below.
-    potentials = (2., 3., -1.)
+    potentials = (2.0, 3.0, -1.0)
     # Reweighting towards initial state.
     r1 = fst.MutableFst.read(self.fst_testdir / "reweight/r1.fst")
     r1.reweight(potentials)
@@ -1112,7 +1118,7 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(fst.equal(r1_m, r2_m))
     r1_m = fst.MutableFst.read(self.fst_testdir / "rmepsilon/r1.fst")
     r4 = fst.MutableFst.read(self.fst_testdir / "rmepsilon/r4.fst")
-    r1_m.rmepsilon(weight=1., nstate=10)
+    r1_m.rmepsilon(weight=1.0, nstate=10)
     self.assertTrue(fst.equal(r1_m, r4))
 
   def testShortestDistance(self):
@@ -1141,7 +1147,8 @@ class PywrapFstTest(parameterized.TestCase):
     sp4_res = fst.shortestpath(sp1, nshortest=4, unique=True)
     self.assertTrue(fst.equal(sp4, sp4_res))
     sp9_res = fst.shortestpath(
-        sp5, nshortest=4, unique=False, nstate=20, weight=1.)
+        sp5, nshortest=4, unique=False, nstate=20, weight=1.0
+    )
     self.assertTrue(fst.equal(sp9, sp9_res))
 
   def testStateMap(self):
@@ -1348,6 +1355,7 @@ class PywrapFstTest(parameterized.TestCase):
           fst.EncodeMapperFlags.ENCODE_WEIGHTS  # pytype: disable=unsupported-operands
           - fst.EncodeMapperFlags.ENCODE_WEIGHTS
       )
+
 
 if __name__ == "__main__":
   absltest.main()

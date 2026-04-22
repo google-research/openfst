@@ -18,6 +18,7 @@
 #include "openfst/script/randequivalent.h"
 
 #include <cstdint>
+#include <optional>
 
 #include "openfst/lib/randgen.h"
 #include "openfst/script/fst-class.h"
@@ -28,13 +29,18 @@ namespace script {
 
 bool RandEquivalent(const FstClass& fst1, const FstClass& fst2, int32_t npath,
                     const RandGenOptions<RandArcSelection>& opts, float delta,
-                    uint64_t seed) {
+                    std::optional<uint64_t> seed) {
   if (!internal::ArcTypesMatch(fst1, fst2, "RandEquivalent")) return false;
   FstRandEquivalentInnerArgs iargs{fst1, fst2, npath, opts, delta, seed};
   FstRandEquivalentArgs args(iargs);
   Apply<Operation<FstRandEquivalentArgs>>("RandEquivalent", fst1.ArcType(),
                                           &args);
   return args.retval;
+}
+
+bool RandEquivalent(const FstClass& fst1, const FstClass& fst2, int32_t npath,
+                    const RandGenOptions<RandArcSelection>& opts, float delta) {
+  return RandEquivalent(fst1, fst2, npath, opts, delta, std::nullopt);
 }
 
 REGISTER_FST_OPERATION_3ARCS(RandEquivalent, FstRandEquivalentArgs);

@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "absl/flags/usage.h"
@@ -39,7 +40,7 @@ ABSL_DECLARE_FLAG(double, delta);
 ABSL_DECLARE_FLAG(bool, random);
 ABSL_DECLARE_FLAG(int32_t, max_length);
 ABSL_DECLARE_FLAG(int32_t, npath);
-ABSL_DECLARE_FLAG(uint64_t, seed);
+ABSL_DECLARE_FLAG(std::optional<uint64_t>, seed);
 ABSL_DECLARE_FLAG(std::string, select);
 
 int fstequivalent_main(int argc, char** argv) {
@@ -83,10 +84,9 @@ int fstequivalent_main(int argc, char** argv) {
     }
     const RandGenOptions<s::RandArcSelection> opts(
         ras, absl::GetFlag(FLAGS_max_length));
-    const auto seed = s::GetSeed(absl::GetFlag(FLAGS_seed));
-    VLOG(1) << argv[0] << ": Seed = " << seed;
     result = s::RandEquivalent(*ifst1, *ifst2, absl::GetFlag(FLAGS_npath), opts,
-                               absl::GetFlag(FLAGS_delta), seed);
+                               absl::GetFlag(FLAGS_delta),
+                               absl::GetFlag(FLAGS_seed));
   } else {
     result = s::Equivalent(*ifst1, *ifst2, absl::GetFlag(FLAGS_delta));
   }

@@ -34,6 +34,8 @@
 #include <string>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/pair-weight.h"
 #include "openfst/lib/product-weight.h"
@@ -604,19 +606,16 @@ class WeightGenerate<SignedLogWeightTpl<T>> {
   using W1 = typename Weight::W1;
   using W2 = typename Weight::W2;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
-        num_random_weights_(num_random_weights) {}
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : allow_zero_(allow_zero), num_random_weights_(num_random_weights) {}
 
-  Weight operator()() const {
+  Weight operator()(absl::BitGenRef bit_gen) const {
     static constexpr W1 negative(-1.0);
     static constexpr W1 positive(+1.0);
-    const bool sign = std::bernoulli_distribution(.5)(rand_);
-    const int sample = std::uniform_int_distribution<>(
-        0, num_random_weights_ + allow_zero_ - 1)(rand_);
+    const bool sign = absl::Bernoulli(bit_gen, .5);
+    const int sample = absl::Uniform(
+        bit_gen, 0, static_cast<int>(num_random_weights_ + allow_zero_));
     if (allow_zero_ && sample == num_random_weights_) {
       return Weight(sign ? positive : negative, W2::Zero());
     }
@@ -624,9 +623,8 @@ class WeightGenerate<SignedLogWeightTpl<T>> {
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
-  const size_t num_random_weights_;
+  const int64_t num_random_weights_;
 };
 
 }  // namespace fst

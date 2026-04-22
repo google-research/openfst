@@ -22,10 +22,10 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <random>
 #include <string>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
 #include "openfst/lib/tuple-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -168,13 +168,11 @@ class WeightGenerate<PowerWeight<W, n>> {
   using Weight = PowerWeight<W, n>;
   using Generate = WeightGenerate<W>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true)
-      : generate_(seed, allow_zero) {}
+  explicit WeightGenerate(bool allow_zero = true) : generate_(allow_zero) {}
 
-  Weight operator()() const {
+  Weight operator()(absl::BitGenRef bit_gen) const {
     Weight result;
-    for (size_t i = 0; i < n; ++i) result.SetValue(i, generate_());
+    for (size_t i = 0; i < n; ++i) result.SetValue(i, generate_(bit_gen));
     return result;
   }
 

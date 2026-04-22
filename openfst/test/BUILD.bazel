@@ -187,11 +187,14 @@ cc_library(
     hdrs = ["algo_test.h"],
     deps = [
         ":rand-fst",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest",
     ],
@@ -228,6 +231,7 @@ cc_library(
     deps = [
         "//openfst/lib:weight",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -320,6 +324,7 @@ cc_library(
         "//openfst/lib",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -345,6 +350,8 @@ cc_library(
     deps = [
         "//openfst/lib",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/status",
     ],
 )
@@ -795,10 +802,12 @@ cc_test(
     deps = [
         ":test_main",
         "//openfst/compat:file_path",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:weight",
         "//openfst/script",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1025,11 +1034,13 @@ cc_test(
     data = [],
     linkstatic = True,
     deps = [
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
         "//openfst/lib:util",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1205,9 +1216,11 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib:interval-set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1294,12 +1307,14 @@ cc_test(
     deps = [
         ":test_main",
         "//openfst/compat:file_path",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:file-util",
         "//openfst/lib:interval-set",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1475,7 +1490,9 @@ cc_test(
         ":power-weight-util",
         ":test_main",
         ":weight_tester",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -1644,8 +1661,10 @@ cc_test(
     deps = [
         ":rand-fst",
         ":test_main",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:weight",
+        "@com_google_absl//absl/random",
         "@com_google_absl//absl/status:status_matchers",
         "@com_google_googletest//:gtest",
     ],
@@ -1665,7 +1684,9 @@ cc_test(
     deps = [
         ":test_main",
         "//openfst/compat:file_path",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -2094,11 +2115,13 @@ cc_test(
     deps = [
         ":test_main",
         "//openfst/compat:file_path",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:weight",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -2211,8 +2234,10 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib:union-find",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/random",
         "@com_google_benchmark//:benchmark",
         "@com_google_googletest//:gtest",
     ],
@@ -2288,6 +2313,7 @@ cc_test(
             ":rand-fst",
             "//openfst/compat:compat_memory",
             "//openfst/compat:init",
+            "//openfst/compat:seed_sequences",
             "//openfst/lib",
             "//openfst/lib:fst-decl",
             "//openfst/lib:weight",
@@ -2296,6 +2322,8 @@ cc_test(
             "@com_google_absl//absl/log:check",
             "@com_google_absl//absl/log:flags",
             "@com_google_absl//absl/memory",
+            "@com_google_absl//absl/random",
+            "@com_google_absl//absl/random:bit_gen_ref",
             "@com_google_absl//absl/status",
             "@com_google_googletest//:gtest",
         ],
@@ -2389,9 +2417,12 @@ cc_test(
     linkstatic = True,
     deps = [
         ":weight_tester",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_googletest//:gtest",
     ],
 )

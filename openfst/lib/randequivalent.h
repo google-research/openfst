@@ -23,9 +23,12 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <random>
 
 #include "absl/log/log.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/compose.h"
 #include "openfst/lib/connect.h"
@@ -52,8 +55,7 @@ namespace fst {
 template <class Arc, class ArcSelector>
 bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
                     const RandGenOptions<ArcSelector>& opts,
-                    float delta = kDelta,
-                    uint64_t seed = std::random_device()(),
+                    absl::BitGenRef bit_gen, float delta = kDelta,
                     bool* error = nullptr) {
   using Weight = typename Arc::Weight;
   if (error) *error = false;
@@ -75,12 +77,10 @@ bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
   ArcSort(&sfst1, icomp);
   ArcSort(&sfst2, icomp);
   bool result = true;
-  std::mt19937 rand(seed);
-  std::bernoulli_distribution coin(.5);
   for (int32_t n = 0; n < npath; ++n) {
     VectorFst<Arc> path;
-    const auto& fst = coin(rand) ? sfst1 : sfst2;
-    RandGen(fst, &path, opts);
+    const auto& fst = absl::Bernoulli(bit_gen, .5) ? sfst1 : sfst2;
+    RandGen(fst, &path, opts, bit_gen);
     VectorFst<Arc> ipath(path);
     VectorFst<Arc> opath(path);
     Project(&ipath, ProjectType::INPUT);
@@ -118,19 +118,50 @@ bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
   return result;
 }
 
+template <class Arc, class ArcSelector>
+[[deprecated("Use overload with absl::BitGenRef.")]]
+bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
+                    const RandGenOptions<ArcSelector>& opts,
+                    float delta = kDelta,
+                    std::optional<uint64_t> seed = std::nullopt,
+                    bool* error = nullptr) {
+  if (seed.has_value()) {
+    std::mt19937_64 bit_gen(*seed);
+    return RandEquivalent(fst1, fst2, npath, opts, bit_gen, delta, error);
+  } else {
+    absl::BitGen bit_gen;
+    return RandEquivalent(fst1, fst2, npath, opts, bit_gen, delta, error);
+  }
+}
+
 // Tests if two FSTs are equivalent by randomly generating a nnpath paths
 // (no longer than the path_length) using a user-specified seed, optionally
 // indicating an error setting an optional error argument to true.
 template <class Arc>
 bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
-                    float delta = kDelta,
-                    uint64_t seed = std::random_device()(),
+                    absl::BitGenRef bit_gen, float delta = kDelta,
                     int32_t max_length = std::numeric_limits<int32_t>::max(),
                     bool* error = nullptr) {
-  const UniformArcSelector<Arc> uniform_selector(seed);
+  const UniformArcSelector<Arc> uniform_selector;
   const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector,
                                                      max_length);
-  return RandEquivalent(fst1, fst2, npath, opts, delta, seed, error);
+  return RandEquivalent(fst1, fst2, npath, opts, bit_gen, delta, error);
+}
+
+template <class Arc>
+[[deprecated("Use overload with absl::BitGenRef.")]]
+bool RandEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int32_t npath,
+                    float delta = kDelta,
+                    std::optional<uint64_t> seed = std::nullopt,
+                    int32_t max_length = std::numeric_limits<int32_t>::max(),
+                    bool* error = nullptr) {
+  if (seed.has_value()) {
+    std::mt19937_64 bit_gen(*seed);
+    return RandEquivalent(fst1, fst2, npath, bit_gen, delta, max_length, error);
+  } else {
+    absl::BitGen bit_gen;
+    return RandEquivalent(fst1, fst2, npath, bit_gen, delta, max_length, error);
+  }
 }
 
 }  // namespace fst

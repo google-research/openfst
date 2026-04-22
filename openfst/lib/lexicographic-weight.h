@@ -33,6 +33,8 @@
 #include <string>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/pair-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -146,32 +148,29 @@ inline LexicographicWeight<W1, W2> Divide(const LexicographicWeight<W1, W2>& w,
 template <class W1, class W2>
 class WeightGenerate<LexicographicWeight<W1, W2>> {
  public:
-  using Weight = LexicographicWeight<W1, W1>;
+  using Weight = LexicographicWeight<W1, W2>;
   using Generate1 = WeightGenerate<W1>;
   using Generate2 = WeightGenerate<W2>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true,
-                          size_t num_random_weights = kNumRandomWeights)
-      : rand_(seed),
-        allow_zero_(allow_zero),
+  explicit WeightGenerate(bool allow_zero = true,
+                          int64_t num_random_weights = kNumRandomWeights)
+      : allow_zero_(allow_zero),
         num_random_weights_(num_random_weights),
-        generator1_(seed, false, num_random_weights),
-        generator2_(seed, false, num_random_weights) {}
+        generator1_(false, num_random_weights),
+        generator2_(false, num_random_weights) {}
 
-  Weight operator()() const {
+  Weight operator()(absl::BitGenRef bit_gen) const {
     if (allow_zero_) {
-      const int sample =
-          std::uniform_int_distribution<>(0, num_random_weights_)(rand_);
+      const int sample = absl::Uniform(absl::IntervalClosedClosed, bit_gen, 0,
+                                       static_cast<int>(num_random_weights_));
       if (sample == num_random_weights_) return Weight(W1::Zero(), W2::Zero());
     }
-    return Weight(generator1_(), generator2_());
+    return Weight(generator1_(bit_gen), generator2_(bit_gen));
   }
 
  private:
-  mutable std::mt19937_64 rand_;
   const bool allow_zero_;
-  const size_t num_random_weights_;
+  const int64_t num_random_weights_;
   const Generate1 generator1_;
   const Generate2 generator2_;
 };

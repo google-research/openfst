@@ -228,10 +228,6 @@ bool GetReweightType(absl::string_view str, ReweightType* reweight_type) {
   return true;
 }
 
-uint64_t GetSeed(uint64_t seed) {
-  return seed == kDefaultSeed ? time(nullptr) : seed;
-}
-
 bool GetTokenType(absl::string_view str, TokenType* token_type) {
   if (str == "byte") {
     *token_type = TokenType::BYTE;

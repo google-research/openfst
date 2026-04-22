@@ -29,6 +29,7 @@
 #include <utility>
 
 #include "absl/hash/hash.h"
+#include "absl/random/bit_gen_ref.h"
 #include "openfst/lib/weight.h"
 
 namespace fst {
@@ -150,11 +151,12 @@ class WeightGenerate<PairWeight<W1, W2>> {
   using Generate1 = WeightGenerate<W1>;
   using Generate2 = WeightGenerate<W2>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true)
-      : generate1_(seed, allow_zero), generate2_(seed, allow_zero) {}
+  explicit WeightGenerate(bool allow_zero = true)
+      : generate1_(allow_zero), generate2_(allow_zero) {}
 
-  Weight operator()() const { return Weight(generate1_(), generate2_()); }
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(generate1_(bit_gen), generate2_(bit_gen));
+  }
 
  private:
   const Generate1 generate1_;

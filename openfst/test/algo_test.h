@@ -22,7 +22,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <random>
 #include <utility>
 #include <vector>
 
@@ -31,6 +30,10 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
+#include "openfst/compat/seed_sequences.h"
 #include "absl/status/status.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
@@ -145,10 +148,7 @@ class AlgoTestBase : public ::testing::Test {
   using Weight = typename Arc::Weight;
   using WeightGenerator = WeightGenerate<Weight>;
 
-  AlgoTestBase()
-      : seed_(absl::GetFlag(FLAGS_seed)),
-        rand_(seed_),
-        generate_(seed_, /*allow_zero=*/false) {
+  AlgoTestBase() : generate_(/*allow_zero=*/false) {
     one_fst_.AddState();
     one_fst_.SetStart(0);
     one_fst_.SetFinal(0);
@@ -159,59 +159,60 @@ class AlgoTestBase : public ::testing::Test {
     for (int i = 0; i < kNumRandomLabels; ++i) univ_fst_.EmplaceArc(0, i, i, 0);
   }
 
-  absl::Status MakeRandFst(MutableFst<Arc>* fst) {
+  absl::Status MakeRandFst(absl::BitGenRef bit_gen, MutableFst<Arc>* fst) {
     return RandFst(kNumRandomStates, kNumRandomArcs, kNumRandomLabels,
-                   kAcyclicProb, generate_, rand_(), fst);
+                   kAcyclicProb, generate_, bit_gen, fst);
   }
 
   // Tests if two FSTs are equivalent by checking if random
   // strings from one FST are transduced the same by both FSTs.
   template <class A>  // Do not shadow `Arc`.
-  bool Equiv(const Fst<A>& fst1, const Fst<A>& fst2) {
+  bool Equiv(absl::BitGenRef bit_gen, const Fst<A>& fst1, const Fst<A>& fst2) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     EXPECT_TRUE(Verify(fst1));
     EXPECT_TRUE(Verify(fst2));
 
     // Ensures seed used once per instantiation.
-    const UniformArcSelector<A> uniform_selector(this->seed_);
+    const UniformArcSelector<A> uniform_selector;
     const RandGenOptions<UniformArcSelector<A>> opts(uniform_selector,
                                                      this->kRandomPathLength);
-    return RandEquivalent(fst1, fst2, this->kNumRandomPaths, opts,
-                          this->kTestDelta, this->seed_);
+    return RandEquivalent(fst1, fst2, this->kNumRandomPaths, opts, bit_gen,
+                          this->kTestDelta);
   }
 
   // Tests FSA is unambiguous.
-  bool Unambiguous(const Fst<Arc>& fst) {
+  bool Unambiguous(absl::BitGenRef bit_gen, const Fst<Arc>& fst) {
     VectorFst<StdArc> sfst, dfst;
     VectorFst<LogArc> lfst1, lfst2;
     ArcMap(fst, &sfst, RmWeightMapper<Arc, StdArc>());
     Determinize(sfst, &dfst);
     ArcMap(fst, &lfst1, RmWeightMapper<Arc, LogArc>());
     ArcMap(dfst, &lfst2, RmWeightMapper<StdArc, LogArc>());
-    return Equiv(lfst1, lfst2);
+    return Equiv(bit_gen, lfst1, lfst2);
   }
 
   // Ensures input-epsilon free transducers fst1 and fst2 have the
   // same domain and that for each string pair '(is, os)' in fst1,
   // '(is, os)' is the minimum weight match to 'is' in fst2.
-  bool MinRelated(const Fst<Arc>& fst1, const Fst<Arc>& fst2) {
+  bool MinRelated(absl::BitGenRef bit_gen, const Fst<Arc>& fst1,
+                  const Fst<Arc>& fst2) {
     // Same domain
     VectorFst<Arc> P1(fst1), P2(fst2);
     Project(&P1, ProjectType::INPUT);
     Project(&P2, ProjectType::INPUT);
-    if (!Equiv(P1, P2)) {
+    if (!Equiv(bit_gen, P1, P2)) {
       LOG(ERROR) << "Inputs not equivalent";
       return false;
     }
 
     // Ensures seed used once per instantiation.
-    const UniformArcSelector<Arc> uniform_selector(this->seed_);
+    const UniformArcSelector<Arc> uniform_selector;
     const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector,
                                                        this->kRandomPathLength);
 
     VectorFst<Arc> path, paths1, paths2;
     for (int n = 0; n < kNumRandomPaths; ++n) {
-      RandGen(fst1, &path, opts);
+      RandGen(fst1, &path, opts, bit_gen);
       Invert(&path);
       ArcMap(&path, RmWeightMapper<Arc>());
       Compose(path, fst2, &paths1);
@@ -306,10 +307,6 @@ class AlgoTestBase : public ::testing::Test {
   }
 
  protected:
-  // Random seed.
-  uint64_t seed_;
-  // Random state.
-  std::mt19937_64 rand_;
   // Generates weights used in testing.
   WeightGenerator generate_;
   // FST with no states.
@@ -346,69 +343,79 @@ class RationalTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(RationalTest);
 
 TYPED_TEST_P(RationalTest, UnionEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VLOG(1) << "Check destructive and delayed union are equivalent.";
     VectorFst<Arc> U1(T1);
     Union(&U1, T2);
     UnionFst<Arc> U2(T1, T2);
-    EXPECT_TRUE(this->Equiv(U1, U2));
+    EXPECT_TRUE(this->Equiv(bit_gen, U1, U2));
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CONCAT_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VLOG(1) << "Check destructive and delayed concatenation are equivalent.";
     VectorFst<Arc> C1(T1);
     Concat(&C1, T2);
     ConcatFst<Arc> C2(T1, T2);
-    EXPECT_TRUE(this->Equiv(C1, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C2));
     VectorFst<Arc> C3(T2);
     Concat(T1, &C3);
-    EXPECT_TRUE(this->Equiv(C3, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C3, C2));
   }
 }
 
 TYPED_TEST_P(RationalTest, ClosureStarEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CLOSURE_STAR_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     VLOG(1) << "Check destructive and delayed closure* are equivalent.";
     VectorFst<Arc> C1(T1);
     Closure(&C1, CLOSURE_STAR);
     ClosureFst<Arc> C2(T1, CLOSURE_STAR);
-    EXPECT_TRUE(this->Equiv(C1, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C2));
   }
 }
 
 TYPED_TEST_P(RationalTest, ClosurePlusEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CLOSURE_PLUS_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     VLOG(1) << "Check destructive and delayed closure+ are equivalent.";
     VectorFst<Arc> C1(T1);
     Closure(&C1, CLOSURE_PLUS);
     ClosureFst<Arc> C2(T1, CLOSURE_PLUS);
-    EXPECT_TRUE(this->Equiv(C1, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C2));
   }
 }
 
 TYPED_TEST_P(RationalTest, UnionAssociativeDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_ASSOCIATIVE_DESTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check union is associative (destructive).";
     VectorFst<Arc> U1(T1);
     Union(&U1, T2);
@@ -419,17 +426,19 @@ TYPED_TEST_P(RationalTest, UnionAssociativeDestructive) {
     VectorFst<Arc> U4(T1);
     Union(&U4, U3);
 
-    EXPECT_TRUE(this->Equiv(U1, U4));
+    EXPECT_TRUE(this->Equiv(bit_gen, U1, U4));
   }
 }
 
 TYPED_TEST_P(RationalTest, UnionAssociativeDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_ASSOCIATIVE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check union is associative (delayed).";
     UnionFst<Arc> U1(T1, T2);
     UnionFst<Arc> U2(U1, T3);
@@ -437,17 +446,19 @@ TYPED_TEST_P(RationalTest, UnionAssociativeDelayed) {
     UnionFst<Arc> U3(T2, T3);
     UnionFst<Arc> U4(T1, U3);
 
-    EXPECT_TRUE(this->Equiv(U2, U4));
+    EXPECT_TRUE(this->Equiv(bit_gen, U2, U4));
   }
 }
 
 TYPED_TEST_P(RationalTest, UnionAssociativeDestructiveDelayed) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("UNION_ASSOCIATIVE_DESTRUCTIVE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check union is associative (destructive delayed).";
     UnionFst<Arc> U1(T1, T2);
     Union(&U1, T3);
@@ -455,17 +466,19 @@ TYPED_TEST_P(RationalTest, UnionAssociativeDestructiveDelayed) {
     UnionFst<Arc> U3(T2, T3);
     UnionFst<Arc> U4(T1, U3);
 
-    EXPECT_TRUE(this->Equiv(U1, U4));
+    EXPECT_TRUE(this->Equiv(bit_gen, U1, U4));
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatAssociativeDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CONCAT_ASSOCIATIVE_DESTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check concatenation is associative (destructive).";
     VectorFst<Arc> C1(T1);
     Concat(&C1, T2);
@@ -476,17 +489,19 @@ TYPED_TEST_P(RationalTest, ConcatAssociativeDestructive) {
     VectorFst<Arc> C4(T1);
     Concat(&C4, C3);
 
-    EXPECT_TRUE(this->Equiv(C1, C4));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C4));
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatAssociativeDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CONCAT_ASSOCIATIVE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check concatenation is associative (delayed).";
     ConcatFst<Arc> C1(T1, T2);
     ConcatFst<Arc> C2(C1, T3);
@@ -494,17 +509,19 @@ TYPED_TEST_P(RationalTest, ConcatAssociativeDelayed) {
     ConcatFst<Arc> C3(T2, T3);
     ConcatFst<Arc> C4(T1, C3);
 
-    EXPECT_TRUE(this->Equiv(C2, C4));
+    EXPECT_TRUE(this->Equiv(bit_gen, C2, C4));
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatAssociativeDestructiveDelayed) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("CONCAT_ASSOCIATIVE_DESTRUCTIVE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VLOG(1) << "Check concatenation is associative (destructive delayed).";
     ConcatFst<Arc> C1(T1, T2);
     Concat(&C1, T3);
@@ -512,18 +529,20 @@ TYPED_TEST_P(RationalTest, ConcatAssociativeDestructiveDelayed) {
     ConcatFst<Arc> C3(T2, T3);
     ConcatFst<Arc> C4(T1, C3);
 
-    EXPECT_TRUE(this->Equiv(C1, C4));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C4));
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatLeftDistributesUnionDestructive) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("CONCAT_LEFT_DISTRIBUTES_UNION_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     if (Weight::Properties() & kLeftSemiring) {
       VLOG(1)
           << "Check concatenation left distributes over union (destructive).";
@@ -539,19 +558,21 @@ TYPED_TEST_P(RationalTest, ConcatLeftDistributesUnionDestructive) {
       VectorFst<Arc> U2(C2);
       Union(&U2, C3);
 
-      EXPECT_TRUE(this->Equiv(C1, U2));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatRightDistributesUnionDestructive) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("CONCAT_RIGHT_DISTRIBUTES_UNION_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     if (Weight::Properties() & kRightSemiring) {
       VLOG(1)
           << "Check concatenation right distributes over union (destructive).";
@@ -567,19 +588,21 @@ TYPED_TEST_P(RationalTest, ConcatRightDistributesUnionDestructive) {
       VectorFst<Arc> U2(C2);
       Union(&U2, C3);
 
-      EXPECT_TRUE(this->Equiv(C1, U2));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatLeftDistributesUnionDelayed) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("CONCAT_LEFT_DISTRIBUTES_UNION_DELAYED"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     if (Weight::Properties() & kLeftSemiring) {
       VLOG(1) << "Check concatenation left distributes over union (delayed).";
       UnionFst<Arc> U1(T1, T2);
@@ -589,19 +612,21 @@ TYPED_TEST_P(RationalTest, ConcatLeftDistributesUnionDelayed) {
       ConcatFst<Arc> C3(T3, T2);
       UnionFst<Arc> U2(C2, C3);
 
-      EXPECT_TRUE(this->Equiv(C1, U2));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, ConcatRightDistributesUnionDelayed) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("CONCAT_RIGHT_DISTRIBUTES_UNION_DELAYED"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     if (Weight::Properties() & kRightSemiring) {
       VLOG(1) << "Check concatenation right distributes over union (delayed).";
       UnionFst<Arc> U1(T1, T2);
@@ -611,17 +636,19 @@ TYPED_TEST_P(RationalTest, ConcatRightDistributesUnionDelayed) {
       ConcatFst<Arc> C3(T2, T3);
       UnionFst<Arc> U2(C2, C3);
 
-      EXPECT_TRUE(this->Equiv(C1, U2));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, TTStarDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "T_T_STAR_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     if (Weight::Properties() & kLeftSemiring) {
       VLOG(1) << "Check T T* == T+ (destructive).";
       VectorFst<Arc> S(T1);
@@ -632,17 +659,19 @@ TYPED_TEST_P(RationalTest, TTStarDestructive) {
       VectorFst<Arc> P(T1);
       Closure(&P, CLOSURE_PLUS);
 
-      EXPECT_TRUE(this->Equiv(C, P));
+      EXPECT_TRUE(this->Equiv(bit_gen, C, P));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, TStarTDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "T_STAR_T_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     if (Weight::Properties() & kRightSemiring) {
       VLOG(1) << "Check T* T == T+ (destructive).";
       VectorFst<Arc> S(T1);
@@ -653,17 +682,19 @@ TYPED_TEST_P(RationalTest, TStarTDestructive) {
       VectorFst<Arc> P(T1);
       Closure(&P, CLOSURE_PLUS);
 
-      EXPECT_TRUE(this->Equiv(C, P));
+      EXPECT_TRUE(this->Equiv(bit_gen, C, P));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, TTStarDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "T_T_STAR_DELAYED"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     if (Weight::Properties() & kLeftSemiring) {
       VLOG(1) << "Check T T* == T+ (delayed).";
       ClosureFst<Arc> S(T1, CLOSURE_STAR);
@@ -671,17 +702,19 @@ TYPED_TEST_P(RationalTest, TTStarDelayed) {
 
       ClosureFst<Arc> P(T1, CLOSURE_PLUS);
 
-      EXPECT_TRUE(this->Equiv(C, P));
+      EXPECT_TRUE(this->Equiv(bit_gen, C, P));
     }
   }
 }
 
 TYPED_TEST_P(RationalTest, TStarTDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "T_STAR_T_DELAYED"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     if (Weight::Properties() & kRightSemiring) {
       VLOG(1) << "Check T* T == T+ (delayed).";
       ClosureFst<Arc> S(T1, CLOSURE_STAR);
@@ -689,7 +722,7 @@ TYPED_TEST_P(RationalTest, TStarTDelayed) {
 
       ClosureFst<Arc> P(T1, CLOSURE_PLUS);
 
-      EXPECT_TRUE(this->Equiv(C, P));
+      EXPECT_TRUE(this->Equiv(bit_gen, C, P));
     }
   }
 }
@@ -699,93 +732,107 @@ class MapTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(MapTest);
 
 TYPED_TEST_P(MapTest, ProjectEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PROJECT_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check destructive and delayed projection are equivalent.";
     VectorFst<Arc> P1(T);
     Project(&P1, ProjectType::INPUT);
     ProjectFst<Arc> P2(T, ProjectType::INPUT);
-    EXPECT_TRUE(this->Equiv(P1, P2));
+    EXPECT_TRUE(this->Equiv(bit_gen, P1, P2));
   }
 }
 
 TYPED_TEST_P(MapTest, InvertEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "INVERT_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check destructive and delayed inversion are equivalent.";
     VectorFst<Arc> I1(T);
     Invert(&I1);
     InvertFst<Arc> I2(T);
-    EXPECT_TRUE(this->Equiv(I1, I2));
+    EXPECT_TRUE(this->Equiv(bit_gen, I1, I2));
   }
 }
 
 TYPED_TEST_P(MapTest, IdentityDestructivePi1) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "IDENTITY_DESTRUCTIVE_PI1"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check Pi_1(T) = Pi_2(T^-1) (destructive).";
     VectorFst<Arc> P1(T);
     VectorFst<Arc> I1(T);
     Project(&P1, ProjectType::INPUT);
     Invert(&I1);
     Project(&I1, ProjectType::OUTPUT);
-    EXPECT_TRUE(this->Equiv(P1, I1));
+    EXPECT_TRUE(this->Equiv(bit_gen, P1, I1));
   }
 }
 
 TYPED_TEST_P(MapTest, IdentityDestructivePi2) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "IDENTITY_DESTRUCTIVE_PI2"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check Pi_2(T) = Pi_1(T^-1) (destructive).";
     VectorFst<Arc> P1(T);
     VectorFst<Arc> I1(T);
     Project(&P1, ProjectType::OUTPUT);
     Invert(&I1);
     Project(&I1, ProjectType::INPUT);
-    EXPECT_TRUE(this->Equiv(P1, I1));
+    EXPECT_TRUE(this->Equiv(bit_gen, P1, I1));
   }
 }
 
 TYPED_TEST_P(MapTest, IdentityDelayedPi1) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "IDENTITY_DELAYED_PI1"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check Pi_1(T) = Pi_2(T^-1) (delayed).";
     ProjectFst<Arc> P1(T, ProjectType::INPUT);
     InvertFst<Arc> I1(T);
     ProjectFst<Arc> P2(I1, ProjectType::OUTPUT);
-    EXPECT_TRUE(this->Equiv(P1, P2));
+    EXPECT_TRUE(this->Equiv(bit_gen, P1, P2));
   }
 }
 
 TYPED_TEST_P(MapTest, IdentityDelayedPi2) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "IDENTITY_DELAYED_PI2"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check Pi_2(T) = Pi_1(T^-1) (delayed).";
     ProjectFst<Arc> P1(T, ProjectType::OUTPUT);
     InvertFst<Arc> I1(T);
     ProjectFst<Arc> P2(I1, ProjectType::INPUT);
-    EXPECT_TRUE(this->Equiv(P1, P2));
+    EXPECT_TRUE(this->Equiv(bit_gen, P1, P2));
   }
 }
 
 TYPED_TEST_P(MapTest, RelabelDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RELABEL_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Label = typename Arc::Label;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check destructive relabeling";
     static const int kNumLabels = 10;
     // set up relabeling pairs
@@ -793,8 +840,7 @@ TYPED_TEST_P(MapTest, RelabelDestructive) {
     for (int j = 0; j < kNumLabels; ++j) labelset[j] = j;
     for (int j = 0; j < kNumLabels; ++j) {
       using std::swap;
-      const auto index =
-          std::uniform_int_distribution<>(0, kNumLabels - 1)(this->rand_);
+      const auto index = absl::Uniform(bit_gen, 0, kNumLabels);
       swap(labelset[j], labelset[index]);
     }
 
@@ -814,24 +860,25 @@ TYPED_TEST_P(MapTest, RelabelDestructive) {
       opairs2[j] = std::make_pair(j, labelset[j]);
     }
     Relabel(&R, ipairs2, opairs2);
-    EXPECT_TRUE(this->Equiv(R, T));
+    EXPECT_TRUE(this->Equiv(bit_gen, R, T));
   }
 }
 
 TYPED_TEST_P(MapTest, RelabelDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RELABEL_DELAYED"));
   using Arc = TypeParam;
   using Label = typename Arc::Label;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     static const int kNumLabels = 10;
     // set up relabeling pairs
     std::vector<Label> labelset(kNumLabels);
     for (int j = 0; j < kNumLabels; ++j) labelset[j] = j;
     for (int j = 0; j < kNumLabels; ++j) {
       using std::swap;
-      const auto index =
-          std::uniform_int_distribution<>(0, kNumLabels - 1)(this->rand_);
+      const auto index = absl::Uniform(bit_gen, 0, kNumLabels);
       swap(labelset[j], labelset[index]);
     }
 
@@ -851,20 +898,22 @@ TYPED_TEST_P(MapTest, RelabelDelayed) {
     RelabelFst<Arc> Rdelay(T, ipairs1, opairs1);
 
     RelabelFst<Arc> RRdelay(Rdelay, ipairs2, opairs2);
-    EXPECT_TRUE(this->Equiv(RRdelay, T));
+    EXPECT_TRUE(this->Equiv(bit_gen, RRdelay, T));
   }
 }
 
 TYPED_TEST_P(MapTest, EncodeDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "ENCODE_DESTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint8_t encode_props = 0;
-    if (std::bernoulli_distribution(.5)(this->rand_)) {
+    if (absl::Bernoulli(bit_gen, .5)) {
       encode_props |= kEncodeLabels;
     }
-    if (std::bernoulli_distribution(.5)(this->rand_)) {
+    if (absl::Bernoulli(bit_gen, .5)) {
       encode_props |= kEncodeWeights;
     }
     VLOG(1) << "Check encoding/decoding (destructive).";
@@ -872,20 +921,22 @@ TYPED_TEST_P(MapTest, EncodeDestructive) {
     EncodeMapper<Arc> encoder(encode_props, ENCODE);
     Encode(&D, &encoder);
     Decode(&D, encoder);
-    EXPECT_TRUE(this->Equiv(D, T));
+    EXPECT_TRUE(this->Equiv(bit_gen, D, T));
   }
 }
 
 TYPED_TEST_P(MapTest, EncodeDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "ENCODE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint8_t encode_props = 0;
-    if (std::bernoulli_distribution(.5)(this->rand_)) {
+    if (absl::Bernoulli(bit_gen, .5)) {
       encode_props |= kEncodeLabels;
     }
-    if (std::bernoulli_distribution(.5)(this->rand_)) {
+    if (absl::Bernoulli(bit_gen, .5)) {
       encode_props |= kEncodeWeights;
     }
     VLOG(1) << "Check encoding/decoding (delayed).";
@@ -893,15 +944,17 @@ TYPED_TEST_P(MapTest, EncodeDelayed) {
     EncodeFst<Arc> E(T, &encoder);
     VectorFst<Arc> Encoded(E);
     DecodeFst<Arc> D(Encoded, encoder);
-    EXPECT_TRUE(this->Equiv(D, T));
+    EXPECT_TRUE(this->Equiv(bit_gen, D, T));
   }
 }
 
 TYPED_TEST_P(MapTest, GallicConstructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "GALLIC_CONSTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check gallic mappers (constructive).";
     ToGallicMapper<Arc> to_mapper;
     FromGallicMapper<Arc> from_mapper;
@@ -909,19 +962,21 @@ TYPED_TEST_P(MapTest, GallicConstructive) {
     VectorFst<Arc> F;
     ArcMap(T, &G, to_mapper);
     ArcMap(G, &F, from_mapper);
-    EXPECT_TRUE(this->Equiv(T, F));
+    EXPECT_TRUE(this->Equiv(bit_gen, T, F));
   }
 }
 
 TYPED_TEST_P(MapTest, GallicDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "GALLIC_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check gallic mappers (delayed).";
     ArcMapFst G(T, ToGallicMapper<Arc>());
     ArcMapFst F(G, FromGallicMapper<Arc>());
-    EXPECT_TRUE(this->Equiv(T, F));
+    EXPECT_TRUE(this->Equiv(bit_gen, T, F));
   }
 }
 
@@ -930,14 +985,16 @@ class ComposeTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(ComposeTest);
 
 TYPED_TEST_P(ComposeTest, Associative) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("ASSOCIATIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VectorFst<Arc> S1(T1), S2(T2), S3(T3);
     ILabelCompare<Arc> icomp;
     OLabelCompare<Arc> ocomp;
@@ -951,19 +1008,21 @@ TYPED_TEST_P(ComposeTest, Associative) {
     ComposeFst<Arc> C3(S2, S3);
     ComposeFst<Arc> C4(S1, C3);
 
-    EXPECT_TRUE(this->Equiv(C2, C4));
+    EXPECT_TRUE(this->Equiv(bit_gen, C2, C4));
   }
 }
 
 TYPED_TEST_P(ComposeTest, LeftDistributesUnion) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "LEFT_DISTRIBUTES_UNION"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VectorFst<Arc> S1(T1), S2(T2), S3(T3);
     ILabelCompare<Arc> icomp;
     OLabelCompare<Arc> ocomp;
@@ -979,19 +1038,21 @@ TYPED_TEST_P(ComposeTest, LeftDistributesUnion) {
     ComposeFst<Arc> C3(S1, S3);
     UnionFst<Arc> U2(C2, C3);
 
-    EXPECT_TRUE(this->Equiv(C1, U2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
   }
 }
 
 TYPED_TEST_P(ComposeTest, RightDistributesUnion) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RIGHT_DISTRIBUTES_UNION"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VectorFst<Arc> S1(T1), S2(T2), S3(T3);
     ILabelCompare<Arc> icomp;
     OLabelCompare<Arc> ocomp;
@@ -1007,18 +1068,20 @@ TYPED_TEST_P(ComposeTest, RightDistributesUnion) {
     ComposeFst<Arc> C3(S2, S3);
     UnionFst<Arc> U2(C2, C3);
 
-    EXPECT_TRUE(this->Equiv(C1, U2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, U2));
   }
 }
 
 TYPED_TEST_P(ComposeTest, IntersectionCommutative) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "INTERSECTION_COMMUTATIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1028,18 +1091,20 @@ TYPED_TEST_P(ComposeTest, IntersectionCommutative) {
     VLOG(1) << "Check intersection is commutative.";
     IntersectFst<Arc> I1(A1, A2);
     IntersectFst<Arc> I2(A2, A1);
-    EXPECT_TRUE(this->Equiv(I1, I2));
+    EXPECT_TRUE(this->Equiv(bit_gen, I1, I2));
   }
 }
 
 TYPED_TEST_P(ComposeTest, FiltersEpsilon) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "FILTERS_EPSILON"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> S1(T1), S2(T2);
     OLabelCompare<Arc> ocomp;
 
@@ -1052,30 +1117,32 @@ TYPED_TEST_P(ComposeTest, FiltersEpsilon) {
     ComposeFst<Arc> C3(S1, S2,
                        ComposeFstOptions<Arc, M, MatchComposeFilter<M>>());
 
-    EXPECT_TRUE(this->Equiv(C1, C2));
-    EXPECT_TRUE(this->Equiv(C1, C3));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C3));
 
     if ((Weight::Properties() & kIdempotent) ||
         S1.Properties(kNoOEpsilons, false) ||
         S2.Properties(kNoIEpsilons, false)) {
       ComposeFst<Arc> C4(S1, S2,
                          ComposeFstOptions<Arc, M, TrivialComposeFilter<M>>());
-      EXPECT_TRUE(this->Equiv(C1, C4));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, C4));
       ComposeFst<Arc> C5(S1, S2,
                          ComposeFstOptions<Arc, M, NoMatchComposeFilter<M>>());
-      EXPECT_TRUE(this->Equiv(C1, C5));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, C5));
     }
   }
 }
 
 TYPED_TEST_P(ComposeTest, FiltersNull) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "FILTERS_NULL"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> S1(T1), S2(T2);
     OLabelCompare<Arc> ocomp;
 
@@ -1086,19 +1153,21 @@ TYPED_TEST_P(ComposeTest, FiltersNull) {
         S2.Properties(kNoIEpsilons, false)) {
       ComposeFst<Arc> C6(S1, S2,
                          ComposeFstOptions<Arc, M, NullComposeFilter<M>>());
-      EXPECT_TRUE(this->Equiv(C1, C6));
+      EXPECT_TRUE(this->Equiv(bit_gen, C1, C6));
     }
   }
 }
 
 TYPED_TEST_P(ComposeTest, LookAhead) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("LOOK_AHEAD"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if (!(Weight::Properties() & kCommutative)) return;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> S1(T1), S2(T2);
     OLabelCompare<Arc> ocomp;
 
@@ -1107,7 +1176,7 @@ TYPED_TEST_P(ComposeTest, LookAhead) {
     VectorFst<Arc> C1, C2;
     Compose(S1, S2, &C1);
     LookAheadCompose(S1, S2, &C2);
-    EXPECT_TRUE(this->Equiv(C1, C2));
+    EXPECT_TRUE(this->Equiv(bit_gen, C1, C2));
   }
 }
 
@@ -1116,37 +1185,43 @@ class SortTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(SortTest);
 
 TYPED_TEST_P(SortTest, ArcSortedEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "ARC_SORTED_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     ILabelCompare<Arc> icomp;
     VectorFst<Arc> S1(T);
     VLOG(1) << "Check arc sorted Fst is equivalent to its input.";
     ArcSort(&S1, icomp);
-    EXPECT_TRUE(this->Equiv(T, S1));
+    EXPECT_TRUE(this->Equiv(bit_gen, T, S1));
   }
 }
 
 TYPED_TEST_P(SortTest, DestructiveDelayedEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DESTRUCTIVE_DELAYED_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     ILabelCompare<Arc> icomp;
     VectorFst<Arc> S1(T);
     ArcSort(&S1, icomp);
     VLOG(1) << "Check destructive and delayed arcsort are equivalent.";
     ArcSortFst<Arc, ILabelCompare<Arc>> S2(T, icomp);
-    EXPECT_TRUE(this->Equiv(S1, S2));
+    EXPECT_TRUE(this->Equiv(bit_gen, S1, S2));
   }
 }
 
 TYPED_TEST_P(SortTest, InversionsIdentity) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "INVERSIONS_IDENTITY"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     ILabelCompare<Arc> icomp;
     OLabelCompare<Arc> ocomp;
     VLOG(1) << "Check ilabel sorting vs. olabel sorting with inversions.";
@@ -1156,27 +1231,31 @@ TYPED_TEST_P(SortTest, InversionsIdentity) {
     Invert(&S2);
     ArcSort(&S2, ocomp);
     Invert(&S2);
-    EXPECT_TRUE(this->Equiv(S1, S2));
+    EXPECT_TRUE(this->Equiv(bit_gen, S1, S2));
   }
 }
 
 TYPED_TEST_P(SortTest, TopologicallySortedEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "TOPOLOGICALLY_SORTED_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check topologically sorted Fst is equivalent to its input.";
     VectorFst<Arc> S3(T);
     TopSort(&S3);
-    EXPECT_TRUE(this->Equiv(T, S3));
+    EXPECT_TRUE(this->Equiv(bit_gen, T, S3));
   }
 }
 
 TYPED_TEST_P(SortTest, ReverseReverseIdentity) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "REVERSE_REVERSE_IDENTITY"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check reverse(reverse(T)) = T";
     for (int j = 0; j < 2; ++j) {
       VectorFst<ReverseArc<Arc>> R1;
@@ -1184,7 +1263,7 @@ TYPED_TEST_P(SortTest, ReverseReverseIdentity) {
       bool require_superinitial = (j == 1);
       Reverse(T, &R1, require_superinitial);
       Reverse(R1, &R2, require_superinitial);
-      EXPECT_TRUE(this->Equiv(T, R2));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, R2));
     }
   }
 }
@@ -1194,23 +1273,27 @@ class OptimizeTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(OptimizeTest);
 
 TYPED_TEST_P(OptimizeTest, ConnectEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CONNECT_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VLOG(1) << "Check connected FST is equivalent to its input.";
     VectorFst<Arc> C1(T);
     Connect(&C1);
-    EXPECT_TRUE(this->Equiv(T, C1));
+    EXPECT_TRUE(this->Equiv(bit_gen, T, C1));
   }
 }
 
 TYPED_TEST_P(OptimizeTest, RmEpsilonDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RM_EPSILON_DESTRUCTIVE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kSemiring) == kSemiring &&
@@ -1218,17 +1301,19 @@ TYPED_TEST_P(OptimizeTest, RmEpsilonDestructive) {
       VectorFst<Arc> R1(T);
       RmEpsilon(&R1);
       VLOG(1) << "Check epsilon-removed FST is equivalent to its input.";
-      EXPECT_TRUE(this->Equiv(T, R1));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, R1));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, RmEpsilonDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RM_EPSILON_DELAYED"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kSemiring) == kSemiring &&
@@ -1238,17 +1323,19 @@ TYPED_TEST_P(OptimizeTest, RmEpsilonDelayed) {
       RmEpsilonFst<Arc> R2(T);
       VLOG(1)
           << "Check destructive and delayed epsilon removal are equivalent.";
-      EXPECT_TRUE(this->Equiv(R1, R2));
+      EXPECT_TRUE(this->Equiv(bit_gen, R1, R2));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, RmEpsilonLargeProportion) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RM_EPSILON_LARGE_PROPORTION"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kSemiring) == kSemiring &&
@@ -1284,11 +1371,13 @@ TYPED_TEST_P(OptimizeTest, RmEpsilonLargeProportion) {
 }
 
 TYPED_TEST_P(OptimizeTest, DeterminizeFSAEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DETERMINIZE_FSA_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1297,17 +1386,19 @@ TYPED_TEST_P(OptimizeTest, DeterminizeFSAEquivalent) {
     if ((wprops & kSemiring) == kSemiring && tprops & kAcyclic) {
       DeterminizeFst<Arc> D(A);
       VLOG(1) << "Check determinized FSA is equivalent to its input.";
-      EXPECT_TRUE(this->Equiv(A, D));
+      EXPECT_TRUE(this->Equiv(bit_gen, A, D));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, DeterminizeFSTEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DETERMINIZE_FST_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kSemiring) == kSemiring && tprops & kAcyclic) {
@@ -1315,17 +1406,19 @@ TYPED_TEST_P(OptimizeTest, DeterminizeFSTEquivalent) {
       DeterminizeFstOptions<Arc> opts;
       opts.type = DETERMINIZE_NONFUNCTIONAL;
       DeterminizeFst<Arc> DT(T, opts);
-      EXPECT_TRUE(this->Equiv(T, DT));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, DT));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PruningDeterminization) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PRUNING_DETERMINIZATION"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1335,7 +1428,7 @@ TYPED_TEST_P(OptimizeTest, PruningDeterminization) {
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
         VLOG(1) << "Check pruning in determinization";
         VectorFst<Arc> P;
-        const Weight threshold = this->generate_();
+        const Weight threshold = this->generate_(bit_gen);
         DeterminizeOptions<Arc> opts;
         opts.weight_threshold = threshold;
         Determinize(A, &P, opts);
@@ -1347,12 +1440,14 @@ TYPED_TEST_P(OptimizeTest, PruningDeterminization) {
 }
 
 TYPED_TEST_P(OptimizeTest, DisambiguateMinDeterminization) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DISAMBIGUATE_MIN_DETERMINIZATION"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   using Label = typename Arc::Label;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kSemiring) == kSemiring && tprops & kAcyclic) {
@@ -1370,18 +1465,20 @@ TYPED_TEST_P(OptimizeTest, DisambiguateMinDeterminization) {
         opts.type = DETERMINIZE_DISAMBIGUATE;
         Determinize(R, &M, opts);
         EXPECT_TRUE(M.Properties(kIDeterministic, true));
-        EXPECT_TRUE(this->MinRelated(M, R));
+        EXPECT_TRUE(this->MinRelated(bit_gen, M, R));
       }
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, DeterminizeMinimize) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DETERMINIZE_MINIMIZE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1394,18 +1491,20 @@ TYPED_TEST_P(OptimizeTest, DeterminizeMinimize) {
       VectorFst<Arc> M(D);
       int n = M.NumStates();
       Minimize(&M, static_cast<MutableFst<Arc>*>(nullptr), this->kDelta);
-      EXPECT_TRUE(this->Equiv(D, M));
+      EXPECT_TRUE(this->Equiv(bit_gen, D, M));
       EXPECT_LE(M.NumStates(), n);
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, DeterminizeRevuzBrozozowski) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DETERMINIZE_REVUZ_BROZOZOWSKI"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1442,11 +1541,13 @@ TYPED_TEST_P(OptimizeTest, DeterminizeRevuzBrozozowski) {
 }
 
 TYPED_TEST_P(OptimizeTest, DisambiguateFSAEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DISAMBIGUATE_FSA_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1458,17 +1559,19 @@ TYPED_TEST_P(OptimizeTest, DisambiguateFSAEquivalent) {
       RmEpsilon(&R);
 
       Disambiguate(R, &D);
-      EXPECT_TRUE(this->Equiv(R, D));
+      EXPECT_TRUE(this->Equiv(bit_gen, R, D));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, DisambiguateUnambiguous) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DISAMBIGUATE_UNAMBIGUOUS"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -1479,18 +1582,18 @@ TYPED_TEST_P(OptimizeTest, DisambiguateUnambiguous) {
       RmEpsilon(&R);
 
       Disambiguate(R, &D);
-      EXPECT_TRUE(this->Equiv(R, D));
+      EXPECT_TRUE(this->Equiv(bit_gen, R, D));
       VLOG(1) << "Check disambiguated FSA is unambiguous";
-      EXPECT_TRUE(this->Unambiguous(D));
+      EXPECT_TRUE(this->Unambiguous(bit_gen, D));
 
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
         VLOG(1) << "Check pruning in disambiguation";
         VectorFst<Arc> P;
-        const Weight threshold = this->generate_();
+        const Weight threshold = this->generate_(bit_gen);
         DisambiguateOptions<Arc> opts;
         opts.weight_threshold = threshold;
         Disambiguate(R, &P, opts);
-        EXPECT_TRUE(this->Unambiguous(P));
+        EXPECT_TRUE(this->Unambiguous(bit_gen, P));
         EXPECT_TRUE(this->PruneEquiv(A, P, threshold));
       }
     }
@@ -1498,34 +1601,38 @@ TYPED_TEST_P(OptimizeTest, DisambiguateUnambiguous) {
 }
 
 TYPED_TEST_P(OptimizeTest, ReweightEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "REWEIGHT_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     if (Arc::Type() == LogArc::Type() || Arc::Type() == StdArc::Type()) {
       std::vector<Weight> potential;
       VectorFst<Arc> RI(T);
       VectorFst<Arc> RF(T);
       while (potential.size() < RI.NumStates()) {
-        potential.push_back(this->generate_());
+        potential.push_back(this->generate_(bit_gen));
       }
       VLOG(1) << "Check reweight(T) equiv T";
       Reweight(&RI, potential, REWEIGHT_TO_INITIAL);
-      EXPECT_TRUE(this->Equiv(T, RI));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, RI));
 
       Reweight(&RF, potential, REWEIGHT_TO_FINAL);
-      EXPECT_TRUE(this->Equiv(T, RF));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, RF));
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PushRightSemiring) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PUSH_RIGHT_SEMIRING"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kIdempotent) || (tprops & kAcyclic)) {
@@ -1534,26 +1641,28 @@ TYPED_TEST_P(OptimizeTest, PushRightSemiring) {
         // Pushing towards the final state.
         VectorFst<Arc> P1;
         Push<Arc, REWEIGHT_TO_FINAL>(T, &P1, kPushLabels);
-        EXPECT_TRUE(this->Equiv(T, P1));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P1));
 
         VectorFst<Arc> P2;
         Push<Arc, REWEIGHT_TO_FINAL>(T, &P2, kPushWeights);
-        EXPECT_TRUE(this->Equiv(T, P2));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P2));
 
         VectorFst<Arc> P3;
         Push<Arc, REWEIGHT_TO_FINAL>(T, &P3, kPushLabels | kPushWeights);
-        EXPECT_TRUE(this->Equiv(T, P3));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P3));
       }
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PushLeftSemiring) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PUSH_LEFT_SEMIRING"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
     if ((wprops & kIdempotent) || (tprops & kAcyclic)) {
@@ -1562,52 +1671,56 @@ TYPED_TEST_P(OptimizeTest, PushLeftSemiring) {
         // Pushing towards the initial state.
         VectorFst<Arc> P1;
         Push<Arc, REWEIGHT_TO_INITIAL>(T, &P1, kPushLabels);
-        EXPECT_TRUE(this->Equiv(T, P1));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P1));
 
         VectorFst<Arc> P2;
         Push<Arc, REWEIGHT_TO_INITIAL>(T, &P2, kPushWeights);
-        EXPECT_TRUE(this->Equiv(T, P2));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P2));
 
         VectorFst<Arc> P3;
         Push<Arc, REWEIGHT_TO_INITIAL>(T, &P3, kPushLabels | kPushWeights);
-        EXPECT_TRUE(this->Equiv(T, P3));
+        EXPECT_TRUE(this->Equiv(bit_gen, T, P3));
       }
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PruningAlgorithm) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PRUNING_ALGORITHM"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t wprops = Weight::Properties();
     if constexpr (IsPath<Weight>::value) {
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
         VLOG(1) << "Check pruning algorithm";
         VLOG(1) << "Check equiv. of constructive and destructive algorithms";
-        const Weight threshold = this->generate_();
+        const Weight threshold = this->generate_(bit_gen);
         VectorFst<Arc> P1(T);
         Prune(&P1, threshold);
         VectorFst<Arc> P2;
         Prune(T, &P2, threshold);
-        EXPECT_TRUE(this->Equiv(P1, P2));
+        EXPECT_TRUE(this->Equiv(bit_gen, P1, P2));
       }
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PruningReverseEquiv) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PRUNING_REVERSE_EQUIV"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t wprops = Weight::Properties();
     if constexpr (IsPath<Weight>::value) {
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
-        const Weight threshold = this->generate_();
+        const Weight threshold = this->generate_(bit_gen);
         VectorFst<Arc> P1(T);
         Prune(&P1, threshold);
         VLOG(1) << "Check prune(reverse) equiv reverse(prune)";
@@ -1616,25 +1729,27 @@ TYPED_TEST_P(OptimizeTest, PruningReverseEquiv) {
         Reverse(T, &R);
         Prune(&R, threshold.Reverse());
         Reverse(R, &P2);
-        EXPECT_TRUE(this->Equiv(P1, P2));
+        EXPECT_TRUE(this->Equiv(bit_gen, P1, P2));
       }
     }
   }
 }
 
 TYPED_TEST_P(OptimizeTest, PruningShortestDistance) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "PRUNING_SHORTEST_DISTANCE"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t wprops = Weight::Properties();
 
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::INPUT);
     if constexpr (IsPath<Weight>::value) {
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
-        const Weight threshold = this->generate_();
+        const Weight threshold = this->generate_(bit_gen);
         VectorFst<Arc> P;
         Prune(A, &P, threshold);
         VLOG(1) << "Check: ShortestDistance(A - prune(A)) > "
@@ -1646,15 +1761,17 @@ TYPED_TEST_P(OptimizeTest, PruningShortestDistance) {
 }
 
 TYPED_TEST_P(OptimizeTest, SynchronizeEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "SYNCHRONIZE_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     uint64_t tprops = T.Properties(kFstProperties, true);
     if (tprops & kAcyclic) {
       VLOG(1) << "Check synchronize(T) equiv T";
       SynchronizeFst<Arc> S(T);
-      EXPECT_TRUE(this->Equiv(T, S));
+      EXPECT_TRUE(this->Equiv(bit_gen, T, S));
     }
   }
 }
@@ -1664,12 +1781,14 @@ class SearchTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(SearchTest);
 
 TYPED_TEST_P(SearchTest, ShortestPathEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "SHORTEST_PATH_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if constexpr (IsPath<Weight>::value) {
     for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
       VectorFst<Arc> T;
-      CHECK_OK(this->MakeRandFst(&T));
+      CHECK_OK(this->MakeRandFst(bit_gen, &T));
       uint64_t wprops = Weight::Properties();
 
       if ((wprops & (kPath | kRightSemiring)) == (kPath | kRightSemiring)) {
@@ -1685,12 +1804,14 @@ TYPED_TEST_P(SearchTest, ShortestPathEquivalent) {
 }
 
 TYPED_TEST_P(SearchTest, NShortestPathsEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "N_SHORTEST_PATHS_EQUIVALENT"));
   using Arc = TypeParam;
   using Weight = typename Arc::Weight;
   if constexpr (IsPath<Weight>::value) {
     for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
       VectorFst<Arc> T;
-      CHECK_OK(this->MakeRandFst(&T));
+      CHECK_OK(this->MakeRandFst(bit_gen, &T));
       uint64_t wprops = Weight::Properties();
 
       VectorFst<Arc> A(T);
@@ -1701,8 +1822,8 @@ TYPED_TEST_P(SearchTest, NShortestPathsEquivalent) {
         VectorFst<Arc> R(A);
         RmEpsilon(&R, /*connect=*/true, Arc::Weight::Zero(), kNoStateId,
                   this->kDelta);
-        const int nshortest = std::uniform_int_distribution<>(
-            0, this->kNumRandomShortestPaths + 1)(this->rand_);
+        const int nshortest = absl::Uniform(absl::IntervalClosedClosed, bit_gen,
+                                            0, this->kNumRandomShortestPaths);
         VectorFst<Arc> paths;
         ShortestPath(R, &paths, nshortest, /*unique=*/true,
                      /*first_path=*/false, Weight::Zero(),
@@ -1741,11 +1862,13 @@ class UnweightedTest : public AlgoTestBase<Arc> {};
 TYPED_TEST_SUITE_P(UnweightedTest);
 
 TYPED_TEST_P(UnweightedTest, UnionDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_DESTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1761,11 +1884,13 @@ TYPED_TEST_P(UnweightedTest, UnionDestructive) {
 }
 
 TYPED_TEST_P(UnweightedTest, UnionDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1780,14 +1905,16 @@ TYPED_TEST_P(UnweightedTest, UnionDelayed) {
 }
 
 TYPED_TEST_P(UnweightedTest, ClosureDestructive) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CLOSURE_DESTRUCTIVE"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     VectorFst<Arc> A1(T1);
     Project(&A1, ProjectType::OUTPUT);
     ArcMap(&A1, RmWeightMapper<Arc>());
-    const int n = std::uniform_int_distribution<>(0, 4)(this->rand_);
+    const int n = absl::Uniform(bit_gen, 0, 5);
     VectorFst<Arc> C(this->one_fst_);
     VLOG(1) << "Check if A^n c A* (destructive).";
     for (int j = 0; j < n; ++j) Concat(&C, A1);
@@ -1798,14 +1925,16 @@ TYPED_TEST_P(UnweightedTest, ClosureDestructive) {
 }
 
 TYPED_TEST_P(UnweightedTest, ClosureDelayed) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CLOSURE_DELAYED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1;
-    CHECK_OK(this->MakeRandFst(&T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
     VectorFst<Arc> A1(T1);
     Project(&A1, ProjectType::OUTPUT);
     ArcMap(&A1, RmWeightMapper<Arc>());
-    const int n = std::uniform_int_distribution<>(0, 4)(this->rand_);
+    const int n = absl::Uniform(bit_gen, 0, 5);
     VLOG(1) << "Check if A^n c A* (delayed).";
     std::unique_ptr<Fst<Arc>> C =
         std::make_unique<VectorFst<Arc>>(this->one_fst_);
@@ -1818,11 +1947,13 @@ TYPED_TEST_P(UnweightedTest, ClosureDelayed) {
 }
 
 TYPED_TEST_P(UnweightedTest, IntersectContained) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "INTERSECT_CONTAINED"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1839,12 +1970,14 @@ TYPED_TEST_P(UnweightedTest, IntersectContained) {
 }
 
 TYPED_TEST_P(UnweightedTest, UnionDistributesIntersect) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "UNION_DISTRIBUTES_INTERSECT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2, T3;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
-    CHECK_OK(this->MakeRandFst(&T3));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T3));
     VectorFst<Arc> A1(T1), A2(T2), A3(T3);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1868,11 +2001,13 @@ TYPED_TEST_P(UnweightedTest, UnionDistributesIntersect) {
 }
 
 TYPED_TEST_P(UnweightedTest, ComplementSigmaStar) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "COMPLEMENT_SIGMA_STAR"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1893,11 +2028,13 @@ TYPED_TEST_P(UnweightedTest, ComplementSigmaStar) {
 }
 
 TYPED_TEST_P(UnweightedTest, ComplementEmpty) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "COMPLEMENT_EMPTY"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1918,11 +2055,13 @@ TYPED_TEST_P(UnweightedTest, ComplementEmpty) {
 }
 
 TYPED_TEST_P(UnweightedTest, DeMorganUnion) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DE_MORGAN_UNION"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1946,11 +2085,13 @@ TYPED_TEST_P(UnweightedTest, DeMorganUnion) {
 }
 
 TYPED_TEST_P(UnweightedTest, DeMorganIntersect) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DE_MORGAN_INTERSECT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T1, T2;
-    CHECK_OK(this->MakeRandFst(&T1));
-    CHECK_OK(this->MakeRandFst(&T2));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T1));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T2));
     VectorFst<Arc> A1(T1), A2(T2);
     Project(&A1, ProjectType::OUTPUT);
     Project(&A2, ProjectType::INPUT);
@@ -1974,10 +2115,12 @@ TYPED_TEST_P(UnweightedTest, DeMorganIntersect) {
 }
 
 TYPED_TEST_P(UnweightedTest, DeterminizeEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DETERMINIZE_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::OUTPUT);
     ArcMap(&A, RmWeightMapper<Arc>());
@@ -1988,10 +2131,12 @@ TYPED_TEST_P(UnweightedTest, DeterminizeEquivalent) {
 }
 
 TYPED_TEST_P(UnweightedTest, DisambiguateEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "DISAMBIGUATE_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::OUTPUT);
     ArcMap(&A, RmWeightMapper<Arc>());
@@ -2005,10 +2150,12 @@ TYPED_TEST_P(UnweightedTest, DisambiguateEquivalent) {
 }
 
 TYPED_TEST_P(UnweightedTest, MinimizeEquivalent) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "MINIMIZE_EQUIVALENT"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::OUTPUT);
     ArcMap(&A, RmWeightMapper<Arc>());
@@ -2022,10 +2169,12 @@ TYPED_TEST_P(UnweightedTest, MinimizeEquivalent) {
 }
 
 TYPED_TEST_P(UnweightedTest, HopcroftRevuzAlgorithm) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "HOPCROFT_REVUZ_ALGORITHM"));
   using Arc = TypeParam;
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); ++i) {
     VectorFst<Arc> T;
-    CHECK_OK(this->MakeRandFst(&T));
+    CHECK_OK(this->MakeRandFst(bit_gen, &T));
     VectorFst<Arc> A(T);
     Project(&A, ProjectType::OUTPUT);
     ArcMap(&A, RmWeightMapper<Arc>());

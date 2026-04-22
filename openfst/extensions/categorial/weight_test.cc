@@ -28,29 +28,34 @@
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/extensions/categorial/categorial-weight.h"
 #include "openfst/test/weight-tester.h"
 
-ABSL_FLAG(int, seed, -1, "Random seed.");
 ABSL_FLAG(int, repeat, 10000, "Number of test repetitions.");
 
 namespace fst {
 namespace {
 
 TEST(CategorialWeight, LeftTest) {
+  absl::BitGen bit_gen(
+      fst::MakeTaggedSeedSeq("LEFT_TEST"));
   WeightGenerate<CategorialWeight<int>> left_category_generate;
   WeightTester<CategorialWeight<int>> left_category_tester(
       left_category_generate);
-  left_category_tester.Test(absl::GetFlag(FLAGS_repeat));
+  left_category_tester.Test(bit_gen, absl::GetFlag(FLAGS_repeat));
   std::cout << "PASS left categorial test" << std::endl;
 }
 
 TEST(CategorialWeight, RightTest) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "CategorialWeight_RightTest"));
   WeightGenerate<CategorialWeight<int, CategoryType::RIGHT>>
       right_category_generate;
   WeightTester<CategorialWeight<int, CategoryType::RIGHT>>
       right_category_tester(right_category_generate);
-  right_category_tester.Test(absl::GetFlag(FLAGS_repeat));
+  right_category_tester.Test(bit_gen, absl::GetFlag(FLAGS_repeat));
   std::cout << "PASS right categorial test" << std::endl;
 }
 
@@ -59,9 +64,5 @@ TEST(CategorialWeight, RightTest) {
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
-                                            : time(nullptr);
-  std::srand(seed);
-  LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
   return RUN_ALL_TESTS();
 }

@@ -16,6 +16,7 @@ add_library(
   fst
   ../compat/file_path.cc
   ../compat/init.cc
+  ../compat/seed_sequences.cc
   encode.cc
   file-util.cc
   fst.cc

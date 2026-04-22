@@ -19,9 +19,13 @@
 #define OPENFST_SCRIPT_RANDGEN_H_
 
 #include <cstdint>
+#include <optional>
 #include <random>
 #include <tuple>
+#include <variant>
 
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/randgen.h"
@@ -31,48 +35,61 @@
 namespace fst {
 namespace script {
 
-using FstRandGenArgs =
-    std::tuple<const FstClass&, MutableFstClass*,
-               const RandGenOptions<RandArcSelection>&, uint64_t>;
+using FstRandGenArgs = std::tuple<const FstClass&, MutableFstClass*,
+                                  const RandGenOptions<RandArcSelection>&,
+                                  std::optional<uint64_t>>;
 
 template <class Arc>
 void RandGen(FstRandGenArgs* args) {
   const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
   MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   const auto& opts = std::get<2>(*args);
-  const uint64_t seed = std::get<3>(*args);
+
+  const std::optional<uint64_t> seed = std::get<3>(*args);
+  std::variant<std::monostate, absl::BitGen, std::mt19937_64> bit_gen;
+  if (seed.has_value()) {
+    bit_gen.emplace<std::mt19937_64>(*seed);
+  } else {
+    bit_gen.emplace<absl::BitGen>();
+  }
+  absl::BitGenRef bit_gen_ref =
+      seed.has_value() ? absl::BitGenRef(std::get<std::mt19937_64>(bit_gen))
+                       : absl::BitGenRef(std::get<absl::BitGen>(bit_gen));
+
   switch (opts.selector) {
     case RandArcSelection::UNIFORM: {
-      const UniformArcSelector<Arc> selector(seed);
+      const UniformArcSelector<Arc> selector;
       const RandGenOptions<UniformArcSelector<Arc>> ropts(
           selector, opts.max_length, opts.npath, opts.weighted,
           opts.remove_total_weight);
-      RandGen(ifst, ofst, ropts);
+      RandGen(ifst, ofst, ropts, bit_gen_ref);
       return;
     }
     case RandArcSelection::FAST_LOG_PROB: {
-      const FastLogProbArcSelector<Arc> selector(seed);
+      const FastLogProbArcSelector<Arc> selector;
       const RandGenOptions<FastLogProbArcSelector<Arc>> ropts(
           selector, opts.max_length, opts.npath, opts.weighted,
           opts.remove_total_weight);
-      RandGen(ifst, ofst, ropts);
+      RandGen(ifst, ofst, ropts, bit_gen_ref);
       return;
     }
     case RandArcSelection::LOG_PROB: {
-      const LogProbArcSelector<Arc> selector(seed);
+      const LogProbArcSelector<Arc> selector;
       const RandGenOptions<LogProbArcSelector<Arc>> ropts(
           selector, opts.max_length, opts.npath, opts.weighted,
           opts.remove_total_weight);
-      RandGen(ifst, ofst, ropts);
+      RandGen(ifst, ofst, ropts, bit_gen_ref);
       return;
     }
   }
 }
 
 void RandGen(const FstClass& ifst, MutableFstClass* ofst,
+             const RandGenOptions<RandArcSelection>& opts,
+             std::optional<uint64_t> seed);
+void RandGen(const FstClass& ifst, MutableFstClass* ofst,
              const RandGenOptions<RandArcSelection>& opts =
-                 RandGenOptions<RandArcSelection>(RandArcSelection::UNIFORM),
-             uint64_t seed = std::random_device()());
+                 RandGenOptions<RandArcSelection>(RandArcSelection::UNIFORM));
 
 }  // namespace script
 }  // namespace fst
