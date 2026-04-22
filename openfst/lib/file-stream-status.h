@@ -22,6 +22,16 @@
 
 #include "absl/status/status.h"
 #include "openfst/lib/file-util.h"
+#include "openfst/lib/util.h"
+
+#define LOG_AND_RETURN_IF_STREAM_FAIL(strm, action, msg) \
+  do {                                                   \
+    action;                                              \
+    if ((strm).fail()) {                                 \
+      FSTERROR() << (msg);                               \
+      return absl::InternalError(msg);                   \
+    }                                                    \
+  } while (0)
 
 namespace fst {
 

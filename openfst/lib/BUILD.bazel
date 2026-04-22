@@ -350,6 +350,7 @@ fst_cc_library(
     hdrs = ["file-stream-status.h"],
     deps = [
         ":file-util",
+        ":util",
         "@com_google_absl//absl/status",
     ],
 )

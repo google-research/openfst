@@ -186,7 +186,14 @@ class STTableReader {
 
   bool Find(absl::string_view key) {
     if (error_) return false;
-    for (size_t i = 0; i < streams_.size(); ++i) LowerBound(i, key);
+    for (size_t i = 0; i < streams_.size(); ++i) {
+      const auto status = LowerBound(i, key);
+      if (!status.ok()) {
+        FSTERROR() << "STTableReader::Find: " << status;
+        error_ = true;
+        return false;
+      }
+    }
     MakeHeap();
     if (heap_.empty()) return false;
     return keys_[current_] == key;
@@ -239,11 +246,14 @@ class STTableReader {
 
   // Positions the stream at the position corresponding to the lower bound for
   // the specified key.
-  // TODO: No stream error checking here.
-  void LowerBound(size_t id, absl::string_view find_key) {
+  absl::Status LowerBound(size_t id, absl::string_view find_key) {
     auto* strm = streams_[id].get();
     const auto& positions = positions_[id];
-    if (positions.empty()) return;
+    if (positions.empty()) return absl::OkStatus();
+
+    const std::string seek_error = absl::StrCat(
+        "Error seeking in file: ", sources_[id], " for key ", find_key);
+
     size_t low = 0;
     size_t high = positions.size() - 1;
     std::string key;
@@ -260,15 +270,19 @@ class STTableReader {
           strm->seekg(positions[i - 1]);
           ReadType(*strm, &key);
           if (key != find_key) {
-            strm->seekg(positions[i]);
-            return;
+            LOG_AND_RETURN_IF_STREAM_FAIL(*strm, strm->seekg(positions[i]),
+                                          seek_error);
+            return absl::OkStatus();
           }
         }
-        strm->seekg(positions[low]);
-        return;
+        LOG_AND_RETURN_IF_STREAM_FAIL(*strm, strm->seekg(positions[low]),
+                                      seek_error);
+        return absl::OkStatus();
       }
     }
-    strm->seekg(positions[low]);
+    LOG_AND_RETURN_IF_STREAM_FAIL(*strm, strm->seekg(positions[low]),
+                                  seek_error);
+    return absl::OkStatus();
   }
 
   // Adds all streams to the heap.
