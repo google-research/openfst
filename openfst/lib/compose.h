@@ -236,6 +236,14 @@ class ComposeFstImplBase
 template <class CacheStore, class Filter, class StateTable>
 class ComposeFstImpl
     : public ComposeFstImplBase<typename CacheStore::Arc, CacheStore> {
+ private:
+  struct StateTableDeleter {
+    bool own = true;
+    void operator()(StateTable* p) const {
+      if (own) delete p;
+    }
+  };
+
  public:
   using Matcher1 = typename Filter::Matcher1;
   using Matcher2 = typename Filter::Matcher2;
@@ -274,13 +282,11 @@ class ComposeFstImpl
         matcher2_(filter_->GetMatcher2()),
         fst1_(matcher1_->GetFst()),
         fst2_(matcher2_->GetFst()),
-        state_table_(new StateTable(*impl.state_table_)),
-        own_state_table_(true),
+        state_table_(new StateTable(*impl.state_table_),
+                     StateTableDeleter{true}),
         match_type_(impl.match_type_) {}
 
-  ~ComposeFstImpl() override {
-    if (own_state_table_) delete state_table_;
-  }
+  ~ComposeFstImpl() override = default;
 
   ComposeFstImpl* Copy() const override { return new ComposeFstImpl(*this); }
 
@@ -329,9 +335,9 @@ class ComposeFstImpl
 
   Filter* GetFilter() { return filter_.get(); }
 
-  const StateTable* GetStateTable() const { return state_table_; }
+  const StateTable* GetStateTable() const { return state_table_.get(); }
 
-  StateTable* GetStateTable() { return state_table_; }
+  StateTable* GetStateTable() { return state_table_.get(); }
 
   MatcherBase<Arc>* InitMatcher(const ComposeFst<Arc, CacheStore>& fst,
                                 MatchType match_type) const override {
@@ -455,8 +461,8 @@ class ComposeFstImpl
   Matcher2* matcher2_;  // Borrowed reference.
   const FST1& fst1_;
   const FST2& fst2_;
-  StateTable* state_table_;
-  bool own_state_table_;
+
+  std::unique_ptr<StateTable, StateTableDeleter> state_table_;
 
   MatchType match_type_;
 };
@@ -474,9 +480,9 @@ ComposeFstImpl<CacheStore, Filter, StateTable>::ComposeFstImpl(
       matcher2_(filter_->GetMatcher2()),
       fst1_(matcher1_->GetFst()),
       fst2_(matcher2_->GetFst()),
-      state_table_(opts.state_table ? opts.state_table
-                                    : new StateTable(fst1_, fst2_)),
-      own_state_table_(opts.state_table ? opts.own_state_table : true) {
+      state_table_(
+          opts.state_table ? opts.state_table : new StateTable(fst1_, fst2_),
+          StateTableDeleter{opts.state_table ? opts.own_state_table : true}) {
   SetType("compose");
   if (!CompatSymbols(fst2.InputSymbols(), fst1.OutputSymbols())) {
     FSTERROR() << "ComposeFst: Output symbol table of 1st argument "
