@@ -45,6 +45,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "openfst/compat/status_macros.h"
 #include "openfst/lib/compat-util.h"
 #include "openfst/lib/file-stream-status.h"
 #include "openfst/lib/file-util.h"
@@ -396,16 +397,8 @@ absl::Status SymbolTable::WriteTextWithStatus(const std::string& path,
     return WriteTextWithStatus(std::cout, sep);
   }
   file::FileOutStream strm(path);
-  // We don't have OpenFST shims for StatusBuilder and status macros yet,
-  // so we cannot use RETURN_IF_ERROR here.
-  // TODO: Use RETURN_IF_ERROR once we have shims.
-  if (const absl::Status status = GetFileStreamStatus(strm); !status.ok()) {
-    return status;
-  }
-  if (const absl::Status status = WriteTextWithStatus(strm, sep);
-      !status.ok()) {
-    return status;
-  }
+  RETURN_IF_ERROR(GetFileStreamStatus(strm));
+  RETURN_IF_ERROR(WriteTextWithStatus(strm, sep));
   return CloseFileStream(strm);
 }
 

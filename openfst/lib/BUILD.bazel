@@ -37,6 +37,7 @@ fst_cc_library(
         ":windows_defs",
         "//openfst/compat:checksummer",
         "//openfst/compat:compat_memory",
+        "//openfst/compat:status_macros",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/base:nullability",
