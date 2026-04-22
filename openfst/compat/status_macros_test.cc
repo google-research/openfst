@@ -150,22 +150,6 @@ TEST(ExternalStatusTest, AssignOrReturn3Payload) {
   ASSERT_EQ(func().status().GetPayload("url"), "payload");
 }
 
-TEST(ExternalStatusTest, AssertOkAndAssign) {
-  ABSL_ASSERT_OK_AND_ASSIGN(auto value, ReturnStatusOrValue(1));
-  ASSERT_EQ(1, value);
-  ABSL_ASSERT_OK_AND_ASSIGN(const auto& result,
-                            ReturnStatusOrValue(std::make_tuple(1, 2)));
-  ASSERT_EQ(1, std::get<0>(result));
-  ASSERT_EQ(2, std::get<1>(result));
-  EXPECT_FATAL_FAILURE(
-      []() {
-        ABSL_ASSERT_OK_AND_ASSIGN(auto x,
-                                  ReturnStatusOrError("Expected error"));
-        (void)x;
-      }(),
-      "Expected error");
-}
-
 TEST(ExternalStatusTest, SetPrepend) {
   auto func = []() -> absl::Status {
     RETURN_IF_ERROR(ReturnError("EXPECTED")).SetPrepend() << "ALSO ";

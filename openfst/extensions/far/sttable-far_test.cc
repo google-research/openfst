@@ -29,7 +29,7 @@
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/util.h"
-#include "openfst/compat/status_macros.h"
+#include "openfst/compat/status_matchers.h"
 
 using ::testing::IsNull;
 

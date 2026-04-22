@@ -520,7 +520,7 @@ cc_test(
         ":sttable-far-reader",
         ":sttable-far-writer",
         "//openfst/compat:file_path",
-        "//openfst/compat:status_macros",
+        "//openfst/compat:status_matchers",
         "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/test:test_main",

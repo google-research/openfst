@@ -18,7 +18,9 @@ set(COMPAT_HEADERS
     compat_memory.h
     file_path.h
     init.h
+    status_builder.h
     status_macros.h
+    status_matchers.h
     unaligned.h
 )
 openfst_install(FILES ${COMPAT_HEADERS}
@@ -32,6 +34,7 @@ if(OPENFST_BUILD_TESTS)
       compat_memory_test
       file_path_test
       status_macros_test
+      status_matchers_test
       init_test
       unaligned_test
   )
