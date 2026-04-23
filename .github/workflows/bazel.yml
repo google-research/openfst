@@ -14,7 +14,7 @@
 
 # See https://github.com/actions/runner-images.
 
-name: "Bazel (x64 Linux)"
+name: "Bazel"
 
 on:
   push:
@@ -30,8 +30,30 @@ concurrency:
 permissions: read-all
 
 jobs:
-    build-and-test-x64-linux-bazel:
-      runs-on: ubuntu-latest
+    build-and-test:
+      # Note that the status check UI will show something like
+      # `Bazel / Bazel / x86-64 Linux`, but this name is the real name.
+      name: Bazel / ${{ matrix.name }}
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os: [ubuntu-latest, macos-latest, windows-latest]
+          include:
+            - os: ubuntu-latest
+              name: x86-64 Linux
+              config: --config=dev
+            - os: macos-latest
+              name: AArch64 macOS
+              config: --config=dev
+              test_filters: --test_filter=-PywrapFstTest.testRandGen
+            - os: windows-latest
+              name: x64 Windows
+              shell: pwsh
+              test_filters: --test_tag_filters=-no_windows_msvc
+      defaults:
+        run:
+          shell: ${{ matrix.shell || 'bash' }}
       env:
         USE_BAZEL_VERSION: 9.0.0
       steps:
@@ -49,9 +71,12 @@ jobs:
           run: bazelisk --version
         - name: Build
           run: |
-            bazelisk build --config=dev -c fastbuild //...
+            bazelisk build ${{ matrix.config }} -c fastbuild //...
         - name: Test
+          shell: bash
           run: >-
-            bazelisk test --config=dev -c fastbuild
-            --test_size_filters=-enormous --test_output=errors
+            bazelisk test ${{ matrix.config }} -c fastbuild
+            --test_size_filters=-enormous
+            --test_output=errors
+            ${{ matrix.test_filters }}
             //...

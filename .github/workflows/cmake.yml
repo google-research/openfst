@@ -14,7 +14,7 @@
 
 # See https://github.com/actions/runner-images.
 
-name: "CMake (arm64 macOS)"
+name: "CMake"
 
 on:
   push:
@@ -30,10 +30,22 @@ concurrency:
 permissions: read-all
 
 jobs:
-    build-and-test-arm64-macos-cmake:
-      runs-on: macos-latest
+    build-and-test:
+      # Note that the status check UI will show something like
+      # `CMake / CMake / x86-64 Linux`, but this name is the real name.
+      name: CMake / ${{ matrix.name }}
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os: [ubuntu-latest, macos-latest]
+          include:
+            - os: ubuntu-latest
+              name: x86-64 Linux
+            - os: macos-latest
+              name: AArch64 macOS
       env:
-        cache-name: ${{github.job}}
+        cache-name: ${{github.job}}-${{ matrix.os }}
       steps:
         - uses: actions/checkout@v6
         - name: Set Build Parallelism
