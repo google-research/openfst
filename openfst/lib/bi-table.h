@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
@@ -145,6 +146,8 @@ class CompactHashBiTable {
   static_assert(HS == HS_STL || HS == HS_FLAT, "Unsupported hash set type");
 
  public:
+  static constexpr I kNoId = static_cast<I>(-1);
+
   friend class HashFunc;
   friend class HashEqual;
 
@@ -181,7 +184,7 @@ class CompactHashBiTable {
       return key;
     }
     const auto it = keys_.find(kCurrentKey);
-    return it == keys_.end() ? -1 : *it;
+    return it == keys_.end() ? kNoId : *it;
   }
 
   const T& FindEntry(I s) const { return id2entry_[s]; }
@@ -194,22 +197,15 @@ class CompactHashBiTable {
   }
 
  private:
-  static_assert(std::is_signed_v<I>, "I must be a signed type");
-  // ... otherwise >= kCurrentKey comparisons as used below don't work.
-  // TODO: (1) don't use >= for key comparison, (2) allow unsigned key
-  // types.
-  static constexpr I kCurrentKey = -1;
+  static constexpr I kCurrentKey =
+      std::is_signed_v<I> ? -1 : std::numeric_limits<I>::max();
 
   class HashFunc {
    public:
     explicit HashFunc(const CompactHashBiTable& ht) : ht_(&ht) {}
 
     size_t operator()(I k) const {
-      if (k >= kCurrentKey) {
-        return absl::HashOf((ht_->hash_func_)(ht_->Key2Entry(k)));
-      } else {
-        return 0;
-      }
+      return absl::HashOf((ht_->hash_func_)(ht_->Key2Entry(k)));
     }
 
    private:
@@ -223,10 +219,8 @@ class CompactHashBiTable {
     bool operator()(I k1, I k2) const {
       if (k1 == k2) {
         return true;
-      } else if (k1 >= kCurrentKey && k2 >= kCurrentKey) {
-        return (ht_->hash_equal_)(ht_->Key2Entry(k1), ht_->Key2Entry(k2));
       } else {
-        return false;
+        return (ht_->hash_equal_)(ht_->Key2Entry(k1), ht_->Key2Entry(k2));
       }
     }
 
@@ -304,6 +298,8 @@ template <class I, class T, class S, class FP, class H = absl::Hash<T>,
           HSType HS = HS_FLAT>
 class VectorHashBiTable {
  public:
+  static constexpr I kNoId = static_cast<I>(-1);
+
   friend class HashFunc;
   friend class HashEqual;
 
@@ -341,7 +337,7 @@ class VectorHashBiTable {
           id2entry_.push_back(entry);
           fp2id_[fp] = id2entry_.size();
         } else {
-          return -1;
+          return kNoId;
         }
       }
       return fp2id_[fp] - 1;  // NB: assoc_value = ID + 1.
@@ -356,7 +352,7 @@ class VectorHashBiTable {
           keys_.insert(key);
           return key;
         } else {
-          return -1;
+          return kNoId;
         }
       }
     }
@@ -373,19 +369,14 @@ class VectorHashBiTable {
   const H& HashFunction() const { return h_; }
 
  private:
-  static constexpr I kCurrentKey = -1;
+  static constexpr I kCurrentKey =
+      std::is_signed_v<I> ? -1 : std::numeric_limits<I>::max();
 
   class HashFunc {
    public:
     explicit HashFunc(const VectorHashBiTable& ht) : ht_(&ht) {}
 
-    size_t operator()(I k) const {
-      if (k >= kCurrentKey) {
-        return (ht_->h_)(ht_->Key2Entry(k));
-      } else {
-        return 0;
-      }
-    }
+    size_t operator()(I k) const { return (ht_->h_)(ht_->Key2Entry(k)); }
 
    private:
     const VectorHashBiTable* ht_;
@@ -396,10 +387,10 @@ class VectorHashBiTable {
     explicit HashEqual(const VectorHashBiTable& ht) : ht_(&ht) {}
 
     bool operator()(I k1, I k2) const {
-      if (k1 >= kCurrentKey && k2 >= kCurrentKey) {
-        return ht_->Key2Entry(k1) == ht_->Key2Entry(k2);
+      if (k1 == k2) {
+        return true;
       } else {
-        return k1 == k2;
+        return ht_->Key2Entry(k1) == ht_->Key2Entry(k2);
       }
     }
 

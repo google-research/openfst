@@ -81,8 +81,9 @@ TEST_F(CollectionTest, Find1Test) {
 TEST_F(CollectionTest, Find2Test) {
   Collection<I, T> collection;
   const auto id1 = collection.FindId(set1_);
-  ASSERT_NE(collection.FindId(set1_, false), -1);
-  ASSERT_EQ(collection.FindId(set2_, false), -1);
+  const auto no_id = Collection<I, T>::NodeTable::kNoId;
+  ASSERT_NE(collection.FindId(set1_, false), no_id);
+  ASSERT_EQ(collection.FindId(set2_, false), no_id);
   const auto id2 = collection.FindId(set2_);
   ASSERT_NE(id1, id2);
   std::vector<T> set;
