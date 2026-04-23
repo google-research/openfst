@@ -211,11 +211,11 @@ TEST_F(ErrorTest, ComposeErrorTest) {
   Compose(empty_nosyms_error_, empty_nosyms_, &ofst2);
   ASSERT_TRUE(ofst2.Properties(kError, false));
 
-  // Missing symbol table (OK).
+  // Missing symbol table.
   Compose(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, &ofst3);
   ASSERT_FALSE(ofst3.Properties(kError, false));
 
-  // Non-matching symbol tables (not OK).
+  // Non-matching symbol tables.
   Compose(accept_ilabeluns_cyc_nondeterm_, trans_ilabeluns_cyc_nondeterm_,
           &ofst3);
   ASSERT_TRUE(ofst3.Properties(kError, false));
@@ -268,15 +268,15 @@ TEST_F(ErrorTest, ConcatErrorTest) {
   ConcatFst<Arc> cfst2(empty_nosyms_, empty_nosyms_error_);
   ASSERT_TRUE(cfst2.Properties(kError, false));
 
-  // non-matching symbols
+  // Mismatching symbol tables.
   Concat(&ofst5, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  ASSERT_FALSE(ofst5.Properties(kError, false));
 
-  // Missing symbol table (OK).
+  // Missing symbol table.
   ConcatFst<Arc> cfst3(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_);
   ASSERT_FALSE(cfst3.Properties(kError, false));
 
-  // Non-matching symbol tables (not OK).
+  // Non-matching symbol tables.
   ConcatFst<Arc> cfst4(trans_ilabeluns_cyc_nondeterm_,
                        accept_ilabeluns_cyc_nondeterm_);
   ASSERT_TRUE(cfst4.Properties(kError, false));
@@ -340,11 +340,11 @@ TEST_F(ErrorTest, IntersectErrorTest) {
   Intersect(empty_nosyms_error_, empty_nosyms_, &ofst2);
   ASSERT_TRUE(ofst2.Properties(kError, false));
 
-  // Missing symbol table (OK).
+  // Missing symbol table.
   Intersect(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, &ofst3);
   ASSERT_FALSE(ofst3.Properties(kError, false));
 
-  // Non-matching symbol tables (not OK).
+  // Non-matching symbol tables.
   Intersect(accept_ilabeluns_cyc_nondeterm_, trans_ilabeluns_cyc_nondeterm_,
             &ofst3);
   ASSERT_TRUE(ofst3.Properties(kError, false));
@@ -374,12 +374,12 @@ TEST_F(ErrorTest, RandEquivalentErrorTest) {
                               1, &error));
   ASSERT_TRUE(error);
 
-  // Missing symbol table (OK).
+  // Missing symbol table.
   ASSERT_TRUE(RandEquivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, 1,
                              kDelta, 1, 1, &error));
   ASSERT_FALSE(error);
 
-  // Non-matching symbol tables (not OK).
+  // Non-matching symbol tables.
   ASSERT_FALSE(RandEquivalent(trans_ilabeluns_cyc_nondeterm_,
                               accept_ilabeluns_cyc_nondeterm_, 1, kDelta, 1, 1,
                               &error));
@@ -507,16 +507,15 @@ TEST_F(ErrorTest, UnionErrorTest) {
   UnionFst<Arc> ufst2(empty_nosyms_, empty_nosyms_error_);
   ASSERT_TRUE(ufst2.Properties(kError, false));
 
-  // TODO: restore when voice actions issues fixed
-  // non-matching symbols
+  // Mismatching symbol tables.
   Union(&ofst3, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  ASSERT_FALSE(ofst3.Properties(kError, false));
 
-  // Missing symbol table (OK).
+  // Missing symbol table.
   UnionFst<Arc> ufst3(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_);
   ASSERT_FALSE(ufst3.Properties(kError, false));
 
-  // Non-matching symbol tables (not OK).
+  // Non-matching symbol tables.
   UnionFst<Arc> ufst4(trans_ilabeluns_cyc_nondeterm_,
                       accept_ilabeluns_cyc_nondeterm_);
   ASSERT_TRUE(ufst4.Properties(kError, false));
