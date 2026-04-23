@@ -123,10 +123,10 @@ class ErrorTest : public testing::Test {
                                     new M(fst2, MATCH_INPUT, special_label));
     ComposeFst<Arc> cfst(fst1, fst2, copts);
     // Not yet a problem since unexpanded.
-    ASSERT_FALSE(cfst.Properties(kError, false));
+    EXPECT_FALSE(cfst.Properties(kError, false));
     VectorFst<Arc> vfst(cfst);
     // Now a problem since expanded.
-    ASSERT_TRUE(cfst.Properties(kError, false));
+    EXPECT_TRUE(cfst.Properties(kError, false));
   }
 
   std::unique_ptr<SymbolTable> syms1_;
@@ -153,77 +153,77 @@ class ErrorTest : public testing::Test {
 };
 
 TEST_F(ErrorTest, VectorFstErrorTest) {
-  ASSERT_TRUE(Verify(empty_nosyms_));
-  ASSERT_TRUE(Verify(trans_ilabeluns_cyc_nondeterm_));
-  ASSERT_TRUE(Verify(accept_ilabeluns_cyc_nondeterm_));
-  ASSERT_TRUE(Verify(accept_ilabelsort_cyc_nondeterm_));
-  ASSERT_FALSE(Verify(empty_nosyms_error_));
-  ASSERT_FALSE(Verify(trans_ilabeluns_cyc_nondeterm_error_));
-  ASSERT_FALSE(Verify(accept_ilabeluns_cyc_nondeterm_error_));
-  ASSERT_FALSE(Verify(accept_ilabelsort_cyc_nondeterm_error_));
-  ASSERT_FALSE(Verify(nanweight_final_));
-  ASSERT_FALSE(Verify(nanweight_arc_));
+  EXPECT_TRUE(Verify(empty_nosyms_));
+  EXPECT_TRUE(Verify(trans_ilabeluns_cyc_nondeterm_));
+  EXPECT_TRUE(Verify(accept_ilabeluns_cyc_nondeterm_));
+  EXPECT_TRUE(Verify(accept_ilabelsort_cyc_nondeterm_));
+  EXPECT_FALSE(Verify(empty_nosyms_error_));
+  EXPECT_FALSE(Verify(trans_ilabeluns_cyc_nondeterm_error_));
+  EXPECT_FALSE(Verify(accept_ilabeluns_cyc_nondeterm_error_));
+  EXPECT_FALSE(Verify(accept_ilabelsort_cyc_nondeterm_error_));
+  EXPECT_FALSE(Verify(nanweight_final_));
+  EXPECT_FALSE(Verify(nanweight_arc_));
 
   // kError is sticky.
   empty_nosyms_error_.SetProperties(0, kError);
-  ASSERT_TRUE(empty_nosyms_error_.Properties(kError, false));
+  EXPECT_TRUE(empty_nosyms_error_.Properties(kError, false));
 
   VectorFst<Arc> vfst(empty_nosyms_error_);
-  ASSERT_TRUE(vfst.Properties(kError, false));
+  EXPECT_TRUE(vfst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ConstFstErrorTest) {
   ConstFst<Arc> cfst(empty_nosyms_error_);
-  ASSERT_TRUE(cfst.Properties(kError, false));
+  EXPECT_TRUE(cfst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, CompactFstErrorTest) {
   CompactAcceptorFst<Arc> c1fst(empty_nosyms_error_);
-  ASSERT_TRUE(c1fst.Properties(kError, false));
+  EXPECT_TRUE(c1fst.Properties(kError, false));
   CompactAcceptorFst<Arc> c2fst(trans_ilabeluns_cyc_nondeterm_error_);
-  ASSERT_TRUE(c2fst.Properties(kError, false));
+  EXPECT_TRUE(c2fst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ArcMapErrorTest) {
   VectorFst<Arc> ofst1, ofst2;
   IdentityArcMapper<Arc> mapper;
   ArcMap(empty_nosyms_error_, &ofst1, mapper);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   ArcMap(trans_ilabeluns_cyc_nondeterm_error_, &ofst2, mapper);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   ArcMapFst afst(empty_nosyms_error_, mapper);
-  ASSERT_TRUE(afst.Properties(kError, false));
+  EXPECT_TRUE(afst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ArcSortErrorTest) {
   ArcSortFst<Arc, ILabelCompare<Arc>> afst(empty_nosyms_error_,
                                            ILabelCompare<Arc>());
-  ASSERT_TRUE(afst.Properties(kError, false));
+  EXPECT_TRUE(afst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ComposeErrorTest) {
   VectorFst<Arc> ofst1, ofst2, ofst3, ofst4, ofst5;
   Compose(empty_nosyms_, empty_nosyms_error_, &ofst1);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   Compose(empty_nosyms_error_, empty_nosyms_, &ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   // Missing symbol table.
   Compose(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, &ofst3);
-  ASSERT_FALSE(ofst3.Properties(kError, false));
+  EXPECT_FALSE(ofst3.Properties(kError, false));
 
   // Non-matching symbol tables.
   Compose(accept_ilabeluns_cyc_nondeterm_, trans_ilabeluns_cyc_nondeterm_,
           &ofst3);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  EXPECT_TRUE(ofst3.Properties(kError, false));
 
   // Unsorted.
   Compose(accept_ilabeluns_cyc_nondeterm_, accept_ilabeluns_cyc_nondeterm_,
           &ofst4);
-  ASSERT_TRUE(ofst4.Properties(kError, false));
+  EXPECT_TRUE(ofst4.Properties(kError, false));
 
   // Sigma matcher that matches on existing label.
   using TestSigmaMatcher = SigmaMatcher<Matcher<Fst<Arc>>>;
@@ -243,7 +243,7 @@ TEST_F(ErrorTest, ComposeErrorTest) {
 
 TEST_F(ErrorTest, ClosureErrorTest) {
   ClosureFst<Arc> cfst(empty_nosyms_error_, CLOSURE_STAR);
-  ASSERT_TRUE(cfst.Properties(kError, false));
+  EXPECT_TRUE(cfst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ConcatErrorTest) {
@@ -251,118 +251,118 @@ TEST_F(ErrorTest, ConcatErrorTest) {
       ofst3(trans_ilabeluns_cyc_nondeterm_);
   VectorFst<Arc> ofst4, ofst5(empty_nosyms_);
   Concat(&ofst1, empty_nosyms_error_);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   Concat(trans_ilabeluns_cyc_nondeterm_error_, &ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   Concat(&ofst3, trans_ilabeluns_cyc_nondeterm_error_);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  EXPECT_TRUE(ofst3.Properties(kError, false));
 
   Concat(trans_ilabeluns_cyc_nondeterm_error_, &ofst4);
-  ASSERT_TRUE(ofst4.Properties(kError, false));
+  EXPECT_TRUE(ofst4.Properties(kError, false));
 
   ConcatFst<Arc> cfst1(empty_nosyms_error_, empty_nosyms_);
-  ASSERT_TRUE(cfst1.Properties(kError, false));
+  EXPECT_TRUE(cfst1.Properties(kError, false));
 
   ConcatFst<Arc> cfst2(empty_nosyms_, empty_nosyms_error_);
-  ASSERT_TRUE(cfst2.Properties(kError, false));
+  EXPECT_TRUE(cfst2.Properties(kError, false));
 
   // Mismatching symbol tables.
   Concat(&ofst5, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_FALSE(ofst5.Properties(kError, false));
+  EXPECT_FALSE(ofst5.Properties(kError, false));
 
   // Missing symbol table.
   ConcatFst<Arc> cfst3(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_FALSE(cfst3.Properties(kError, false));
+  EXPECT_FALSE(cfst3.Properties(kError, false));
 
   // Non-matching symbol tables.
   ConcatFst<Arc> cfst4(trans_ilabeluns_cyc_nondeterm_,
                        accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_TRUE(cfst4.Properties(kError, false));
+  EXPECT_TRUE(cfst4.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, DeterminizeErrorTest) {
   VectorFst<Arc> ofst1, ofst2;
   Determinize(empty_nosyms_error_, &ofst1);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   // Non-functional.
   Determinize(trans_ilabeluns_cyc_nondeterm_, &ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, DifferenceErrorTest) {
   VectorFst<Arc> ofst1, ofst2, ofst3(accept_ilabeluns_cyc_nondeterm_), ofst4;
   Difference(empty_nosyms_, empty_nosyms_error_, &ofst1);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   Difference(empty_nosyms_error_, empty_nosyms_, &ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   // Non-matching symbols.
   Difference(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, &ofst3);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  EXPECT_TRUE(ofst3.Properties(kError, false));
 
   // Unsorted and non-deterministic.
   Difference(accept_ilabeluns_cyc_nondeterm_, accept_ilabeluns_cyc_nondeterm_,
              &ofst4);
-  ASSERT_TRUE(ofst4.Properties(kError, false));
+  EXPECT_TRUE(ofst4.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, EpsNormalizeErrorTest) {
   VectorFst<Arc> ofst;
   EpsNormalize(empty_nosyms_error_, &ofst, EPS_NORM_INPUT);
-  ASSERT_TRUE(ofst.Properties(kError, false));
+  EXPECT_TRUE(ofst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, EquivalentErrorTest) {
   bool error;
-  ASSERT_FALSE(Equivalent(empty_nosyms_error_, empty_nosyms_, kDelta, &error));
-  ASSERT_TRUE(error);
+  EXPECT_FALSE(Equivalent(empty_nosyms_error_, empty_nosyms_, kDelta, &error));
+  EXPECT_TRUE(error);
 
   // Non-matching symbols.
-  ASSERT_FALSE(Equivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_,
+  EXPECT_FALSE(Equivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_,
                           kDelta, &error));
-  ASSERT_TRUE(error);
+  EXPECT_TRUE(error);
 
   // Non-deteterministic.
-  ASSERT_FALSE(Equivalent(accept_ilabeluns_cyc_nondeterm_,
+  EXPECT_FALSE(Equivalent(accept_ilabeluns_cyc_nondeterm_,
                           accept_ilabeluns_cyc_nondeterm_, kDelta, &error));
-  ASSERT_TRUE(error);
+  EXPECT_TRUE(error);
 }
 
 TEST_F(ErrorTest, IntersectErrorTest) {
   VectorFst<Arc> ofst1, ofst2, ofst3, ofst4;
   Intersect(empty_nosyms_, empty_nosyms_error_, &ofst1);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   Intersect(empty_nosyms_error_, empty_nosyms_, &ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   // Missing symbol table.
   Intersect(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, &ofst3);
-  ASSERT_FALSE(ofst3.Properties(kError, false));
+  EXPECT_FALSE(ofst3.Properties(kError, false));
 
   // Non-matching symbol tables.
   Intersect(accept_ilabeluns_cyc_nondeterm_, trans_ilabeluns_cyc_nondeterm_,
             &ofst3);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  EXPECT_TRUE(ofst3.Properties(kError, false));
 
   // Unsorted.
   Intersect(accept_ilabeluns_cyc_nondeterm_, accept_ilabeluns_cyc_nondeterm_,
             &ofst4);
-  ASSERT_TRUE(ofst4.Properties(kError, false));
+  EXPECT_TRUE(ofst4.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, InvertErrorTest) {
   InvertFst<Arc> ifst(empty_nosyms_error_);
-  ASSERT_TRUE(ifst.Properties(kError, false));
+  EXPECT_TRUE(ifst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ProjectErrorTest) {
   ProjectFst<Arc> pfst(empty_nosyms_error_, ProjectType::INPUT);
-  ASSERT_TRUE(pfst.Properties(kError, false));
+  EXPECT_TRUE(pfst.Properties(kError, false));
 }
 
 // Prune with non-path weight is a compile-time error.
@@ -370,59 +370,59 @@ TEST_F(ErrorTest, ProjectErrorTest) {
 TEST_F(ErrorTest, RandEquivalentErrorTest) {
   bool error;
 
-  ASSERT_FALSE(RandEquivalent(empty_nosyms_error_, empty_nosyms_, 1, kDelta, 1,
+  EXPECT_FALSE(RandEquivalent(empty_nosyms_error_, empty_nosyms_, 1, kDelta, 1,
                               1, &error));
-  ASSERT_TRUE(error);
+  EXPECT_TRUE(error);
 
   // Missing symbol table.
-  ASSERT_TRUE(RandEquivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, 1,
+  EXPECT_TRUE(RandEquivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, 1,
                              kDelta, 1, 1, &error));
-  ASSERT_FALSE(error);
+  EXPECT_FALSE(error);
 
   // Non-matching symbol tables.
-  ASSERT_FALSE(RandEquivalent(trans_ilabeluns_cyc_nondeterm_,
+  EXPECT_FALSE(RandEquivalent(trans_ilabeluns_cyc_nondeterm_,
                               accept_ilabeluns_cyc_nondeterm_, 1, kDelta, 1, 1,
                               &error));
-  ASSERT_TRUE(error);
+  EXPECT_TRUE(error);
 }
 
 TEST_F(ErrorTest, RandGenErrorTest) {
   VectorFst<Arc> ofst;
   RandGen(empty_nosyms_error_, &ofst);
-  ASSERT_TRUE(ofst.Properties(kError, false));
+  EXPECT_TRUE(ofst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, RelabelErrorTest) {
   RelabelFst<Arc> rfst(empty_nosyms_error_, syms1_.get(), syms1_.get());
-  ASSERT_TRUE(rfst.Properties(kError, false));
+  EXPECT_TRUE(rfst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ReverseErrorTest) {
   VectorFst<Arc> ofst;
   Reverse(empty_nosyms_error_, &ofst);
-  ASSERT_TRUE(ofst.Properties(kError, false));
+  EXPECT_TRUE(ofst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, RmEpsilonErrorTest) {
   // Bad inputs.
   RmEpsilonFst<Arc> rfst1(empty_nosyms_error_);
-  ASSERT_TRUE(rfst1.Properties(kError, false));
+  EXPECT_TRUE(rfst1.Properties(kError, false));
   RmEpsilonFst<Arc> rfst2(trans_ilabeluns_cyc_nondeterm_error_);
-  ASSERT_TRUE(rfst2.Properties(kError, false));
+  EXPECT_TRUE(rfst2.Properties(kError, false));
   VectorFst<Arc> ofst2(trans_ilabeluns_cyc_nondeterm_error_);
   RmEpsilon(&ofst2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   // NaN on an epsilon transition.
   VectorFst<Arc> nanfst(nanweight_final_);
   Concat(&nanfst, trans_ilabeluns_cyc_nondeterm_);
   RmEpsilonFst<Arc> rfst3(nanfst);
-  ASSERT_FALSE(rfst3.Properties(kError, false));
+  EXPECT_FALSE(rfst3.Properties(kError, false));
   rfst3.NumArcs(rfst3.Start());
-  ASSERT_TRUE(rfst3.Properties(kError, false));
+  EXPECT_TRUE(rfst3.Properties(kError, false));
   VectorFst<Arc> ofst3(nanfst);
   RmEpsilon(&ofst3);
-  ASSERT_TRUE(ofst3.Properties(kError, false));
+  EXPECT_TRUE(ofst3.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, ShortestDistanceErrorTest) {
@@ -430,25 +430,25 @@ TEST_F(ErrorTest, ShortestDistanceErrorTest) {
     std::vector<Weight> distance;
     ShortestDistance(empty_nosyms_error_, &distance, reverse);
     ASSERT_EQ(distance.size(), 1);
-    ASSERT_FALSE(distance[0].Member());
+    EXPECT_FALSE(distance[0].Member());
     distance.clear();
     ShortestDistance(trans_ilabeluns_cyc_nondeterm_error_, &distance, reverse);
     ASSERT_EQ(distance.size(), 1);
-    ASSERT_FALSE(distance[0].Member());
+    EXPECT_FALSE(distance[0].Member());
     distance.clear();
     ShortestDistance(nanweight_final_, &distance, reverse);
     ASSERT_EQ(distance.size(), 1);
-    ASSERT_TRUE(reverse == 1 ? !distance[0].Member() : distance[0].Member());
+    EXPECT_TRUE(reverse == 1 ? !distance[0].Member() : distance[0].Member());
     distance.clear();
     ShortestDistance(nanweight_arc_, &distance, reverse);
     ASSERT_EQ(distance.size(), 1);
-    ASSERT_FALSE(distance[0].Member());
+    EXPECT_FALSE(distance[0].Member());
   }
 
-  ASSERT_FALSE(ShortestDistance(empty_nosyms_error_).Member());
-  ASSERT_FALSE(ShortestDistance(trans_ilabeluns_cyc_nondeterm_error_).Member());
-  ASSERT_FALSE(ShortestDistance(nanweight_final_).Member());
-  ASSERT_FALSE(ShortestDistance(nanweight_arc_).Member());
+  EXPECT_FALSE(ShortestDistance(empty_nosyms_error_).Member());
+  EXPECT_FALSE(ShortestDistance(trans_ilabeluns_cyc_nondeterm_error_).Member());
+  EXPECT_FALSE(ShortestDistance(nanweight_final_).Member());
+  EXPECT_FALSE(ShortestDistance(nanweight_arc_).Member());
 }
 
 TEST_F(ErrorTest, ShortestPathErrorTest) {
@@ -456,13 +456,13 @@ TEST_F(ErrorTest, ShortestPathErrorTest) {
     // Bad inputs.
     VectorFst<Arc> ofst;
     ShortestPath(empty_nosyms_error_, &ofst, n);
-    ASSERT_TRUE(ofst.Properties(kError, false));
+    EXPECT_TRUE(ofst.Properties(kError, false));
     ShortestPath(trans_ilabeluns_cyc_nondeterm_error_, &ofst, n);
-    ASSERT_TRUE(ofst.Properties(kError, false));
+    EXPECT_TRUE(ofst.Properties(kError, false));
     ShortestPath(nanweight_final_, &ofst, n);
-    ASSERT_TRUE(ofst.Properties(kError, false));
+    EXPECT_TRUE(ofst.Properties(kError, false));
     ShortestPath(nanweight_arc_, &ofst, n);
-    ASSERT_TRUE(ofst.Properties(kError, false));
+    EXPECT_TRUE(ofst.Properties(kError, false));
     // Log semiring is a compilation error, so don't try to test it.
   }
 }
@@ -473,52 +473,52 @@ TEST_F(ErrorTest, StateMapErrorTest) {
   IdentityStateMapper<Arc> mapper2(trans_ilabeluns_cyc_nondeterm_error_);
 
   StateMap(empty_nosyms_error_, &ofst1, mapper1);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   StateMap(trans_ilabeluns_cyc_nondeterm_error_, &ofst2, mapper2);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   StateMapFst<Arc, Arc, IdentityStateMapper<Arc>> afst(empty_nosyms_error_,
                                                        mapper1);
-  ASSERT_TRUE(afst.Properties(kError, false));
+  EXPECT_TRUE(afst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, SynchronizeErrorTest) {
   VectorFst<Arc> ofst;
 
   Synchronize(empty_nosyms_error_, &ofst);
-  ASSERT_TRUE(ofst.Properties(kError, false));
+  EXPECT_TRUE(ofst.Properties(kError, false));
 
   SynchronizeFst<Arc> sfst(empty_nosyms_error_);
-  ASSERT_TRUE(sfst.Properties(kError, false));
+  EXPECT_TRUE(sfst.Properties(kError, false));
 }
 
 TEST_F(ErrorTest, UnionErrorTest) {
   VectorFst<Arc> ofst1, ofst2, ofst3(empty_nosyms_);
   Union(&ofst1, empty_nosyms_error_);
-  ASSERT_TRUE(ofst1.Properties(kError, false));
+  EXPECT_TRUE(ofst1.Properties(kError, false));
 
   Union(&ofst2, trans_ilabeluns_cyc_nondeterm_error_);
-  ASSERT_TRUE(ofst2.Properties(kError, false));
+  EXPECT_TRUE(ofst2.Properties(kError, false));
 
   UnionFst<Arc> ufst1(empty_nosyms_error_, empty_nosyms_);
-  ASSERT_TRUE(ufst1.Properties(kError, false));
+  EXPECT_TRUE(ufst1.Properties(kError, false));
 
   UnionFst<Arc> ufst2(empty_nosyms_, empty_nosyms_error_);
-  ASSERT_TRUE(ufst2.Properties(kError, false));
+  EXPECT_TRUE(ufst2.Properties(kError, false));
 
   // Mismatching symbol tables.
   Union(&ofst3, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_FALSE(ofst3.Properties(kError, false));
+  EXPECT_FALSE(ofst3.Properties(kError, false));
 
   // Missing symbol table.
   UnionFst<Arc> ufst3(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_FALSE(ufst3.Properties(kError, false));
+  EXPECT_FALSE(ufst3.Properties(kError, false));
 
   // Non-matching symbol tables.
   UnionFst<Arc> ufst4(trans_ilabeluns_cyc_nondeterm_,
                       accept_ilabeluns_cyc_nondeterm_);
-  ASSERT_TRUE(ufst4.Properties(kError, false));
+  EXPECT_TRUE(ufst4.Properties(kError, false));
 }
 
 }  // namespace
