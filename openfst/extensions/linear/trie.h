@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "openfst/lib/util.h"
 
 namespace fst {
@@ -68,7 +69,7 @@ struct ParentLabel {
 template <class L, class H>
 struct ParentLabelHash {
   size_t operator()(const ParentLabel<L>& pl) const {
-    return static_cast<size_t>(pl.parent * 7853 + H()(pl.label));
+    return absl::HashOf(pl.parent, H()(pl.label));
   }
 };
 

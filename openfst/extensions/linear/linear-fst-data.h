@@ -29,6 +29,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "openfst/extensions/linear/trie.h"
 #include "openfst/lib/fst.h"
@@ -428,7 +429,7 @@ struct FeatureGroup<A>::InputOutputLabel {
 template <class A>
 struct FeatureGroup<A>::InputOutputLabelHash {
   size_t operator()(InputOutputLabel label) const {
-    return static_cast<size_t>(label.input * 7853 + label.output);
+    return absl::HashOf(label.input, label.output);
   }
 };
 

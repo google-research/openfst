@@ -65,6 +65,7 @@ cc_library(
         ":trie",
         "//openfst/lib",
         "//openfst/lib:util",
+        "@com_google_absl//absl/hash",
         "@com_google_absl//absl/log:check",
     ],
 )
@@ -92,6 +93,7 @@ cc_library(
     deps = [
         "//openfst/lib:util",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/hash",
     ],
 )
 
