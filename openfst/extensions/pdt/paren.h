@@ -32,6 +32,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "openfst/extensions/pdt/collection.h"
 #include "openfst/lib/fst.h"
@@ -65,8 +66,7 @@ struct ParenState {
 
   struct Hash {
     size_t operator()(const ParenState<Arc>& pstate) const {
-      static constexpr auto prime = 7853;
-      return pstate.paren_id + pstate.state_id * prime;
+      return absl::HashOf(pstate.paren_id, pstate.state_id);
     }
   };
 };

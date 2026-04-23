@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/types/span.h"
 #include "openfst/lib/connect.h"
 #include "openfst/lib/fst.h"
@@ -50,8 +51,7 @@ namespace internal {
 template <typename S>
 struct ReplaceParenHash {
   size_t operator()(const std::pair<size_t, S>& paren) const {
-    static constexpr auto prime = 7853;
-    return paren.first + paren.second * prime;
+    return absl::HashOf(paren.first, paren.second);
   }
 };
 

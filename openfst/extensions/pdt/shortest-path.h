@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/log/log.h"
 #include "openfst/extensions/pdt/paren.h"
 #include "openfst/lib/expanded-fst.h"
@@ -202,18 +203,14 @@ class PdtShortestPathData {
   // Hash for search state.
   struct SearchStateHash {
     size_t operator()(const SearchState& s) const {
-      static constexpr auto prime = 7853;
-      return s.state + s.start * prime;
+      return absl::HashOf(s.state, s.start);
     }
   };
 
   // Hash for paren map.
   struct ParenHash {
     size_t operator()(const ParenSpec& paren) const {
-      static constexpr auto prime0 = 7853;
-      static constexpr auto prime1 = 7867;
-      return paren.paren_id + paren.src_start * prime0 +
-             paren.dest_start * prime1;
+      return absl::HashOf(paren.paren_id, paren.src_start, paren.dest_start);
     }
   };
 

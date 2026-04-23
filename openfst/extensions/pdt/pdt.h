@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/state-table.h"
 
@@ -115,9 +116,7 @@ class PdtStack {
  private:
   struct ChildHash {
     size_t operator()(const std::pair<StackId, Label>& pair) const {
-      static constexpr size_t prime = 7853;
-      return static_cast<size_t>(pair.first) +
-             static_cast<size_t>(pair.second) * prime;
+      return absl::HashOf(pair.first, pair.second);
     }
   };
 
@@ -156,8 +155,7 @@ template <class T>
 class PdtStateHash {
  public:
   size_t operator()(const T& tuple) const {
-    static constexpr auto prime = 7853;
-    return tuple.state_id + tuple.stack_id * prime;
+    return absl::HashOf(tuple.state_id, tuple.stack_id);
   }
 };
 
