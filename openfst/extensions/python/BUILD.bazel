@@ -239,3 +239,15 @@ py_test(
         "@com_google_absl_py//absl/testing:parameterized",
     ],
 )
+
+py_test(
+    name = "gil_test",
+    size = "small",
+    srcs = ["gil_test.py"],
+    legacy_create_init = False,
+    deps = [
+        "//openfst:pywrapfst",
+        "@com_google_absl_py//absl/logging",
+        "@com_google_absl_py//absl/testing:absltest",
+    ],
+)
