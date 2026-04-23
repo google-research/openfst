@@ -427,8 +427,7 @@ void SymbolTableToString(const SymbolTable* table, std::string* result) {
 
 SymbolTable* StringToSymbolTable(const std::string& str) {
   std::istringstream istrm(str);
-  // TODO: Change to source="string".
-  return SymbolTable::Read(istrm, /*source=*/"");
+  return SymbolTable::Read(istrm, /*source=*/"string");
 }
 
 }  // namespace fst
