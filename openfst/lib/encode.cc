@@ -43,7 +43,7 @@ bool EncodeTableHeader::Read(std::istream& strm, absl::string_view source) {
       LOG(ERROR) << "This old-style Encoder is written in a deprecated "
                     "format and will soon cease to be readable. Please read "
                     "and re-write it in order to be future-proof.";
-      // TODO: deprecated, remove by 2020-01-01.
+      // TODO: Deprecated.
       uint32_t flags;
       ReadType(strm, &flags);
       flags_ = flags;

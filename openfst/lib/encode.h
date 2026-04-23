@@ -61,7 +61,7 @@ inline constexpr uint8_t kEncodeHasOSymbols = 0x08;
 
 // Identifies stream data as an encode table (and its endianity).
 inline constexpr int32_t kEncodeMagicNumber = 2128178506;
-// TODO: deprecated, remove by 2020-01-01.
+// TODO: Deprecated.
 inline constexpr int32_t kEncodeDeprecatedMagicNumber = 2129983209;
 
 }  // namespace internal
