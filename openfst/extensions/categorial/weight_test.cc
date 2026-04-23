@@ -19,6 +19,7 @@
 
 #include "openfst/lib/weight.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -31,36 +32,42 @@
 #include "openfst/extensions/categorial/categorial-weight.h"
 #include "openfst/test/weight-tester.h"
 
-ABSL_FLAG(int, seed, -1, "Random seed.");
-ABSL_FLAG(int, repeat, 10000, "Number of test repetitions.");
+ABSL_FLAG(uint64_t, seed, 403, "Random seed.");
+ABSL_FLAG(int32_t, repeat, 10000, "Number of test repetitions.");
 
 namespace fst {
+
+template <>
+struct WeightTestTraits<CategorialWeight<int>> {
+  static WeightGenerate<CategorialWeight<int>> Generator(uint64_t seed) {
+    return WeightGenerate<CategorialWeight<int>>();
+  }
+  static bool IoRequiresParens() { return false; }
+};
+
+template <>
+struct WeightTestTraits<CategorialWeight<int, CategoryType::RIGHT>> {
+  static WeightGenerate<CategorialWeight<int, CategoryType::RIGHT>> Generator(
+      uint64_t seed) {
+    return WeightGenerate<CategorialWeight<int, CategoryType::RIGHT>>();
+  }
+  static bool IoRequiresParens() { return false; }
+};
+
 namespace {
 
-TEST(CategorialWeight, LeftTest) {
-  WeightGenerate<CategorialWeight<int>> left_category_generate;
-  WeightTester<CategorialWeight<int>> left_category_tester(
-      left_category_generate);
-  left_category_tester.Test(absl::GetFlag(FLAGS_repeat));
-  std::cout << "PASS left categorial test" << std::endl;
-}
+using CategorialWeightTypes =
+    ::testing::Types<CategorialWeight<int>,
+                     CategorialWeight<int, CategoryType::RIGHT>>;
 
-TEST(CategorialWeight, RightTest) {
-  WeightGenerate<CategorialWeight<int, CategoryType::RIGHT>>
-      right_category_generate;
-  WeightTester<CategorialWeight<int, CategoryType::RIGHT>>
-      right_category_tester(right_category_generate);
-  right_category_tester.Test(absl::GetFlag(FLAGS_repeat));
-  std::cout << "PASS right categorial test" << std::endl;
-}
+INSTANTIATE_TYPED_TEST_SUITE_P(Categorial, WeightTest, CategorialWeightTypes, );
 
 }  // namespace
 }  // namespace fst
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  int seed = absl::GetFlag(FLAGS_seed) >= 0 ? absl::GetFlag(FLAGS_seed)
-                                            : time(nullptr);
+  int seed = absl::GetFlag(FLAGS_seed);
   std::srand(seed);
   LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
   return RUN_ALL_TESTS();
