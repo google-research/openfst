@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -31,6 +32,7 @@
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/icu.h"
 #include "openfst/lib/shortest-distance.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/vector-fst.h"
@@ -38,6 +40,8 @@
 
 namespace fst {
 namespace {
+
+using ::testing::ElementsAre;
 
 // Appends a UTF-8 encoded codepoint to the given string without bloated
 // dependencies.
@@ -276,6 +280,13 @@ TEST(StringTest, ConvertStringToNumericSymbols) {
   std::string out;
   EXPECT_TRUE(sp(fst, &out));
   EXPECT_EQ(out, in);
+}
+
+TEST(StringTest, ByteStringToLabels) {
+  const std::string str = "abcd";
+  std::vector<int> labels;
+  EXPECT_TRUE(ByteStringToLabels(str, &labels));
+  EXPECT_THAT(labels, ElementsAre('a', 'b', 'c', 'd'));
 }
 
 // A few tests to verify that for all TokenType options, LabelsToString
