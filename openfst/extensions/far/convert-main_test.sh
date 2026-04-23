@@ -19,8 +19,6 @@ TEST_SRCDIR="$TEST_SRCDIR/$TEST_WORKSPACE"
 
 set -eou pipefail
 
-PLATFORM="$(uname)"
-
 FST="$TEST_SRCDIR/openfst"
 FARBIN="$FST/extensions/far"
 DAT="$FST/extensions/far/testdata"
@@ -98,7 +96,8 @@ cd "$TST"
 "$FARINFO" test1.stlist.const.stdout2.far | grep '^fst type.*const$'
 
 # Same thing with "/dev/stdout" for output filename.
-if [[ "${PLATFORM}" == "Linux" || "${PLATFORM}" == "Darwin" ]]; then
+# Under MSYS2 /dev/stdout works in bash, but not in farconvert.
+if [[ -e /dev/stdout && "$OSTYPE" != msys* ]]; then
   "$FARCONVERT" --far_type=stlist --fst_type=const \
     "$DAT/test1.sttable.far" /dev/stdout > test1.stlist.const.stdout3.far
   "$FAREQUAL" "$DAT/test1.sttable.far" test1.stlist.const.stdout3.far
