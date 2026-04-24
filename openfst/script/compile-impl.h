@@ -15,7 +15,7 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Class to to compile a binary FST from textual input.
+// Class to compile a binary FST from textual input.
 
 #ifndef OPENFST_SCRIPT_COMPILE_IMPL_H_
 #define OPENFST_SCRIPT_COMPILE_IMPL_H_

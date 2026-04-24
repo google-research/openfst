@@ -538,7 +538,7 @@ class StateOrderQueue : public QueueBase<S> {
 
 // SCC topological-order meta-queue discipline, templated on the StateId and a
 // queue used inside each SCC. It visits the SCCs of an FST in topological
-// order. Its constructor is passed the queues to to use within an SCC.
+// order. Its constructor is passed the queues to use within an SCC.
 template <class S, class Queue>
 class SccQueue : public QueueBase<S> {
  public:

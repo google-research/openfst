@@ -73,7 +73,7 @@ inline constexpr uint8_t kPdtMarked = 0x04;
 //    b. the Distance() is from this "start" state to the search state.
 //    c. Parent().state is kNoLabel for the "start" state.
 //
-// 2. ParenSpec: This connects shortest path trees depending on the the
+// 2. ParenSpec: This connects shortest path trees depending on the
 // parenthesis taken. Given the parenthesis spec:
 //    a. the Distance() is from the Parent() "start" state to the parenthesis
 //    destination state.
