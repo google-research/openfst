@@ -50,6 +50,7 @@ jobs:
           uses: hendrikmuhs/ccache-action@1bbbcda0748b3e340dee71a314fa68ffcbd6df79 # v1.2.21
           with:
             key: cmake-cache-${{env.cache-name}}
+            # Compressed cache is ~156MB; default 500MB max-size is sufficient.
         - name: Configure
           run: >-
             cmake -S . -B build
