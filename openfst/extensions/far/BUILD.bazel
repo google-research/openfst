@@ -14,9 +14,9 @@
 
 # Description: Finite-State Transducer (FST) archives
 
-load("@//openfst/lib:build_rules.bzl", "fst_cc_library")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//openfst/lib:build_rules.bzl", "fst_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 

@@ -15,9 +15,9 @@
 # Description: Library for finite-state tranducer representations and
 # algorithms to build, combine, search and optimize them.
 
-load("@//openfst/lib:build_rules.bzl", "fst_cc_library")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//openfst/lib:build_rules.bzl", "fst_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 

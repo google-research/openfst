@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//openfst/lib:build_rules.bzl", "fst_cc_library")
+load("//openfst/lib:build_rules.bzl", "fst_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 

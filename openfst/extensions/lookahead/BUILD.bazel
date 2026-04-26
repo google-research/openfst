@@ -15,7 +15,7 @@
 # Description:
 #   Libraries for registering lookahead Fst types.
 
-load("@//openfst/lib:build_rules.bzl", "fst_cc_library")
+load("//openfst/lib:build_rules.bzl", "fst_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
