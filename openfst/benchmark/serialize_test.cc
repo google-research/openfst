@@ -30,9 +30,9 @@
 #include "openfst/lib/vector-fst.h"
 
 // This file was created using:
-// bazel-bin/nlp/grm2/ngram/ngramshrink
+// bazel-bin/third_party/opengrm/ngram/ngramshrink
 //   --theta=0.0001
-//   nlp/grm2/ngram/testdata/earnest.mod
+//   third_party/opengrm/ngram/testdata/earnest.mod
 //   openfst/benchmark/testdata/compose.fst
 ABSL_FLAG(std::string, input_fst,
           "openfst/benchmark/testdata/serialize.fst",
