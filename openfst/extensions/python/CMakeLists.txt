@@ -127,6 +127,12 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
       --test_tmpdir=${CMAKE_CURRENT_BINARY_DIR}/tmp
   )
 
+  add_test(
+    NAME gil_test
+    COMMAND
+      ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gil_test.py
+  )
+
   # Construct LD_LIBRARY_PATH for the test
   set(TEST_LIB_PATH "$<TARGET_FILE_DIR:fst>" "$<TARGET_FILE_DIR:fstscript>")
   if(UNIX AND NOT APPLE)
@@ -145,6 +151,13 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
         "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
       WILL_FAIL TRUE
       LABELS "ExpectFailure"
+  )
+
+  set_tests_properties(
+    gil_test
+    PROPERTIES
+      ENVIRONMENT
+        "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
   )
 
 else()
