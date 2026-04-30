@@ -245,6 +245,9 @@ py_test(
     size = "small",
     srcs = ["gil_test.py"],
     legacy_create_init = False,
+    tags = [
+        "no_windows_msvc",
+    ],
     deps = [
         "//openfst:pywrapfst",
         "@com_google_absl_py//absl/logging",
