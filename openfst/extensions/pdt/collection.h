@@ -86,7 +86,7 @@ class Collection {
     for (ssize_t i = set.size() - 1; i >= 0; --i) {
       Node node(node_id, set[i]);
       node_id = node_table_.FindId(node, insert);
-      if (node_id == -1) break;
+      if (node_id == NodeTable::kNoId) break;
     }
     return node_id;
   }
