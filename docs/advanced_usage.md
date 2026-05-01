@@ -37,7 +37,7 @@ class ArcIterator {
 };
 ```
 
-It is templated on the Fst class `F` to allow efficient specializations but
+It is templated on the FST class `F` to allow efficient specializations but
 defaults to a generic version on the abstract base
 [`Fst`](advanced_usage.md#base-fsts) class.
 
@@ -95,7 +95,7 @@ enum MapFinalAction {
   // A final weight is mapped to an arc to the superfinal state
   // unless the result can be represented as a final weight of weight
   // Zero(). The superfinal state is always added (if the input is
-  // not the empty Fst).
+  // not the empty FST).
   MAP_REQUIRE_SUPERFINAL
 };
 
@@ -128,8 +128,8 @@ class SomeArcMapper {
    MapSymbolsAction InputSymbolsAction() const;
    // Specifies output symbol table action the mapper requires (see above).
    MapSymbolsAction OutputSymbolsAction() const;
-   // This specifies the known properties of an Fst mapped by this
-   // mapper. It takes as argument the input Fst's known properties
+   // This specifies the known properties of an FST mapped by this
+   // mapper. It takes as argument the input FST's known properties
    uint64 Properties(uint64 props) const;
 };
 ```
@@ -202,17 +202,18 @@ Additional arc information:
 
 *   [Corresponding weight types](advanced_usage.md#weights)
 *   [Elementary arc information](quick_tour.md#std-arc)
-*   [Fst I/O:](advanced_usage.md#input-output) How to register arc types for
+*   [FST I/O:](advanced_usage.md#input-output) How to register arc types for
     I/O.
 *   [User-defined arcs](advanced_usage.md#user-defined-arcs-and-weights)
 
 ## Base FSTs
 
 Every [`Fst`](https://www.openfst.org/doxygen/fst/html/classfst_1_1Fst.html)
-must specify an initial state, the final weights, arc and epsilon counts per
-states, an Fst type name, the Fst's [properties](advanced_usage.md#properties),
-how to copy, read and write the Fst, and the input and output symbol tables (if
-any). In particular, the base `Fst` class has the interface:
+class must specify an initial state, the final weights, arc and epsilon counts
+per states, an FST type name, the FST's
+[properties](advanced_usage.md#properties), how to copy, read and write the FST,
+and the input and output symbol tables (if any). In particular, the base `Fst`
+class has the interface:
 
 ```cpp
 template <class A>
@@ -265,7 +266,7 @@ states and transitions of the FST.
 
 ## Caching
 
-Most of the [delayed Fst classes](quick_tour.md#delayed-fsts) use internal
+Most of the [delayed FST classes](quick_tour.md#delayed-fsts) use internal
 caching to save expanded states and arcs. This caching is controlled by this
 struct:
 
@@ -283,7 +284,7 @@ struct CacheOptions {
 };
 ```
 
-All OpenFst cached Fsts have constructors that accept this (or a class derived
+All OpenFst cached FSTs have constructors that accept this (or a class derived
 from it) as an argument. The member defaults are controlled by
 [global flags](advanced_usage.md#command-line-flags). These options can be used
 for:
@@ -326,19 +327,19 @@ ignore, leaving them with their default values:
 Option                             | Type     | Default   | Description
 ---------------------------------- | -------- | --------- | -----------
 `FLAGS_fst_compat_symbols`         | `bool`   | `true`    | Require symbol tables to match when appropriate
-`FLAGS_fst_default_cache_gc`       | `bool`   | `true`    | Enable garbage collection of cached Fsts
-`FLAGS_fst_default_cache_gc_limit` | `int64`  | `1048576` | Byte size that triggers garbage collection of cached Fsts
+`FLAGS_fst_default_cache_gc`       | `bool`   | `true`    | Enable garbage collection of cached FSTs
+`FLAGS_fst_default_cache_gc_limit` | `int64`  | `1048576` | Byte size that triggers garbage collection of cached FSTs
 `FLAGS_fst_error_fatal`            | `bool`   | `true`    | FST errors are fatal; o.w. return objects flagged as bad: e.g., FSTs - `kError` prop. true, FST weights - not a `Member()`
 `FLAGS_fst_field_separator`        | `string` | `" \t"`   | Set of characters used as a separator between printed fields
 `FLAGS_fst_weight_parentheses`     | `string` | `""`      | Characters enclosing the first weight of a printed composite weight (and derived classes) to ensure proper I/O of nested composite weights; must have size 0 (none) or 2 (open and close parenthesis)
 `FLAGS_fst_weight_separator`       | `string` | `","`     | Character separator between printed composite weights; must be a single character
-`FLAGS_fst_verify_properties`      | `bool`   | `false`   | Verify Fst properties are correctly set when queried
+`FLAGS_fst_verify_properties`      | `bool`   | `false`   | Verify FST properties are correctly set when queried
 
 The first ensures the arguments of binary FST operations (e.g.
 [composition](compose.md)) have compatible symbol tables (e.g. output symbol
 table matches input symbol table for composition). The second two are used to
 control the [caching](advanced_usage.md#caching) of expanded state and arc
-information found in most [delayed Fst classes](quick_tour.md); the default
+information found in most [delayed FST classes](quick_tour.md); the default
 values should normally be satisfactory. The next determines how
 [errors are handled](advanced_usage.md#error-handling). The next is used in the
 textual representation of FSTs and symbol tables. The next two are used to
@@ -347,10 +348,10 @@ other weight tuples. The last is used to ensure that the
 [properties](advanced_usage.md#properties) of an FST have been correctly set; it
 is used for debugging only since it incurs considerable computational cost.
 
-In each of the Fst distribution installed binaries, the above options, as well
-as any of those defined specific to the binary, can be set from the command line
-using e.g. `--fst_default_cache_gc=false` or `--fst_weight_parenthesis="("` .
-Additionally, the option `--help` and `--v=N` (where N = 0,1,2,..) will print
+In each of the OpenFst distribution installed binaries, the above options, as
+well as any of those defined specific to the binary, can be set from the command
+line using e.g. `--fst_default_cache_gc=false` or `--fst_weight_parenthesis="("`
+. Additionally, the option `--help` and `--v=N` (where N = 0,1,2,..) will print
 out usage information and set the verbosity level of logging, respectively. The
 flag processing is modeled after the Google
 [gflags](https://code.google.com/p/google-gflags) package.
@@ -536,9 +537,9 @@ Fst<Arc> *fst = Fst<Arc>::Read("a.fst");
 
 reads the same `VectorFst` from the file as above, but returns a base `Fst`.
 This form, useful for code that works generically for different FST types, can
-not work unless the Fst and arc type are appropriately *registered*. Some arc
+not work unless the FST and arc type are appropriately *registered*. Some arc
 types (see [here](advanced_usage.md#arcs)) are already registered for common FST
-types defined in the OpenFst library. Other arc type `Arc` and Fst type `F`
+types defined in the OpenFst library. Other arc type `Arc` and FST type `F`
 pairs can be registered with the following call:
 
 ```txt
@@ -605,7 +606,7 @@ and FST types. However, it would not be ideal to have to do so for all the
 distribution binaries or other existing programs. Instead, this can be done more
 easily with *dynamic shared objects (DSOs)*.
 
-To add a new Fst type, `MyFst` with `MyFst::Type()` = `"my_fst"`, use the code:
+To add a new FST type, `MyFst` with `MyFst::Type()` = `"my_fst"`, use the code:
 
 ```txt
 // Register some arc types with this Fst type
@@ -614,7 +615,7 @@ REGISTER_FST(MyFst, LogArc);
 ```
 
 compiled into a dynamic shared object `my_fst.so`. If `my_fst.so` can be found
-in the `LD_LIBRARY_PATH` (or equivalent), you should be able to read the new Fst
+in the `LD_LIBRARY_PATH` (or equivalent), you should be able to read the new FST
 type with existing programs.
 
 To add a new arc type, `MyArc` with `MyArc::Type()` = `"my_arc"`, use the code:
@@ -847,7 +848,7 @@ efficiency and convenience; it can circumvented by changing the *accumulator*
 [`FastLogAccumulator`](https://www.openfst.org/doxygen/fst/html/classfst_1_1FastLogAccumulator.html)
 used.
 
-Non-abstract FST types without file representations include the on-the-fly Fst
+Non-abstract FST types without file representations include the on-the-fly FST
 [operations](quick_tour.md#available-fst-operations) and the following:
 
 Name         | Description                                                               |     |
@@ -990,7 +991,7 @@ class SomeMatcher {
    // If 'test' is false, a constant time test is performed, but
    // MATCH_UNKNOWN may be returned. If 'test' is true,
    // a definite answer is returned, but may involve more costly
-   // computation (e.g., visiting the Fst).
+   // computation (e.g., visiting the FST).
    MatchType Type(bool test) const;
 
    // Specifies the current state.
@@ -1186,7 +1187,7 @@ weight 0.
 Many [FST operations](quick_tour.md#available-fst-operations) have versions that
 accept options, especially option structures, that have not been documented in
 this Wiki for brevity other than to mention some of the parameters that can be
-changed. For example, most of the [delayed Fsts](quick_tour.md#delayed-fsts)
+changed. For example, most of the [delayed FSTs](quick_tour.md#delayed-fsts)
 have constructors that accept options that control
 [caching behavior](advanced_usage.md#caching).
 
@@ -1297,7 +1298,7 @@ class StateIterator {
 };
 ```
 
-It is templated on the Fst class `F` to allow efficient specializations but
+It is templated on the FST class `F` to allow efficient specializations but
 defaults to a generic version on the abstract base
 [`Fst`](advanced_usage.md#base-fsts) class.
 
@@ -1355,8 +1356,8 @@ class SomeStateMapper {
    MapSymbolsAction InputSymbolsAction() const;
    // Specifies output symbol table action the mapper requires (see above).
    MapSymbolsAction OutputSymbolsAction() const;
-   // This specifies the known properties of an Fst mapped by this
-   // mapper. It takes as argument the input Fst's known properties
+   // This specifies the known properties of an FST mapped by this
+   // mapper. It takes as argument the input FST's known properties
    uint64 Properties(uint64 props) const;
 };
 ```
@@ -1381,7 +1382,7 @@ and [shortest distance](shortest_distance.md) algorithms and by the
 template <class StateId>
 class SomeQueue {
  public:
-   // Ctr: may need args (e.g., Fst, comparator) for some queues
+   // Ctr: may need args (e.g., FST, comparator) for some queues
    SomeQueue(...);
    // Returns the head of the queue
    StateId Head() const;
@@ -1402,7 +1403,7 @@ Pre-defined state queues include:
 
 Queue                       | Description                                                        |     |
 --------------------------- | ------------------------------------------------------------------ | ---
-`AutoQueue`                 | Automatically-selected from Fst properties                         | [`AutoQueue`](https://www.openfst.org/doxygen/fst/html/classfst_1_1AutoQueue.html)
+`AutoQueue`                 | Automatically-selected from FST properties                         | [`AutoQueue`](https://www.openfst.org/doxygen/fst/html/classfst_1_1AutoQueue.html)
 `FifoQueue`                 | First-In, first-Out                                                | [`FifoQueue`](https://www.openfst.org/doxygen/fst/html/classfst_1_1FifoQueue.html)
 `LifoQueue`                 | Last-In, first-Out                                                 | [`LifoQueue`](https://www.openfst.org/doxygen/fst/html/classfst_1_1LifoQueue.html)
 `NaturalAStarQueue`         | A* (under natural order with provided estimate)                    | [`NaturalAStarQueue`](https://www.openfst.org/doxygen/fst/html/classfst_1_1NaturalAStarQueue.html)
@@ -1522,7 +1523,7 @@ A user may define his own weight type so long as it meets the necessary
 [requirements](weight_requirements.md).
 
 A user may define his own arc type so long as has the right
-[form](advanced_usage.md#arcs). Some Fst I/O with new arc types requires
+[form](advanced_usage.md#arcs). Some FST I/O with new arc types requires
 [registration](advanced_usage.md#input-output).
 
 ## User-defined FST Classes

@@ -30,7 +30,7 @@ creating *efficient* implementations.
 *   **Interface Type:** When creating [state](advanced_usage.md#state-iterators)
     or [arc iterators](advanced_usage.md#arc-iterators), the specific
     [interface type](quick_tour.md#calling-fst-operations-from-c) can greatly
-    affect efficiency. Using the most specific Fst type as the template argument
+    affect efficiency. Using the most specific FST type as the template argument
     of the iterators will access specializations that avoid virtual function and
     other overhead of more generic calls. E.g., prefer
     `ArcIterator<VectorFst<Arc>>(fst, s)` to `ArcIterator<Fst<Arc>>(fst, s)`,

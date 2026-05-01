@@ -121,7 +121,7 @@ This text FST must be converted into a binary FST file before it can be used by
 the OpenFst library. <a id="fstcompile"></a>
 
 ```bash
-# Creates binary Fst from text file.
+# Creates binary FST from text file.
 # The symbolic labels will be converted into integers using the symbol table files.
 $ fstcompile --isymbols=isyms.txt --osymbols=osyms.txt text.fst binary.fst
 
@@ -336,21 +336,21 @@ void Connect(MutableFst<Arc> *fst);
 ```
 
 *   *Constructive*: When an operation, like `Reverse`, creates a new expanded
-    Fst, it has the form:
+    `Fst`, it has the form:
 
 ```cpp
 void Reverse(const Fst<Arc> &infst, MutableFst<Arc> *outfst);
 ```
 
 *   *Delayed*: When an operation, like `ComposeFst`, creates a lazy-evaluated
-    Fst, it is a new unexpanded Fst class of the form:
+    FST, it is a new unexpanded FST class of the form:
 
 ```cpp
 ComposeFst<Arc>(const Fst<Arc> &fst1, const Fst<Arc> &fst2);
 ```
 
-<a id="delayed-fsts"></a> Delayed Fsts have constant time-class constructors.
-When components of delayed Fsts are accessed through the `Fst` interface, the
+<a id="delayed-fsts"></a> Delayed FSTs have constant time-class constructors.
+When components of delayed FSTs are accessed through the `Fst` interface, the
 automaton is built dynamically, just enough to respond to the accesses
 requested. It is important that the object access [conventions](conventions.md)
 are observed for correct operation.
@@ -461,7 +461,7 @@ Operation                                | Usage                                
 &nbsp;                                   | `fstconcat a.fst b.fst out.fst`                                                        |
 [Connect](connect.md)                    | `Connect(&A);`                                                                         | removes states and arcs not on a path from the start to a final state
 &nbsp;                                   | `fstconnect in.fst out.fst`                                                            |
-[Decode](encode_decode.md)               | `Decode(&A, encoder);`                                                                 | decodes previously encoded Fst
+[Decode](encode_decode.md)               | `Decode(&A, encoder);`                                                                 | decodes previously encoded FST
 &nbsp;                                   | `DecodeFst(A, encoder);`                                                               |
 &nbsp;                                   | `fstencode --decode in.fst encoder out.fst`                                            |
 [Determinize](determinize.md)            | `Determinize(A, &B);`                                                                  | creates equiv. FST with no state with two arcs with the same input label
@@ -540,7 +540,7 @@ Operation                                | Usage                                
 An arc weight in an FST gives the cost of taking that transition. The OpenFst
 library supports multiple types of weights -- in fact, any C++ class that meets
 various properties can be used as the `Weight` type specified in the Arc
-template parameter of an Fst. Several `Weight` types are
+template parameter of an FST. Several `Weight` types are
 [predefined](quick_tour.md#fst-weights) in the library that will normally meet
 your needs. Among a weight's properties, it must have associated binary
 operations $\oplus$ and $\otimes$ and elements $0$ and $1$. These are
