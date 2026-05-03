@@ -4,11 +4,8 @@
 
 [![GitHub license](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/google-research/nisaba/blob/main/LICENSE)
 [![C++ version](https://img.shields.io/badge/C++17-blue.svg?style=flat&logo=c%2B%2B)](https://en.cppreference.com/w/cpp/17)
-[![Bazel (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_linux.yml)
-[![CMake (x64 Linux)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake_x64_linux.yml)
-[![Bazel (arm64 macOS)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_arm64_macos.yml)
-[![CMake (arm64 macOS)](https://github.com/google-research/openfst/actions/workflows/cmake_arm64_macos.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake_arm64_macos.yml)
-[![Bazel (x64 Windows)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_windows.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel_x64_windows.yml)
+[![Bazel](https://github.com/google-research/openfst/actions/workflows/bazel.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/bazel.yml)
+[![CMake](https://github.com/google-research/openfst/actions/workflows/cmake.yml/badge.svg)](https://github.com/google-research/openfst/actions/workflows/cmake.yml)
 
 This library is for constructing, combining, optimizing, and searching *weighted
 finite-state transducers* (FSTs). Weighted finite-state transducers are automata
