@@ -109,6 +109,7 @@ PUBLIC_HEADERS = [
     "lexicographic-weight.h",
     "lookahead-filter.h",
     "lookahead-matcher.h",
+    "lookahead-matcher-traits.h",
     "matcher-fst.h",
     "matcher.h",
     "memory.h",

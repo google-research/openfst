@@ -121,6 +121,7 @@ set(LIB_HEADERS
     lexicographic-weight.h
     lookahead-filter.h
     lookahead-matcher.h
+    lookahead-matcher-traits.h
     mapped-file.h
     matcher-fst.h
     matcher.h

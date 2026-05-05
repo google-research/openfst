@@ -72,6 +72,7 @@ set(TESTS
     interval-set_test
     invert_test
     isomorphic_test
+    lookahead-matcher-traits_test
     label-reachable_test
     lookahead_test
     mapped-file_test

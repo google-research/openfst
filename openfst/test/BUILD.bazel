@@ -1108,6 +1108,17 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "lookahead-matcher-traits_test",
+    srcs = ["lookahead-matcher-traits_test.cc"],
+    linkstatic = True,
+    deps = [
+        "//openfst/lib",
+        "//openfst/lib:lib_lite",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 sh_test(
     name = "generic_register_dso_test",
     size = "small",
