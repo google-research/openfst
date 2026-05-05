@@ -21,11 +21,15 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/sparse-power-weight.h"
 #include "openfst/lib/weight.h"
 #include "openfst/test/power-weight-util.h"
 #include "openfst/test/weight-tester.h"
+
+ABSL_FLAG(uint64_t, seed, 403, "random seed");
+ABSL_FLAG(int32_t, repeat, 2000, "number of test repetitions");
 
 namespace fst {
 namespace {
@@ -40,20 +44,7 @@ using PowerWeightTypes =
     testing::Types<SparsePowerWeight<TropicalWeight, int32_t>,
                    PowerWeight<TropicalWeight, 6>>;
 
-template <typename PowerWeightT>
-class GeneratePowerWeightTest : public testing::Test {
- public:
-  using Weight = PowerWeightT;
-};
-TYPED_TEST_SUITE(GeneratePowerWeightTest, PowerWeightTypes);
-
-TYPED_TEST(GeneratePowerWeightTest, WeightTester) {
-  using Weight = typename TestFixture::Weight;
-  using Generator = WeightGenerate<Weight>;
-  using WeightTester = WeightTester<Weight>;
-  WeightTester tester((Generator()));
-  tester.Test(2000 /* iterations */);
-}
+INSTANTIATE_TYPED_TEST_SUITE_P(Power, WeightTest, PowerWeightTypes, );
 
 template <typename PowerWeightT>
 class GetPowerWeightComponentTest : public testing::Test {
