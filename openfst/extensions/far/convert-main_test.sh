@@ -97,9 +97,13 @@ cd "$TST"
 
 # Same thing with "/dev/stdout" for output filename.
 # Under MSYS2 /dev/stdout works in bash, but not in farconvert.
+# Debug intermittent failures on Windows GitHub runners.
+set -x
+echo "OSTYPE: $OSTYPE"
 if [[ -e /dev/stdout && "$OSTYPE" != msys* ]]; then
   "$FARCONVERT" --far_type=stlist --fst_type=const \
     "$DAT/test1.sttable.far" /dev/stdout > test1.stlist.const.stdout3.far
+  ls -l test1.stlist.const.stdout3.far
   "$FAREQUAL" "$DAT/test1.sttable.far" test1.stlist.const.stdout3.far
   "$FARINFO" test1.stlist.const.stdout3.far | grep '^far type.*stlist$'
   "$FARINFO" test1.stlist.const.stdout3.far | grep '^arc type.*log$'
