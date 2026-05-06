@@ -17,7 +17,7 @@
 
 import enum
 import os
-from typing import Optional, Union, overload, TypeVar, Tuple, Any, Type, Iterable, Iterator, List, Literal
+from typing import Any, Iterable, Iterator, List, Literal, Optional, Tuple, Type, TypeVar, Union, overload
 
 ## Custom exceptions.
 class FstError(Exception): ...
@@ -33,11 +33,23 @@ _Symbol = str
 _Label = int
 _StateId = int
 
-ArcMapType = Literal["identity", "input_epsilon", "invert",
-                     "output_epsilon", "plus", "power", "quantize",
-                     "rmweight", "superfinal", "times", "to_log",
-                     # NOTE: Both spellings of "to_std"
-                     "to_log64", "to_std", "to_standard"]
+ArcMapType = Literal[
+    "identity",
+    "input_epsilon",
+    "invert",
+    "output_epsilon",
+    "plus",
+    "power",
+    "quantize",
+    "rmweight",
+    "superfinal",
+    "times",
+    "to_log",
+    "to_log64",
+    # NOTE: Both spellings of "to_std"
+    "to_std",
+    "to_standard",
+]
 # NOTE: At runtime, any number of arc types could be linked in, even though a
 # few are the most common, so no strong type checking.
 _ArcTypeFlag = str
@@ -45,16 +57,17 @@ _ArcTypeFlag = str
 # few are the most common, so no strong type checking.
 _FstTypeFlag = str
 ClosureType = Literal["star", "plus"]
-ComposeFilter = Literal["alt_sequence", "auto", "match", "no_match",
-                        "null", "sequence", "trivial"]
+ComposeFilter = Literal[
+    "alt_sequence", "auto", "match", "no_match", "null", "sequence", "trivial"
+]
 DeterminizeType = Literal["functional", "nonfunctional", "disambiguate"]
 DrawFloatFormat = Literal["e", "f", "g"]
 EpsNormalizeType = Literal["input", "output"]
 FarType = Literal[
-  "fst",
-  "stlist",
-  "sttable",
-  "default"
+    "fst",
+    "stlist",
+    "sttable",
+    "default",
 ]
 ProjectType = Literal["input", "output"]
 QueueType = Literal["auto", "fifo", "lifo", "shortest", "state", "top"]
@@ -94,6 +107,7 @@ def plus(lhs: Weight, rhs: Weight) -> Weight: ...
 def times(lhs: Weight, rhs: Weight) -> Weight: ...
 def divide(lhs: Weight, rhs: Weight) -> Weight: ...
 def power(w: Weight, n: int) -> Weight: ...
+
 class SymbolTableView:
   def __init__(self) -> None: ...
   def __iter__(self) -> _SymbolTableIterator: ...
@@ -112,10 +126,7 @@ class SymbolTableView:
   def name(self) -> str: ...
   def num_symbols(self) -> int: ...
   def write(self, source: _Filename) -> None: ...
-  def write_text(self,
-                 source: _Filename,
-                 *,
-                 sep: str = ...) -> None: ...
+  def write_text(self, source: _Filename, *, sep: str = ...) -> None: ...
   def write_to_string(self) -> bytes: ...
 
 class _EncodeMapperSymbolTableView(SymbolTableView):
@@ -138,18 +149,16 @@ class SymbolTable(_MutableSymbolTable):
   @classmethod
   def read(cls, source: _Filename) -> SymbolTable: ...
   @classmethod
-  def read_text(cls,
-                source: _Filename,
-                *,
-                sep: str = ...) -> SymbolTable: ...
+  def read_text(cls, source: _Filename, *, sep: str = ...) -> SymbolTable: ...
   @classmethod
   def read_fst(cls, source: _Filename, input_table: bool) -> SymbolTable: ...
 
 # Constructive SymbolTable operations.
 
 def compact_symbol_table(syms: SymbolTableView) -> SymbolTable: ...
-def merge_symbol_table(lhs: SymbolTableView,
-                       rhs: SymbolTableView) -> SymbolTable: ...
+def merge_symbol_table(
+    lhs: SymbolTableView, rhs: SymbolTableView
+) -> SymbolTable: ...
 
 ## _SymbolTableIterator.
 
@@ -163,10 +172,12 @@ class _SymbolTableIterator:
 
 class EncodeMapper:
   def __repr__(self) -> None: ...
-  def __init__(self,
-               arc_type: _ArcTypeFlag = ...,
-               encode_labels: bool = ...,
-               encode_weights: bool = ...) -> None: ...
+  def __init__(
+      self,
+      arc_type: _ArcTypeFlag = ...,
+      encode_labels: bool = ...,
+      encode_weights: bool = ...,
+  ) -> None: ...
   def __call__(self, arc: Arc) -> Arc: ...
   def __reduce__(self) -> Union[str, Tuple[Any, ...]]: ...
   def arc_type(self) -> _ArcTypeFlag: ...
@@ -181,12 +192,15 @@ class EncodeMapper:
   def write_to_string(self) -> bytes: ...
   def input_symbols(self) -> _EncodeMapperSymbolTableView: ...
   def output_symbols(self) -> _EncodeMapperSymbolTableView: ...
-  def set_input_symbols(self,
-                        syms: Optional[SymbolTableView]) -> EncodeMapper: ...
-  def set_output_symbols(self,
-                         syms: Optional[SymbolTableView]) -> EncodeMapper: ...
+  def set_input_symbols(
+      self, syms: Optional[SymbolTableView]
+  ) -> EncodeMapper: ...
+  def set_output_symbols(
+      self, syms: Optional[SymbolTableView]
+  ) -> EncodeMapper: ...
 
 U = TypeVar("U", bound="Fst")
+
 class Fst:
   # TODO: Verify that `bytes` is really the output type here.
   def _repr_svg_(self) -> bytes: ...
@@ -215,7 +229,8 @@ class Fst:
       precision: int = ...,
       float_format: DrawFloatFormat = ...,
       show_weight_one: bool = ...,
-      format: str = ...) -> None: ...
+      format: str = ...,
+  ) -> None: ...
   def final(self, state: _StateId) -> Weight: ...
   def fst_type(self) -> _FstTypeFlag: ...
   def input_symbols(self) -> _FstSymbolTableView: ...
@@ -224,13 +239,15 @@ class Fst:
   def num_output_epsilons(self, state: _StateId) -> int: ...
   def num_states_if_known(self) -> None | _StateId: ...
   def output_symbols(self) -> _FstSymbolTableView: ...
-  def print(self,
-            isymbols: Optional[SymbolTableView] = ...,
-            osymbols: Optional[SymbolTableView] = ...,
-            ssymbols: Optional[SymbolTableView] = ...,
-            acceptor: bool = ...,
-            show_weight_one: bool = ...,
-            missing_sym: _Symbol = ...) -> str: ...
+  def print(
+      self,
+      isymbols: Optional[SymbolTableView] = ...,
+      osymbols: Optional[SymbolTableView] = ...,
+      ssymbols: Optional[SymbolTableView] = ...,
+      acceptor: bool = ...,
+      show_weight_one: bool = ...,
+      missing_sym: _Symbol = ...,
+  ) -> str: ...
   def properties(self, mask: FstProperties, test: bool) -> FstProperties: ...
   @classmethod
   def read(cls: Type[U], source: _Filename) -> U: ...
@@ -244,6 +261,7 @@ class Fst:
   def write_to_string(self) -> bytes: ...
 
 T = TypeVar("T", bound="MutableFst")
+
 class MutableFst(Fst):
   def add_arc(self: T, state: _StateId, arc: Arc) -> T: ...
   def add_state(self) -> _StateId: ...
@@ -254,7 +272,9 @@ class MutableFst(Fst):
   def connect(self: T) -> T: ...
   def decode(self: T, mapper: EncodeMapper) -> T: ...
   def delete_arcs(self: T, state: _StateId, n: int = ...) -> T: ...
-  def delete_states(self: T, states: Optional[Iterable[_StateId]] = ...) -> T: ...
+  def delete_states(
+      self: T, states: Optional[Iterable[_StateId]] = ...
+  ) -> T: ...
   def encode(self: T, mapper: EncodeMapper) -> T: ...
   def invert(self: T) -> T: ...
   def minimize(self: T, delta: float = ..., allow_nondet: bool = ...) -> T: ...
@@ -263,46 +283,57 @@ class MutableFst(Fst):
   def mutable_output_symbols(self) -> _MutableFstSymbolTableView: ...
   def num_states(self) -> _StateId: ...
   def project(self: T, project_type: ProjectType) -> T: ...
-  def prune(self: T,
-            delta: float = ...,
-            nstate: _StateId = ...,
-            weight: Optional[WeightLike] = ...) -> T: ...
-  def push(self: T,
-           delta: float = ...,
-           remove_total_weight: bool = ...,
-           reweight_type: ReweightType = ...) -> T: ...
+  def prune(
+      self: T,
+      delta: float = ...,
+      nstate: _StateId = ...,
+      weight: Optional[WeightLike] = ...,
+  ) -> T: ...
+  def push(
+      self: T,
+      delta: float = ...,
+      remove_total_weight: bool = ...,
+      reweight_type: ReweightType = ...,
+  ) -> T: ...
   def relabel_pairs(
       self: T,
       ipairs: Optional[Iterable[Tuple[_Label, _Label]]] = ...,
-      opairs: Optional[Iterable[Tuple[_Label, _Label]]] = ...) -> T: ...
-  def relabel_tables(self: T,
-                     old_isymbols: Optional[SymbolTableView] = ...,
-                     new_isymbols: Optional[SymbolTableView] = ...,
-                     unknown_isymbol: _Symbol = ...,
-                     attach_new_isymbols: bool = ...,
-                     old_osymbols: Optional[SymbolTableView] = ...,
-                     new_osymbols: Optional[SymbolTableView] = ...,
-                     unknown_osymbol: _Symbol = ...,
-                     attach_new_osymbols: bool = ...) -> T: ...
+      opairs: Optional[Iterable[Tuple[_Label, _Label]]] = ...,
+  ) -> T: ...
+  def relabel_tables(
+      self: T,
+      old_isymbols: Optional[SymbolTableView] = ...,
+      new_isymbols: Optional[SymbolTableView] = ...,
+      unknown_isymbol: _Symbol = ...,
+      attach_new_isymbols: bool = ...,
+      old_osymbols: Optional[SymbolTableView] = ...,
+      new_osymbols: Optional[SymbolTableView] = ...,
+      unknown_osymbol: _Symbol = ...,
+      attach_new_osymbols: bool = ...,
+  ) -> T: ...
   def reserve_arcs(self: T, state: _StateId, n: int) -> T: ...
   def reserve_states(self: T, n: _StateId) -> T: ...
-  def reweight(self: T,
-               potentials: Iterable[WeightLike],
-               reweight_type: ReweightType = ...) -> T: ...
-  def rmepsilon(self: T,
-                queue_type: QueueType = ...,
-                connect: bool = ...,
-                weight: Optional[WeightLike] = ...,
-                nstate: _StateId = ...,
-                delta: float = ...) -> T: ...
-  def set_final(self: T,
-                state: _StateId,
-                weight: Optional[WeightLike] = ...) -> T: ...
+  def reweight(
+      self: T,
+      potentials: Iterable[WeightLike],
+      reweight_type: ReweightType = ...,
+  ) -> T: ...
+  def rmepsilon(
+      self: T,
+      queue_type: QueueType = ...,
+      connect: bool = ...,
+      weight: Optional[WeightLike] = ...,
+      nstate: _StateId = ...,
+      delta: float = ...,
+  ) -> T: ...
+  def set_final(
+      self: T, state: _StateId, weight: Optional[WeightLike] = ...
+  ) -> T: ...
   def set_input_symbols(self: T, syms: Optional[SymbolTableView]) -> T: ...
   def set_output_symbols(self: T, syms: Optional[SymbolTableView]) -> T: ...
-  def set_properties(self: T,
-                     props: FstProperties,
-                     mask: FstProperties) -> T: ...
+  def set_properties(
+      self: T, props: FstProperties, mask: FstProperties
+  ) -> T: ...
   def set_start(self: T, state: _StateId) -> T: ...
   def topsort(self: T) -> T: ...
   def union(self: T, *fsts2: Fst) -> T: ...
@@ -312,6 +343,7 @@ class VectorFst(MutableFst):
 
 def _read_Fst(source: _Filename) -> Fst: ...
 def _read_Fst_from_string(state: str) -> Fst: ...
+
 NO_LABEL: _Label
 NO_STATE_ID: _StateId
 # TODO: Extremely confusingly, `NO_SYMBOL` is a `_Label` rather than
@@ -490,8 +522,13 @@ ENCODE_FLAGS: EncodeMapperFlags
 
 class Arc:
   def __repr__(self) -> str: ...
-  def __init__(self, ilabel: _Label, olabel: _Label,
-               weight: WeightLike, nextstate: _StateId) -> None: ...
+  def __init__(
+      self,
+      ilabel: _Label,
+      olabel: _Label,
+      weight: WeightLike,
+      nextstate: _StateId,
+  ) -> None: ...
   def copy(self) -> Arc: ...
   @property
   def ilabel(self) -> _Label: ...
@@ -524,9 +561,9 @@ class _ArcIterator:
   def position(self) -> int: ...
   def reset(self) -> None: ...
   def seek(self, a: int) -> None: ...
-  def set_flags(self,
-                flags: ArcIteratorFlags,
-                mask: ArcIteratorFlags) -> None: ...
+  def set_flags(
+      self, flags: ArcIteratorFlags, mask: ArcIteratorFlags
+  ) -> None: ...
   def value(self) -> Arc: ...
 
 class _MutableArcIterator:
@@ -541,9 +578,9 @@ class _MutableArcIterator:
   def position(self) -> int: ...
   def reset(self) -> None: ...
   def seek(self, a: int) -> None: ...
-  def set_flags(self,
-                flags: ArcIteratorFlags,
-                mask: ArcIteratorFlags) -> None: ...
+  def set_flags(
+      self, flags: ArcIteratorFlags, mask: ArcIteratorFlags
+  ) -> None: ...
   def set_value(self, arc: Arc) -> None: ...
   def value(self) -> Arc: ...
 
@@ -562,18 +599,19 @@ class _StateIterator:
 
 ## FST operations.
 
-
 def arcmap(
     ifst: Fst,
     delta: float = ...,
     map_type: ArcMapType = ...,
     power: float = ...,
-    weight: Optional[WeightLike] = ...) -> Fst: ...
+    weight: Optional[WeightLike] = ...,
+) -> Fst: ...
 def compose(
     ifst1: Fst,
     ifst2: Fst,
     compose_filter: ComposeFilter = ...,
-    connect: bool = ...) -> MutableFst: ...
+    connect: bool = ...,
+) -> MutableFst: ...
 def convert(ifst: Fst, fst_type: _FstTypeFlag = ...) -> Fst: ...
 def determinize(
     ifst: Fst,
@@ -582,36 +620,48 @@ def determinize(
     nstate: _StateId = ...,
     subsequential_label: _Label = ...,
     weight: Optional[WeightLike] = ...,
-    increment_subsequential_label: bool = ...) -> MutableFst: ...
+    increment_subsequential_label: bool = ...,
+) -> MutableFst: ...
 def difference(
     ifst1: Fst,
     ifst2: Fst,
     compose_filter: ComposeFilter = ...,
-    connect: bool = ...) -> MutableFst: ...
-def disambiguate(ifst: Fst,
-                 delta: float = ...,
-                 nstate: _StateId = ...,
-                 subsequential_label: _Label = ...,
-                 weight: Optional[WeightLike] = ...) -> MutableFst: ...
-def epsnormalize(ifst: Fst, eps_norm_type: EpsNormalizeType = ...) -> MutableFst: ...
+    connect: bool = ...,
+) -> MutableFst: ...
+def disambiguate(
+    ifst: Fst,
+    delta: float = ...,
+    nstate: _StateId = ...,
+    subsequential_label: _Label = ...,
+    weight: Optional[WeightLike] = ...,
+) -> MutableFst: ...
+def epsnormalize(
+    ifst: Fst, eps_norm_type: EpsNormalizeType = ...
+) -> MutableFst: ...
 def equal(ifst1: Fst, ifst2: Fst, delta: float = ...) -> bool: ...
 def equivalent(ifst1: Fst, ifst2: Fst, delta: float = ...) -> bool: ...
-def intersect(ifst1: Fst,
-              ifst2: Fst,
-              compose_filter: ComposeFilter = ...,
-              connect: bool = ...) -> MutableFst: ...
+def intersect(
+    ifst1: Fst,
+    ifst2: Fst,
+    compose_filter: ComposeFilter = ...,
+    connect: bool = ...,
+) -> MutableFst: ...
 def isomorphic(ifst1: Fst, ifst2: Fst, delta: float = ...) -> bool: ...
-def prune(ifst: Fst,
-          delta: float = ...,
-          nstate: _StateId = ...,
-          weight: Optional[WeightLike] = ...) -> MutableFst: ...
-def push(ifst: Fst,
-         delta: float = ...,
-         push_weights: bool = ...,
-         push_labels: bool = ...,
-         remove_common_affix: bool = ...,
-         remove_total_weight: bool = ...,
-         reweight_type: ReweightType = ...) -> MutableFst: ...
+def prune(
+    ifst: Fst,
+    delta: float = ...,
+    nstate: _StateId = ...,
+    weight: Optional[WeightLike] = ...,
+) -> MutableFst: ...
+def push(
+    ifst: Fst,
+    delta: float = ...,
+    push_weights: bool = ...,
+    push_labels: bool = ...,
+    remove_common_affix: bool = ...,
+    remove_total_weight: bool = ...,
+    reweight_type: ReweightType = ...,
+) -> MutableFst: ...
 def randequivalent(
     ifst1: Fst,
     ifst2: Fst,
@@ -619,7 +669,8 @@ def randequivalent(
     delta: float = ...,
     select: RandArcSelection = ...,
     max_length: int = ...,
-    seed: int = ...) -> bool: ...
+    seed: int = ...,
+) -> bool: ...
 def randgen(
     ifst: Fst,
     npath: int = ...,
@@ -627,20 +678,23 @@ def randgen(
     max_length: int = ...,
     weighted: bool = ...,
     remove_total_weight: bool = ...,
-    seed: int = ...) -> MutableFst: ...
+    seed: int = ...,
+) -> MutableFst: ...
 def replace(
     pairs: Iterable[Tuple[int, Fst]],
     call_arc_labeling: ReplaceLabelType = ...,
     return_arc_labeling: ReplaceLabelType = ...,
     epsilon_on_replace: bool = ...,
-    return_label: _Label = ...) -> MutableFst: ...
+    return_label: _Label = ...,
+) -> MutableFst: ...
 def reverse(ifst: Fst, require_superinitial: bool = ...) -> MutableFst: ...
 def shortestdistance(
     ifst: Fst,
     delta: float = ...,
     nstate: _StateId = ...,
     queue_type: QueueType = ...,
-    reverse: bool = ...) -> List[Weight]: ...
+    reverse: bool = ...,
+) -> List[Weight]: ...
 def shortestpath(
     ifst: Fst,
     delta: float = ...,
@@ -648,9 +702,11 @@ def shortestpath(
     nstate: _StateId = ...,
     queue_type: QueueType = ...,
     unique: bool = ...,
-    weight: Optional[WeightLike] = ...) -> MutableFst: ...
+    weight: Optional[WeightLike] = ...,
+) -> MutableFst: ...
 def statemap(ifst: Fst, map_type: StateMapType) -> Fst: ...
 def synchronize(ifst: Fst) -> MutableFst: ...
+
 ## Compiler.
 
 class Compiler:
@@ -668,7 +724,8 @@ class Compiler:
       keep_isymbols: bool = ...,
       keep_osymbols: bool = ...,
       keep_state_numbering: bool = ...,
-      allow_negative_labels: bool = ...) -> None: ...
+      allow_negative_labels: bool = ...,
+  ) -> None: ...
   def compile(self) -> Fst: ...
   def write(self, expression: str) -> None: ...
 
@@ -696,10 +753,12 @@ class FarWriter:
   def __init__(self) -> None: ...
   def __repr__(self) -> str: ...
   @classmethod
-  def create(cls,
-             source: _Filename,
-             arc_type: _ArcTypeFlag = ...,
-             far_type: FarType = ...) -> FarWriter: ...
+  def create(
+      cls,
+      source: _Filename,
+      arc_type: _ArcTypeFlag = ...,
+      far_type: FarType = ...,
+  ) -> FarWriter: ...
   def add(self, key: str, ifst: Fst) -> None: ...
   def arc_type(self) -> _ArcTypeFlag: ...
   def error(self) -> bool: ...

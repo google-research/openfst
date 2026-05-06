@@ -27,7 +27,6 @@ from absl import logging
 from absl.testing import absltest
 from openfst import pywrapfst as fst
 
-
 # Thresholds.
 MIN_OP_DURATION = 0.05
 HEARTBEAT_SLEEP = 0.001
