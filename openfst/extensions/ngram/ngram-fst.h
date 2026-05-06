@@ -201,7 +201,7 @@ class NGramFstImpl : public FstImpl<A> {
                        BitmapIndex::StorageSize(num_futures + num_states + 1) +
                        BitmapIndex::StorageSize(num_states));
     offset += (num_states + 1) * sizeof(label) + num_futures * sizeof(label);
-    // Pad for alignemnt, see
+    // Pad for alignment, see
     // http://en.wikipedia.org/wiki/Data_structure_alignment#Computing_padding
     offset = (offset + sizeof(weight) - 1) & ~(sizeof(weight) - 1);
     offset += (num_states + 1) * sizeof(weight) + num_final * sizeof(weight) +
@@ -381,7 +381,7 @@ class NGramFst : public ImplToExpandedFst<internal::NGramFstImpl<A>> {
     return GetImpl()->GetData(data_size);
   }
 
-  const std::vector<Label> GetContext(StateId s) const {
+  const std::vector<Label>& GetContext(StateId s) const {
     return GetImpl()->GetContext(s, &inst_);
   }
 
@@ -428,7 +428,7 @@ class NGramFst : public ImplToExpandedFst<internal::NGramFstImpl<A>> {
     return Fst<A>::WriteFile(source);
   }
 
-  inline void InitStateIterator(StateIteratorData<A>* data) const override {
+  void InitStateIterator(StateIteratorData<A>* data) const override {
     GetImpl()->InitStateIterator(data);
   }
 
