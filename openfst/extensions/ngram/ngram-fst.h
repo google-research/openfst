@@ -32,6 +32,7 @@
 #include <ios>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <queue>
@@ -128,8 +129,21 @@ class NGramFstImpl : public FstImpl<A> {
     strm.read(reinterpret_cast<char*>(&num_states), sizeof(num_states));
     strm.read(reinterpret_cast<char*>(&num_futures), sizeof(num_futures));
     strm.read(reinterpret_cast<char*>(&num_final), sizeof(num_final));
+    if (strm.fail()) {
+      LOG(ERROR) << "NGramFst::Read: Failed to read header counts";
+      return nullptr;
+    }
+    if (num_states == 0 || num_states > kMaxStates ||
+        num_futures > kMaxFutures || num_final > kMaxStates) {
+      LOG(ERROR) << "NGramFst::Read: Invalid size";
+      return nullptr;
+    }
     size_t size = Storage(num_states, num_futures, num_final);
     std::unique_ptr<MappedFile> data_region(MappedFile::Allocate(size));
+    if (!data_region) {
+      LOG(ERROR) << "NGramFst::Read: MappedFile allocation failed";
+      return nullptr;
+    }
     char* data = static_cast<char*>(data_region->mutable_data());
     // Copy num_states, num_futures and num_final back into data.
     memcpy(data, reinterpret_cast<char*>(&num_states), sizeof(num_states));
@@ -274,6 +288,15 @@ class NGramFstImpl : public FstImpl<A> {
   static constexpr int kFileVersion = 4;
   // Minimum file format version supported.
   static constexpr int kMinFileVersion = 4;
+  // We limit component sizes to avoid overflow in intermediate
+  // multiplication and summation. The choice of divisor 64 allows
+  // headroom for multiplications by sizeof(Arc) members (at most 8)
+  // and summation of multiple terms. These are static assertions but
+  // also so large as to be impractical.
+  static constexpr uint64_t kMaxStates =
+      std::numeric_limits<uint64_t>::max() / 64;
+  static constexpr uint64_t kMaxFutures =
+      std::numeric_limits<uint64_t>::max() / 64;
 
   std::unique_ptr<MappedFile> data_region_;
   const char* data_ = nullptr;  // Not owned.
@@ -512,6 +535,11 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A>& fst,
   }
 
   int64_t num_states = CountStates(fst);
+  if (num_states > kMaxStates) {
+    FSTERROR() << "NGramFst: Fst size exceeds limits";
+    SetProperties(kError, kError);
+    return;
+  }
   std::vector<Label> context(num_states, 0);
 
   // Find the unigram state by starting from the start state, following
@@ -594,6 +622,12 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A>& fst,
       }
     }
   }
+  if (num_futures > kMaxFutures) {
+    FSTERROR() << "NGramFstImpl: Fst futures size exceeds limits";
+    SetProperties(kError, kError);
+    return;
+  }
+
   if (num_context_arcs != context_fst.NumStates() - 1) {
     FSTERROR() << "Number of contexts arcs != number of states - 1";
     SetProperties(kError, kError);

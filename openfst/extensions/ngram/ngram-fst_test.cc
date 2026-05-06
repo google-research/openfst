@@ -19,7 +19,9 @@
 
 #include <cstdint>
 #include <ios>
+#include <limits>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -37,7 +39,9 @@
 #include "openfst/lib/fst.h"
 #include "openfst/lib/matcher.h"
 #include "openfst/lib/mutable-fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/statesort.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 
 ABSL_FLAG(std::string, fst_file, "", "Fst file to use for tests");
@@ -57,6 +61,13 @@ TEST(NGramFstTest, EmptyFst) {
   const NGramFst<StdArc> fst;
   EXPECT_EQ(fst::kNoStateId, fst.Start());
   EXPECT_EQ(0, fst.NumStates());
+}
+
+TEST(NGramFstDeathTest, FailsOnEmptyFst) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  const VectorFst<StdArc> fst;
+  NGramFst<StdArc> ngram_fst(fst);
+  EXPECT_TRUE(ngram_fst.Properties(kError, true));
 }
 
 TEST(NGramFstTest, TestNGramFst) {
@@ -203,6 +214,30 @@ TEST(NGramFstTest, NGramMatcherBackoff) {
       EXPECT_EQ(base_matcher.Done(), matcher.Done());
     }
   }
+}
+
+TEST(NGramFstTest, ReadFailsOnLargeSize) {
+  FstHeader hdr;
+  hdr.SetFstType("ngram");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(4);
+  std::ostringstream ostrm;
+  hdr.Write(ostrm, "");
+  const uint64_t large_size = std::numeric_limits<uint64_t>::max();
+  const uint64_t zero = 0;
+  ostrm.write(reinterpret_cast<const char*>(&large_size), sizeof(large_size));
+  ostrm.write(reinterpret_cast<const char*>(&zero), sizeof(zero));
+  ostrm.write(reinterpret_cast<const char*>(&zero), sizeof(zero));
+  std::string in_data = ostrm.str();
+  std::istringstream istrm(in_data);
+  EXPECT_EQ(NGramFst<StdArc>::Read(istrm, FstReadOptions()), nullptr);
+}
+
+TEST(NGramFstImplTest, StorageTest) {
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(2, 2, 2), 100);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(3, 2, 2), 108);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(2, 3, 2), 108);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(2, 2, 3), 104);
 }
 
 }  // namespace fst
