@@ -910,6 +910,10 @@ inline LinearClassifierFstImpl<A>* LinearClassifierFstImpl<A>::Read(
   if (!strm) {
     return nullptr;
   }
+  if (impl->num_classes_ == 0) {
+    FSTERROR() << "LinearClassifierFst::Read: num_classes must be positive";
+    return nullptr;
+  }
   impl->num_groups_ = impl->data_->NumGroups() / impl->num_classes_;
   if (impl->num_groups_ * impl->num_classes_ != impl->data_->NumGroups()) {
     FSTERROR() << "Total number of feature groups is not a multiple of the "
