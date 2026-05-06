@@ -34,7 +34,9 @@ jobs:
       runs-on: windows-latest
       defaults:
         run:
-          shell: pwsh
+          # PowerShell misparses flags like --flag=-value as parameter
+          # binding, so use bash where arguments are passed through as-is.
+          shell: bash
       env:
         USE_BAZEL_VERSION: 9.0.0
       steps:
@@ -54,7 +56,6 @@ jobs:
           run: |
             bazelisk build -c fastbuild //...
         - name: Test
-          shell: bash  # Avoid default PowerShell syntax headaches.
           run: >-
             bazelisk test -c fastbuild
             --test_size_filters=-enormous
