@@ -227,6 +227,24 @@ ConstFstImpl<Arc, Unsigned>* ConstFstImpl<Arc, Unsigned>::Read(
     return nullptr;
   }
   impl->arcs_ = static_cast<Arc*>(impl->arcs_region_->mutable_data());
+
+  // Check states.
+  if (impl->start_ != kNoStateId &&
+      !(impl->start_ >= 0 && impl->start_ < impl->nstates_)) {
+    LOG(ERROR) << "ConstFst::Read: Invalid start state " << impl->start_
+               << " for FST with " << impl->nstates_
+               << " states: " << opts.source;
+    return nullptr;
+  }
+  for (StateId s = 0; s < impl->nstates_; ++s) {
+    if (impl->states_[s].pos > impl->narcs_ ||
+        impl->states_[s].narcs > impl->narcs_ - impl->states_[s].pos) {
+      LOG(ERROR) << "ConstFst::Read: state " << s
+                 << " arc range out of bounds: " << opts.source;
+      return nullptr;
+    }
+  }
+
   return impl.release();
 }
 

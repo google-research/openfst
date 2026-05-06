@@ -17,6 +17,8 @@
 //
 // Unit test for FST file formats.
 
+#include <cstddef>
+#include <fstream>
 #include <ios>
 #include <memory>
 #include <ostream>
@@ -207,6 +209,69 @@ TEST_F(FstFileTest, NoSeek) {
   FstWriteOptions opts;
   opts.stream_write = true;
   ConstFst<Arc>::WriteFst(*fst, oss, opts);
+}
+
+// Creates a ConstFst file with 1 state and 1 arc, but with arbitrary values for
+// start, states[0].pos, and states[0].narcs.
+bool WriteBadConstFst(const std::string& path, int start, size_t pos,
+                      size_t narcs) {
+  FstHeader hdr;
+  hdr.SetFstType("const");
+  hdr.SetArcType("standard");
+  hdr.SetVersion(2);  // Unaligned, == ConstFstImpl::kFileVersion.
+  hdr.SetStart(start);
+  hdr.SetNumStates(1);
+  hdr.SetNumArcs(1);
+
+  std::fstream strm(path, std::ios::binary | std::ios::out);
+  if (!hdr.Write(strm, path)) {
+    return false;
+  }
+  // Write 1 state.
+  ConstFst<Arc>::ConstState state;
+  state.final_weight = Arc::Weight::One();
+  state.pos = pos;
+  state.narcs = narcs;
+  if (!strm.write(reinterpret_cast<const char*>(&state), sizeof(state))) {
+    return false;
+  }
+
+  // Write 1 arc.
+  Arc arc(1, 1, Arc::Weight::One(), 0);
+  if (!strm.write(reinterpret_cast<const char*>(&arc), sizeof(arc))) {
+    return false;
+  }
+
+  strm.close();
+  return static_cast<bool>(strm);
+}
+
+TEST(FstFileFailureTest, ConstBadStates) {
+  std::string path =
+      JoinPath(::testing::TempDir(), "const_bad_states.fst");
+  Fst<Arc>* fst = nullptr;
+
+  // Not bad.
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/0, /*narcs=*/1));
+  fst = Fst<Arc>::Read(path);
+  EXPECT_NE(fst, nullptr);
+  delete fst;
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/1, /*narcs=*/0));
+  fst = Fst<Arc>::Read(path);
+  EXPECT_NE(fst, nullptr);
+  delete fst;
+
+  // Bad start.
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/-2, /*pos=*/0, /*narcs=*/1));
+  EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/1, /*pos=*/0, /*narcs=*/1));
+  EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
+
+  // Bad arc range.
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/2, /*narcs=*/0));
+  EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/0, /*narcs=*/2));
+  EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
 }
 
 }  // namespace
