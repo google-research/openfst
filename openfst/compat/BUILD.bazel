@@ -64,6 +64,7 @@ cc_test(
 
 cc_library(
     name = "status_builder",
+    srcs = ["status_builder.cc"],
     hdrs = ["status_builder.h"],
     visibility = ["//visibility:private"],
     deps = [
@@ -73,6 +74,20 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/types:source_location",
+    ],
+)
+
+cc_test(
+    name = "status_builder_test",
+    srcs = ["status_builder_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":status_builder",
+        "//openfst/test:test_main",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:source_location",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -83,6 +98,8 @@ cc_library(
         ":status_builder",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:source_location",
     ],
 )
 

@@ -15,148 +15,147 @@
 #ifndef OPENFST_COMPAT_STATUS_BUILDER_H_
 #define OPENFST_COMPAT_STATUS_BUILDER_H_
 
+#include <memory>
 #include <sstream>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/source_location.h"
 
 namespace fst {
 
-// Dummy implementation of StatusBuilder. Placeholder for real implementation
-// allowing status to be annotated using operator<<.
-class StatusBuilder {
+class ABSL_MUST_USE_RESULT StatusBuilder {
  public:
-  explicit StatusBuilder(const ::absl::Status& status) : status_(status) {}
-  explicit StatusBuilder(::absl::Status&& status)
-      : status_(std::move(status)) {}
+  StatusBuilder(const StatusBuilder& sb);
+  StatusBuilder& operator=(const StatusBuilder& sb);
 
-  // Implicit conversion back to absl::Status.
-  operator ::absl::Status() const {
-    const auto& stream_msg = stream_.str();
-    if (stream_msg.empty()) {
-      return status_;
-    }
-    ::absl::Status result;
-    if (status_.message().empty()) {
-      result = absl::Status(status_.code(), stream_msg);
-    } else {
-      switch (message_join_style_) {
-        case MessageJoinStyle::kAnnotate:
-          result = absl::Status(status_.code(), absl::StrCat(status_.message(),
-                                                             "; ", stream_msg));
-          break;
-        case MessageJoinStyle::kAppend:
-          result = absl::Status(status_.code(),
-                                absl::StrCat(status_.message(), stream_msg));
-          break;
-        case MessageJoinStyle::kPrepend:
-          result = absl::Status(status_.code(),
-                                absl::StrCat(stream_msg, status_.message()));
-          break;
-      }
-    }
-    status_.ForEachPayload([&](auto type_url, auto payload) {
-      result.SetPayload(std::move(type_url), std::move(payload));
-    });
-    return result;
-  }
+  StatusBuilder(StatusBuilder&&) = default;
+  StatusBuilder& operator=(StatusBuilder&&) = default;
 
-  template <typename Adaptor>
-  auto With(Adaptor&& adaptor) {
-    return std::forward<Adaptor>(adaptor)(std::move(*this));
+  // Creates a `StatusBuilder` based on an original status.  If logging is
+  // enabled, it will use `location` as the location from which the log message
+  // occurs.  A typical user will call this with `GENAI_MODULES_LOC`.
+  StatusBuilder(const absl::Status& original_status,
+                absl::SourceLocation location)
+      : impl_(original_status.ok()
+                  ? nullptr
+                  : std::make_unique<Impl>(original_status, location)) {}
+
+  StatusBuilder(absl::Status&& original_status, absl::SourceLocation location)
+      : impl_(original_status.ok()
+                  ? nullptr
+                  : std::make_unique<Impl>(std::move(original_status),
+                                           location)) {}
+
+  // Creates a `StatusBuilder` from a status code.  If logging is
+  // enabled, it will use `location` as the location from which the log message
+  // occurs.  A typical user will call this with `GENAI_MODULES_LOC`.
+  StatusBuilder(absl::StatusCode code, absl::SourceLocation location)
+      : impl_(code == absl::StatusCode::kOk
+                  ? nullptr
+                  : std::make_unique<Impl>(absl::Status(code, ""), location)) {}
+
+  bool ok() const { return !impl_; }
+
+  StatusBuilder& SetAppend() &;
+  StatusBuilder&& SetAppend() &&;
+
+  StatusBuilder& SetPrepend() &;
+  StatusBuilder&& SetPrepend() &&;
+
+  StatusBuilder& SetNoLogging() &;
+  StatusBuilder&& SetNoLogging() &&;
+
+  StatusBuilder& SetCode(absl::StatusCode code) &;
+  StatusBuilder&& SetCode(absl::StatusCode code) &&;
+
+  template <typename T>
+  StatusBuilder& operator<<(const T& msg) & {
+    if (!impl_) return *this;
+    impl_->stream << msg;
+    return *this;
   }
 
   template <typename T>
-  StatusBuilder& operator<<(const T& extra_msg) & {
-    stream_ << extra_msg;
-    return *this;
+  StatusBuilder&& operator<<(const T& msg) && {
+    return std::move(*this << msg);
   }
 
-  template <typename T>
-  StatusBuilder&& operator<<(const T& extra_msg) && {
-    stream_ << extra_msg;
-    return std::move(*this);
-  }
+  operator absl::Status() const&;
+  operator absl::Status() &&;
 
-  StatusBuilder& SetPrepend() & {
-    message_join_style_ = MessageJoinStyle::kPrepend;
-    return *this;
-  }
-
-  StatusBuilder&& SetPrepend() && {
-    message_join_style_ = MessageJoinStyle::kPrepend;
-    return std::move(*this);
-  }
-
-  StatusBuilder& SetAppend() & {
-    message_join_style_ = MessageJoinStyle::kAppend;
-    return *this;
-  }
-
-  StatusBuilder&& SetAppend() && {
-    message_join_style_ = MessageJoinStyle::kAppend;
-    return std::move(*this);
-  }
+  absl::Status JoinMessageToStatus();
 
  private:
-  enum class MessageJoinStyle {
-    kAnnotate,
-    kAppend,
-    kPrepend,
+  struct Impl {
+    // Specifies how to join the error message in the original status and any
+    // additional message that has been streamed into the builder.
+    enum class MessageJoinStyle {
+      kAnnotate,
+      kAppend,
+      kPrepend,
+    };
+
+    Impl(const absl::Status& status, absl::SourceLocation location);
+    Impl(absl::Status&& status, absl::SourceLocation location);
+    Impl(const Impl&);
+    Impl& operator=(const Impl&);
+
+    absl::Status JoinMessageToStatus();
+
+    // The status that the result will be based on.
+    absl::Status status;
+    // The source location to record if this file is logged.
+    absl::SourceLocation location;
+    // Logging disabled if true.
+    bool no_logging = false;
+    // The additional messages added with `<<`.  This is nullptr when status_ is
+    // ok.
+    std::ostringstream stream;
+    // Specifies how to join the message in `status_` and `stream_`.
+    MessageJoinStyle join_style = MessageJoinStyle::kAnnotate;
   };
 
-  absl::Status status_;
-  std::ostringstream stream_;
-  MessageJoinStyle message_join_style_ = MessageJoinStyle::kAnnotate;
+  // Internal store of data for the class.  An invariant of the class is that
+  // this is null when the original status is okay, and not-null otherwise.
+  std::unique_ptr<Impl> impl_;
 };
 
-// Macros shared by status matchers and status macros.
+inline StatusBuilder AlreadyExistsErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kAlreadyExists, location);
+}
 
-#define OPENFST_STATUS_IMPL_CONCAT_INNER(a, b) a##b
-#define OPENFST_STATUS_IMPL_CONCAT(a, b) OPENFST_STATUS_IMPL_CONCAT_INNER(a, b)
+inline StatusBuilder FailedPreconditionErrorBuilder(
+    absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kFailedPrecondition, location);
+}
 
-#define OPENFST_STATUS_IMPL_GET_VARIADIC_INNER(_1, _2, _3, NAME, ...) NAME
-#define OPENFST_STATUS_IMPL_GET_VARIADIC(args) \
-  OPENFST_STATUS_IMPL_GET_VARIADIC_INNER args
+inline StatusBuilder InternalErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kInternal, location);
+}
 
-// Internal helpers for macro expansion.
-#define OPENFST_STATUS_IMPL_EAT(...)
-#define OPENFST_STATUS_IMPL_REM(...) __VA_ARGS__
-#define OPENFST_STATUS_IMPL_EMPTY()
+inline StatusBuilder InvalidArgumentErrorBuilder(
+    absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kInvalidArgument, location);
+}
 
-// Internal helpers for emptyness arguments check.
-#define OPENFST_STATUS_IMPL_IS_EMPTY_INNER(...) \
-  OPENFST_STATUS_IMPL_IS_EMPTY_INNER_HELPER((__VA_ARGS__, 0, 1))
-// MSVC expands variadic macros incorrectly, so we need this extra indirection
-// to work around that (b/110959038).
-#define OPENFST_STATUS_IMPL_IS_EMPTY_INNER_HELPER(args) \
-  OPENFST_STATUS_IMPL_IS_EMPTY_INNER_I args
-#define OPENFST_STATUS_IMPL_IS_EMPTY_INNER_I(e0, e1, is_empty, ...) is_empty
+inline StatusBuilder NotFoundErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kNotFound, location);
+}
 
-#define OPENFST_STATUS_IMPL_IS_EMPTY(...) \
-  OPENFST_STATUS_IMPL_IS_EMPTY_I(__VA_ARGS__)
-#define OPENFST_STATUS_IMPL_IS_EMPTY_I(...) \
-  OPENFST_STATUS_IMPL_IS_EMPTY_INNER(_, ##__VA_ARGS__)
+inline StatusBuilder UnavailableErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kUnavailable, location);
+}
 
-// Internal helpers for if statement.
-#define OPENFST_STATUS_IMPL_IF_1(_Then, _Else) _Then
-#define OPENFST_STATUS_IMPL_IF_0(_Then, _Else) _Else
-#define OPENFST_STATUS_IMPL_IF(_Cond, _Then, _Else) \
-  OPENFST_STATUS_IMPL_CONCAT(OPENFST_STATUS_IMPL_IF_, _Cond)(_Then, _Else)
+inline StatusBuilder UnimplementedErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kUnimplemented, location);
+}
 
-// Expands to 1 if the input is parenthesized. Otherwise expands to 0.
-#define OPENFST_STATUS_IMPL_IS_PARENTHESIZED(...) \
-  OPENFST_STATUS_IMPL_IS_EMPTY(OPENFST_STATUS_IMPL_EAT __VA_ARGS__)
-
-// If the input is parenthesized, removes the parentheses. Otherwise expands to
-// the input unchanged.
-#define OPENFST_STATUS_IMPL_UNPARENTHESIZE_IF_PARENTHESIZED(...)               \
-  OPENFST_STATUS_IMPL_IF(OPENFST_STATUS_IMPL_IS_PARENTHESIZED(__VA_ARGS__),    \
-                         OPENFST_STATUS_IMPL_REM, OPENFST_STATUS_IMPL_EMPTY()) \
-  __VA_ARGS__
+inline StatusBuilder UnknownErrorBuilder(absl::SourceLocation location) {
+  return StatusBuilder(absl::StatusCode::kUnknown, location);
+}
 
 }  // namespace fst
 

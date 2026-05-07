@@ -18,39 +18,210 @@
 #include <utility>
 
 #include "absl/base/optimization.h"
-#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/types/source_location.h"
 #include "openfst/compat/status_builder.h"
 
-namespace fst {
+// Evaluates an expression that produces a `absl::Status`. If the status
+// is not ok, returns it from the current function.
+//
+// For example:
+//   absl::Status MultiStepFunction() {
+//     RETURN_IF_ERROR(Function(args...));
+//     RETURN_IF_ERROR(foo.Method(args...));
+//     return absl::OkStatus();
+//   }
+//
+// The macro ends with a `fst::StatusBuilder` which allows the
+// returned status to be extended with more details.  Any chained expressions
+// after the macro will not be evaluated unless there is an error.
+//
+// For example:
+//   absl::Status MultiStepFunction() {
+//     RETURN_IF_ERROR(Function(args...)) << "in MultiStepFunction";
+//     RETURN_IF_ERROR(foo.Method(args...)).Log(base_logging::ERROR)
+//         << "while processing query: " << query.DebugString();
+//     return absl::OkStatus();
+//   }
+//
+// `fst::StatusBuilder` supports adapting the builder chain using a
+// `With` method and a functor.  This allows for powerful extensions to the
+// macro.
+//
+// For example, teams can define local policies to use across their code:
+//
+//   StatusBuilder TeamPolicy(StatusBuilder builder) {
+//     return std::move(builder.Log(base_logging::WARNING).Attach(...));
+//   }
+//
+//   RETURN_IF_ERROR(foo()).With(TeamPolicy);
+//   RETURN_IF_ERROR(bar()).With(TeamPolicy);
+//
+// Changing the return type allows the macro to be used with Task and Rpc
+// interfaces.
+//
+// If using this macro inside a lambda, you need to annotate the return type
+// to avoid confusion between a `fst::StatusBuilder` and a
+// `absl::Status` type. E.g.
+//
+//   []() -> absl::Status {
+//     RETURN_IF_ERROR(Function(args...));
+//     RETURN_IF_ERROR(foo.Method(args...));
+//     return absl::OkStatus();
+//   }
+#define RETURN_IF_ERROR(expr)                               \
+  OPENFST_STATUS_MACROS_IMPL_ELSE_BLOCKER_                  \
+  if (fst::status_macro_internal::StatusAdaptorForMacros    \
+          status_macro_internal_adaptor = {                 \
+              (expr), ::absl::SourceLocation::current()}) { \
+  } else /* NOLINT */                                       \
+    return status_macro_internal_adaptor.Consume()
 
-#define RETURN_IF_ERROR(expr) \
-  RETURN_IF_ERROR_IMPL(OPENFST_STATUS_IMPL_CONCAT(status, __COUNTER__), expr)
-
-#define RETURN_IF_ERROR_IMPL(_status, expr)  \
-  if (auto _status = (expr); _status.ok()) { \
-  } else /* NOLINT */                        \
-    return ::fst::StatusBuilder(_status)
-
-#define ASSIGN_OR_RETURN(...)                                          \
-  OPENFST_STATUS_IMPL_GET_VARIADIC(                                    \
-      (__VA_ARGS__, ASSIGN_OR_RETURN_IMPL_3, ASSIGN_OR_RETURN_IMPL_2)) \
+// Executes an expression `rexpr` that returns a `absl::StatusOr<T>`. On
+// OK, extracts its value into the variable defined by `lhs`, otherwise returns
+// from the current function. By default the error status is returned
+// unchanged, but it may be modified by an `error_expression`. If there is an
+// error, `lhs` is not evaluated; thus any side effects that `lhs` may have
+// only occur in the success case.
+//
+// Interface:
+//
+//   ASSIGN_OR_RETURN(lhs, rexpr)
+//   ASSIGN_OR_RETURN(lhs, rexpr, error_expression);
+//
+// WARNING: expands into multiple statements; it cannot be used in a single
+// statement (e.g. as the body of an if statement without {})!
+//
+// Example: Declaring and initializing a new variable (ValueType can be anything
+//          that can be initialized with assignment, including references):
+//   ASSIGN_OR_RETURN(ValueType value, MaybeGetValue(arg));
+//
+// Example: Assigning to an existing variable:
+//   ValueType value;
+//   ASSIGN_OR_RETURN(value, MaybeGetValue(arg));
+//
+// Example: Assigning to an expression with side effects:
+//   MyProto data;
+//   ASSIGN_OR_RETURN(*data.mutable_str(), MaybeGetValue(arg));
+//   // No field "str" is added on error.
+//
+// Example: Assigning to a std::unique_ptr.
+//   ASSIGN_OR_RETURN(std::unique_ptr<T> ptr, MaybeGetPtr(arg));
+//
+// If passed, the `error_expression` is evaluated to produce the return
+// value. The expression may reference any variable visible in scope, as
+// well as a `genai_modules::StatusBuilder` object populated with the error and
+// named by a single underscore `_`. The expression typically uses the
+// builder to modify the status and is returned directly in manner similar
+// to RETURN_IF_ERROR. The expression may, however, evaluate to any type
+// returnable by the function, including (void). For example:
+//
+// Example: Adjusting the error message.
+//   ASSIGN_OR_RETURN(ValueType value, MaybeGetValue(query),
+//                    _ << "while processing query " << query.DebugString());
+//
+// Example: Logging the error on failure.
+//   ASSIGN_OR_RETURN(ValueType value, MaybeGetValue(query), _.LogError());
+//
+#define ASSIGN_OR_RETURN(...)                                       \
+  OPENFST_STATUS_MACROS_IMPL_GET_VARIADIC_(                         \
+      (__VA_ARGS__, OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_3_, \
+       OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_2_))             \
   (__VA_ARGS__)
 
-#define ASSIGN_OR_RETURN_IMPL_2(lhs, rexpr) \
-  ASSIGN_OR_RETURN_IMPL_3(lhs, rexpr, _)
-#define ASSIGN_OR_RETURN_IMPL_3(lhs, rexpr, error_expression)              \
-  ASSIGN_OR_RETURN_IMPL(OPENFST_STATUS_IMPL_CONCAT(statusor, __COUNTER__), \
-                        lhs, rexpr, error_expression)
-#define ASSIGN_OR_RETURN_IMPL(_statusor, lhs, rexpr, error_expression)  \
-  auto _statusor = (rexpr);                                             \
-  if (ABSL_PREDICT_FALSE(!_statusor.ok())) {                            \
-    ::fst::StatusBuilder _(std::move(_statusor).status());              \
-    (void)_; /* error expression is allowed to not use this variable */ \
-    return (error_expression);                                          \
-  }                                                                     \
-  OPENFST_STATUS_IMPL_UNPARENTHESIZE_IF_PARENTHESIZED(lhs) =            \
-      (*std::move(_statusor))
+// =================================================================
+// == Implementation details, do not rely on anything below here. ==
+// =================================================================
 
+// MSVC incorrectly expands variadic macros, splice together a macro call to
+// work around the bug.
+#define OPENFST_STATUS_MACROS_IMPL_GET_VARIADIC_HELPER_(_1, _2, _3, NAME, ...) \
+  NAME
+#define OPENFST_STATUS_MACROS_IMPL_GET_VARIADIC_(args) \
+  OPENFST_STATUS_MACROS_IMPL_GET_VARIADIC_HELPER_ args
+
+#define OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_2_(lhs, rexpr)            \
+  OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_(                               \
+      OPENFST_STATUS_MACROS_IMPL_CONCAT_(_status_or_value, __LINE__), lhs,    \
+      rexpr,                                                                  \
+      return fst::StatusBuilder(std::move(OPENFST_STATUS_MACROS_IMPL_CONCAT_( \
+                                              _status_or_value, __LINE__))    \
+                                    .status(),                                \
+                                ::absl::SourceLocation::current()))
+#define OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_3_(lhs, rexpr,         \
+                                                       error_expression)   \
+  OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_(                            \
+      OPENFST_STATUS_MACROS_IMPL_CONCAT_(_status_or_value, __LINE__), lhs, \
+      rexpr,                                                               \
+      fst::StatusBuilder _(std::move(OPENFST_STATUS_MACROS_IMPL_CONCAT_(   \
+                                         _status_or_value, __LINE__))      \
+                               .status(),                                  \
+                           ::absl::SourceLocation::current());             \
+      (void)_; /* error_expression is allowed to not use this variable */  \
+      return (error_expression))
+#define OPENFST_STATUS_MACROS_IMPL_ASSIGN_OR_RETURN_(statusor, lhs, rexpr, \
+                                                     error_expression)     \
+  auto statusor = (rexpr);                                                 \
+  if (ABSL_PREDICT_FALSE(!statusor.ok())) {                                \
+    error_expression;                                                      \
+  }                                                                        \
+  lhs = std::move(statusor).value()
+
+// Internal helper for concatenating macro values.
+#define OPENFST_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
+#define OPENFST_STATUS_MACROS_IMPL_CONCAT_(x, y) \
+  OPENFST_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y)
+
+// The GNU compiler emits a warning for code like:
+//
+//   if (foo)
+//     if (bar) { } else baz;
+//
+// because it thinks you might want the else to bind to the first if.  This
+// leads to problems with code like:
+//
+//   if (do_expr) RETURN_IF_ERROR(expr) << "Some message";
+//
+// The "switch (0) case 0:" idiom is used to suppress this.
+#define OPENFST_STATUS_MACROS_IMPL_ELSE_BLOCKER_ \
+  switch (0)                                     \
+  case 0:                                        \
+  default:
+
+namespace fst {
+namespace status_macro_internal {
+
+// Provides a conversion to bool so that it can be used inside an if statement
+// that declares a variable.
+class StatusAdaptorForMacros {
+ public:
+  StatusAdaptorForMacros(const absl::Status& status,
+                         absl::SourceLocation location)
+      : builder_(status, location) {}
+
+  StatusAdaptorForMacros(absl::Status&& status, absl::SourceLocation location)
+      : builder_(std::move(status), location) {}
+
+  StatusAdaptorForMacros(const StatusBuilder& builder,
+                         absl::SourceLocation /*location*/)
+      : builder_(builder) {}
+
+  StatusAdaptorForMacros(StatusBuilder&& builder,
+                         absl::SourceLocation /*location*/)
+      : builder_(std::move(builder)) {}
+
+  StatusAdaptorForMacros(const StatusAdaptorForMacros&) = delete;
+  StatusAdaptorForMacros& operator=(const StatusAdaptorForMacros&) = delete;
+
+  explicit operator bool() const { return ABSL_PREDICT_TRUE(builder_.ok()); }
+
+  StatusBuilder&& Consume() { return std::move(builder_); }
+
+ private:
+  StatusBuilder builder_;
+};
+
+}  // namespace status_macro_internal
 }  // namespace fst
 
 #endif  // OPENFST_COMPAT_STATUS_MACROS_H_

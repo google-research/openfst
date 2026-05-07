@@ -34,6 +34,7 @@ if(OPENFST_BUILD_TESTS)
   set(COMPAT_TESTS
       compat_memory_test
       file_path_test
+      status_builder_test
       status_macros_test
       status_matchers_test
       init_test
