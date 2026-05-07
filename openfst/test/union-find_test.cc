@@ -28,17 +28,17 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "benchmark/benchmark.h"
 
-constexpr uint64_t kSeed = 403;
 constexpr int kNumElements = 37;  // # of elements in the test set.
 constexpr int kMaxUnions = 37;    // Max # of Union operations.
 constexpr int kNumTestRuns = 10;  // Number of separate random test runs.
 
-int Rand(int n) {
-  static std::mt19937_64 rand(kSeed);
-  return std::uniform_int_distribution<>(1, n - 1)(rand);
-}
+namespace {
+int Rand(int n, absl::BitGen& bit_gen) { return absl::Uniform(bit_gen, 1, n); }
+}  // namespace
 
 class UnionFindTest : public testing::Test {
  protected:
@@ -62,8 +62,8 @@ class UnionFindTest : public testing::Test {
     // Main loop: performs random union operations.
     for (int i = 0; i < k; ++i) {
       // Select two random elements.
-      int p = Rand(n);
-      int q = Rand(n);
+      int p = Rand(n, bit_gen_);
+      int q = Rand(n, bit_gen_);
 
       // Union-Find operation.
       uf.Union(p, q);
@@ -95,11 +95,14 @@ class UnionFindTest : public testing::Test {
       ASSERT_TRUE(*sets[i] == *uf_sets[i]);
     }
   }
+
+  absl::BitGen bit_gen_{fst::MakeTaggedSeedSeq(
+      "UnionFindTest")};
 };
 
 TEST_F(UnionFindTest, T1) {
   for (int i = 0; i < kNumTestRuns; ++i) {
-    TestRun(kNumElements, Rand(kMaxUnions));
+    TestRun(kNumElements, Rand(kMaxUnions, bit_gen_));
   }
 }
 
@@ -164,12 +167,14 @@ static void BM_UnionFind(benchmark::State& state) {
   const int elements = state.range(0);
 
   fst::UnionFind<int> uf(elements, -1);
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "BM_UNION_FIND"));
 
   // Multiply by 10 to run for longer than the benchmark usually wants
   // us to. We get slightly better numerical stability that way.
   for (auto s : state) {
-    int a = Rand(elements);
-    int b = Rand(elements);
+    int a = Rand(elements, bit_gen);
+    int b = Rand(elements, bit_gen);
     if (uf.FindSet(a) == -1) uf.MakeSet(a);
     if (uf.FindSet(b) == -1) uf.MakeSet(b);
     uf.Union(a, b);

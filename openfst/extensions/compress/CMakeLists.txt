@@ -29,6 +29,7 @@ target_link_libraries(
             absl::memory
             absl::strings
             absl::span
+            absl::random_random
 )
 
 add_library(fstcompressscript compressscript.cc)
@@ -59,6 +60,7 @@ target_link_libraries(
           absl::flags_parse
           absl::flags_usage
           absl::log
+          absl::random_random
 )
 
 add_library(fstquantize_weights quantize_weights.cc)
@@ -146,6 +148,7 @@ if(OPENFST_BUILD_TESTS)
             absl::flags
             absl::log
             fst
+            absl::random_random
   )
   gtest_discover_tests(
     randmod_test

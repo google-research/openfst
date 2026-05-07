@@ -41,10 +41,10 @@
 #define OPENFST_LIB_EXPECTATION_WEIGHT_H_
 
 #include <cstdint>
-#include <random>
 #include <string>
 
 #include "absl/base/no_destructor.h"
+#include "absl/random/bit_gen_ref.h"
 #include "openfst/lib/pair-weight.h"
 #include "openfst/lib/weight.h"
 
@@ -214,11 +214,11 @@ class WeightGenerate<ExpectationWeight<W1, W2>> {
   using Weight = ExpectationWeight<W1, W2>;
   using Generate = WeightGenerate<PairWeight<W1, W2>>;
 
-  explicit WeightGenerate(uint64_t seed = std::random_device()(),
-                          bool allow_zero = true)
-      : generate_(seed, allow_zero) {}
+  explicit WeightGenerate(bool allow_zero = true) : generate_(allow_zero) {}
 
-  Weight operator()() const { return Weight(generate_()); }
+  Weight operator()(absl::BitGenRef bit_gen) const {
+    return Weight(generate_(bit_gen));
+  }
 
  private:
   const Generate generate_;

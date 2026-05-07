@@ -31,6 +31,8 @@
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/float-weight.h"
@@ -38,8 +40,6 @@
 #include "openfst/lib/interval-set.h"
 #include "openfst/lib/statesort.h"
 #include "openfst/lib/vector-fst.h"
-
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
 
 namespace fst {
 namespace {
@@ -168,8 +168,6 @@ class ReachableTest : public testing::Test {
           "openfst/test/testdata/label-reachable",
           "a" + std::to_string(i) + ".fst")));
     }
-    rand_.seed(absl::GetFlag(FLAGS_seed));
-    LOG(INFO) << "Seed = " << absl::GetFlag(FLAGS_seed);
   }
 
   void TestReachableLabel(const VectorFst<Arc>& fst, int i,
@@ -177,8 +175,7 @@ class ReachableTest : public testing::Test {
     const Label max_label = MaxLabel(fst, false);
     if (fst.NumStates() == 0) return;
     for (auto j = 0; j < kNumRandomStates; ++j) {
-      const StateId s =
-          std::uniform_int_distribution<>(0, fst.NumStates() - 1)(rand_);
+      const StateId s = absl::Uniform(rand_, 0, fst.NumStates());
       TestLabelReachable test_reachable(fst, s, false);
       label_reachable->SetState(s);
       for (auto l = 1; l <= max_label; ++l) {
@@ -201,8 +198,7 @@ class ReachableTest : public testing::Test {
                           LabelReachable<Arc>* label_reachable) {
     if (fst.NumStates() == 0) return;
     for (auto j = 0; j < kNumRandomStates; ++j) {
-      const StateId s =
-          std::uniform_int_distribution<>(0, fst.NumStates() - 1)(rand_);
+      const StateId s = absl::Uniform(rand_, 0, fst.NumStates());
       TestLabelReachable test_reachable(fst, s, false);
       label_reachable->SetState(s);
       const bool reach1 = test_reachable.ReachFinal();
@@ -218,7 +214,7 @@ class ReachableTest : public testing::Test {
     }
   }
 
-  std::mt19937_64 rand_;
+  absl::BitGen rand_{fst::MakeTaggedSeedSeq("REACHABLE_TEST")};
   std::vector<std::unique_ptr<VectorFst<Arc>>> afst_;
   static constexpr int kNumRandomStates = 1000;  // Number of states to examine.
 };

@@ -26,6 +26,8 @@ cc_library(
         "//openfst/lib",
         "//openfst/lib:util",
         "@com_google_absl//absl/base:no_destructor",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -37,11 +39,13 @@ cc_test(
     linkstatic = True,
     deps = [
         ":categorial-weight",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib:weight",
         "//openfst/test:weight_tester",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )

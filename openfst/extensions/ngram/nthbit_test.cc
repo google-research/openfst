@@ -20,9 +20,10 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/log/log_streamer.h"
+#include "openfst/compat/seed_sequences.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/random.h"
+#include "openfst/compat/seed_sequences.h"
 
 ABSL_FLAG(int32_t, test_size, 10000,
           "Number of random values to compute per test.");
@@ -80,9 +81,10 @@ TEST(NthbitTest, OneInNBitsSet) {
 }
 
 TEST(NthbitTest, RandomCases) {
-  absl::BitGen gen;
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RANDOM_CASES"));
   for (int i = 0; i < absl::GetFlag(FLAGS_test_size); ++i) {
-    const auto value = absl::Uniform<uint64_t>(gen);
+    const auto value = absl::Uniform<uint64_t>(bit_gen);
     for (int rank = 0; rank < absl::popcount(value); ++rank) {
       const unsigned int reference = nth_bit_scan(value, rank);
       const unsigned int test = nth_bit(value, rank);

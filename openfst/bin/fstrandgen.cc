@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 
 #include "absl/flags/flag.h"
@@ -22,7 +23,7 @@
 ABSL_FLAG(int32_t, max_length, std::numeric_limits<int32_t>::max(),
           "Maximum path length");
 ABSL_FLAG(int32_t, npath, 1, "Number of paths to generate");
-ABSL_FLAG(uint64_t, seed, ::fst::script::kDefaultSeed, "Random seed");
+ABSL_FLAG(std::optional<uint64_t>, seed, std::nullopt, "Random seed");
 ABSL_FLAG(std::string, select, "uniform",
           "Selection type: one of "
           " \"uniform\", \"log_prob\" (when appropriate),"

@@ -30,6 +30,7 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "openfst/compat/compat_memory.h"
+#include "absl/random/random.h"
 #include "openfst/lib/accumulator.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcsort.h"
@@ -84,9 +85,10 @@ class LookAheadTest : public ::testing::Test {
 
   bool IsEqual(const Fst<Arc>& fst1, const Fst<Arc>& fst2, int i, int j,
                const std::string& type, bool equal, bool copy) {
+    absl::BitGen bit_gen;
     bool same = equal ? Equal(fst1, fst2)
-                      : RandEquivalent(fst1, fst2, /*npath=*/100,
-                                       /*delta=*/.05, /*seed=*/kSeed);
+                      : RandEquivalent(fst1, fst2, /*npath=*/100, bit_gen,
+                                       /*delta=*/.05);
     if (!same) {
       LOG(WARNING) << "Lookahead composition test of Fst a" << i << " and Fst b"
                    << j << " failed with type = " << type << " copy = " << copy;

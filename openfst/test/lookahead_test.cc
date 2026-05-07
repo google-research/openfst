@@ -30,8 +30,6 @@
 #include "openfst/lib/vector-fst.h"
 #include "openfst/test/compactors.h"
 
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
-
 namespace fst {
 namespace {
 

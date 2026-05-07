@@ -147,19 +147,9 @@ foreach(TEST_NAME ${TESTS})
             absl::log
             absl::status
             absl::statusor
+            absl::random_random
             benchmark::benchmark
   )
-
-  if(TEST_NAME STREQUAL "heap_test")
-    target_link_libraries(
-      ${TEST_NAME}
-      PRIVATE absl::random_internal_randen
-              absl::random_internal_randen_hwaes
-              absl::random_internal_randen_slow
-              absl::random_internal_seed_material
-              absl::random_seed_sequences
-    )
-  endif()
 
   # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
   # then use gtest_discover_tests.
@@ -217,6 +207,7 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
             absl::status
             absl::statusor
             absl::memory
+            absl::random_random
   )
   # This could use `gtest_discover_tests`, but it's about 5s slower (74s vs
   # 69s) since there are hundreds of very small test cases.

@@ -22,6 +22,7 @@ from libc.stdint cimport uint8_t
 from libc.stdint cimport uint64_t
 
 from libcpp cimport bool
+from libcpp.optional cimport optional
 from libcpp.memory cimport shared_ptr
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
@@ -543,7 +544,7 @@ cpdef bool randequivalent(Fst ifst1,
                           float delta=?,
                           select=?,
                           int32_t max_length=?,
-                          uint64_t seed=?) except *
+                          seed=?) except *
 
 cpdef MutableFst randgen(Fst ifst,
                          int32_t npath=?,
@@ -551,7 +552,7 @@ cpdef MutableFst randgen(Fst ifst,
                          int32_t max_length=?,
                          bool remove_total_weight=?,
                          bool weighted=?,
-                         uint64_t seed=?)
+                         seed=?)
 
 cpdef MutableFst replace(pairs,
                          call_arc_labeling=?,

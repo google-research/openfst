@@ -36,6 +36,7 @@ if(OPENFST_BUILD_TESTS)
             GTest::gmock
             absl::flags
             absl::log
+            absl::random_random
   )
   gtest_discover_tests(
     categorial_weight_test

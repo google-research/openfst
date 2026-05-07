@@ -23,6 +23,8 @@
 #include <cstdlib>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
 
@@ -40,19 +42,19 @@ class RandMod {
   // a transducer is generated; iff 'generate_' is non-null, the output is
   // randomly weighted.
   RandMod(StateId nstates, StateId nclasses, Label nlabels, bool trans,
-          const G* generate)
+          const G* generate, absl::BitGenRef bit_gen)
       : nstates_(nstates),
         nlabels_(nlabels),
         trans_(trans),
         generate_(generate) {
     for (StateId s = 0; s < nstates; ++s) {
-      classes_.push_back(rand() % nclasses);
+      classes_.push_back(absl::Uniform<StateId>(bit_gen, 0, nclasses));
     }
   }
 
   // Generates a random FST according to a class-specific transition model.
-  void Generate(StdMutableFst* fst) {
-    StateId start = rand() % nstates_;
+  void Generate(StdMutableFst* fst, absl::BitGenRef bit_gen) {
+    StateId start = absl::Uniform<StateId>(bit_gen, 0, nstates_);
     fst->DeleteStates();
     for (StateId s = 0; s < nstates_; ++s) {
       fst->AddState();
@@ -60,7 +62,7 @@ class RandMod {
       for (StateId n = 0; n <= nstates_; ++n) {
         Arc arc;
         StateId d = n == nstates_ ? kNoStateId : n;
-        if (!RandArc(s, d, &arc)) continue;
+        if (!RandArc(s, d, bit_gen, &arc)) continue;
         if (d == kNoStateId) {  // A super-final transition?
           fst->SetFinal(s, arc.weight);
         } else {
@@ -73,11 +75,11 @@ class RandMod {
  private:
   // Generates a transition from s to d. If d == kNoStateId, a superfinal
   // transition is generated. Returns false if no transition generated.
-  bool RandArc(StateId s, StateId d, Arc* arc) {
+  bool RandArc(StateId s, StateId d, absl::BitGenRef bit_gen, Arc* arc) {
     StateId sclass = classes_[s];
     StateId dclass = d != kNoStateId ? classes_[d] : 0;
     int r = sclass + dclass + 2;
-    if ((rand() % r) != 0) return false;
+    if (!absl::Bernoulli(bit_gen, 1.0 / r)) return false;
     arc->nextstate = d;
     Label ilabel = kNoLabel;
     Label olabel = kNoLabel;
@@ -87,7 +89,7 @@ class RandMod {
     }
     arc->ilabel = ilabel;
     arc->olabel = olabel;
-    arc->weight = generate_ ? (*generate_)() : Weight::One();
+    arc->weight = generate_ ? (*generate_)(bit_gen) : Weight::One();
     return true;
   }
 

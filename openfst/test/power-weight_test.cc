@@ -21,6 +21,8 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/sparse-power-weight.h"
 #include "openfst/lib/weight.h"
@@ -51,8 +53,10 @@ TYPED_TEST(GeneratePowerWeightTest, WeightTester) {
   using Weight = typename TestFixture::Weight;
   using Generator = WeightGenerate<Weight>;
   using WeightTester = WeightTester<Weight>;
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "WEIGHT_TESTER"));
   WeightTester tester((Generator()));
-  tester.Test(2000 /* iterations */);
+  tester.Test(bit_gen, 2000 /* iterations */);
 }
 
 template <typename PowerWeightT>

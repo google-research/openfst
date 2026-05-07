@@ -28,6 +28,8 @@
 #include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "openfst/extensions/compress/randmod.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/float-weight.h"
@@ -35,7 +37,6 @@
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/weight.h"
 
-ABSL_FLAG(int32_t, seed, time(0), "Random seed");
 ABSL_FLAG(int32_t, states, 10, "# of states");
 ABSL_FLAG(int32_t, labels, 2, "# of labels");
 ABSL_FLAG(int32_t, classes, 1, "# of probability distributions");
@@ -60,12 +61,13 @@ int main(int argc, char** argv) {
 
   std::string out_name =
       (argc > 1 && (strcmp(argv[1], "-") != 0)) ? argv[1] : "";
-
-  srand(absl::GetFlag(FLAGS_seed));
-
-  int num_states = (rand() % absl::GetFlag(FLAGS_states)) + 1;
-  int num_classes = (rand() % absl::GetFlag(FLAGS_classes)) + 1;
-  int num_labels = (rand() % absl::GetFlag(FLAGS_labels)) + 1;
+  absl::BitGen bit_gen;
+  int num_states = absl::Uniform(absl::IntervalClosedClosed, bit_gen, 1,
+                                 absl::GetFlag(FLAGS_states));
+  int num_classes = absl::Uniform(absl::IntervalClosedClosed, bit_gen, 1,
+                                  absl::GetFlag(FLAGS_classes));
+  int num_labels = absl::Uniform(absl::IntervalClosedClosed, bit_gen, 1,
+                                 absl::GetFlag(FLAGS_labels));
 
   StdVectorFst fst;
   using TropicalWeightGenerate = WeightGenerate<TropicalWeight>;
@@ -74,8 +76,8 @@ int main(int argc, char** argv) {
                                    : nullptr);
   fst::RandMod<StdArc, TropicalWeightGenerate> rand_mod(
       num_states, num_classes, num_labels, absl::GetFlag(FLAGS_transducer),
-      generate.get());
-  rand_mod.Generate(&fst);
+      generate.get(), bit_gen);
+  rand_mod.Generate(&fst, bit_gen);
 
   return !fst.Write(out_name);
 }

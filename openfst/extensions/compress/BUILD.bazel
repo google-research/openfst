@@ -43,7 +43,11 @@ fst_cc_library(
 cc_library(
     name = "randmod",
     hdrs = ["randmod.h"],
-    deps = ["//openfst/lib"],
+    deps = [
+        "//openfst/lib",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
+    ],
 )
 
 cc_library(
@@ -94,6 +98,8 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
@@ -127,12 +133,14 @@ cc_test(
         ":compress",
         ":randmod",
         "//openfst/compat:file_path",
+        "//openfst/compat:seed_sequences",
         "//openfst/lib",
         "//openfst/lib:fst-decl",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],
 )

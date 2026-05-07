@@ -25,6 +25,7 @@
 
 #include "gtest/gtest.h"
 #include "absl/log/log.h"
+#include "absl/random/bit_gen_ref.h"
 #include "openfst/lib/weight.h"
 
 namespace fst {
@@ -38,12 +39,12 @@ class WeightTester {
   explicit WeightTester(WeightGenerator generator)
       : weight_generator_(std::move(generator)) {}
 
-  void Test(int iterations) {
+  void Test(absl::BitGenRef bit_gen, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       // Selects the test weights.
-      const Weight w1(weight_generator_());
-      const Weight w2(weight_generator_());
-      const Weight w3(weight_generator_());
+      const Weight w1(weight_generator_(bit_gen));
+      const Weight w2(weight_generator_(bit_gen));
+      const Weight w3(weight_generator_(bit_gen));
 
       VLOG(1) << "weight type = " << Weight::Type();
       VLOG(1) << "w1 = " << w1;

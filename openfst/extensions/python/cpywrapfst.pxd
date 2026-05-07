@@ -712,12 +712,12 @@ cdef extern from "openfst/script/fstscript.h" namespace "fst::script" \
                            int32_t,
                            const RandGenOptions[RandArcSelection] &,
                            float,
-                           uint64_t)
+                           optional[uint64_t])
 
   cdef void RandGen(const FstClass &,
                     MutableFstClass *,
                     const RandGenOptions[RandArcSelection] &,
-                    uint64_t)
+                    optional[uint64_t])
 
   cdef void Relabel(MutableFstClass *,
                     const SymbolTable *,
@@ -788,7 +788,6 @@ cdef extern from "openfst/script/fstscript.h" namespace "fst::script" \
 
 cdef extern from "openfst/script/getters.h" namespace "fst::script" nogil:
 
-  cdef uint64_t kDefaultSeed
 
   cdef bool GetArcSortType(const string &, ArcSortType *)
 
@@ -810,7 +809,6 @@ cdef extern from "openfst/script/getters.h" namespace "fst::script" nogil:
 
   cdef bool GetReweightType(const string &, ReweightType *)
 
-  cdef uint64_t GetSeed(uint64_t)
 
   cdef bool GetTokenType(const string &, TokenType *)
 

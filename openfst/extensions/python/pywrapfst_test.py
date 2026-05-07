@@ -21,7 +21,6 @@ import itertools
 import os
 import pathlib
 import pickle
-import unittest
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -1039,15 +1038,12 @@ class PywrapFstTest(parameterized.TestCase):
     e6 = fst.MutableFst.read(self.fst_testdir / "equivalent/e6.fst")
     self.assertTrue(fst.randequivalent(e5, e6, npath=25, seed=218))
 
-  # TODO: Investigate.
-  # OSS notes: Below we expect the test to fail, which is the current behavior
-  # on Linux. But on macOS machines the test actually passes.
-  # b/476053592: Fails due to std::uniform_int_distribution.
-  @unittest.expectedFailure
   def testRandGen(self):
     """Cf. randgen_test."""
     r1 = fst.MutableFst.read(self.fst_testdir / "randgen/r1.fst")
     r2 = fst.MutableFst.read(self.fst_testdir / "randgen/r2.fst")
+    # Note: The seed here must match the seed used in the corresponding
+    # C++ test (openfst/test/randgen_test.cc).
     r2_res = fst.randgen(r1, seed=2)
     self.assertTrue(fst.equal(r2, r2_res))
 

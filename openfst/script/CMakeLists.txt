@@ -84,6 +84,7 @@ target_link_libraries(
          absl::memory
          absl::strings
          absl::span
+         absl::random_random
 )
 
 openfst_install(

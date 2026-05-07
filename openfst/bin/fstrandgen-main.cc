@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "absl/flags/usage.h"
@@ -36,7 +37,7 @@
 
 ABSL_DECLARE_FLAG(int32_t, max_length);
 ABSL_DECLARE_FLAG(int32_t, npath);
-ABSL_DECLARE_FLAG(uint64_t, seed);
+ABSL_DECLARE_FLAG(std::optional<uint64_t>, seed);
 ABSL_DECLARE_FLAG(std::string, select);
 ABSL_DECLARE_FLAG(bool, weighted);
 ABSL_DECLARE_FLAG(bool, remove_total_weight);
@@ -73,16 +74,12 @@ int fstrandgen_main(int argc, char** argv) {
                << absl::GetFlag(FLAGS_select);
     return 1;
   }
-
-  const auto seed = s::GetSeed(absl::GetFlag(FLAGS_seed));
-  VLOG(1) << argv[0] << ": Seed = " << seed;
-
   s::RandGen(*ifst, &ofst,
              RandGenOptions<s::RandArcSelection>(
                  ras, absl::GetFlag(FLAGS_max_length),
                  absl::GetFlag(FLAGS_npath), absl::GetFlag(FLAGS_weighted),
                  absl::GetFlag(FLAGS_remove_total_weight)),
-             seed);
+             absl::GetFlag(FLAGS_seed));
 
   return !ofst.Write(out_name);
 }

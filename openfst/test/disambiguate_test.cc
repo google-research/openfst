@@ -29,6 +29,8 @@
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/determinize.h"
@@ -47,8 +49,6 @@
 #include "openfst/script/fst-class.h"
 #include "openfst/script/verify.h"
 #include "openfst/script/weight-class.h"
-
-ABSL_FLAG(uint64_t, seed, 403, "random seed");
 
 namespace fst {
 namespace {
@@ -116,11 +116,12 @@ class DisambiguateTest : public ::testing::Test {
   // Tests (partially) if two FSTs have the same states
   // and arcs irrespective of state and arc orderings.
   bool UnorderedEqual(const Fst<Arc>& fst1, const Fst<Arc>& fst2) const {
-    const UniformArcSelector<Arc> uniform_selector(0);
+    absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+        "UNORDERED_EQUAL"));
+    const UniformArcSelector<Arc> uniform_selector;
     const RandGenOptions<UniformArcSelector<Arc>> opts(uniform_selector, 25);
     const bool fst_equiv =
-        RandEquivalent(fst1, fst2, /*npath=*/100, opts,
-                       /*delta=*/.05, /*seed=*/absl::GetFlag(FLAGS_seed));
+        RandEquivalent(fst1, fst2, /*npath=*/100, opts, bit_gen, /*delta=*/.05);
     const bool state_size_equiv = CountStates(fst1) == CountStates(fst2);
     const bool arc_size_equiv = CountArcs(fst1) == CountArcs(fst2);
     return fst_equiv && state_size_equiv && arc_size_equiv;

@@ -15,6 +15,8 @@
 #include "openfst/test/rand-fst.h"
 
 #include "gtest/gtest.h"
+#include "openfst/compat/seed_sequences.h"
+#include "absl/random/random.h"
 #include "absl/status/status_matchers.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/float-weight.h"
@@ -27,24 +29,28 @@ namespace {
 using Generate = WeightGenerate<TropicalWeight>;
 
 TEST(RandFstTest, AcyclicProb1) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "ACYCLIC_PROB_1"));
   for (int i = 0; i < 100; ++i) {
     VectorFst<StdArc> fst;
     Generate generate(/*seed=*/i, /*generate_tropical=*/false);
     ABSL_EXPECT_OK(RandFst(/*num_random_states=*/10, /*num_random_arcs=*/20,
                            /*num_random_labels=*/5, /*acyclic_prob=*/1.0,
-                           generate, /*seed=*/i, &fst));
+                           generate, bit_gen, &fst));
     EXPECT_TRUE(fst.Properties(kAcyclic, true) & kAcyclic);
   }
 }
 
 TEST(RandFstTest, AcyclicProb0) {
+  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
+      "RandFstTest_AcyclicProb0"));
   int num_cyclic = 0;
   for (int i = 0; i < 100; ++i) {
     VectorFst<StdArc> fst;
     Generate generate(/*seed=*/i, /*generate_tropical=*/false);
     ABSL_EXPECT_OK(RandFst(/*num_random_states=*/10, /*num_random_arcs=*/20,
                            /*num_random_labels=*/5, /*acyclic_prob=*/0.0,
-                           generate, /*seed=*/i, &fst));
+                           generate, bit_gen, &fst));
     if (!(fst.Properties(kAcyclic, true) & kAcyclic)) {
       num_cyclic++;
     }
