@@ -232,6 +232,8 @@ bool WriteBadConstFst(const std::string& path, int start, size_t pos,
   state.final_weight = Arc::Weight::One();
   state.pos = pos;
   state.narcs = narcs;
+  state.niepsilons = 0;
+  state.noepsilons = 0;
   if (!strm.write(reinterpret_cast<const char*>(&state), sizeof(state))) {
     return false;
   }
