@@ -379,11 +379,24 @@ TEST_F(ErrorTest, RandEquivalentErrorTest) {
   EXPECT_TRUE(error);
 
   // Missing symbol table (OK).
-  EXPECT_TRUE(RandEquivalent(empty_nosyms_, accept_ilabeluns_cyc_nondeterm_, 1,
-                             bit_gen, kDelta, 1, &error));
+  // We use another empty FST with symbols to test this case robustly.
+  VectorFst<Arc> empty_with_syms2;
+  empty_with_syms2.SetInputSymbols(syms2_.get());
+  empty_with_syms2.SetOutputSymbols(syms2_.get());
+  EXPECT_TRUE(RandEquivalent(empty_nosyms_, empty_with_syms2, 1, bit_gen,
+                             kDelta, 1, &error));
   EXPECT_FALSE(error);
 
+  VectorFst<Arc> empty_with_syms1;
+  empty_with_syms1.SetInputSymbols(syms1_.get());
+  empty_with_syms1.SetOutputSymbols(syms1_.get());
+
   // Non-matching symbol tables (not OK).
+  EXPECT_FALSE(RandEquivalent(empty_with_syms1, empty_with_syms2, 1, bit_gen,
+                              kDelta, 1, &error));
+  EXPECT_TRUE(error);
+
+  // Also test with non-empty FSTs that differ in symbols and content.
   EXPECT_FALSE(RandEquivalent(trans_ilabeluns_cyc_nondeterm_,
                               accept_ilabeluns_cyc_nondeterm_, 1, bit_gen,
                               kDelta, 1, &error));
