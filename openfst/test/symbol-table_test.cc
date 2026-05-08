@@ -455,5 +455,88 @@ TEST_P(RemoveOneSymbolTest, RemoveKeyAndCheck) {
 
 INSTANTIATE_TEST_SUITE_P(RemoveEachKey, RemoveOneSymbolTest,
                          ::testing::Range(0, 20));
+
+TEST(CreateSymbolTableTest, Empty) {
+  const SymbolTable symbols = CreateSymbolTable({});
+  EXPECT_EQ(0, symbols.NumSymbols());
+}
+
+TEST(CreateSymbolTableTest, List) {
+  const SymbolTable symbols = CreateSymbolTable({"a", "c", "b"});
+  EXPECT_EQ(3, symbols.NumSymbols());
+  EXPECT_EQ(0, symbols.Find("a"));
+  EXPECT_EQ(1, symbols.Find("c"));
+  EXPECT_EQ(2, symbols.Find("b"));
+}
+
+TEST(CreateSymbolTableTest, AddEpsilon) {
+  const SymbolTable symbols = CreateSymbolTable({"a", "c", "b"}, true);
+  EXPECT_EQ(4, symbols.NumSymbols());
+  EXPECT_EQ(0, symbols.Find("<epsilon>"));
+  EXPECT_EQ(1, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("c"));
+  EXPECT_EQ(3, symbols.Find("b"));
+}
+
+TEST(CreateSymbolTableTest, Vector) {
+  const SymbolTable symbols =
+      CreateSymbolTable(std::vector<std::string>{"a", "c", "b"}, true);
+  EXPECT_EQ(4, symbols.NumSymbols());
+  EXPECT_EQ(0, symbols.Find("<epsilon>"));
+  EXPECT_EQ(1, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("c"));
+  EXPECT_EQ(3, symbols.Find("b"));
+}
+
+TEST(CreateSymbolTableTest, CustomEpsilon) {
+  const SymbolTable symbols =
+      CreateSymbolTable({"a", "c", "b"}, true, "<eps>", 42);
+  EXPECT_EQ(4, symbols.NumSymbols());
+  EXPECT_EQ(42, symbols.Find("<eps>"));
+  EXPECT_EQ(43, symbols.Find("a"));
+  EXPECT_EQ(44, symbols.Find("c"));
+  EXPECT_EQ(45, symbols.Find("b"));
+}
+
+TEST(CreateSymbolTableFromTuplesTest, List) {
+  const SymbolTable symbols =
+      CreateSymbolTableFromTuples({{"a", 13}, {"b", 2}, {"c", 444}});
+  EXPECT_EQ(3, symbols.NumSymbols());
+  EXPECT_EQ(13, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("b"));
+  EXPECT_EQ(444, symbols.Find("c"));
+  EXPECT_TRUE(symbols.Find(static_cast<int64_t>(0)).empty());
+}
+
+TEST(CreateSymbolTableFromTuplesTest, Vector) {
+  const SymbolTable symbols =
+      CreateSymbolTableFromTuples(std::vector<std::pair<std::string, int64_t>>{
+          {"a", 13}, {"b", 2}, {"c", 444}});
+  EXPECT_EQ(3, symbols.NumSymbols());
+  EXPECT_EQ(13, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("b"));
+  EXPECT_EQ(444, symbols.Find("c"));
+  EXPECT_TRUE(symbols.Find(static_cast<int64_t>(0)).empty());
+}
+
+TEST(CreateSymbolTableFromTuplesTest, AddEpsilon) {
+  const SymbolTable symbols =
+      CreateSymbolTableFromTuples({{"a", 13}, {"b", 2}, {"c", 444}}, true);
+  EXPECT_EQ(4, symbols.NumSymbols());
+  EXPECT_EQ(0, symbols.Find("<epsilon>"));
+  EXPECT_EQ(13, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("b"));
+  EXPECT_EQ(444, symbols.Find("c"));
+}
+
+TEST(CreateSymbolTableFromTuplesTest, CustomEpsilon) {
+  const SymbolTable symbols =
+      CreateSymbolTableFromTuples({{"a", 13}, {"b", 2}}, true, "<eps>", 42);
+  EXPECT_EQ(3, symbols.NumSymbols());
+  EXPECT_EQ(42, symbols.Find("<eps>"));
+  EXPECT_EQ(13, symbols.Find("a"));
+  EXPECT_EQ(2, symbols.Find("b"));
+}
+
 }  // namespace
 }  // namespace fst

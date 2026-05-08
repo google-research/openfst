@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include <ios>
 #include <iostream>
 #include <istream>
@@ -45,6 +46,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "openfst/compat/status_macros.h"
 #include "openfst/lib/compat-util.h"
 #include "openfst/lib/file-stream-status.h"
@@ -428,6 +430,64 @@ void SymbolTableToString(const SymbolTable* table, std::string* result) {
 SymbolTable* StringToSymbolTable(const std::string& str) {
   std::istringstream istrm(str);
   return SymbolTable::Read(istrm, /*source=*/"string");
+}
+
+namespace {
+
+template <class T>
+SymbolTable CreateSymbolTableImpl(T symbols, bool add_epsilon,
+                                  absl::string_view epsilon_symbol,
+                                  int64_t epsilon_label) {
+  SymbolTable symbol_table;
+  if (add_epsilon) symbol_table.AddSymbol(epsilon_symbol, epsilon_label);
+  for (const auto& s : symbols) symbol_table.AddSymbol(s);
+  return symbol_table;
+}
+
+}  // namespace
+
+SymbolTable CreateSymbolTable(absl::Span<const std::string> symbols,
+                              bool add_epsilon,
+                              absl::string_view epsilon_symbol,
+                              int64_t epsilon_label) {
+  return CreateSymbolTableImpl(symbols, add_epsilon, epsilon_symbol,
+                               epsilon_label);
+}
+
+SymbolTable CreateSymbolTable(std::initializer_list<absl::string_view> symbols,
+                              bool add_epsilon,
+                              absl::string_view epsilon_symbol,
+                              int64_t epsilon_label) {
+  return CreateSymbolTableImpl(symbols, add_epsilon, epsilon_symbol,
+                               epsilon_label);
+}
+
+namespace {
+
+template <class T>
+SymbolTable CreateSymbolTableFromTuplesImpl(T symbols, bool add_epsilon,
+                                            absl::string_view epsilon_symbol,
+                                            int64_t epsilon_label) {
+  SymbolTable symbol_table;
+  if (add_epsilon) symbol_table.AddSymbol(epsilon_symbol, epsilon_label);
+  for (const auto& s : symbols) symbol_table.AddSymbol(s.first, s.second);
+  return symbol_table;
+}
+
+}  // namespace
+
+SymbolTable CreateSymbolTableFromTuples(
+    absl::Span<const std::pair<std::string, int64_t>> symbols, bool add_epsilon,
+    absl::string_view epsilon_symbol, int64_t epsilon_label) {
+  return CreateSymbolTableFromTuplesImpl(symbols, add_epsilon, epsilon_symbol,
+                                         epsilon_label);
+}
+
+SymbolTable CreateSymbolTableFromTuples(
+    std::initializer_list<std::pair<absl::string_view, int64_t>> symbols,
+    bool add_epsilon, absl::string_view epsilon_symbol, int64_t epsilon_label) {
+  return CreateSymbolTableFromTuplesImpl(symbols, add_epsilon, epsilon_symbol,
+                                         epsilon_label);
 }
 
 }  // namespace fst

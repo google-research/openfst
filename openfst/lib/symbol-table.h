@@ -599,15 +599,41 @@ SymbolTable* RelabelSymbolTable(
   return new_table.release();
 }
 
+// Creates a SymbolTable for the given set of symbols. Symbols are consecutively
+// numbered. If add_epsilon is true, an entry for the special label 0 is added.
+SymbolTable CreateSymbolTable(absl::Span<const std::string> symbols,
+                              bool add_epsilon = false,
+                              absl::string_view epsilon_symbol = "<epsilon>",
+                              int64_t epsilon_label = 0);
+
+// Same as above but uses string_views.
+SymbolTable CreateSymbolTable(std::initializer_list<absl::string_view> symbols,
+                              bool add_epsilon = false,
+                              absl::string_view epsilon_symbol = "<epsilon>",
+                              int64_t epsilon_label = 0);
+
+// Creates a SymbolTable for the given pairs of symbol and label.
+// If add_epsilon is true, an entry for the special label 0 is added.
+SymbolTable CreateSymbolTableFromTuples(
+    absl::Span<const std::pair<std::string, int64_t>> symbols,
+    bool add_epsilon = false, absl::string_view epsilon_symbol = "<epsilon>",
+    int64_t epsilon_label = 0);
+
+// Same as above but uses string_views.
+SymbolTable CreateSymbolTableFromTuples(
+    std::initializer_list<std::pair<absl::string_view, int64_t>> symbols,
+    bool add_epsilon = false, absl::string_view epsilon_symbol = "<epsilon>",
+    int64_t epsilon_label = 0);
+
 // Returns true if the two symbol tables have equal checksums. Passing in
 // nullptr for either table always returns true.
 bool CompatSymbols(const SymbolTable* syms1, const SymbolTable* syms2,
                    bool warning = true);
 
 // Symbol table serialization.
-
 void SymbolTableToString(const SymbolTable* table, std::string* result);
 
+// Symbol table deserialization.
 SymbolTable* StringToSymbolTable(const std::string& str);
 
 }  // namespace fst
