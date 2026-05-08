@@ -53,6 +53,7 @@ jobs:
         - name: Configure
           run: >-
             cmake -S . -B build
+            -DCMAKE_BUILD_TYPE=Dev
             -DCMAKE_C_COMPILER_LAUNCHER=ccache
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             -DOPENFST_ENABLE_BIN=ON -DOPENFST_BUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON

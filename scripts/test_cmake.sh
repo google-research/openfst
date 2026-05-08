@@ -23,6 +23,7 @@ NPROC="$(getconf _NPROCESSORS_ONLN)"
 # Using -DOPENFST_ENABLE_FSTS=ON and -DOPENFST_ENABLE_GRM=ON ensures we test
 # all extensions, similar to the CI workflow.
 cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Dev \
   -DOPENFST_ENABLE_BIN=ON \
   -DOPENFST_BUILD_TESTS=ON \
   -DOPENFST_ENABLE_FSTS=ON \
