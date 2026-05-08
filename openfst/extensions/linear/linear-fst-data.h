@@ -21,6 +21,7 @@
 #define OPENFST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_H_
 
 #include <cstddef>
+#include <ios>
 #include <istream>
 #include <memory>
 #include <ostream>
@@ -221,18 +222,40 @@ inline LinearFstData<A>* LinearFstData<A>::Read(std::istream& strm) {
   size_t num_groups = 0;
   ReadType(strm, &num_groups);
   data->groups_.resize(num_groups);
-  for (size_t i = 0; i < num_groups; ++i)
-    data->groups_[i].reset(FeatureGroup<A>::Read(strm));
+  for (size_t i = 0; i < num_groups; ++i) {
+    FeatureGroup<A>* group = FeatureGroup<A>::Read(strm);
+    if (group == nullptr) return nullptr;
+    data->groups_[i].reset(group);
+  }
   // Other data
   ReadType(strm, &(data->input_attribs_));
   ReadType(strm, &(data->output_pool_));
   ReadType(strm, &(data->output_set_));
   ReadType(strm, &(data->group_feat_map_));
-  if (strm) {
-    return data.release();
-  } else {
+  if (!strm) return nullptr;
+  // Make sure there are enough input attributes.
+  if (data->input_attribs_.size() <= data->max_input_label_) {
+    FSTERROR() << "LinearFstData::Read: input_attribs size "
+               << data->input_attribs_.size()
+               << " is not consistent with max_input_label "
+               << data->max_input_label_;
     return nullptr;
   }
+  // Validate output_begin/output_length for each input attribute.
+  for (size_t i = 0; i < data->input_attribs_.size(); ++i) {
+    const InputAttribute& attrib = data->input_attribs_[i];
+    if (attrib.output_length > 0 &&
+        (attrib.output_begin > data->output_pool_.size() ||
+         attrib.output_length >
+             data->output_pool_.size() - attrib.output_begin)) {
+      FSTERROR() << "LinearFstData::Read: input_attribs[" << i
+                 << "] has output_begin=" << attrib.output_begin
+                 << ", output_length=" << attrib.output_length
+                 << " exceeding output_pool size=" << data->output_pool_.size();
+      return nullptr;
+    }
+  }
+  return data.release();
 }
 
 template <class A>
@@ -501,7 +524,9 @@ class LinearFstData<A>::GroupFeatureMap {
   }
 
   Label Find(size_t group_id, Label ilabel) const {
-    return pool_[IndexOf(group_id, ilabel)];
+    const size_t index = IndexOf(group_id, ilabel);
+    if (index >= pool_.size()) return kNoLabel;
+    return pool_[index];
   }
 
   bool Set(size_t group_id, Label ilabel, Label feat) {
@@ -518,6 +543,11 @@ class LinearFstData<A>::GroupFeatureMap {
   std::istream& Read(std::istream& strm) {
     ReadType(strm, &num_groups_);
     ReadType(strm, &pool_);
+    if (strm && num_groups_ > 0 && pool_.size() % num_groups_ != 0) {
+      FSTERROR() << "GroupFeatureMap::Read: pool size (" << pool_.size()
+                 << ") is not a multiple of num_groups (" << num_groups_ << ")";
+      strm.setstate(std::ios::failbit);
+    }
     return strm;
   }
 

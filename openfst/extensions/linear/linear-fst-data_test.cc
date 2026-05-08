@@ -20,17 +20,23 @@
 #include "openfst/extensions/linear/linear-fst-data.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <ostream>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "openfst/extensions/linear/linear-fst-data-builder.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/util.h"
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
@@ -38,6 +44,7 @@ using ::testing::Not;
 using ::testing::Test;
 
 namespace fst {
+namespace {
 
 typedef StdArc::Label Label;
 typedef StdArc::StateId StateId;
@@ -1260,4 +1267,148 @@ TEST(ClassifierBuilderTest, Boundary) {
   EXPECT_EQ(Weight(6), weight);
 }
 
+class LinearFstDataReadFailureTest : public Test {
+ protected:
+  void SetUp() override {
+    // Prevent FSTERROR() from aborting the process so Read() can return
+    // nullptr.
+    absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  }
+
+  static std::unique_ptr<StdLinearFstData> ReadFrom(const std::string& buf) {
+    std::istringstream in(buf);
+    return std::unique_ptr<StdLinearFstData>(StdLinearFstData::Read(in));
+  }
+
+  // Writes the GroupFeatureMap section into `strm`, matching GroupFeatureMap::
+  // Write(): size_t num_groups_ then vector<Label> pool_.
+  static void WriteGroupFeatureMap(std::ostream& strm, size_t num_groups,
+                                   int64_t pool_count) {
+    WriteType(strm, num_groups);
+    // pool_ is vector<Label> (Label=int32_t); WriteContainer writes int64_t
+    // count then raw elements.
+    WriteType(strm, pool_count);
+    for (int64_t i = 0; i < pool_count; ++i)
+      WriteType(strm, static_cast<int32_t>(kNoLabel));
+  }
+
+  // Builds a minimal serialized LinearFstData with:
+  //   max_future_size_ = 0
+  //   max_input_label_ = max_input_label
+  //   0 feature groups  (empty trie --- no opaque bytes to mis-interpret)
+  //   input_attribs_  = [{ob=0, ol=0}, {ob=output_begin_1, ol=output_length_1}]
+  //   output_pool_    = [1, 2]  (2 elements)
+  //   output_set_     = []
+  //   group_feat_map_ = {num_groups, pool of pool_count kNoLabel entries}
+  //
+  // With 0 feature groups the serialized stream contains no trie data, so
+  // the only size_t fields are the ones we write here --- no ambiguous
+  // scanning.  `max_input_label` defaults to 1 so that the 2-attrib
+  // input_attribs_ satisfies the size check (need size > max_input_label_).
+  static std::string MakeMinimalStream(size_t output_begin_1,
+                                       size_t output_length_1,
+                                       size_t num_groups = 0,
+                                       int64_t pool_count = 0,
+                                       int32_t max_input_label = 1) {
+    std::ostringstream strm;
+    // max_future_size_ (size_t)
+    WriteType(strm, static_cast<size_t>(0));
+    // max_input_label_ (int32_t = StdArc::Label)
+    WriteType(strm, max_input_label);
+    // groups_: vector count written as size_t (see LinearFstData::Write).
+    WriteType(strm, static_cast<size_t>(0));
+    // input_attribs_: WriteContainer writes int64_t count first.
+    WriteType(strm, static_cast<int64_t>(2));
+    // attrib[0] = {output_begin=0, output_length=0}
+    WriteType(strm, static_cast<size_t>(0));
+    WriteType(strm, static_cast<size_t>(0));
+    // attrib[1] = {output_begin=output_begin_1, output_length=output_length_1}
+    WriteType(strm, output_begin_1);
+    WriteType(strm, output_length_1);
+    // output_pool_: vector<int32_t> of 2 elements
+    WriteType(strm, static_cast<int64_t>(2));
+    WriteType(strm, static_cast<int32_t>(1));
+    WriteType(strm, static_cast<int32_t>(2));
+    // output_set_: empty vector<int32_t>
+    WriteType(strm, static_cast<int64_t>(0));
+    // group_feat_map_
+    WriteGroupFeatureMap(strm, num_groups, pool_count);
+    return strm.str();
+  }
+
+  // Builds a serialized LinearFstData that declares num_feature_groups > 0
+  // but whose group bytes are entirely absent (truncated stream), so that
+  // FeatureGroup::Read() fails and returns nullptr.
+  static std::string MakeTruncatedGroupStream(size_t num_feature_groups = 1) {
+    std::ostringstream strm;
+    WriteType(strm, static_cast<size_t>(0));   // max_future_size_
+    WriteType(strm, static_cast<int32_t>(1));  // max_input_label_
+    // Claim num_feature_groups groups exist, then write nothing for them.
+    WriteType(strm, num_feature_groups);
+    // Stream ends here; FeatureGroup::Read() will fail on the first group.
+    return strm.str();
+  }
+};
+
+// Sanity check: a well-formed stream parses successfully.
+TEST_F(LinearFstDataReadFailureTest, ValidMinimalStreamParses) {
+  // output_begin_1=0, output_length_1=2 spans exactly the 2-element
+  // output_pool_.
+  EXPECT_NE(
+      ReadFrom(MakeMinimalStream(/*output_begin_1=*/0, /*output_length_1=*/2)),
+      nullptr);
+}
+
+// Verifies that Read() returns nullptr when output_begin >=
+// output_pool_.size().
+TEST_F(LinearFstDataReadFailureTest, OutputBeginPastPoolEnd) {
+  const size_t kHuge = static_cast<size_t>(-1);
+  EXPECT_EQ(ReadFrom(MakeMinimalStream(/*output_begin_1=*/kHuge,
+                                       /*output_length_1=*/1)),
+            nullptr);
+}
+
+// Verifies that Read() returns nullptr when output_begin + output_length
+// overflows past output_pool_.size().
+TEST_F(LinearFstDataReadFailureTest, OutputLengthPastPoolEnd) {
+  const size_t kHuge = static_cast<size_t>(-1);
+  // output_begin_1=0 is valid; output_length_1=kHuge causes
+  // output_begin_1+output_length_1 to exceed pool size.
+  EXPECT_EQ(ReadFrom(MakeMinimalStream(/*output_begin_1=*/0,
+                                       /*output_length_1=*/kHuge)),
+            nullptr);
+}
+
+// Verifies that Read() returns nullptr when GroupFeatureMap pool_.size() is
+// not a multiple of num_groups_.
+TEST_F(LinearFstDataReadFailureTest, GroupFeatureMapPoolSizeMismatch) {
+  // num_groups=3, pool has 2 entries: 2 % 3 != 0.
+  EXPECT_EQ(
+      ReadFrom(MakeMinimalStream(/*output_begin_1=*/0, /*output_length_1=*/2,
+                                 /*num_groups=*/3, /*pool_count=*/2)),
+      nullptr);
+}
+
+// Verifies that Read() returns nullptr when FeatureGroup::Read() fails
+// (e.g., truncated stream), and that the nullptr is propagated rather than
+// stored as a null group pointer.
+TEST_F(LinearFstDataReadFailureTest, FeatureGroupReadNullptrPropagated) {
+  // Stream declares 1 feature group but contains no group data.
+  EXPECT_EQ(ReadFrom(MakeTruncatedGroupStream(/*num_feature_groups=*/1)),
+            nullptr);
+}
+
+// Verifies that Read() returns nullptr when input_attribs_ is too small to
+// cover every valid input label up to max_input_label_.
+// The check requires input_attribs_.size() > max_input_label_; with only 2
+// attribs and max_input_label_=5, the condition is 2 <= 5 (fail).
+TEST_F(LinearFstDataReadFailureTest, InputAttribsTooShortForMaxInputLabel) {
+  EXPECT_EQ(ReadFrom(MakeMinimalStream(
+                /*output_begin_1=*/0, /*output_length_1=*/2,
+                /*num_groups=*/0, /*pool_count=*/0,
+                /*max_input_label=*/5)),
+            nullptr);
+}
+
+}  // namespace
 }  // namespace fst
