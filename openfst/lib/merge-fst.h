@@ -544,10 +544,8 @@ class MergeFst : public ImplToExpandedFst<internal::MergeFstImpl<A, M>> {
   // To support registration.
   MergeFst() : ImplToExpandedFst<Impl>(std::make_shared<Impl>()) {}
 
-  explicit MergeFst(const Fst<A> &)
-      : ImplToExpandedFst<Impl>(std::make_shared<Impl>()) {
-    FSTERROR() << "Constructor for registration only";
-  }
+  // Doesn't support construction from an arbitrary FST.
+  explicit MergeFst(const Fst<A>&) = delete;
 
   // Constructor taking as argument the primary Fst, the secondary Fst
   // and the state map specified by a hash_map.
