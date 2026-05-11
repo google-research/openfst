@@ -171,7 +171,7 @@ class _SymbolTableIterator:
 ## EncodeMapper.
 
 class EncodeMapper:
-  def __repr__(self) -> None: ...
+  def __repr__(self) -> str: ...
   def __init__(
       self,
       arc_type: _ArcTypeFlag = ...,
