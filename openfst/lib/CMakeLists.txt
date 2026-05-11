@@ -128,6 +128,7 @@ set(LIB_HEADERS
     matcher-fst.h
     matcher.h
     memory.h
+    merge-fst.h
     minimize.h
     mutable-fst.h
     pair-weight.h

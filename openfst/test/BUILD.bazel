@@ -2513,6 +2513,18 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "merge-fst_test",
+    srcs = ["merge-fst_test.cc"],
+    linkstatic = True,
+    deps = [
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 # Helper for generic_register_dso_test.sh.
 
 cc_binary(

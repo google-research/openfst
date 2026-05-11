@@ -78,6 +78,7 @@ set(TESTS
     mapped-file_test
     matcher_test
     memory_test
+    merge-fst_test
     minimize_test
     partition_test
     power-weight-mappers_test
