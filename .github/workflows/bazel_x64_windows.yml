@@ -53,12 +53,24 @@ jobs:
         - name: Check Bazelisk
           run: bazelisk --version
         - name: Build
+          # fastbuild uses /Z7 like dbg, which enables full debug info.
+          # https://github.com/bazelbuild/rules_cc/blob/538d89f8/cc/private/toolchain/windows_cc_toolchain_config.bzl#L550
+          # Full debug info takes ~1.8GB of cache space, so use opt, but with /O1
+          # (optimize for size) instead of /O2 (speed), which takes 300MB.
+          # /O1 is half the compilation speed of optimizations disabled, but
+          # runtime is 5x better.  We take the run time under the assumption
+          # that most runs will be cached.
           run: |
-            bazelisk build -c fastbuild //...
+            bazelisk build -c opt --copt=-O1 //...
         - name: Test
           run: >-
-            bazelisk test -c fastbuild
+            bazelisk test -c opt --copt=-O1
             --test_size_filters=-enormous
             --test_output=errors
             --test_tag_filters=-no_windows_msvc
             //...
+        - name: Disk cache size
+          if: always()
+          run: |
+            du -sh D:/_bazel-disk
+            echo "File count: $(find D:/_bazel-disk -type f | wc -l)"
