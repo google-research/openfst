@@ -60,6 +60,8 @@ jobs:
           # /O1 is half the compilation speed of optimizations disabled, but
           # runtime is 5x better.  We take the run time under the assumption
           # that most runs will be cached.
+          # TODO: This can be changed to fastbuild with rules_cc 0.2.19.
+          # https://github.com/bazelbuild/rules_cc/commit/06cda56
           run: |
             bazelisk build -c opt --copt=-O1 //...
         - name: Test
