@@ -137,6 +137,7 @@ cc_library(
     hdrs = ["init.h"],
     deps = [
         "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:initialize",

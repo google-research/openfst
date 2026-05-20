@@ -17,6 +17,8 @@
 #ifndef OPENFST_COMPAT_INIT_H_
 #define OPENFST_COMPAT_INIT_H_
 
+#include <cstdint>
+
 #include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 
@@ -25,6 +27,16 @@ namespace fst {
 void InitOpenFst(absl::string_view usage, int* absl_nonnull argc,
                  char* absl_nullable* absl_nonnull* absl_nonnull argv,
                  bool remove_flags);
+
+// Looks for flags in argv and parses them.  Rearranges argv to put
+// flags first, or removes them entirely if remove_flags is true.
+// If a flag is defined more than once in the command line or flag
+// file, the last definition is used.  Returns the index (into argv)
+// of the first non-flag argument.
+uint32_t ParseCommandLineFlags(int* argc, char*** argv, bool remove_flags);
+
+uint32_t ParseCommandLineNonHelpFlags(int* argc, char*** argv,
+                                      bool remove_flags);
 
 }  // namespace fst
 
