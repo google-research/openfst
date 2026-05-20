@@ -1,0 +1,80 @@
+# Copyright 2026 The OpenFst Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "command_dispatcher",
+    srcs = ["command_dispatcher.cc"],
+    hdrs = ["command_dispatcher.h"],
+    deps = [
+        "//openfst/compat:file_path",
+        "//openfst/compat:init",
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/flags:reflection",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+# Default extensions which are linked statically with the binaries.
+cc_library(
+    name = "extensions",
+    linkstatic = 1,
+    deps = [
+        "//openfst/extensions/lookahead:olabel_lookahead-fst",
+        "//openfst/extensions/ngram:ngram-fst-file",
+    ],
+    alwayslink = 1,
+)
+
+FAR_TOOLS = [
+    "farcompilestrings",
+    "farconvert",
+    "farcreate",
+    "farencode",
+    "farequal",
+    "farextract",
+    "farinfo",
+    "farisomorphic",
+    "farprintstrings",
+]
+
+cc_library(
+    name = "far_main",
+    srcs = ["far.cc"],
+    deps = [
+        ":command_dispatcher",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_absl//absl/flags:flag",
+    ] + ["//openfst/extensions/far:%s-main" % t for t in FAR_TOOLS],
+)
+
+# If the default file factories are too heavy, use a custom binary with
+# `:fst_main`.
+cc_binary(
+    name = "far",
+    linkstatic = True,
+    deps = [
+        ":extensions",
+        ":far_main",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+    ],
+)
