@@ -27,48 +27,31 @@
 #include "absl/strings/string_view.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
+#include "openfst/lib/util.h"
 #include "openfst/script/arcfilter-impl.h"
 
 namespace fst {
 
-// Column width for property names.
-constexpr int kWidth = 50;
-
 void FstInfo::Info() const {
   std::ostream& ostrm = std::cout;
   const auto old = ostrm.setf(std::ios::left);
-  ostrm.width(kWidth);
-  ostrm << "fst type" << FstType() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "arc type" << ArcType() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "input symbol table" << InputSymbols() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "output symbol table" << OutputSymbols() << std::endl;
+  PrintField(ostrm, "fst type", FstType());
+  PrintField(ostrm, "arc type", ArcType());
+  PrintField(ostrm, "input symbol table", InputSymbols());
+  PrintField(ostrm, "output symbol table", OutputSymbols());
   if (!LongInfo()) {
     ostrm.setf(old);
     return;
   }
-  ostrm.width(kWidth);
-  ostrm << "# of states" << NumStates() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of arcs" << NumArcs() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "initial state" << Start() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of final states" << NumFinal() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of input/output epsilons" << NumEpsilons() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of input epsilons" << NumInputEpsilons() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of output epsilons" << NumOutputEpsilons() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "input label multiplicity" << InputLabelMultiplicity() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "output label multiplicity" << OutputLabelMultiplicity()
-        << std::endl;
-  ostrm.width(kWidth);
+  PrintField(ostrm, "# of states", NumStates());
+  PrintField(ostrm, "# of arcs", NumArcs());
+  PrintField(ostrm, "initial state", Start());
+  PrintField(ostrm, "# of final states", NumFinal());
+  PrintField(ostrm, "# of input/output epsilons", NumEpsilons());
+  PrintField(ostrm, "# of input epsilons", NumInputEpsilons());
+  PrintField(ostrm, "# of output epsilons", NumOutputEpsilons());
+  PrintField(ostrm, "input label multiplicity", InputLabelMultiplicity());
+  PrintField(ostrm, "output label multiplicity", OutputLabelMultiplicity());
   std::string arc_type = "";
   switch (ArcFilterType()) {
     case script::ArcFilterType::ANY:
@@ -86,42 +69,26 @@ void FstInfo::Info() const {
       break;
     }
   }
-  const auto accessible_label =
-      absl::StrCat("# of ", arc_type, "accessible states");
-  ostrm.width(kWidth);
-  ostrm << accessible_label << NumAccessible() << std::endl;
-  const auto coaccessible_label =
-      absl::StrCat("# of ", arc_type, "coaccessible states");
-  ostrm.width(kWidth);
-  ostrm << coaccessible_label << NumCoAccessible() << std::endl;
-  const auto connected_label =
-      absl::StrCat("# of ", arc_type, "connected states");
-  ostrm.width(kWidth);
-  ostrm << connected_label << NumConnected() << std::endl;
-  const auto numcc_label =
-      absl::StrCat("# of ", arc_type, "connected components");
-  ostrm.width(kWidth);
-  ostrm << numcc_label << NumCc() << std::endl;
-  const auto numscc_label =
-      absl::StrCat("# of ", arc_type, "strongly conn components");
-  ostrm.width(kWidth);
-  ostrm << numscc_label << NumScc() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "input matcher"
-        << (InputMatchType() == MATCH_INPUT  ? 'y'
-            : InputMatchType() == MATCH_NONE ? 'n'
-                                             : '?')
-        << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "output matcher"
-        << (OutputMatchType() == MATCH_OUTPUT ? 'y'
-            : OutputMatchType() == MATCH_NONE ? 'n'
-                                              : '?')
-        << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "input lookahead" << (InputLookAhead() ? 'y' : 'n') << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "output lookahead" << (OutputLookAhead() ? 'y' : 'n') << std::endl;
+  PrintField(ostrm, absl::StrCat("# of ", arc_type, "accessible states"),
+             NumAccessible());
+  PrintField(ostrm, absl::StrCat("# of ", arc_type, "coaccessible states"),
+             NumCoAccessible());
+  PrintField(ostrm, absl::StrCat("# of ", arc_type, "connected states"),
+             NumConnected());
+  PrintField(ostrm, absl::StrCat("# of ", arc_type, "connected components"),
+             NumCc());
+  PrintField(ostrm, absl::StrCat("# of ", arc_type, "strongly conn components"),
+             NumScc());
+  PrintField(ostrm, "input matcher",
+             (InputMatchType() == MATCH_INPUT  ? 'y'
+              : InputMatchType() == MATCH_NONE ? 'n'
+                                               : '?'));
+  PrintField(ostrm, "output matcher",
+             (OutputMatchType() == MATCH_OUTPUT ? 'y'
+              : OutputMatchType() == MATCH_NONE ? 'n'
+                                                : '?'));
+  PrintField(ostrm, "input lookahead", (InputLookAhead() ? 'y' : 'n'));
+  PrintField(ostrm, "output lookahead", (OutputLookAhead() ? 'y' : 'n'));
   PrintProperties(ostrm, Properties());
   ostrm.setf(old);
 }
@@ -131,8 +98,7 @@ void PrintProperties(std::ostream& ostrm, const uint64_t properties) {
   for (auto i = 0; i < 64; ++i, prop <<= 1) {
     if (prop & kBinaryProperties) {
       const char value = properties & prop ? 'y' : 'n';
-      ostrm.width(kWidth);
-      ostrm << internal::PropertyNames[i] << value << std::endl;
+      PrintField(ostrm, internal::PropertyNames[i], value);
     } else if (prop & kPosTrinaryProperties) {
       char value = '?';
       if (properties & prop) {
@@ -140,40 +106,26 @@ void PrintProperties(std::ostream& ostrm, const uint64_t properties) {
       } else if (properties & prop << 1) {
         value = 'n';
       }
-      ostrm.width(kWidth);
-      ostrm << internal::PropertyNames[i] << value << std::endl;
+      PrintField(ostrm, internal::PropertyNames[i], value);
     }
   }
 }
 
 void PrintHeader(std::ostream& ostrm, const FstHeader& header) {
   const auto old = ostrm.setf(std::ios::left);
-  ostrm.width(kWidth);
-  ostrm << "fst type" << header.FstType() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "arc type" << header.ArcType() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "version" << header.Version() << std::endl;
-
-  // Flags
+  PrintField(ostrm, "fst type", header.FstType());
+  PrintField(ostrm, "arc type", header.ArcType());
+  PrintField(ostrm, "version", header.Version());
+  // Flags.
   const auto flags = header.GetFlags();
-  ostrm.width(kWidth);
-  ostrm << "input symbol table" << (flags & FstHeader::HAS_ISYMBOLS ? 'y' : 'n')
-        << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "output symbol table"
-        << (flags & FstHeader::HAS_OSYMBOLS ? 'y' : 'n') << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "aligned" << (flags & FstHeader::IS_ALIGNED ? 'y' : 'n')
-        << std::endl;
-
-  ostrm.width(kWidth);
-  ostrm << "initial state" << header.Start() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of states" << header.NumStates() << std::endl;
-  ostrm.width(kWidth);
-  ostrm << "# of arcs" << header.NumArcs() << std::endl;
-
+  PrintField(ostrm, "input symbol table",
+             (flags & FstHeader::HAS_ISYMBOLS ? 'y' : 'n'));
+  PrintField(ostrm, "output symbol table",
+             (flags & FstHeader::HAS_OSYMBOLS ? 'y' : 'n'));
+  PrintField(ostrm, "aligned", (flags & FstHeader::IS_ALIGNED ? 'y' : 'n'));
+  PrintField(ostrm, "initial state", header.Start());
+  PrintField(ostrm, "# of states", header.NumStates());
+  PrintField(ostrm, "# of arcs", header.NumArcs());
   PrintProperties(ostrm, header.Properties());
   ostrm.setf(old);
 }

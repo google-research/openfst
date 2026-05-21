@@ -30,6 +30,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_cat.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/util.h"
 
@@ -167,37 +168,33 @@ MPdtInfo<Arc, nlevels>::MPdtInfo(
 template <class Arc, typename Arc::Label nlevels>
 void MPdtInfo<Arc, nlevels>::Print() {
   const auto old = std::cout.setf(std::ios::left);
-  std::cout.width(50);
-  std::cout << "fst type" << FstType() << std::endl;
-  std::cout.width(50);
-  std::cout << "arc type" << ArcType() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of states" << NumStates() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of arcs" << NumArcs() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of levels" << NumLevels() << std::endl;
-  std::cout.width(50);
+  PrintField(std::cout, "fst type", FstType());
+  PrintField(std::cout, "arc type", ArcType());
+  PrintField(std::cout, "# of states", NumStates());
+  PrintField(std::cout, "# of arcs", NumArcs());
+  PrintField(std::cout, "# of levels", NumLevels());
   for (typename Arc::Label i = 0; i < nlevels; ++i) {
     int level = i + 1;
-    std::cout << "# of open parentheses at level " << level << "\t"
-              << NumOpenParens(i) << std::endl;
-    std::cout.width(50);
-    std::cout << "# of close parentheses at level " << level << "\t"
-              << NumCloseParens(i) << std::endl;
-    std::cout.width(50);
-    std::cout << "# of unique open parentheses at level " << level << "\t"
-              << NumUniqueOpenParens(i) << std::endl;
-    std::cout.width(50);
-    std::cout << "# of unique close parentheses at level " << level << "\t"
-              << NumUniqueCloseParens(i) << std::endl;
-    std::cout.width(50);
-    std::cout << "# of open parenthesis dest. states at level " << level << "\t"
-              << NumOpenParenStates(i) << std::endl;
-    std::cout.width(50);
-    std::cout << "# of close parenthesis source states at level " << level
-              << "\t" << NumCloseParenStates(i) << std::endl;
-    std::cout.width(50);
+    PrintField(std::cout,
+               absl::StrCat("# of open parentheses at level ", level),
+               NumOpenParens(i));
+    PrintField(std::cout,
+               absl::StrCat("# of close parentheses at level ", level),
+               NumCloseParens(i));
+    PrintField(std::cout,
+               absl::StrCat("# of unique open parentheses at level ", level),
+               NumUniqueOpenParens(i));
+    PrintField(std::cout,
+               absl::StrCat("# of unique close parentheses at level ", level),
+               NumUniqueCloseParens(i));
+    PrintField(
+        std::cout,
+        absl::StrCat("# of open parenthesis dest. states at level ", level),
+        NumOpenParenStates(i));
+    PrintField(
+        std::cout,
+        absl::StrCat("# of close parenthesis source states at level ", level),
+        NumCloseParenStates(i));
   }
   std::cout.setf(old);
 }

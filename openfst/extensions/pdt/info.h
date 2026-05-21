@@ -31,6 +31,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 
@@ -137,30 +138,19 @@ PdtInfo<Arc>::PdtInfo(
 template <class Arc>
 void PdtInfo<Arc>::Print() {
   const auto old = std::cout.setf(std::ios::left);
-  std::cout.width(50);
-  std::cout << "fst type" << FstType() << std::endl;
-  std::cout.width(50);
-  std::cout << "arc type" << ArcType() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of states" << NumStates() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of arcs" << NumArcs() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of open parentheses" << NumOpenParens() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of close parentheses" << NumCloseParens() << std::endl;
-  std::cout.width(50);
-  std::cout << "# of unique open parentheses" << NumUniqueOpenParens()
-            << std::endl;
-  std::cout.width(50);
-  std::cout << "# of unique close parentheses" << NumUniqueCloseParens()
-            << std::endl;
-  std::cout.width(50);
-  std::cout << "# of open parenthesis dest. states" << NumOpenParenStates()
-            << std::endl;
-  std::cout.width(50);
-  std::cout << "# of close parenthesis source states" << NumCloseParenStates()
-            << std::endl;
+  PrintField(std::cout, "fst type", FstType());
+  PrintField(std::cout, "arc type", ArcType());
+  PrintField(std::cout, "# of states", NumStates());
+  PrintField(std::cout, "# of arcs", NumArcs());
+  PrintField(std::cout, "# of open parentheses", NumOpenParens());
+  PrintField(std::cout, "# of close parentheses", NumCloseParens());
+  PrintField(std::cout, "# of unique open parentheses", NumUniqueOpenParens());
+  PrintField(std::cout, "# of unique close parentheses",
+             NumUniqueCloseParens());
+  PrintField(std::cout, "# of open parenthesis dest. states",
+             NumOpenParenStates());
+  PrintField(std::cout, "# of close parenthesis source states",
+             NumCloseParenStates());
   std::cout.setf(old);
 }
 

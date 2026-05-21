@@ -438,6 +438,14 @@ void ConvertToLegalCSymbol(std::string* s);
 
 // Utilities for stream I/O.
 
+// Helper template for printing labeled fields to output streams.
+template <typename T>
+inline void PrintField(std::ostream& ostrm, absl::string_view label,
+                       const T& value, int width = 50) {
+  ostrm.width(width);
+  ostrm << label << value << '\n';
+}
+
 bool AlignInput(std::istream& strm, size_t align = MappedFile::kArchAlignment);
 bool AlignOutput(std::ostream& strm, size_t align = MappedFile::kArchAlignment);
 

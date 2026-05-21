@@ -30,12 +30,14 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far-reader.h"
 #include "openfst/extensions/far/far.h"
 #include "openfst/extensions/far/getters.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 
@@ -112,24 +114,15 @@ void Info(absl::Span<const std::string> sources, absl::string_view begin_key,
   FarInfoData info;
   GetInfo<Arc>(sources, begin_key, end_key, list_fsts, &info);
   if (!list_fsts) {
-    std::cout << std::left << std::setw(50) << "far type" << info.far_type
-              << '\n';
-    std::cout << std::left << std::setw(50) << "arc type" << Arc::Type()
-              << std::endl;
-    std::cout << std::left << std::setw(50) << "fst type";
-    for (auto iter = info.fst_types.begin(); iter != info.fst_types.end();
-         ++iter) {
-      if (iter != info.fst_types.begin()) std::cout << ",";
-      std::cout << *iter;
-    }
-    std::cout << '\n';
-    std::cout << std::left << std::setw(50) << "# of FSTs" << info.nfst << '\n';
-    std::cout << std::left << std::setw(50) << "total # of states"
-              << info.nstate << '\n';
-    std::cout << std::left << std::setw(50) << "total # of arcs" << info.narc
-              << '\n';
-    std::cout << std::left << std::setw(50) << "total # of final states"
-              << info.nfinal << '\n';
+    const auto old = std::cout.setf(std::ios::left);
+    PrintField(std::cout, "far type", info.far_type);
+    PrintField(std::cout, "arc type", Arc::Type());
+    PrintField(std::cout, "fst type", absl::StrJoin(info.fst_types, ","));
+    PrintField(std::cout, "# of FSTs", info.nfst);
+    PrintField(std::cout, "total # of states", info.nstate);
+    PrintField(std::cout, "total # of arcs", info.narc);
+    PrintField(std::cout, "total # of final states", info.nfinal);
+    std::cout.setf(old);
   } else {
     // FIXME(kbg): Grok, then document this.
     int wkey = 10;
