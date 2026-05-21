@@ -33,6 +33,28 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 
+#if defined(_MSC_VER)  // Windows MSVC compiler.
+#include <stdlib.h>    // ::malloc and friends.
+#include <string.h>    // For ::strnlen.
+
+namespace {
+
+char* strndup(const char* s, size_t n) {
+  if (!s) return nullptr;
+
+  const size_t len = ::strnlen(s, n);
+  char* copy = (char*)::malloc(len + 1);
+  if (copy) {
+    ::memcpy(copy, s, len);
+    copy[len] = '\0';
+  }
+  return copy;
+}
+
+}  // namespace
+
+#endif  // _MSC_VER
+
 namespace fst {
 
 CommandDispatcher::CommandDispatcher(const std::string& main_command_name,
@@ -136,7 +158,7 @@ int CommandDispatcher::Main(int argc, char** argv) {
     // remove command and shift arguments after the command back by one
     std::copy(argv + command_index + 1, argv + argc, argv + command_index);
     --argc;
-    argv[0] = ::strndup(cmd.c_str(), cmd.size());
+    argv[0] = strndup(cmd.c_str(), cmd.size());
     // C++ standard requires argv[argc] is null.
     argv[argc] = nullptr;
   }
