@@ -590,6 +590,9 @@ cdef class Compiler:
   cdef unique_ptr[stringstream] _sstrm
   cdef string _fst_type
   cdef string _arc_type
+  cdef SymbolTable _isymbols_py
+  cdef SymbolTable _osymbols_py
+  cdef SymbolTable _ssymbols_py
   cdef const fst.SymbolTable *_isymbols
   cdef const fst.SymbolTable *_osymbols
   cdef const fst.SymbolTable *_ssymbols

@@ -4740,12 +4740,15 @@ cdef class Compiler:
     self._sstrm.reset(new stringstream())
     self._fst_type = tostring(fst_type)
     self._arc_type = tostring(arc_type)
+    self._isymbols_py = isymbols
     self._isymbols = NULL
     if isymbols is not None:
       self._isymbols = isymbols._raw_ptr_or_raise()
+    self._osymbols_py = osymbols
     self._osymbols = NULL
     if osymbols is not None:
       self._osymbols = osymbols._raw_ptr_or_raise()
+    self._ssymbols_py = ssymbols
     self._ssymbols = NULL
     if ssymbols is not None:
       self._ssymbols = ssymbols._raw_ptr_or_raise()

@@ -17,6 +17,7 @@
 """Tests for Python interface to FST scriptland."""
 
 import filecmp
+import gc
 import itertools
 import os
 import pathlib
@@ -410,6 +411,20 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertEqual(f.final(0), fst.Weight.zero("tropical"))
     self.assertEqual(f.final(1), fst.Weight.one("tropical"))
     self.assertEqual(f.final(2), fst.Weight("tropical", 3.4))
+
+  def testCompilerGC(self):
+    def create_compiler():
+      isyms = fst.SymbolTable()
+      isyms.add_symbol("a", 1)
+      osyms = fst.SymbolTable()
+      osyms.add_symbol("b", 1)
+      return fst.Compiler(isymbols=isyms, osymbols=osyms)
+
+    compiler = create_compiler()
+    gc.collect()
+    compiler.write("0 0 a b\n0\n")
+    f = compiler.compile()
+    self.assertIsNotNone(f)
 
   # Tests weight wrapper.
 
