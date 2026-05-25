@@ -3176,18 +3176,18 @@ cdef class VectorFst(MutableFst):
 
 
 cdef Fst _init_Fst(FstClass_ptr tfst):
-  if tfst.Properties(fst.kError, True) == fst.kError:
-    raise FstOpError("Operation failed")
   cdef Fst _ofst = Fst.__new__(Fst)
   _ofst._fst.reset(tfst)
+  if _ofst._fst.get().Properties(fst.kError, True) == fst.kError:
+    raise FstOpError("Operation failed")
   return _ofst
 
 
 cdef MutableFst _init_MutableFst(MutableFstClass_ptr tfst):
-  if tfst.Properties(fst.kError, True) == fst.kError:
-    raise FstOpError("Operation failed")
   cdef MutableFst _ofst = MutableFst.__new__(MutableFst)
   _ofst._fst.reset(tfst)
+  if _ofst._fst.get().Properties(fst.kError, True) == fst.kError:
+    raise FstOpError("Operation failed")
   # Makes a copy of it as the derived type! Cool.
   _ofst._mfst = static_pointer_cast[fst.MutableFstClass,
                                     fst.FstClass](_ofst._fst)
