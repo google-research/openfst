@@ -16,7 +16,6 @@
 
 #include <cstddef>
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include "absl/strings/match.h"
@@ -27,13 +26,14 @@
 namespace fst {
 namespace {
 
-constexpr std::string_view kPathSeparator = "/";
+constexpr absl::string_view kPathSeparator = "/";
 
-std::pair<std::string_view, std::string_view> SplitPath(std::string_view path) {
+std::pair<absl::string_view, absl::string_view> SplitPath(
+    absl::string_view path) {
   size_t pos = path.find_last_of(kPathSeparator[0]);
 
   // Handle the case with no '/' in 'path'.
-  if (pos == std::string_view::npos) {
+  if (pos == absl::string_view::npos) {
     return std::make_pair(path.substr(0, 0), path);
   }
 
@@ -49,12 +49,12 @@ std::pair<std::string_view, std::string_view> SplitPath(std::string_view path) {
 // Return the parts of the basename of path, split on the final ".".
 // If there is no "." in the basename or "." is the final character in the
 // basename, the second value will be empty.
-std::pair<std::string_view, std::string_view> SplitBasename(
-    std::string_view path) {
+std::pair<absl::string_view, absl::string_view> SplitBasename(
+    absl::string_view path) {
   path = Basename(path);
 
   const size_t pos = path.find_last_of('.');
-  if (pos == std::string_view::npos)
+  if (pos == absl::string_view::npos)
     return std::make_pair(path, absl::ClippedSubstr(path, path.size(), 0));
   return std::make_pair(path.substr(0, pos),
                         absl::ClippedSubstr(path, pos + 1));
@@ -62,7 +62,7 @@ std::pair<std::string_view, std::string_view> SplitBasename(
 
 }  // namespace
 
-std::string JoinPath(std::string_view path1, std::string_view path2) {
+std::string JoinPath(absl::string_view path1, absl::string_view path2) {
   if (path1.empty()) return std::string(path2);
   if (path2.empty()) return std::string(path1);
 
@@ -77,13 +77,13 @@ std::string JoinPath(std::string_view path1, std::string_view path2) {
   }
 }
 
-std::string JoinPath(std::string_view path1, std::string_view path2,
-                     std::string_view path3) {
+std::string JoinPath(absl::string_view path1, absl::string_view path2,
+                     absl::string_view path3) {
   return JoinPath(JoinPath(path1, path2), path3);
 }
 
-std::string JoinPathRespectAbsolute(std::string_view path1,
-                                    std::string_view path2) {
+std::string JoinPathRespectAbsolute(absl::string_view path1,
+                                    absl::string_view path2) {
   if (path1.empty()) return std::string(path2);
   if (absl::StartsWith(path2, kPathSeparator)) {
     return std::string(path2);
@@ -91,15 +91,15 @@ std::string JoinPathRespectAbsolute(std::string_view path1,
   return JoinPath(path1, path2);
 }
 
-std::string_view Basename(std::string_view path) {
+absl::string_view Basename(absl::string_view path) {
   return SplitPath(path).second;
 }
 
-std::string_view Dirname(absl::string_view path) {
+absl::string_view Dirname(absl::string_view path) {
   return SplitPath(path).first;
 }
 
-std::string_view Extension(std::string_view path) {
+absl::string_view Extension(absl::string_view path) {
   return SplitBasename(path).second;
 }
 

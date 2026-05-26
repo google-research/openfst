@@ -18,34 +18,35 @@
 #define OPENFST_COMPAT_FILE_PATH_H_
 
 #include <string>
-#include <string_view>
+
+#include "absl/strings/string_view.h"
 
 namespace fst {
 
 // Joins paths, inserting a path separator if necessary.
-std::string JoinPath(std::string_view path1, std::string_view path2);
-std::string JoinPath(std::string_view path1, std::string_view path2,
-                     std::string_view path3);
+std::string JoinPath(absl::string_view path1, absl::string_view path2);
+std::string JoinPath(absl::string_view path1, absl::string_view path2,
+                     absl::string_view path3);
 
 // Joins paths, inserting a path separator if necessary. If `path2` is an
 // absolute path, the result is `path2`.
-std::string JoinPathRespectAbsolute(std::string_view path1,
-                                    std::string_view path2);
+std::string JoinPathRespectAbsolute(absl::string_view path1,
+                                    absl::string_view path2);
 
 // Returns the part of the path after the final "/".  If there is no
 // "/" in the path, the result is the same as the input.
-std::string_view Basename(std::string_view path);
+absl::string_view Basename(absl::string_view path);
 
 // Returns the part of the path before the final "/", EXCEPT:
 // * If there is a single leading "/" in the path, the result will be the
 //   leading "/".
 // * If there is no "/" in the path, the result is the empty prefix of the
 //   input string.
-std::string_view Dirname(std::string_view path);
+absl::string_view Dirname(absl::string_view path);
 
 // Returns the part of the basename of path after the final ".".  If
 // there is no "." in the basename, the result is empty.
-std::string_view Extension(std::string_view path);
+absl::string_view Extension(absl::string_view path);
 
 }  // namespace fst
 
