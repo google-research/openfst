@@ -36,6 +36,17 @@ std::string JoinPathRespectAbsolute(std::string_view path1,
 // "/" in the path, the result is the same as the input.
 std::string_view Basename(std::string_view path);
 
+// Returns the part of the path before the final "/", EXCEPT:
+// * If there is a single leading "/" in the path, the result will be the
+//   leading "/".
+// * If there is no "/" in the path, the result is the empty prefix of the
+//   input string.
+std::string_view Dirname(std::string_view path);
+
+// Returns the part of the basename of path after the final ".".  If
+// there is no "." in the basename, the result is empty.
+std::string_view Extension(std::string_view path);
+
 }  // namespace fst
 
 #endif  // OPENFST_COMPAT_FILE_PATH_H_

@@ -57,5 +57,29 @@ TEST(FilePathTest, CheckBasename) {
   EXPECT_EQ("hello", Basename("/a/b/c/hello"));
 }
 
+TEST(FilePathTest, CheckDirname) {
+  EXPECT_EQ("/hello", Dirname("/hello/"));
+  EXPECT_EQ("/", Dirname("/hello"));
+  EXPECT_EQ("/hello", Dirname("/hello/world"));
+  EXPECT_EQ("hello", Dirname("hello/world"));
+  EXPECT_EQ("hello", Dirname("hello/"));
+  EXPECT_EQ("", Dirname("world"));
+  EXPECT_EQ("/", Dirname("/"));
+  EXPECT_EQ("", Dirname(""));
+}
+
+TEST(FilePathTest, CheckExtension) {
+  EXPECT_EQ("gif", Extension("foo.gif"));
+  EXPECT_EQ("", Extension("foo."));
+  EXPECT_EQ("", Extension(""));
+  EXPECT_EQ("", Extension("/"));
+  EXPECT_EQ("", Extension("foo"));
+  EXPECT_EQ("", Extension("foo/"));
+  EXPECT_EQ("gif", Extension("/a/path/to/foo.gif"));
+  EXPECT_EQ("html", Extension("/a/path.bar/to/foo.html"));
+  EXPECT_EQ("", Extension("/a/path.bar/to/foo"));
+  EXPECT_EQ("baz", Extension("/a/path.bar/to/foo.bar.baz"));
+}
+
 }  // namespace
 }  // namespace fst

@@ -46,6 +46,20 @@ std::pair<std::string_view, std::string_view> SplitPath(std::string_view path) {
                         absl::ClippedSubstr(path, pos + 1));
 }
 
+// Return the parts of the basename of path, split on the final ".".
+// If there is no "." in the basename or "." is the final character in the
+// basename, the second value will be empty.
+std::pair<std::string_view, std::string_view> SplitBasename(
+    std::string_view path) {
+  path = Basename(path);
+
+  const size_t pos = path.find_last_of('.');
+  if (pos == std::string_view::npos)
+    return std::make_pair(path, absl::ClippedSubstr(path, path.size(), 0));
+  return std::make_pair(path.substr(0, pos),
+                        absl::ClippedSubstr(path, pos + 1));
+}
+
 }  // namespace
 
 std::string JoinPath(std::string_view path1, std::string_view path2) {
@@ -79,6 +93,14 @@ std::string JoinPathRespectAbsolute(std::string_view path1,
 
 std::string_view Basename(std::string_view path) {
   return SplitPath(path).second;
+}
+
+std::string_view Dirname(absl::string_view path) {
+  return SplitPath(path).first;
+}
+
+std::string_view Extension(std::string_view path) {
+  return SplitBasename(path).second;
 }
 
 }  // namespace fst
