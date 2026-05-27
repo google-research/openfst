@@ -1113,6 +1113,7 @@ cc_test(
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
+        "//openfst/lib:util",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest",

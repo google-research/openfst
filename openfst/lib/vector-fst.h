@@ -27,6 +27,7 @@
 #include <ios>
 #include <iosfwd>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -483,6 +484,8 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
   impl->BaseImpl::SetStart(hdr.Start());
   if (hdr.NumStates() != kNoStateId) impl->ReserveStates(hdr.NumStates());
   StateId state = 0;
+  StateId max_next_state = std::numeric_limits<StateId>::min();
+  StateId min_next_state = std::numeric_limits<StateId>::max();
   for (; hdr.NumStates() == kNoStateId || state < hdr.NumStates(); ++state) {
     Weight weight;
     if (!weight.Read(strm)) break;
@@ -506,11 +509,33 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
         LOG(ERROR) << "VectorFst::Read: Read failed: " << opts.source;
         return nullptr;
       }
+      if (arc.nextstate == kNoStateId) {
+        LOG(ERROR) << "VectorFst::Read: Disallowed next state: " << kNoStateId;
+        return nullptr;
+      }
+      max_next_state = std::max(arc.nextstate, max_next_state);
+      min_next_state = std::min(arc.nextstate, min_next_state);
       impl->BaseImpl::AddArc(state, std::move(arc));
     }
   }
   if (hdr.NumStates() != kNoStateId && state != hdr.NumStates()) {
     LOG(ERROR) << "VectorFst::Read: Unexpected end of file: " << opts.source;
+    return nullptr;
+  }
+  // Sanity check for the start state.
+  if (impl->Start() != kNoStateId && impl->Start() >= state) {
+    LOG(ERROR) << "VectorFst::Read: start state " << impl->Start()
+               << " out of range [0, " << state << ")";
+    return nullptr;
+  }
+  // Sanity check on next states.
+  if (min_next_state < 0) {
+    LOG(ERROR) << "VectorFst::Read: Next state is negative: " << min_next_state;
+    return nullptr;
+  }
+  if (opts.verify && max_next_state >= state) {
+    LOG(ERROR) << "VectorFst::Read: Next state " << max_next_state
+               << " is larger than total number of states " << state;
     return nullptr;
   }
   return impl.release();

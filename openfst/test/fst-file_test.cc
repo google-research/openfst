@@ -18,6 +18,7 @@
 // Unit test for FST file formats.
 
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <ios>
 #include <memory>
@@ -34,6 +35,7 @@
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/symbol-table.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -274,6 +276,73 @@ TEST(FstFileFailureTest, ConstBadStates) {
   EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
   ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/0, /*narcs=*/2));
   EXPECT_EQ(Fst<Arc>::Read(path), nullptr);
+}
+
+// Creates a VectorFst file with 1 state, 1 arc, given start state and the next
+// state.
+bool WriteBadVectorFst(const std::string& path, int start, int next_state) {
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType("standard");
+  hdr.SetVersion(2);  // Unaligned, == VectorFstImpl::kFileVersion.
+  hdr.SetStart(start);
+  hdr.SetNumStates(1);
+  hdr.SetNumArcs(1);
+
+  std::fstream strm(path, std::ios::binary | std::ios::out);
+  if (!hdr.Write(strm, path)) {
+    return false;
+  }
+
+  // Write states.
+  const Arc::Weight final_w = Arc::Weight::One();
+  if (!final_w.Write(strm)) return false;
+  constexpr int64_t num_arcs = 1;
+  WriteType(strm, num_arcs);
+
+  // Write single arc.
+  const Arc arc(/*ilabel=*/1, /*olabel=*/2, next_state);
+  WriteType(strm, arc.ilabel);
+  WriteType(strm, arc.olabel);
+  arc.weight.Write(strm);
+  WriteType(strm, arc.nextstate);
+  return !!strm;
+}
+
+TEST(FstFileFailureTest, VectorBadStates) {
+  std::string path =
+      JoinPath(::testing::TempDir(), "vector_bad_states.fst");
+  std::unique_ptr<Fst<Arc>> fst;
+
+  // Not bad.
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/0));
+  ;
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_NE(fst.get(), nullptr);
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/-1, /*next_state=*/0));
+  ;
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_NE(fst.get(), nullptr);
+
+  // Start state is out-of-bounds.
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/2, /*next_state=*/0));
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_EQ(fst.get(), nullptr);
+
+  // Next state is a reserved sentinel (kNoStateId).
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/kNoStateId));
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_EQ(fst.get(), nullptr);
+
+  // Next state does out-of-bounds (negative).
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/-3));
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_EQ(fst.get(), nullptr);
+
+  // Next state does out-of-bounds (positive).
+  ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/3));
+  fst.reset(Fst<Arc>::Read(path));
+  EXPECT_EQ(fst.get(), nullptr);
 }
 
 }  // namespace

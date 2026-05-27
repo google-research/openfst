@@ -117,7 +117,8 @@ FstReadOptions::FstReadOptions(const absl::string_view source,
       isymbols(isymbols),
       osymbols(osymbols),
       read_isymbols(true),
-      read_osymbols(true) {
+      read_osymbols(true),
+      verify(true) {
   mode = ReadMode(absl::GetFlag(FLAGS_fst_read_mode));
 }
 
@@ -140,7 +141,8 @@ std::string FstReadOptions::DebugString() const {
       "\" read_osymbols: \"", (read_osymbols ? "true" : "false"),
       "\" header: \"", (header ? "set" : "null"), "\" isymbols: \"",
       (isymbols ? "set" : "null"), "\" osymbols: \"",
-      (osymbols ? "set" : "null"), "\"");
+      (osymbols ? "set" : "null"), "\" verify: \"", (verify ? "true" : "false"),
+      "\"");
 }
 
 }  // namespace fst

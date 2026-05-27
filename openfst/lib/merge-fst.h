@@ -495,12 +495,42 @@ class MergeFstImpl : public FstImpl<A> {
     if (!state_map) return nullptr;
     FstReadOptions fopts(opts);
     fopts.header = nullptr;  // Component Fst headers were written out.
+
+    // Read primary Fst.
     std::unique_ptr<ExpandedFst<A> > primary_fst(
         ExpandedFst<A>::Read(strm, fopts));
     if (!primary_fst) return nullptr;
+
+    // Read secondary Fst. Disable the verification on read because this Fst is
+    // incomplete.
+    fopts.verify = false;
     std::unique_ptr<ExpandedFst<A> > secondary_fst(
         ExpandedFst<A>::Read(strm, fopts));
     if (!secondary_fst) return nullptr;
+
+    // Make sure the destination states in the secondary Fst are sane.
+    StateId max_next_state = std::numeric_limits<StateId>::min();
+    for (StateIterator<Fst<A>> siter(*secondary_fst); !siter.Done();
+         siter.Next()) {
+      const auto& state = siter.Value();
+      for (ArcIterator<Fst<A>> aiter(*secondary_fst, state); !aiter.Done();
+           aiter.Next()) {
+        const auto& arc = aiter.Value();
+        if (arc.nextstate == kNoStateId) {
+          LOG(ERROR) << "MergeFst::Read: Disallowed next state: " << kNoStateId;
+          return nullptr;
+        }
+        max_next_state = std::max(arc.nextstate, max_next_state);
+      }
+    }
+    const size_t max_states =
+        primary_fst->NumStates() + secondary_fst->NumStates();
+    if (max_next_state >= max_states) {
+      LOG(ERROR) << "MergeFst::Read: Next state " << max_next_state << "in "
+                 << "secondary FST is bigger than maximum possible number "
+                 << "of states " << max_states;
+      return nullptr;
+    }
     return new MergeFstImpl<A, M>(
         *impl, *primary_fst, *secondary_fst, hdr.NumStates(), *state_map);
   }
