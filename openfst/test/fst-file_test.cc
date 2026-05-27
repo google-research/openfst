@@ -316,11 +316,9 @@ TEST(FstFileFailureTest, VectorBadStates) {
 
   // Not bad.
   ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/0));
-  ;
   fst.reset(Fst<Arc>::Read(path));
   EXPECT_NE(fst.get(), nullptr);
   ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/-1, /*next_state=*/0));
-  ;
   fst.reset(Fst<Arc>::Read(path));
   EXPECT_NE(fst.get(), nullptr);
 
