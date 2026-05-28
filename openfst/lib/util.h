@@ -104,7 +104,7 @@ inline std::istream& ReadType(std::istream& strm, std::string* s) {
   s->clear();
   int32_t ns = 0;
   ReadType(strm, &ns);
-  if (ns <= 0) return strm;
+  if (!strm || ns <= 0) return strm;
   s->resize(ns);
   ReadType(strm, ns, s->data());
   return strm;
@@ -145,6 +145,7 @@ std::istream& ReadContainerType(std::istream& strm, C* c, ReserveFn reserve) {
   c->clear();
   int64_t n = 0;
   ReadType(strm, &n);
+  if (!strm || n <= 0) return strm;
   reserve(c, n);
   auto insert = std::inserter(*c, c->begin());
   for (int64_t i = 0; i < n; ++i) {
@@ -160,7 +161,7 @@ template <typename T, class A,
           typename std::enable_if_t<std::is_class_v<T>, T>* = nullptr>
 inline std::istream& ReadVectorType(std::istream& strm, std::vector<T, A>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
 }
 
 // Vector of numerics (boolean, integral, floating-point, char) or enum case.
@@ -170,7 +171,7 @@ inline std::istream& ReadVectorType(std::istream& strm, std::vector<T, A>* c) {
   c->clear();
   int64_t n = 0;
   ReadType(strm, &n);
-  if (n == 0) return strm;
+  if (!strm || n <= 0) return strm;
   c->resize(n);
   ReadType(strm, n, c->data());
   return strm;
@@ -182,7 +183,10 @@ std::istream& ReadType(std::istream& strm, std::array<T, N>* c) {
   if constexpr (internal::IsScalarIOTypeV<T>) {
     ReadType(strm, c->size(), c->data());
   } else {
-    for (auto& v : *c) ReadType(strm, &v);
+    for (auto& v : *c) {
+      if (!strm) break;
+      ReadType(strm, &v);
+    }
   }
   return strm;
 }
@@ -210,13 +214,13 @@ std::istream& ReadType(std::istream& strm, std::map<T...>* c) {
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::unordered_set<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
 }
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::unordered_map<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
 }
 
 // Writes types to an output stream.
@@ -294,6 +298,7 @@ template <class C>
 std::ostream& WriteContainer(std::ostream& strm, const C& c) {
   const int64_t n = c.size();
   WriteType(strm, n);
+  if (!strm) return strm;
   WriteSequence(strm, c);
   return strm;
 }
@@ -528,7 +533,7 @@ namespace fst {
 template <class... T>
 std::istream& ReadType(std::istream& strm, absl::flat_hash_map<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, int n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
 }
 
 template <typename... T>
