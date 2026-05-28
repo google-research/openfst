@@ -786,6 +786,22 @@ sh_test(
 )
 
 cc_test(
+    name = "validation_test",
+    size = "small",
+    srcs = ["validation_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":basic-fst",
+        ":compactors",
+        ":test_main",
+        "//openfst/compat:compat_memory",
+        "//openfst/lib",
+        "@com_google_absl//absl/memory",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "disambiguate_test",
     size = "medium",
     srcs = ["disambiguate_test.cc"],

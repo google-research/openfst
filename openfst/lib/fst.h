@@ -86,10 +86,8 @@ struct FstReadOptions {
   bool read_isymbols;           // Read isymbols, if any (default: true).
   bool read_osymbols;           // Read osymbols, if any (default: true).
   bool verify;                  // Perform FST type-specific light-weight sanity
-                                // check, e.g., check that the destinations of
-                                // all the arcs are valid in VectorFst, which is
-                                // the only place where such checks are
-                                // controlled by this flag (default: true).
+                                // check, where supported by implementations.
+                                // (default: true).
 
   explicit FstReadOptions(absl::string_view source = "<unspecified>",
                           const FstHeader* absl_nullable header = nullptr,

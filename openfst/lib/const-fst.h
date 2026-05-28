@@ -21,6 +21,7 @@
 #ifndef OPENFST_LIB_CONST_FST_H_
 #define OPENFST_LIB_CONST_FST_H_
 
+#include <algorithm>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -242,6 +243,32 @@ ConstFstImpl<Arc, Unsigned>* ConstFstImpl<Arc, Unsigned>::Read(
       LOG(ERROR) << "ConstFst::Read: state " << s
                  << " arc range out of bounds: " << opts.source;
       return nullptr;
+    }
+  }
+  if (opts.verify) {
+    StateId max_next_state = std::numeric_limits<StateId>::min();
+    StateId min_next_state = std::numeric_limits<StateId>::max();
+    for (size_t i = 0; i < impl->narcs_; ++i) {
+      const StateId nextstate = impl->arcs_[i].nextstate;
+      if (nextstate == kNoStateId) {
+        LOG(ERROR) << "ConstFst::Read: Disallowed next state: " << kNoStateId;
+        return nullptr;
+      }
+      max_next_state = std::max(nextstate, max_next_state);
+      min_next_state = std::min(nextstate, min_next_state);
+    }
+    if (impl->narcs_ > 0) {
+      if (min_next_state < 0) {
+        LOG(ERROR) << "ConstFst::Read: Next state is negative: "
+                   << min_next_state;
+        return nullptr;
+      }
+      if (max_next_state >= impl->nstates_) {
+        LOG(ERROR) << "ConstFst::Read: Next state " << max_next_state
+                   << " is larger than total number of states "
+                   << impl->nstates_;
+        return nullptr;
+      }
     }
   }
 

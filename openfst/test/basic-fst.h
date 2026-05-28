@@ -27,7 +27,6 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
@@ -151,10 +150,15 @@ BasicFstImpl<A>::BasicFstImpl(const Fst<A>& fst) {
 template <class A>
 BasicFstImpl<A>* BasicFstImpl<A>::Read(std::istream& strm,
                                        const FstReadOptions& opts) {
-  BasicFstImpl<A>* impl = new BasicFstImpl;
+  auto impl = std::make_unique<BasicFstImpl<A>>();
   FstHeader hdr;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
   impl->BaseImpl::SetStart(hdr.Start());
+  if (impl->Start() != kNoStateId && impl->Start() >= hdr.NumStates()) {
+    LOG(ERROR) << "BasicFst::Read: start state " << impl->Start()
+               << " out of range [0, " << hdr.NumStates() << ")";
+    return nullptr;
+  }
   impl->ReserveStates(hdr.NumStates());
 
   for (StateId s = 0; s < hdr.NumStates(); ++s) {
@@ -180,10 +184,25 @@ BasicFstImpl<A>* BasicFstImpl<A>::Read(std::istream& strm,
         LOG(ERROR) << "BasicFst::Read: read failed: " << opts.source;
         return nullptr;
       }
+      if (arc.nextstate == kNoStateId) {
+        LOG(ERROR) << "BasicFst::Read: Disallowed next state: " << kNoStateId;
+        return nullptr;
+      }
+      if (arc.nextstate < 0) {
+        LOG(ERROR) << "BasicFst::Read: Next state is negative: "
+                   << arc.nextstate;
+        return nullptr;
+      }
+      if (arc.nextstate >= hdr.NumStates()) {
+        LOG(ERROR) << "BasicFst::Read: Next state " << arc.nextstate
+                   << " is larger than total number of states "
+                   << hdr.NumStates();
+        return nullptr;
+      }
       impl->BaseImpl::AddArc(s, arc);
     }
   }
-  return impl;
+  return impl.release();
 }
 
 template <class A>

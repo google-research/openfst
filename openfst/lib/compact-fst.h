@@ -452,6 +452,11 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
   auto data = std::make_unique<CompactArcStore>();
   data->start_ = hdr.Start();
   data->nstates_ = hdr.NumStates();
+  if (data->start_ != kNoStateId && data->start_ >= data->nstates_) {
+    LOG(ERROR) << "CompactArcStore::Read: start state " << data->start_
+               << " out of range [0, " << data->nstates_ << ")";
+    return nullptr;
+  }
   data->narcs_ = hdr.NumArcs();
   if (arc_compactor.Size() == -1) {
     if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
