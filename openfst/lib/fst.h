@@ -960,11 +960,21 @@ bool FstImpl<Arc>::ReadHeader(std::istream& strm, const FstReadOptions& opts,
   properties_.store(hdr->Properties(), std::memory_order_relaxed);
   if (hdr->GetFlags() & FstHeader::HAS_ISYMBOLS) {
     isymbols_.reset(SymbolTable::Read(strm, opts.source));
+    if (!isymbols_) {
+      LOG(ERROR) << "FstImpl::ReadHeader: Failed to read input symbols: "
+                 << opts.source;
+      return false;
+    }
   }
   // Deletes input symbol table.
   if (!opts.read_isymbols) SetInputSymbols(nullptr);
   if (hdr->GetFlags() & FstHeader::HAS_OSYMBOLS) {
     osymbols_.reset(SymbolTable::Read(strm, opts.source));
+    if (!osymbols_) {
+      LOG(ERROR) << "FstImpl::ReadHeader: Failed to read output symbols: "
+                 << opts.source;
+      return false;
+    }
   }
   // Deletes output symbol table.
   if (!opts.read_osymbols) SetOutputSymbols(nullptr);

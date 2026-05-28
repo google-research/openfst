@@ -21,6 +21,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <sstream>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -33,6 +35,7 @@
 #include "openfst/lib/edit-fst.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/matcher-fst.h"
 #include "openfst/lib/product-weight.h"
 #include "openfst/lib/register.h"
@@ -246,6 +249,90 @@ TEST(FstTest, EditFstStdArc) {
   std_edit_tester.TestCopy();
   std_edit_tester.TestMutable();
   std_edit_tester.TestArcIteratorMove();
+}
+
+TEST(FstTest, ReadHeaderInputSymbolsMissing) {
+  // Input symbols missing: Header claims they exist, but stream ends.
+  std::stringstream strm;
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetFlags(FstHeader::HAS_ISYMBOLS);
+  hdr.SetStart(kNoStateId);
+  hdr.SetNumStates(0);
+  hdr.Write(strm, "test");
+
+  FstReadOptions opts("test");
+  std::unique_ptr<VectorFst<StdArc>> fst(VectorFst<StdArc>::Read(strm, opts));
+  EXPECT_EQ(fst, nullptr);
+}
+
+TEST(FstTest, ReadHeaderOutputSymbolsMissing) {
+  // Output symbols missing: Header claims they exist, but stream ends.
+  std::stringstream strm;
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetFlags(FstHeader::HAS_OSYMBOLS);
+  hdr.SetStart(kNoStateId);
+  hdr.SetNumStates(0);
+  hdr.Write(strm, "test");
+
+  FstReadOptions opts("test");
+  std::unique_ptr<VectorFst<StdArc>> fst(VectorFst<StdArc>::Read(strm, opts));
+  EXPECT_EQ(fst, nullptr);
+}
+
+TEST(FstTest, ReadHeaderInputSymbolsTruncated) {
+  // Input symbols truncated.
+  std::stringstream strm;
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetFlags(FstHeader::HAS_ISYMBOLS);
+  hdr.SetStart(kNoStateId);
+  hdr.SetNumStates(0);
+  hdr.Write(strm, "test");
+
+  SymbolTable isyms("isyms");
+  isyms.AddSymbol("a", 1);
+  std::stringstream syms_strm;
+  isyms.Write(syms_strm);
+  std::string syms_str = syms_strm.str();
+  // Write only part of the symbol table.
+  strm.write(syms_str.data(), syms_str.size() / 2);
+
+  FstReadOptions opts("test");
+  std::unique_ptr<VectorFst<StdArc>> fst(VectorFst<StdArc>::Read(strm, opts));
+  EXPECT_EQ(fst, nullptr);
+}
+
+TEST(FstTest, ReadHeaderOutputSymbolsTruncated) {
+  // Output symbols truncated.
+  std::stringstream strm;
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetFlags(FstHeader::HAS_OSYMBOLS);
+  hdr.SetStart(kNoStateId);
+  hdr.SetNumStates(0);
+  hdr.Write(strm, "test");
+
+  SymbolTable osyms("osyms");
+  osyms.AddSymbol("a", 1);
+  std::stringstream syms_strm;
+  osyms.Write(syms_strm);
+  std::string syms_str = syms_strm.str();
+  // Write only part of the symbol table.
+  strm.write(syms_str.data(), syms_str.size() / 2);
+
+  FstReadOptions opts("test");
+  std::unique_ptr<VectorFst<StdArc>> fst(VectorFst<StdArc>::Read(strm, opts));
+  EXPECT_EQ(fst, nullptr);
 }
 
 }  // namespace
