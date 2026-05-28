@@ -110,6 +110,7 @@ set(TESTS
     union-find_test
     union_test
     util_test
+    validation_test
     vector-fst_test
     visit_test
     weight_test
