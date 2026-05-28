@@ -4740,18 +4740,9 @@ cdef class Compiler:
     self._sstrm.reset(new stringstream())
     self._fst_type = tostring(fst_type)
     self._arc_type = tostring(arc_type)
-    self._isymbols_py = isymbols
-    self._isymbols = NULL
-    if isymbols is not None:
-      self._isymbols = isymbols._raw_ptr_or_raise()
-    self._osymbols_py = osymbols
-    self._osymbols = NULL
-    if osymbols is not None:
-      self._osymbols = osymbols._raw_ptr_or_raise()
-    self._ssymbols_py = ssymbols
-    self._ssymbols = NULL
-    if ssymbols is not None:
-      self._ssymbols = ssymbols._raw_ptr_or_raise()
+    self._isymbols = isymbols
+    self._osymbols = osymbols
+    self._ssymbols = ssymbols
     self._acceptor = acceptor
     self._keep_isymbols = keep_isymbols
     self._keep_osymbols = keep_osymbols
@@ -4771,15 +4762,24 @@ cdef class Compiler:
     Raises:
       FstOpError: Compilation failed.
     """
+    cdef const fst.SymbolTable *_isyms = NULL
+    if self._isymbols is not None:
+      _isyms = self._isymbols._raw_ptr_or_raise()
+    cdef const fst.SymbolTable *_osyms = NULL
+    if self._osymbols is not None:
+      _osyms = self._osymbols._raw_ptr_or_raise()
+    cdef const fst.SymbolTable *_ssyms = NULL
+    if self._ssymbols is not None:
+      _ssyms = self._ssymbols._raw_ptr_or_raise()
     cdef unique_ptr[fst.FstClass] _tfst
     with nogil:
       _tfst = fst.CompileInternal(deref(self._sstrm),
                                   b"<pywrapfst>",
                                   self._fst_type,
                                   self._arc_type,
-                                  self._isymbols,
-                                  self._osymbols,
-                                  self._ssymbols,
+                                  _isyms,
+                                  _osyms,
+                                  _ssyms,
                                   self._acceptor,
                                   self._keep_isymbols,
                                   self._keep_osymbols,
