@@ -3195,10 +3195,17 @@ cdef MutableFst _init_MutableFst(MutableFstClass_ptr tfst):
 
 
 cdef Fst _init_XFst(FstClass_ptr tfst):
-  if tfst.Properties(fst.kMutable, True) == fst.kMutable:
-    return _init_MutableFst(static_cast[MutableFstClass_ptr](tfst))
-  else:
-    return _init_Fst(tfst)
+  # First declares this as a generic Fst.
+  cdef Fst _ofst = _init_Fst(tfst)
+  # Upgrades it to a MutableFst if it's mutable.
+  cdef MutableFst _mfst
+  if _ofst._fst.get().Properties(fst.kMutable, True) == fst.kMutable:
+    _mfst = MutableFst.__new__(MutableFst)
+    _mfst._fst = _ofst._fst
+    _mfst._mfst = static_pointer_cast[fst.MutableFstClass,
+                                      fst.FstClass](_mfst._fst)
+    return _mfst
+  return _ofst
 
 
 cpdef Fst _read_Fst(source):
