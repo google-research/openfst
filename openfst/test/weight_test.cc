@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <sstream>
 #include <utility>
 
 #include "gtest/gtest.h"
@@ -40,6 +41,7 @@
 #include "openfst/lib/sparse-power-weight.h"
 #include "openfst/lib/string-weight.h"
 #include "openfst/lib/union-weight.h"
+#include "openfst/lib/util.h"
 #include "openfst/test/weight-tester.h"
 
 ABSL_FLAG(int32_t, repeat, 10000, "number of test repetitions");
@@ -267,6 +269,34 @@ void TestFloatEqualityIsReflexive() {
   EXPECT_TRUE(FloatEqualityIsReflexive(test_value));
 }
 
+void TestStringWeightRead() {
+  using Weight = StringWeight<int>;
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  // Test unreasonable size values: negative size.
+  {
+    std::stringstream strm;
+    int32_t size = -1;
+    strm.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    Weight w;
+    w.Read(strm);
+    EXPECT_EQ(0, w.Size());
+  }
+
+  // Test truncated read case.
+  {
+    std::stringstream strm;
+    int32_t size = 10;
+    strm.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    // No labels provided.
+    Weight w;
+    w.Read(strm);
+    EXPECT_EQ(0, w.Size());
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
+}
+
 void RunTest() {
   absl::BitGen bit_gen(
       fst::MakeTaggedSeedSeq("WEIGHT_TEST"));
@@ -320,6 +350,8 @@ void RunTest() {
   WeightGenerate<RightStringWeight> right_string_generate;
   WeightTester<RightStringWeight> right_string_tester(right_string_generate);
   right_string_tester.Test(bit_gen, absl::GetFlag(FLAGS_repeat));
+
+  TestStringWeightRead();
 
   // STRING_RESTRICT not tested since it requires equal strings,
   // so would fail.

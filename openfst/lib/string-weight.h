@@ -27,7 +27,6 @@
 #include <list>
 #include <optional>
 #include <ostream>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -244,9 +243,13 @@ inline std::istream& StringWeight<Label, S>::Read(std::istream& strm) {
   Clear();
   int32_t size;
   ReadType(strm, &size);
+  if (size < 0) {
+    FSTERROR() << "StringWeight::Read: Invalid size " << size;
+    return strm;
+  }
   for (int32_t i = 0; i < size; ++i) {
     Label label;
-    ReadType(strm, &label);
+    if (!ReadType(strm, &label)) return strm;
     PushBack(label);
   }
   return strm;

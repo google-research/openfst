@@ -2458,6 +2458,7 @@ cc_test(
     deps = [
         ":weight_tester",
         "//openfst/compat:seed_sequences",
+        "//openfst/lib:util",
         "//openfst/lib:weight",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
