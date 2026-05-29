@@ -29,6 +29,7 @@
 #include "openfst/compat/compat_memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "openfst/compat/status_macros.h"
 #include "openfst/extensions/far/far-reader.h"
 #include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/fst-reader.h"
@@ -44,9 +45,8 @@ class STTableFarReader : public FarReader<A> {
 
   static absl::StatusOr<std::unique_ptr<STTableFarReader>> OpenWithStatus(
       absl::string_view source) {
-    auto reader =
-        absl::WrapUnique(STTableReader<Fst<Arc>, FstReader<Arc>>::Open(source));
-    if (!reader || reader->Error()) return nullptr;
+    using ReaderType = STTableReader<Fst<Arc>, FstReader<Arc>>;
+    ASSIGN_OR_RETURN(auto reader, ReaderType::OpenWithStatus(source));
     return absl::WrapUnique(new STTableFarReader(std::move(reader)));
   }
 

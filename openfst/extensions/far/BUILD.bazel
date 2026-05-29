@@ -122,6 +122,7 @@ fst_cc_library(
         ":fst-reader",
         ":sttable",
         "//openfst/compat:compat_memory",
+        "//openfst/compat:status_macros",
         "//openfst/lib",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status:statusor",
