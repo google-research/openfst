@@ -15,7 +15,11 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <cstdint>
+#include <fstream>
+#include <ios>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -26,6 +30,7 @@
 #include "openfst/extensions/far/far-test-base.h"
 #include "openfst/extensions/far/sttable-far-reader.h"
 #include "openfst/extensions/far/sttable-far-writer.h"
+#include "openfst/extensions/far/sttable.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/util.h"
@@ -156,6 +161,52 @@ TEST_F(FarTest, STTableEmptyFar) {
   ASSERT_FALSE(reader->Error());
   ASSERT_FALSE(reader->Find("foo"));
   ASSERT_TRUE(reader->Done());
+}
+
+TEST_F(FarTest, STTableReaderCorruptNumEntries) {
+  std::ostringstream ostrm;
+  EXPECT_TRUE(WriteType(ostrm, kSTTableMagicNumber));
+  EXPECT_TRUE(WriteType(ostrm, kSTTableFileVersion));
+
+  // Write a large num_entries at the end.
+  const int64_t num_entries = 1000;
+  EXPECT_TRUE(WriteType(ostrm, num_entries));
+
+  const std::string data = ostrm.str();
+
+  const std::string filename =
+      JoinPath(::testing::TempDir(), "corrupt.far");
+  std::ofstream ofstrm(filename, std::ios_base::binary);
+  ofstrm << data;
+  ofstrm.close();
+
+  auto status_or = STTableFarReader<LogArc>::OpenWithStatus(filename);
+  EXPECT_FALSE(status_or.ok());
+  EXPECT_THAT(status_or.status().message(),
+              ::testing::HasSubstr("too small for"));
+}
+
+TEST_F(FarTest, STTableReaderNegativeNumEntries) {
+  std::ostringstream ostrm;
+  EXPECT_TRUE(WriteType(ostrm, kSTTableMagicNumber));
+  EXPECT_TRUE(WriteType(ostrm, kSTTableFileVersion));
+
+  // Write a negative num_entries at the end.
+  const int64_t num_entries = -1;
+  EXPECT_TRUE(WriteType(ostrm, num_entries));
+
+  const std::string data = ostrm.str();
+
+  const std::string filename =
+      JoinPath(::testing::TempDir(), "negative_entries.far");
+  std::ofstream ofstrm(filename, std::ios_base::binary);
+  ofstrm << data;
+  ofstrm.close();
+
+  auto status_or = STTableFarReader<LogArc>::OpenWithStatus(filename);
+  EXPECT_FALSE(status_or.ok());
+  EXPECT_THAT(status_or.status().message(),
+              ::testing::HasSubstr("negative number of entries"));
 }
 
 }  // namespace

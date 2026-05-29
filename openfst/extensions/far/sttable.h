@@ -346,13 +346,42 @@ class STTableReader {
             absl::StrCat("Wrong file version: ", sources[i], ", expected ",
                          kSTTableFileVersion, ", got ", file_version));
       }
-      int64_t num_entries;
-      streams[i]->seekg(-static_cast<int>(sizeof(int64_t)), std::ios_base::end);
-      ReadType(*streams[i], &num_entries);
+      streams[i]->seekg(0, std::ios_base::end);
+      if (streams[i]->fail()) {
+        return absl::FailedPreconditionError(
+            absl::StrCat("File ", sources[i], ": failed to seek to the end"));
+      }
+      const std::streampos file_size = streams[i]->tellg();
+      if (file_size == -1) {
+        return absl::FailedPreconditionError(absl::StrCat(
+            "File ", sources[i], ": failed to measure file size."));
+      }
+      streams[i]->seekg(-static_cast<std::streamoff>(sizeof(int64_t)),
+                        std::ios_base::cur);
+      if (streams[i]->fail()) {
+        return absl::FailedPreconditionError(absl::StrCat(
+            "File ", sources[i], ": failed to seek to num_entries"));
+      }
+      int64_t num_entries = 0;
+      if (!ReadType(*streams[i], &num_entries)) {
+        return absl::DataLossError(
+            absl::StrCat("Error reading num_entries from file: ", sources[i]));
+      }
+      if (num_entries < 0) {
+        return absl::FailedPreconditionError(
+            absl::StrCat("Malformed file: ", sources[i],
+                         ", negative number of entries: ", num_entries));
+      }
       if (num_entries > 0) {
-        streams[i]->seekg(
-            -static_cast<int>(sizeof(int64_t)) * (num_entries + 1),
-            std::ios_base::end);
+        const std::streamoff offset =
+            -static_cast<std::streamoff>(sizeof(int64_t)) * (num_entries + 1);
+
+        if (file_size < -offset) {
+          return absl::FailedPreconditionError(
+              absl::StrCat("Malformed file: ", sources[i], ", too small for ",
+                           num_entries, " entries"));
+        }
+        streams[i]->seekg(offset, std::ios_base::end);
         positions[i].resize(num_entries);
         for (size_t j = 0; (j < num_entries) && (!streams[i]->fail()); ++j) {
           ReadType(*streams[i], &(positions[i][j]));
@@ -420,7 +449,7 @@ bool ReadSTTableHeader(const std::string& source, Header* header) {
     return false;
   }
   int64_t i = -1;
-  strm.seekg(-static_cast<int>(sizeof(int64_t)), std::ios_base::end);
+  strm.seekg(-static_cast<std::streamoff>(sizeof(int64_t)), std::ios_base::end);
   ReadType(strm, &i);  // Reads number of entries
   if (strm.fail()) {
     LOG(ERROR) << "ReadSTTableHeader: Error reading file: " << source;

@@ -524,6 +524,8 @@ cc_test(
     linkstatic = True,
     deps = [
         ":far-test-base",
+        ":fst-reader",
+        ":sttable",
         ":sttable-far-reader",
         ":sttable-far-writer",
         "//openfst/compat:file_path",
