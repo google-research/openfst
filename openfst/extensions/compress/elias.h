@@ -47,7 +47,7 @@ void Elias<Var>::GammaEncode(const Var& input, std::vector<bool>* code) {
     reverse_code.push(input_copy % 2);
     input_copy = input_copy / 2;
   }
-  code->resize(reverse_code.size() - 1, false);
+  code->insert(code->end(), reverse_code.size() - 1, false);
   while (!reverse_code.empty()) {
     code->push_back(reverse_code.top());
     reverse_code.pop();
@@ -75,27 +75,26 @@ void Elias<Var>::DeltaEncode(const Var& input, std::vector<bool>* code) {
 template <class Var>
 void Elias<Var>::BatchDecode(const std::vector<bool>& input,
                              std::vector<Var>* output) {
-  Var lead_zeros = 0;
-  Var current_word = 1;
-  Var value = 1;
   for (auto it = input.cbegin(); it != input.cend();) {
-    lead_zeros = 0;
-    current_word = 1;
-    value = 1;
-    while (!*it) {
+    Var lead_zeros = 0;
+    while (it != input.cend() && !*it) {
       ++it;
       ++lead_zeros;
     }
+    if (it == input.cend()) return;
+    // Found the '1' that ends the lead zeros.
     ++it;
-    while (lead_zeros > 0) {
-      --lead_zeros;
+    Var current_word = 1;
+    for (Var i = 0; i < lead_zeros; ++i) {
+      if (it == input.cend()) return;
       current_word = 2 * current_word + *it;
       ++it;
     }
-    --current_word;
-    while (current_word > 0) {
+    Var remainder_bits = current_word - 1;
+    Var value = 1;
+    for (Var i = 0; i < remainder_bits; ++i) {
+      if (it == input.cend()) return;
       value = 2 * value + *it;
-      --current_word;
       ++it;
     }
     output->push_back(value - 1);

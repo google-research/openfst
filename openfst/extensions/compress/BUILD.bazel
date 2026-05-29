@@ -115,6 +115,7 @@ cc_test(
     linkstatic = True,
     deps = [
         ":compress",
+        ":elias",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",

@@ -29,13 +29,14 @@
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
+#include "openfst/extensions/compress/elias.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/isomorphic.h"
 #include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/test-properties.h"
 #include "openfst/lib/vector-fst.h"
 
-using ::fst::Isomorphic;
+using ::fst::Elias;
 using ::fst::LempelZiv;
 using ::fst::StdArc;
 using ::fst::StdMutableFst;
@@ -101,6 +102,92 @@ TEST_F(CompressTest, EmptyFst) {
   ASSERT_TRUE(Compress(input_fst, output_fstname));
   ASSERT_TRUE(Decompress(output_fstname, &output_fst));
   EXPECT_TRUE(Isomorphic(input_fst, output_fst));
+}
+
+// Tests Elias encoding.
+TEST_F(CompressTest, EliasEncode) {
+  std::vector<bool> code;
+  Elias<int>::GammaEncode(1, &code);
+  EXPECT_EQ(code, std::vector<bool>({true}));
+
+  code.clear();
+  Elias<int>::GammaEncode(2, &code);
+  EXPECT_EQ(code, std::vector<bool>({false, true, false}));
+
+  code.clear();
+  Elias<int>::DeltaEncode(0, &code);
+  EXPECT_EQ(code, std::vector<bool>({true}));
+
+  code.clear();
+  Elias<int>::DeltaEncode(1, &code);
+  EXPECT_EQ(code, std::vector<bool>({false, true, false, false}));
+
+  // Tests appending.
+  code = {true};
+  Elias<int>::DeltaEncode(0, &code);
+  std::vector<bool> expected = {true, true};
+  EXPECT_EQ(code, expected);
+}
+
+// Tests Elias BatchDecode and its iterator exhaustion branches.
+TEST_F(CompressTest, EliasBatchDecode) {
+  std::vector<bool> input;
+  std::vector<int> output;
+
+  // Valid input.
+  Elias<int>::DeltaEncode(0, &input);
+  Elias<int>::DeltaEncode(1, &input);
+  Elias<int>::BatchDecode(input, &output);
+  ASSERT_EQ(output.size(), 2);
+  EXPECT_EQ(output[0], 0);
+  EXPECT_EQ(output[1], 1);
+
+  // Iterator exhaustion branches.
+
+  // 1. Truncated during lead_zeros (Gamma part).
+  input = {0, 0};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  EXPECT_TRUE(output.empty());
+
+  // 2. Truncated right after first 1 of Gamma.
+  input = {0, 1};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  EXPECT_TRUE(output.empty());
+
+  // 3. Truncated during reading Gamma value.
+  input = {0, 1, 0};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  EXPECT_TRUE(output.empty());
+
+  // 4. Truncated during reading Delta remainder.
+  // Elias Delta of 4 is {0, 1, 1, 0, 1}
+  input = {0, 1, 1, 0};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  EXPECT_TRUE(output.empty());
+}
+
+// Tests Elias BatchDecode when it ends exactly at the end of the input vector.
+TEST_F(CompressTest, BatchDecodeExactEnd) {
+  std::vector<bool> input;
+  std::vector<int> output;
+
+  // Elias Delta of 0 is {true}
+  input = {true};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  ASSERT_EQ(output.size(), 1);
+  EXPECT_EQ(output[0], 0);
+
+  // Elias Delta of 2 is {false, true, false, true}
+  input = {false, true, false, true};
+  output.clear();
+  Elias<int>::BatchDecode(input, &output);
+  ASSERT_EQ(output.size(), 1);
+  EXPECT_EQ(output[0], 2);
 }
 
 }  // namespace
