@@ -150,7 +150,7 @@ else()
 
   FetchContent_Declare(
     abseil-cpp
-    URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20260107.0.zip
+    URL https://github.com/abseil/abseil-cpp/archive/fe126c727b925b7c3b2742f6f54690973216952b.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   )
   FetchContent_MakeAvailable(abseil-cpp)

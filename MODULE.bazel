@@ -108,11 +108,17 @@ use_repo(llvm, "llvm_toolchain_cur")
 # Note we're not using `register_toolchain()`; `--extra_toolchains` is
 # configured in `.bazelrc`.
 
-# Prod dependencies.
+# Prod dependencies. For `abseil-cpp` we try to use the current head.
 bazel_dep(
     name = "abseil-cpp",
     version = "20260107.0",
     repo_name = "com_google_absl",
+)
+ABSEIL_CPP_COMMIT = "fe126c727b925b7c3b2742f6f54690973216952b"  # 29th March, 2026.
+git_override(
+    module_name = "abseil-cpp",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+    commit = ABSEIL_CPP_COMMIT,
 )
 bazel_dep(
     name = "abseil-py",
