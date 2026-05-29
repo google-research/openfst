@@ -287,6 +287,11 @@ class CompactArcStore {
   static const std::string& Type();
 
  private:
+  // Maximum number of arcs during read.
+  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
+  // Maximum number of states during read.
+  static constexpr uint64_t kMaxStates = 0x10000000000000ull;
+
   std::shared_ptr<MappedFile> states_region_;
   std::shared_ptr<MappedFile> compacts_region_;
   // Unowned pointer into states_region_.
@@ -452,12 +457,25 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
   auto data = std::make_unique<CompactArcStore>();
   data->start_ = hdr.Start();
   data->nstates_ = hdr.NumStates();
-  if (data->start_ != kNoStateId && data->start_ >= data->nstates_) {
-    LOG(ERROR) << "CompactArcStore::Read: start state " << data->start_
-               << " out of range [0, " << data->nstates_ << ")";
+  if (data->start_ != kNoStateId &&
+      !(data->start_ >= 0 && data->start_ < data->nstates_)) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid start state " << data->start_
+               << " for FST with " << data->nstates_
+               << " states: " << opts.source;
+    return nullptr;
+  }
+  if (data->nstates_ < 0 || data->nstates_ > kMaxStates) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid number of states: "
+               << data->nstates_ << " > " << kMaxStates << " for "
+               << opts.source;
     return nullptr;
   }
   data->narcs_ = hdr.NumArcs();
+  if (data->narcs_ < 0 || data->narcs_ > kMaxArcs) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid number of arcs: "
+               << data->narcs_ << " > " << kMaxArcs << " for " << opts.source;
+    return nullptr;
+  }
   if (arc_compactor.Size() == -1) {
     if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
       LOG(ERROR) << "CompactArcStore::Read: Alignment failed: " << opts.source;

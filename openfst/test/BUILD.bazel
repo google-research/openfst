@@ -526,6 +526,18 @@ sh_test(
 )
 
 cc_test(
+    name = "fst_limits_test",
+    size = "small",
+    srcs = ["fst_limits_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":test_main",
+        "//openfst/lib",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "compact_test",
     size = "medium",
     srcs = ["compact_test.cc"],

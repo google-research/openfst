@@ -64,6 +64,7 @@ set(TESTS
     factor-weight_test
     float-weight_test
     fst-file_test
+    fst_limits_test
     fst_test
     generic_register_test
     heap_test

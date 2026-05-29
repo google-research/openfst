@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <ios>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -133,6 +134,10 @@ class ConstFstImpl : public FstImpl<A> {
   static constexpr int kAlignedFileVersion = 1;
   // Minimum file format version supported.
   static constexpr int kMinFileVersion = 1;
+  // Maximum number of arcs during read.
+  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
+  // Maximum number of states during read.
+  static constexpr uint64_t kMaxStates = 0x10000000000000ull;
 
   std::unique_ptr<MappedFile> states_region_;  // Mapped file for states.
   std::unique_ptr<MappedFile> arcs_region_;    // Mapped file for arcs.
@@ -198,7 +203,17 @@ ConstFstImpl<Arc, Unsigned>* ConstFstImpl<Arc, Unsigned>::Read(
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
   impl->start_ = hdr.Start();
   impl->nstates_ = hdr.NumStates();
+  if (impl->nstates_ < 0 || impl->nstates_ > kMaxStates) {
+    LOG(ERROR) << "ConstFst::Read: Invalid number of states: " << impl->nstates_
+               << " > " << kMaxStates << " for " << opts.source;
+    return nullptr;
+  }
   impl->narcs_ = hdr.NumArcs();
+  if (impl->narcs_ < 0 || impl->narcs_ > kMaxArcs) {
+    LOG(ERROR) << "ConstFst::Read: Invalid number of arcs: " << impl->narcs_
+               << " > " << kMaxArcs << " for " << opts.source;
+    return nullptr;
+  }
   // Ensures compatibility.
   if (hdr.Version() == kAlignedFileVersion) {
     hdr.SetFlags(hdr.GetFlags() | FstHeader::IS_ALIGNED);
