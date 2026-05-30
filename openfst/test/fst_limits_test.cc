@@ -33,8 +33,8 @@ namespace {
 
 TEST(CompactLimitsTest, MaxStatesTest) {
   FstHeader hdr;
-  // kMaxStates for CompactArcStore is 1L << 54.
-  hdr.SetNumStates((1L << 54) + 1);
+  // kMaxStates for CompactArcStore is 1LL << 54.
+  hdr.SetNumStates((1LL << 54) + 1);
   hdr.SetNumArcs(0);
   hdr.SetStart(0);
 
@@ -50,8 +50,8 @@ TEST(CompactLimitsTest, MaxStatesTest) {
 TEST(CompactLimitsTest, MaxArcsTest) {
   FstHeader hdr;
   hdr.SetNumStates(10);
-  // kMaxArcs for CompactArcStore is 1L << 54.
-  hdr.SetNumArcs((1L << 54) + 1);
+  // kMaxArcs for CompactArcStore is 1LL << 54.
+  hdr.SetNumArcs((1LL << 54) + 1);
   hdr.SetStart(0);
 
   std::istringstream iss;
@@ -85,8 +85,8 @@ TEST(ConstLimitsTest, MaxStatesTest) {
   hdr.SetFstType("const");
   hdr.SetArcType(StdArc::Type());
   hdr.SetVersion(2);
-  // kMaxStates for ConstFst is 1L << 54.
-  hdr.SetNumStates((1L << 54) + 1);
+  // kMaxStates for ConstFst is 1LL << 54.
+  hdr.SetNumStates((1LL << 54) + 1);
   hdr.SetNumArcs(0);
   hdr.SetStart(0);
 
@@ -104,8 +104,8 @@ TEST(ConstLimitsTest, MaxArcsTest) {
   hdr.SetArcType(StdArc::Type());
   hdr.SetVersion(2);
   hdr.SetNumStates(10);
-  // kMaxArcs for ConstFst is 1L << 54.
-  hdr.SetNumArcs((1L << 54) + 1);
+  // kMaxArcs for ConstFst is 1LL << 54.
+  hdr.SetNumArcs((1LL << 54) + 1);
   hdr.SetStart(0);
 
   std::istringstream iss;
