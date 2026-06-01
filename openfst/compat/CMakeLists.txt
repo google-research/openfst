@@ -16,6 +16,7 @@ set(COMPAT_HEADERS
     checksummer.h
     compat.h
     compat_memory.h
+    fastmath.h
     file_path.h
     init.h
     seed_sequences.h
@@ -33,6 +34,7 @@ if(OPENFST_BUILD_TESTS)
 
   set(COMPAT_TESTS
       compat_memory_test
+      fastmath_test
       file_path_test
       status_macros_test
       status_matchers_test

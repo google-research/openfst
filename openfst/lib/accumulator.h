@@ -37,7 +37,7 @@
 #include "openfst/lib/replace.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/weight.h"
-
+#include "openfst/compat/fastmath.h"
 
 namespace fst {
 
@@ -354,12 +354,12 @@ class FastLogAccumulator {
  private:
   static double LogPosExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
-                                                   : log(1.0F + exp(-x));
+                                                   : flogd(1.0F + fexpd(-x));
   }
 
   static double LogMinusExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
-                                                   : log(1.0F - exp(-x));
+                                                   : flogd(1.0F - fexpd(-x));
   }
 
   Weight LogPlus(Weight w, Weight v) const {
@@ -599,12 +599,12 @@ class CacheLogAccumulator {
  private:
   static double LogPosExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
-                                                   : log(1.0F + exp(-x));
+                                                   : flogd(1.0F + fexpd(-x));
   }
 
   static double LogMinusExp(double x) {
     return x == FloatLimits<double>::PosInfinity() ? 0.0
-                                                   : log(1.0F - exp(-x));
+                                                   : flogd(1.0F - fexpd(-x));
   }
 
   Weight LogPlus(Weight w, Weight v) const {

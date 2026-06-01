@@ -48,7 +48,7 @@
 #include "openfst/lib/properties.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/weight.h"
-
+#include "openfst/compat/fastmath.h"
 
 namespace fst {
 
@@ -147,7 +147,7 @@ class FastLogProbArcSelector : public LogProbArcSelector<Arc> {
     const double sum =
         ToLogWeight(accumulator->Sum(fst.Final(s), &aiter, 0, fst.NumArcs(s)))
             .Value();
-    const double r = -log(absl::Uniform(bit_gen, 0.0, 1.0));
+    const double r = -flogd(absl::Uniform(bit_gen, 0.0, 1.0));
     Weight w = from_log_weight_(Log64Weight(r + sum));
     aiter.Reset();
     return accumulator->LowerBound(w, &aiter);

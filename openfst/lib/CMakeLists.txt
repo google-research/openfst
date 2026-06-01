@@ -14,6 +14,7 @@
 
 add_library(
   fst
+  ../compat/fastmath.cc
   ../compat/file_path.cc
   ../compat/init.cc
   ../compat/seed_sequences.cc

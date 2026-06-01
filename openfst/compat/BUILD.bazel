@@ -183,3 +183,22 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "fastmath",
+    srcs = ["fastmath.cc"],
+    hdrs = ["fastmath.h"],
+    deps = ["@com_google_absl//absl/base"],
+)
+
+cc_test(
+    name = "fastmath_test",
+    srcs = ["fastmath_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":fastmath",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
