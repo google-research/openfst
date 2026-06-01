@@ -32,6 +32,7 @@ permissions: read-all
 jobs:
     build-and-test-x64-windows-bazel:
       runs-on: windows-latest
+      timeout-minutes: 45
       defaults:
         run:
           # PowerShell misparses flags like --flag=-value as parameter

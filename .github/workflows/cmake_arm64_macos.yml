@@ -32,6 +32,7 @@ permissions: read-all
 jobs:
     build-and-test-arm64-macos-cmake:
       runs-on: macos-latest
+      timeout-minutes: 20
       env:
         cache-name: ${{github.job}}
       steps:

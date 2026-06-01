@@ -32,6 +32,7 @@ permissions: read-all
 jobs:
     build-and-test-x64-linux-cmake:
       runs-on: ubuntu-latest
+      timeout-minutes: 45
       env:
         cache-name: ${{github.job}}
       steps:

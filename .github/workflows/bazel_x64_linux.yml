@@ -32,6 +32,7 @@ permissions: read-all
 jobs:
     build-and-test-x64-linux-bazel:
       runs-on: ubuntu-latest
+      timeout-minutes: 45
       env:
         USE_BAZEL_VERSION: 9.0.0
       steps:
