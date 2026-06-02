@@ -19,51 +19,10 @@
 #define OPENFST_COMPAT_COMPAT_H_
 
 #include <algorithm>
-#include <cstring>
 #include <iterator>
 #include <utility>
 
 namespace fst {
-
-// Downcasting.
-
-template <typename To, typename From>
-inline To down_cast(From* f) {
-  return static_cast<To>(f);
-}
-
-template <typename To, typename From>
-inline To down_cast(From& f) {
-  return static_cast<To>(f);
-}
-
-// Bitcasting.
-template <class Dest, class Source>
-inline Dest bit_cast(const Source& source) {
-  static_assert(sizeof(Dest) == sizeof(Source),
-                "Bitcasting unsafe for specified types");
-  Dest dest;
-  std::memcpy(&dest, &source, sizeof(dest));
-  return dest;
-}
-
-namespace internal {
-
-// TODO: Remove this once we migrate to C++20.
-template <typename T>
-struct type_identity {
-  using type = T;
-};
-
-template <typename T>
-using type_identity_t = typename type_identity<T>::type;
-
-}  // namespace internal
-
-template <typename To>
-constexpr To implicit_cast(typename internal::type_identity_t<To> to) {
-  return to;
-}
 
 // Range utilities
 
