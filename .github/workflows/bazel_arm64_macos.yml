@@ -56,5 +56,4 @@ jobs:
             bazelisk test --config=dev -c fastbuild
             --test_size_filters=-enormous
             --test_output=errors
-            --test_filter="-PywrapFstTest.testRandGen"
             //...
