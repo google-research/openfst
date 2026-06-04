@@ -146,7 +146,9 @@ cmake -S . -B build -DOPENFST_ENABLE_FAR=ON -DOPENFST_ENABLE_PYTHON=ON
 
 ### Python with Bazel
 
-To build and test the Python wrapper (`pywrapfst`) run
+The Python interface documentation is available
+[here](docs/python_extension.md). To build and test the Python wrapper
+(`pywrapfst`) run
 
 ```bash
 bazel test -c opt openfst/extensions/python/...
