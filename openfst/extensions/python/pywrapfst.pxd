@@ -29,10 +29,10 @@ from libcpp.string cimport string
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
-from cios cimport ostream
-from cios cimport stringstream
+from openfst.extensions.python.cios cimport ostream
+from openfst.extensions.python.cios cimport stringstream
 
-cimport cpywrapfst as fst
+cimport openfst.extensions.python.cpywrapfst as fst
 
 
 # Exportable helper functions.

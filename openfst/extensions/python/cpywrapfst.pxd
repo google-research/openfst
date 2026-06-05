@@ -32,7 +32,7 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
 
-from cios cimport *
+from openfst.extensions.python.cios cimport *
 
 
 cdef extern from "absl/flags/flag.h" namespace "absl" nogil:

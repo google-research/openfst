@@ -90,9 +90,9 @@ from libcpp.optional cimport optional
 from libcpp.utility cimport move
 
 # Missing C++ imports.
-from cios cimport ofstream
-from cmemory cimport WrapUnique
-from cpywrapfst cimport SetFlag
+from openfst.extensions.python.cios cimport ofstream
+from openfst.extensions.python.cmemory cimport WrapUnique
+from openfst.extensions.python.cpywrapfst cimport SetFlag
 
 # Python imports.
 from absl import logging

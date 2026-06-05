@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_python//python:py_library.bzl", "py_library")
-
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["__init__.py"])
-
-py_library(
-    name = "pywrapfst",
-    srcs = ["__init__.py"],
-    deps = ["//openfst/extensions/python:pywrapfst"],
-)
