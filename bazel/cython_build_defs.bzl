@@ -46,9 +46,6 @@ pyx_extension(name = 'pyxextension',
               srcs = ['myext.pyx'], # can only have 1
               module_name = 'myext'
 )
-
-pyx_test allows you to list pyx files as dependencies and even let
-the main test file be a pyx file.
 """
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
