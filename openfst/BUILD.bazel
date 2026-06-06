@@ -20,6 +20,9 @@ exports_files(["__init__.py"])
 
 py_library(
     name = "pywrapfst",
-    srcs = ["__init__.py"],
+    srcs = [
+        "__init__.py",
+        "pywrapfst.py",
+    ],
     deps = ["//openfst/extensions/python:pywrapfst"],
 )

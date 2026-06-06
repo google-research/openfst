@@ -12,5 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""OpenFst Python extensions package."""
+"""A dummy forwarding module.
 
+This allows external clients to access Python interface like so:
+
+```python
+from openfst import pywrapfst
+
+# But also dotted syntax
+from openfst.pywrapfst import Thing
+```
+"""
+
+from .extensions.python.pywrapfst import *  # pylint: disable=wildcard-import
