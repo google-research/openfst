@@ -689,14 +689,23 @@ def _py_extension(
                 "-Wno-self-assign",
                 # These fall-throughs are intentional (but not documented as such).
                 "-Wno-implicit-fallthrough",
+                # Ensure cross-DSO symbol visibility.
+                "-fvisibility=default",
                 # Cython re-throws exceptions from stdlib to catch their error msgs.
                 "-fexceptions",
             ],
         }),
         linkopts = select({
             "@platforms//os:macos": ["-undefined", "dynamic_lookup"],
+            "@platforms//os:linux": ["-Wl,--export-dynamic"],
             "//conditions:default": [],
         }) + linkopts,
         linkshared = True,
+        linkstatic = select({
+            # This is the default setting (will use for, e.g., MSVC).
+            "@platforms//os:windows": True,
+            # Enforce dynamic shared core linkage for everything else.
+            "//conditions:default": False,
+        }),
         **kwargs
     )
