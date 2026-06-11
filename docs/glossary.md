@@ -7,7 +7,7 @@ acceptor <a id="acceptor"></a>
 
 accessible <a id="accessible"></a>
 :   A state $q$ is accessible iff there is a path from the initial state to
-    $q$.
+    $$q$$.
 
 co-accessible <a id="co-accessible"></a>
 :   A state $q$ is co-accessible iff there is a path from $q$ to a final
