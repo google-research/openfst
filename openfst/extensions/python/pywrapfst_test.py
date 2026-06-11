@@ -52,8 +52,8 @@ class PywrapFstTest(parameterized.TestCase):
     mapper = fst.EncodeMapper(f.arc_type())
     # Neither `encode_labels` nor `encode_weights` are set.
     self.assertFalse(mapper.flags())
-    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_LABELS)
-    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_WEIGHTS)
+    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_LABELS)  # pyrefly: ignore[unsupported-operation]
+    self.assertFalse(mapper.flags() & fst.EncodeMapperFlags.ENCODE_WEIGHTS)  # pyrefly: ignore[unsupported-operation]
     f.encode(mapper)
     mapper = pickle.loads(pickle.dumps(mapper))
     g.encode(mapper)
@@ -467,12 +467,12 @@ class PywrapFstTest(parameterized.TestCase):
         unused_w = fst.Weight("tropical", "nonexistent")
     # Does arithmetic with weights.
     w1 = fst.Weight.one("tropical")
-    self.assertEqual(w1.properties() & fst.IDEMPOTENT, fst.IDEMPOTENT)
+    self.assertEqual(w1.properties() & fst.IDEMPOTENT, fst.IDEMPOTENT)  # pyrefly: ignore[bad-argument-count]
     w2 = fst.Weight("tropical", 2)
     self.assertEqual(w1, fst.plus(w1, w2))
     self.assertEqual(w2, fst.times(w1, w2))
     w1 = fst.Weight.one("log")
-    self.assertNotEqual(w1.properties() & fst.IDEMPOTENT, fst.IDEMPOTENT)
+    self.assertNotEqual(w1.properties() & fst.IDEMPOTENT, fst.IDEMPOTENT)  # pyrefly: ignore[bad-argument-count]
     w2 = fst.Weight("log", 2)
     self.assertNotEqual(w1, fst.plus(w1, w2))
     self.assertEqual(w2, fst.times(w1, w2))
@@ -530,9 +530,9 @@ class PywrapFstTest(parameterized.TestCase):
   def testArcIterationSetFlags(self):
     arciter = self.f.arcs(self.f.start())
     arciter.set_flags(
-        fst.ArcIteratorFlags.ARC_VALUE_FLAGS
+        fst.ArcIteratorFlags.ARC_VALUE_FLAGS  # pyrefly: ignore[bad-argument-type]
         | fst.ArcIteratorFlags.ARC_I_LABEL_VALUE,
-        fst.ArcIteratorFlags.ARC_VALUE_FLAGS,
+        fst.ArcIteratorFlags.ARC_VALUE_FLAGS,  # pyrefly: ignore[bad-argument-type]
     )
     self.assertEqual(arciter.flags(), fst.ArcIteratorFlags.ARC_VALUE_FLAGS)
 
@@ -902,7 +902,7 @@ class PywrapFstTest(parameterized.TestCase):
     )
     e1.add_arc(1, fst.Arc(0, 0, 0, 0))
     self.assertEqual(
-        e1.properties(fst.FstProperties.EPSILONS, True),
+        e1.properties(fst.FstProperties.EPSILONS, True),  # pyrefly: ignore[bad-argument-type]
         fst.FstProperties.EPSILONS,
     )
     self.assertRaises(fst.FstOpError, fst.equivalent, e1, e1)
@@ -918,7 +918,7 @@ class PywrapFstTest(parameterized.TestCase):
     )
     e1.add_arc(1, fst.Arc(1, 1, 0, 0))
     self.assertEqual(
-        e1.properties(fst.FstProperties.NON_I_DETERMINISTIC, True),
+        e1.properties(fst.FstProperties.NON_I_DETERMINISTIC, True),  # pyrefly: ignore[bad-argument-type]
         fst.FstProperties.NON_I_DETERMINISTIC,
     )
     self.assertRaises(fst.FstOpError, fst.equivalent, e1, e1)
@@ -934,7 +934,7 @@ class PywrapFstTest(parameterized.TestCase):
     )
     e1.add_arc(1, fst.Arc(2, 1, 0, 0))
     self.assertEqual(
-        e1.properties(fst.FstProperties.NOT_ACCEPTOR, True),
+        e1.properties(fst.FstProperties.NOT_ACCEPTOR, True),  # pyrefly: ignore[bad-argument-type]
         fst.FstProperties.NOT_ACCEPTOR,
     )
     self.assertRaises(fst.FstOpError, fst.equivalent, e1, e1)
