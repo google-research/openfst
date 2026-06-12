@@ -384,8 +384,10 @@ def pyx_library(
                 srcs = [src] + cc_hdrs,
                 cc_deps = cc_deps + [actual_pxd_deps],
                 dynamic_deps = dynamic_deps or select({
-                    "@platforms//os:macos": [main_shared_target] if main_shared_target else [],
-                    "//conditions:default": [],
+                    "@platforms//os:windows": [],  # No Windows for now.
+                    "//conditions:default": (
+                        [main_shared_target] if main_shared_target else []
+                    ),
                 }),
                 pxd_deps = pxd_deps,
                 data = data,
