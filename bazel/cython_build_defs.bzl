@@ -694,11 +694,10 @@ def _py_extension(
                 # Cython re-throws exceptions from stdlib to catch their error msgs.
                 "-fexceptions",
                 # In C++, IEEE 754 floating-point math defines two distinct
-                # zeros: +0.0 (0x00000000) and -0.0 (0x80000000). The One
-                # Definition Rule and C++ equality operators mandate that they
-                # compare equal. However, the hash (Hash()) in `float-weight.h`
-                # uses raw bit-copy `memcpy` that does not respect floating-point
-                # equality.
+                # zeros: +0.0 (0x00000000) and -0.0 (0x80000000). C++ equality
+                # operators mandate that they compare equal. However, the hash
+                # (`Hash()`) in `float-weight.h` uses raw bit-copy (`memcpy`)
+                # that does not respect floating-point equality.
                 "-fno-signed-zeros",
                 "-funsigned-char",
             ],
