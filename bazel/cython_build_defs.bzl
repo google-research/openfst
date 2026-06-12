@@ -50,6 +50,7 @@ pyx_extension(name = 'pyxextension',
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_python//python:py_library.bzl", "py_library")
@@ -94,10 +95,10 @@ def _pxd_library_impl(ctx):
                 transitive = [pxds[DefaultInfo].files for pxds in ctx.attr.deps],
             ),
         ),
-        # All dependencies are considered direct dependencies as the generated .cc files will
-        # directly include headers from transitive dependencies.
-        # We add provide a separate layer_check target to ensure that any directly referenced
-        # header files are exported by direct dependencies.
+        # All dependencies are considered direct dependencies as the generated
+        # .cc files will directly include headers from transitive dependencies.
+        # We provide a separate layer_check target to ensure that any directly
+        # referenced header files are exported by direct dependencies.
         cc_common.merge_cc_infos(
             direct_cc_infos = [dep[CcInfo] for dep in ctx.attr.deps if CcInfo in dep],
         ),
@@ -246,6 +247,7 @@ def pyx_library(
         cc_deps = None,
         py_deps = None,
         pxd_deps = None,
+        dynamic_deps = None,
         pyx_deps = None,
         cc_hdrs = None,
         data = None,
@@ -275,6 +277,8 @@ def pyx_library(
           modules. Please use py_deps, cc_deps, or pxd_deps according
           to the type of the dependency.
       cc_deps: CC dependencies for the extension module Cython creates.
+      dynamic_deps: dynamic libraries to link against at runtime, excluding their
+          underlying C++ static symbols from the generated extension.
       py_deps: Dependencies of the final py_library. If a target ends with
           "_pxds", it is moved to pxd_deps for backward compatibility.
           A warning is issued when this happens. Pleasely move the
@@ -320,6 +324,27 @@ def pyx_library(
         cc_deps = cc_deps,
     )
 
+    # For macOS, Mach-O Two-Level Namespaces mandate a unified dynamic runtime
+    # to bridge Run-Time Type Information (RTTI) and One Definition Rule (ODR)
+    # boundaries. This centralized cc_shared_library merges all upstream C++
+    # dependencies into a single canonical target, ensuring distinct Python
+    # extensions share a common vtable registry for C++ dynamic casting.
+    main_shared_target = None
+    if cc_deps:
+        main_shared_name = name + "_main_cc_shared"
+        cc_shared_library(
+            name = main_shared_name,
+            deps = cc_deps,
+            dynamic_deps = dynamic_deps,
+            exports_filter = [
+                "//:__subpackages__",
+                "@com_google_absl//:__subpackages__",
+            ],
+            visibility = visibility or ["//visibility:public"],
+            testonly = testonly,
+        )
+        main_shared_target = ":" + main_shared_name
+
     # TODO: Restrict pxd_deps to only pxd_library targets.
     actual_pxd_deps = name + "_pxd_deps"
     _pxd_cc_deps(
@@ -358,6 +383,10 @@ def pyx_library(
                 name = pyx_rule,
                 srcs = [src] + cc_hdrs,
                 cc_deps = cc_deps + [actual_pxd_deps],
+                dynamic_deps = dynamic_deps or select({
+                    "@platforms//os:macos": [main_shared_target] if main_shared_target else [],
+                    "//conditions:default": [],
+                }),
                 pxd_deps = pxd_deps,
                 data = data,
                 deprecation = deprecation,
@@ -458,6 +487,7 @@ def pyx_extension(
         srcs,
         deps = None,
         cc_deps = None,
+        dynamic_deps = None,
         pxd_deps = None,
         pyx_deps = None,
         data = None,
@@ -483,6 +513,8 @@ def pyx_extension(
           modules. Please use cc_deps, or pxd_deps according
           to the type of the dependency.
       cc_deps: CC dependencies for the extension module Cython creates.
+      dynamic_deps: dynamic libraries to link against at runtime, excluding their
+          underlying C++ static symbols from the generated extension.
       pxd_deps: pxd_library labels for Cython include files used in the
           compilation. File labels are also allowed.
       pyx_deps: deprecated. Replaced by pxd_deps.
@@ -654,6 +686,7 @@ def pyx_extension(
         name = name,
         srcs = [cython_c_file] + c_srcs,
         deps = cc_deps,
+        dynamic_deps = dynamic_deps or [],
         copts = copts,
         testonly = testonly,
         tags = tags,
@@ -664,6 +697,7 @@ def _py_extension(
         name,
         srcs,
         deps = None,
+        dynamic_deps = None,
         copts = None,
         linkopts = None,
         **kwargs):
@@ -679,6 +713,7 @@ def _py_extension(
             "@rules_python//python/cc:current_py_cc_headers",
             "@rules_python//python/cc:current_py_cc_libs",
         ],
+        dynamic_deps = dynamic_deps or [],
         copts = copts + select({
             "@platforms//os:windows": [],
             "//conditions:default": [
