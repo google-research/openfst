@@ -16,7 +16,7 @@
 # all FST features abstracting away from arc type.
 
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//:bazel/cython_build_defs.bzl", "pxd_library", "pyx_library")
+load("//:bazel/cython_build_defs.bzl", "pyx_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -31,21 +31,22 @@ exports_files(["__init__.py"])
 # standard Python rules (py_binary, etc.). If a pyx_library rule includes
 # any .pxd header files in the "srcs" section, these can be imported
 # in the py_deps section of a pyx_library rule with the suffix "_pxds"
-# appended to the target. (For an example, see the pxd_deps section of the
-# "pywrapfst" rule.)
+# appended to the target.
 
-# Cython headers for C++ basics.
-pxd_library(
-    name = "cpywrapfst",
+# Cython extension libraries.
+pyx_library(
+    name = "pywrapfst",
     srcs = [
         "cios.pxd",
         "cmemory.pxd",
         "cpywrapfst.pxd",
+        "pywrapfst.pxd",
+        "pywrapfst.pyx",
         "//openfst:__init__.py",
         "//openfst/extensions:__init__.py",
         "//openfst/extensions/python:__init__.py",
     ],
-    deps = [
+    cc_deps = [
         "//openfst/compat:compat_memory",
         "//openfst/extensions/far:lib",
         "//openfst/extensions/far:script",
@@ -56,19 +57,7 @@ pxd_library(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
     ],
-)
-
-# Cython extension libraries.
-pyx_library(
-    name = "pywrapfst",
-    srcs = [
-        "pywrapfst.pxd",
-        "pywrapfst.pyx",
-    ],
     copts = ["-fexceptions"],
-    pxd_deps = [
-        ":cpywrapfst",
-    ],
     py_deps = [
         "@com_google_absl_py//absl/logging",
     ],
