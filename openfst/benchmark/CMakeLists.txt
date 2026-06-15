@@ -49,7 +49,7 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
   )
 
   target_include_directories(${BENCHMARK_TARGET}
-                             PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                             PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   )
 
   target_link_libraries(

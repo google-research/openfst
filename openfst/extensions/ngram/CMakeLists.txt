@@ -19,7 +19,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstngram PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstngram PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -69,10 +69,10 @@ if(OPENFST_BUILD_TESTS)
       ${TEST_NAME}
       PROPERTIES
         CROSSCOMPILING_EMULATOR
-          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+          "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
     )
     target_include_directories(
-      ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+      ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
     target_link_libraries(
@@ -93,7 +93,7 @@ if(OPENFST_BUILD_TESTS)
     )
     gtest_discover_tests(
       ${TEST_NAME}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   endforeach()
 endif()

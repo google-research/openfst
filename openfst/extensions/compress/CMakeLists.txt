@@ -39,7 +39,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstcompressscript PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstcompressscript PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(fstcompressscript PUBLIC fstscript fstcompress_compress)
@@ -70,7 +70,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstquantize_weights PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstquantize_weights PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(fstquantize_weights PUBLIC fst absl::log absl::span)
@@ -119,7 +119,7 @@ if(OPENFST_BUILD_TESTS)
     compress_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     compress_test
@@ -131,7 +131,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     compress_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(randmod_test randmod_test.cc)
@@ -139,7 +139,7 @@ if(OPENFST_BUILD_TESTS)
     randmod_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     randmod_test
@@ -152,7 +152,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     randmod_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(quantize_weights_test quantize_weights_test.cc)
@@ -160,7 +160,7 @@ if(OPENFST_BUILD_TESTS)
     quantize_weights_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     quantize_weights_test
@@ -172,6 +172,6 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     quantize_weights_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 endif()

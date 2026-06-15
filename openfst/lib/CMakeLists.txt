@@ -37,7 +37,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fst PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fst PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 

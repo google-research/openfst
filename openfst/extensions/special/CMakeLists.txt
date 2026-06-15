@@ -18,7 +18,7 @@ set_target_properties(
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
 )
 target_include_directories(
-  fstphi-fst PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstphi-fst PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(
@@ -35,7 +35,7 @@ set_target_properties(
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
 )
 target_include_directories(
-  fstrho-fst PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstrho-fst PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(
@@ -52,7 +52,7 @@ set_target_properties(
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
 )
 target_include_directories(
-  fstsigma-fst PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstsigma-fst PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(
@@ -107,7 +107,7 @@ if(OPENFST_BUILD_TESTS)
     phi-fst_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     phi-fst_test
@@ -118,7 +118,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     phi-fst_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(rho-fst_test rho-fst_test.cc)
@@ -126,7 +126,7 @@ if(OPENFST_BUILD_TESTS)
     rho-fst_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     rho-fst_test
@@ -137,7 +137,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     rho-fst_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(sigma-fst_test sigma-fst_test.cc)
@@ -145,7 +145,7 @@ if(OPENFST_BUILD_TESTS)
     sigma-fst_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     sigma-fst_test
@@ -156,6 +156,6 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     sigma-fst_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 endif()

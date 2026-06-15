@@ -69,7 +69,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstscript PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstscript PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 

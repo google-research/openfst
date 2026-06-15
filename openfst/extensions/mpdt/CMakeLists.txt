@@ -19,7 +19,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstmpdtscript PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstmpdtscript PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(fstmpdtscript PUBLIC fstscript fstpdtscript absl::log)
@@ -86,10 +86,10 @@ if(OPENFST_BUILD_TESTS)
       mpdt_${TEST_NAME}
       PROPERTIES
         CROSSCOMPILING_EMULATOR
-          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+          "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
     )
     target_include_directories(
-      mpdt_${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+      mpdt_${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                                 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
     target_link_libraries(
@@ -103,7 +103,7 @@ if(OPENFST_BUILD_TESTS)
     )
     gtest_discover_tests(
       mpdt_${TEST_NAME}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   endforeach()
 endif()

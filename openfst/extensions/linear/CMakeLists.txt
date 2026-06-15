@@ -19,7 +19,7 @@ set_target_properties(
 )
 
 target_include_directories(
-  fstlinearscript PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  fstlinearscript PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(
@@ -91,12 +91,12 @@ if(OPENFST_BUILD_TESTS)
     linear-fst-data_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(linear-fst-data_test PRIVATE fst test_main absl::log)
   gtest_discover_tests(
     linear-fst-data_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(linear-fst_test linear-fst_test.cc)
@@ -104,7 +104,7 @@ if(OPENFST_BUILD_TESTS)
     linear-fst_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     linear-fst_test
@@ -115,7 +115,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     linear-fst_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
   add_executable(trie_test trie_test.cc)
@@ -123,7 +123,7 @@ if(OPENFST_BUILD_TESTS)
     trie_test
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_link_libraries(
     trie_test
@@ -134,6 +134,6 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     trie_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 endif()

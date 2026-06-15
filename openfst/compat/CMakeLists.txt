@@ -48,7 +48,7 @@ if(OPENFST_BUILD_TESTS)
       ${TEST_NAME}
       PROPERTIES
         CROSSCOMPILING_EMULATOR
-          "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+          "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
     )
     target_link_libraries(
       ${TEST_NAME}
@@ -64,7 +64,7 @@ if(OPENFST_BUILD_TESTS)
     )
     gtest_discover_tests(
       ${TEST_NAME}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   endforeach()
 endif()

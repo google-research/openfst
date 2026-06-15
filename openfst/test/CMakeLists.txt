@@ -22,7 +22,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/testdata"
 # Common libraries for tests
 add_library(test_main STATIC test_main.cc)
 target_include_directories(test_main
-                           PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+                           PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
 )
 target_link_libraries(
   test_main
@@ -123,10 +123,10 @@ foreach(TEST_NAME ${TESTS})
     ${TEST_NAME}
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_include_directories(
-    ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    ${TEST_NAME} PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   )
 
@@ -160,12 +160,12 @@ foreach(TEST_NAME ${TESTS})
     add_test(
       NAME ${TEST_NAME}
       COMMAND ${TEST_NAME}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   else()
     gtest_discover_tests(
       ${TEST_NAME}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   endif()
 
@@ -191,10 +191,10 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
     ${VAR_TEST_NAME}
     PROPERTIES
       CROSSCOMPILING_EMULATOR
-        "${CMAKE_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
   target_include_directories(
-    ${VAR_TEST_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    ${VAR_TEST_NAME} PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   )
   target_compile_definitions(${VAR_TEST_NAME} PRIVATE "TEST_${WEIGHT_UPPER}")
@@ -217,6 +217,6 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
   add_test(
     NAME ${VAR_TEST_NAME}
     COMMAND ${VAR_TEST_NAME}
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 endforeach()

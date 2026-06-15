@@ -26,8 +26,8 @@ if(OPENFST_BUILD_TESTS)
                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
   )
   target_include_directories(categorial_weight_test
-                             PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-                                     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/test>
+                             PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+                                     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/test>
   )
   target_link_libraries(
     categorial_weight_test
@@ -40,7 +40,7 @@ if(OPENFST_BUILD_TESTS)
   )
   gtest_discover_tests(
     categorial_weight_test
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     DISCOVERY_TIMEOUT 60
   )
 endif()

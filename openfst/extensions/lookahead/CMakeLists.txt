@@ -25,7 +25,7 @@ foreach(LIB ${LOOKAHEAD_LIBS})
     PROPERTIES SOVERSION ${OPENFST_SOVERSION}
   )
   target_include_directories(
-    ${LIB} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    ${LIB} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   target_link_libraries(${LIB} PUBLIC fst)
