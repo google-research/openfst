@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(fstpdtscript getters.cc pdtscript.cc)
+fst_add_library(fstpdtscript getters.cc pdtscript.cc)
 set_target_properties(
   fstpdtscript
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -123,3 +123,10 @@ if(OPENFST_BUILD_TESTS)
     )
   endforeach()
 endif()
+
+# Logical interface wrapper for header-backed PDT extension
+add_library(openfst::pdt INTERFACE IMPORTED)
+set_target_properties(
+  openfst::pdt
+  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
+)

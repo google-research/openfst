@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(fstmpdtscript mpdtscript.cc)
+fst_add_library(fstmpdtscript mpdtscript.cc)
 set_target_properties(
   fstmpdtscript
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -107,3 +107,10 @@ if(OPENFST_BUILD_TESTS)
     )
   endforeach()
 endif()
+
+# Logical interface wrapper for header-backed MPDT extension
+add_library(openfst::mpdt INTERFACE IMPORTED)
+set_target_properties(
+  openfst::mpdt
+  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
+)

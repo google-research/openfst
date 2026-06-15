@@ -32,7 +32,7 @@ target_link_libraries(
             absl::random_random
 )
 
-add_library(fstcompressscript compressscript.cc)
+fst_add_library(fstcompressscript compressscript.cc)
 set_target_properties(
   fstcompressscript
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}

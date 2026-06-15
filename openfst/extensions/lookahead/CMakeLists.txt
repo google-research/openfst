@@ -35,3 +35,10 @@ foreach(LIB ${LOOKAHEAD_LIBS})
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/fst
   )
 endforeach()
+
+# Logical interface wrapper for plugin-backed LookAhead extension
+add_library(openfst::lookahead INTERFACE IMPORTED)
+set_target_properties(
+  openfst::lookahead
+  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
+)

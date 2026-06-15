@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(fstphi-fst phi-fst.cc)
+fst_add_library(fstphi-fst phi-fst.cc)
 set_target_properties(
   fstphi-fst
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -29,7 +29,7 @@ target_link_libraries(
          absl::flags
 )
 
-add_library(fstrho-fst rho-fst.cc)
+fst_add_library(fstrho-fst rho-fst.cc)
 set_target_properties(
   fstrho-fst
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -46,7 +46,7 @@ target_link_libraries(
          absl::flags
 )
 
-add_library(fstsigma-fst sigma-fst.cc)
+fst_add_library(fstsigma-fst sigma-fst.cc)
 set_target_properties(
   fstsigma-fst
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}

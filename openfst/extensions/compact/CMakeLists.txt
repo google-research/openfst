@@ -47,3 +47,10 @@ foreach(LIB ${COMPACT_LIBS})
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/fst
   )
 endforeach()
+
+# Logical interface wrapper for plugin-backed Compact extension
+add_library(openfst::compact INTERFACE IMPORTED)
+set_target_properties(
+  openfst::compact
+  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
+)

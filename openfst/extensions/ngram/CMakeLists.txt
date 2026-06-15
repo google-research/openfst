@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(fstngram bitmap-index.cc ngram-fst.cc nthbit.cc)
+fst_add_library(fstngram bitmap-index.cc ngram-fst.cc nthbit.cc)
 set_target_properties(
   fstngram
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}

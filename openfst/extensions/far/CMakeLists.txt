@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(
+fst_add_library(
   fstfar
   stlist.cc
   sttable.cc
@@ -41,7 +41,7 @@ target_link_libraries(
          absl::span
 )
 
-add_library(
+fst_add_library(
   fstfarscript
   compile-strings.cc
   far-class.cc

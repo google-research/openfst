@@ -130,6 +130,7 @@ endif()
 
 include(FetchContent)
 include(GNUInstallDirs)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenFstHelpers.cmake)
 
 # Helper macro for conditional installation
 function(openfst_install)

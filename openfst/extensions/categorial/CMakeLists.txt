@@ -44,3 +44,10 @@ if(OPENFST_BUILD_TESTS)
     DISCOVERY_TIMEOUT 60
   )
 endif()
+
+# Logical interface wrapper for header-only categorial extension
+add_library(openfst::categorial INTERFACE IMPORTED)
+set_target_properties(
+  openfst::categorial
+  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
+)
