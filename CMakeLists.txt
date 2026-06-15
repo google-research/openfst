@@ -196,8 +196,8 @@ add_subdirectory(openfst)
 openfst_install(
   EXPORT OpenFstTargets
   FILE OpenFstTargets.cmake
-  NAMESPACE OpenFst::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenFst
+  NAMESPACE openfst::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/openfst
 )
 
 # License
@@ -213,10 +213,10 @@ write_basic_package_version_file(
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenFstConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/OpenFstConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenFst
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/openfst
 )
 
 openfst_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/OpenFstConfig.cmake
                       ${CMAKE_CURRENT_BINARY_DIR}/OpenFstConfigVersion.cmake
-                DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenFst
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/openfst
 )
