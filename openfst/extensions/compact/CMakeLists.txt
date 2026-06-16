@@ -31,7 +31,7 @@ set(COMPACT_LIBS
 )
 
 foreach(LIB ${COMPACT_LIBS})
-  add_library(${LIB} ${LIB}.cc)
+  fst_add_library(${LIB} ${LIB}.cc)
   set_target_properties(
     ${LIB}
     PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -49,7 +49,12 @@ foreach(LIB ${COMPACT_LIBS})
 endforeach()
 
 # Logical interface wrapper for plugin-backed Compact extension
-add_library(openfst::compact INTERFACE IMPORTED)
+add_library(
+  openfst::compact
+  INTERFACE
+  IMPORTED
+  GLOBAL
+)
 set_target_properties(
   openfst::compact
   PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst

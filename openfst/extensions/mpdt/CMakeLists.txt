@@ -109,7 +109,12 @@ if(OPENFST_BUILD_TESTS)
 endif()
 
 # Logical interface wrapper for header-backed MPDT extension
-add_library(openfst::mpdt INTERFACE IMPORTED)
+add_library(
+  openfst::mpdt
+  INTERFACE
+  IMPORTED
+  GLOBAL
+)
 set_target_properties(
   openfst::mpdt
   PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst

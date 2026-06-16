@@ -25,9 +25,10 @@ if(OPENFST_BUILD_TESTS)
   target_link_directories(categorial_weight_test
                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
   )
-  target_include_directories(categorial_weight_test
-                             PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-                                     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/test>
+  target_include_directories(
+    categorial_weight_test
+    PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/test>
   )
   target_link_libraries(
     categorial_weight_test
@@ -46,7 +47,12 @@ if(OPENFST_BUILD_TESTS)
 endif()
 
 # Logical interface wrapper for header-only categorial extension
-add_library(openfst::categorial INTERFACE IMPORTED)
+add_library(
+  openfst::categorial
+  INTERFACE
+  IMPORTED
+  GLOBAL
+)
 set_target_properties(
   openfst::categorial
   PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
