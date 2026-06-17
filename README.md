@@ -108,8 +108,6 @@ ctest --test-dir build --output-on-failure -j$(getconf _NPROCESSORS_ONLN)
 cmake --install build --prefix /usr/local
 ```
 
-Note that Python tests are expected to fail without `-DBUILD_SHARED_LIBS=ON`.
-
 #### Configuration Options
 
 You can enable or disable specific features using CMake options (default is
