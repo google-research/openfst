@@ -94,7 +94,9 @@ if(OPENFST_BUILD_TESTS)
     )
     target_link_libraries(
       mpdt_${TEST_NAME}
-      PRIVATE fst
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fst
+              ${OPENFST_ALWAYS_LINK_END}
               test_main
               GTest::gtest
               GTest::gmock

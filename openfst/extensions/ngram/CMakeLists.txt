@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-fst_add_library(fstngram bitmap-index.cc ngram-fst.cc nthbit.cc)
+fst_add_library(
+  fstngram
+  bitmap-index.cc
+  ngram-fst.cc
+  nthbit.cc
+)
 set_target_properties(
   fstngram
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
@@ -77,8 +82,10 @@ if(OPENFST_BUILD_TESTS)
     )
     target_link_libraries(
       ${TEST_NAME}
-      PRIVATE fstngram
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fstngram
               fst
+              ${OPENFST_ALWAYS_LINK_END}
               test_main
               GTest::gtest
               GTest::gmock

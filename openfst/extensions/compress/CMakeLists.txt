@@ -123,11 +123,13 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     compress_test
-    PRIVATE fstcompress_compress
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstcompress_compress
             test_main
             absl::flags
             absl::log
-            fst
   )
   gtest_discover_tests(
     compress_test
@@ -143,11 +145,13 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     randmod_test
-    PRIVATE fstcompress_compress
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstcompress_compress
             test_main
             absl::flags
             absl::log
-            fst
             absl::random_random
   )
   gtest_discover_tests(
@@ -164,11 +168,13 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     quantize_weights_test
-    PRIVATE fstquantize_weights
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstquantize_weights
             test_main
             absl::flags
             absl::log
-            fst
   )
   gtest_discover_tests(
     quantize_weights_test

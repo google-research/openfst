@@ -111,8 +111,10 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     phi-fst_test
-    PRIVATE fstphi-fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstphi-fst
             fst
+            ${OPENFST_ALWAYS_LINK_END}
             test_main
             absl::flags
   )
@@ -130,8 +132,10 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     rho-fst_test
-    PRIVATE fstrho-fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstrho-fst
             fst
+            ${OPENFST_ALWAYS_LINK_END}
             test_main
             absl::flags
   )
@@ -149,8 +153,10 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     sigma-fst_test
-    PRIVATE fstsigma-fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstsigma-fst
             fst
+            ${OPENFST_ALWAYS_LINK_END}
             test_main
             absl::flags
   )

@@ -128,6 +128,27 @@ if(APPLE)
   )
 endif()
 
+# Linker flags to force loading of static/shared libraries that use
+# self-registering objects. Without these, the linker will optimize out/discard
+# the libraries because no symbols from them are explicitly referenced at
+# compile time.
+# TODO: Around 2027-05-01, when the CMake minimum version can be bumped to 3.24 (per
+# https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md),
+# remove these variables and replace usage in target_link_libraries with
+# $<LINK_LIBRARY:WHOLE_ARCHIVE,fst>.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(BUILD_SHARED_LIBS)
+    set(OPENFST_ALWAYS_LINK_START "-Wl,--no-as-needed")
+    set(OPENFST_ALWAYS_LINK_END "-Wl,--as-needed")
+  else()
+    set(OPENFST_ALWAYS_LINK_START "-Wl,--whole-archive")
+    set(OPENFST_ALWAYS_LINK_END "-Wl,--no-whole-archive")
+  endif()
+else()
+  set(OPENFST_ALWAYS_LINK_START "")
+  set(OPENFST_ALWAYS_LINK_END "")
+endif()
+
 include(FetchContent)
 include(GNUInstallDirs)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenFstHelpers.cmake)

@@ -140,8 +140,10 @@ foreach(TEST_NAME ${TESTS})
 
   target_link_libraries(
     ${TEST_NAME}
-    PRIVATE fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
             fstscript
+            ${OPENFST_ALWAYS_LINK_END}
             ${TEST_MAIN_LIB}
             GTest::gmock
             absl::flags
@@ -154,8 +156,8 @@ foreach(TEST_NAME ${TESTS})
             benchmark::benchmark
   )
 
-  # TODO: Make these use GUnit TEST() instead of a custom RunTest(),
-  # then use gtest_discover_tests.
+  # TODO: Make these use GUnit TEST() instead of a custom RunTest(), then use
+  # gtest_discover_tests.
   if(TEST_NAME STREQUAL "weight_test")
     add_test(
       NAME ${TEST_NAME}
@@ -212,8 +214,8 @@ foreach(WEIGHT ${ALGO_TEST_WEIGHTS})
             absl::memory
             absl::random_random
   )
-  # This could use `gtest_discover_tests`, but it's about 5s slower (74s vs
-  # 69s) since there are hundreds of very small test cases.
+  # This could use `gtest_discover_tests`, but it's about 5s slower (74s vs 69s)
+  # since there are hundreds of very small test cases.
   add_test(
     NAME ${VAR_TEST_NAME}
     COMMAND ${VAR_TEST_NAME}

@@ -93,7 +93,14 @@ if(OPENFST_BUILD_TESTS)
       CROSSCOMPILING_EMULATOR
         "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
   )
-  target_link_libraries(linear-fst-data_test PRIVATE fst test_main absl::log)
+  target_link_libraries(
+    linear-fst-data_test
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            test_main
+            absl::log
+  )
   gtest_discover_tests(
     linear-fst-data_test
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
@@ -108,9 +115,11 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     linear-fst_test
-    PRIVATE fstlinear_tagger_fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstlinear_tagger_fst
             fstlinear_classifier_fst
             fst
+            ${OPENFST_ALWAYS_LINK_END}
             test_main
   )
   gtest_discover_tests(
@@ -127,7 +136,9 @@ if(OPENFST_BUILD_TESTS)
   )
   target_link_libraries(
     trie_test
-    PRIVATE fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
             test_main
             absl::strings
             absl::flat_hash_map

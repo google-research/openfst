@@ -169,10 +169,12 @@ if(OPENFST_BUILD_TESTS)
     )
     target_link_libraries(
       ${TEST_NAME}
-      PRIVATE fstfar
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fstfar
               fstfarscript
               fst
               fstscript
+              ${OPENFST_ALWAYS_LINK_END}
               test_main
               GTest::gtest
               GTest::gmock
