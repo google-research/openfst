@@ -42,7 +42,6 @@ if(OPENFST_BUILD_TESTS)
   gtest_discover_tests(
     categorial_weight_test
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
-    DISCOVERY_TIMEOUT 60
   )
 endif()
 
