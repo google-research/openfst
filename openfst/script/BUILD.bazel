@@ -142,7 +142,6 @@ fst_cc_library(
         ":compile-impl",
         ":info-impl",
         ":print-impl",
-        "//openfst/compat:compat_memory",
         "//openfst/lib",
         "//openfst/lib:file-util",
         "//openfst/lib:register",

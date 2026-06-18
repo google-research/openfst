@@ -32,7 +32,6 @@
 #include "gtest/gtest.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/file-util.h"
 
 #if defined(_WIN32)

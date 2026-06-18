@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"

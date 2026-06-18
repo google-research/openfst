@@ -47,7 +47,6 @@ pyx_library(
         "//openfst/extensions/python:__init__.py",
     ],
     cc_deps = [
-        "//openfst/compat:compat_memory",
         "//openfst/extensions/far:lib",
         "//openfst/extensions/far:script",
         "//openfst/lib",

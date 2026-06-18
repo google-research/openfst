@@ -28,7 +28,6 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
@@ -75,7 +74,7 @@ std::pair<uint32_t, int64_t> FillBitMap(int percent_filled, uint64_t* bm,
 // Generates `batch_size` random `uint32_t`s with range `[0, hi_val)`.
 std::unique_ptr<uint32_t[]> GenerateRandomBatch(uint32_t batch_size,
                                                 uint32_t hi_val) {
-  auto batch = make_unique_for_overwrite<uint32_t[]>(batch_size);
+  auto batch = absl::make_unique_for_overwrite<uint32_t[]>(batch_size);
   absl::BitGen bitgen;
   std::generate_n(&batch[0], batch_size,
                   [&]() { return absl::Uniform<uint32_t>(bitgen, 0, hi_val); });

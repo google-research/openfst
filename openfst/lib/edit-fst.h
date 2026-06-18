@@ -51,7 +51,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "openfst/lib/expanded-fst.h"
@@ -324,7 +323,7 @@ template <typename A, typename WrappedFstT, typename MutableFstT>
 EditFstData<A, WrappedFstT, MutableFstT>*
 EditFstData<A, WrappedFstT, MutableFstT>::Read(std::istream& strm,
                                                const FstReadOptions& opts) {
-  auto data = make_unique_for_overwrite<EditFstData>();
+  auto data = absl::make_unique_for_overwrite<EditFstData>();
   // Next read in MutabelFstT machine that stores edits
   FstReadOptions edits_opts(opts);
   // Contained header was written out, so read it in.

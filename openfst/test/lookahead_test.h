@@ -29,7 +29,6 @@
 #include "gtest/gtest.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/random/random.h"
 #include "openfst/lib/accumulator.h"
 #include "openfst/lib/arc.h"

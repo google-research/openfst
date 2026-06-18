@@ -25,7 +25,6 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 

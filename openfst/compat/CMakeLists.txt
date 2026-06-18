@@ -15,7 +15,6 @@
 set(COMPAT_HEADERS
     checksummer.h
     compat.h
-    compat_memory.h
     fastmath.h
     file_path.h
     init.h
@@ -32,7 +31,6 @@ if(OPENFST_BUILD_TESTS)
   include(GoogleTest)
 
   set(COMPAT_TESTS
-      compat_memory_test
       fastmath_test
       file_path_test
       status_matchers_test

@@ -31,7 +31,6 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
@@ -209,7 +208,7 @@ struct DeterminizeArc {
 
   explicit DeterminizeArc(const Arc& arc)
       : label(arc.ilabel),
-        dest_tuple(make_unique_for_overwrite<StateTuple>()) {}
+        dest_tuple(absl::make_unique_for_overwrite<StateTuple>()) {}
 
   Label label = kNoLabel;          // Arc label.
   Weight weight = Weight::Zero();  // Arc weight.
@@ -618,7 +617,7 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   StateId ComputeStart() override {
     const auto s = GetFst().Start();
     if (s == kNoStateId) return kNoStateId;
-    auto tuple = make_unique_for_overwrite<StateTuple>();
+    auto tuple = absl::make_unique_for_overwrite<StateTuple>();
     tuple->subset.emplace_front(s, Weight::One());
     tuple->filter_state = filter_->Start();
     return FindState(std::move(tuple));

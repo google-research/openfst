@@ -33,7 +33,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/accumulator.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/fst.h"

@@ -29,7 +29,6 @@
 #include "gtest/gtest.h"
 #include "absl/base/casts.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/file-util.h"

@@ -26,7 +26,6 @@
 
 #include "gtest/gtest.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"

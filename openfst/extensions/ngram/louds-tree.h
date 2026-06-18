@@ -25,7 +25,6 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/ngram/bitmap-index.h"
 
@@ -43,7 +42,7 @@ class LoudsTree {
   LoudsTree(const LoudsTree& other) : initialized_(other.initialized_) {
     if (other.initialized_) {
       const size_t array_size = other.bitmap_.ArraySize();
-      bm_ = make_unique_for_overwrite<uint64_t[]>(array_size);
+      bm_ = absl::make_unique_for_overwrite<uint64_t[]>(array_size);
       std::copy_n(other.bm_.get(), array_size, bm_.get());
       bitmap_.BuildIndex(bm_.get(), other.bitmap_.Bits());
     }
@@ -206,7 +205,7 @@ class LoudsTree {
     uint64_t nodes;
     strm.read(reinterpret_cast<char*>(&nodes), sizeof(nodes));
     const size_t storage_size = BitmapIndex::StorageSize(nodes * 2 + 1);
-    auto bm = make_unique_for_overwrite<uint64_t[]>(storage_size);
+    auto bm = absl::make_unique_for_overwrite<uint64_t[]>(storage_size);
     strm.read(reinterpret_cast<char*>(bm.get()),
               sizeof(bm[0]) * BitmapIndex::StorageSize(nodes * 2 + 1));
     if (!strm) return nullptr;

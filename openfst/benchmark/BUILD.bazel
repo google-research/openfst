@@ -38,7 +38,6 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
-        "//openfst/compat:compat_memory",
         "//openfst/lib:symbol-table",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:check",

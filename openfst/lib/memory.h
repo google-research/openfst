@@ -27,7 +27,6 @@
 
 #include "absl/base/casts.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 
 namespace fst {
 
@@ -59,7 +58,7 @@ class MemoryArenaImpl : public MemoryArenaBase {
   explicit MemoryArenaImpl(size_t block_size = kAllocSize)
       : block_size_(block_size * kObjectSize), block_pos_(0) {
     blocks_.push_front(
-        make_unique_for_overwrite<std::byte[]>(block_size_));
+        absl::make_unique_for_overwrite<std::byte[]>(block_size_));
   }
 
   void* Allocate(size_t size) {
@@ -67,14 +66,14 @@ class MemoryArenaImpl : public MemoryArenaBase {
     if (byte_size * kAllocFit > block_size_) {
       // Large block; adds new large block.
       blocks_.push_back(
-          make_unique_for_overwrite<std::byte[]>(byte_size));
+          absl::make_unique_for_overwrite<std::byte[]>(byte_size));
       return blocks_.back().get();
     }
     if (block_pos_ + byte_size > block_size_) {
       // Doesn't fit; adds new standard block.
       block_pos_ = 0;
       blocks_.push_front(
-          make_unique_for_overwrite<std::byte[]>(block_size_));
+          absl::make_unique_for_overwrite<std::byte[]>(block_size_));
     }
     // Fits; uses current block.
     auto* ptr = &blocks_.front()[block_pos_];

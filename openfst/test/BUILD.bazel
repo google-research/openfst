@@ -205,7 +205,6 @@ cc_library(
     testonly = 1,
     hdrs = ["compactors.h"],
     deps = [
-        "//openfst/compat:compat_memory",
         "//openfst/lib",
         "//openfst/lib:util",
         "@com_google_absl//absl/base:no_destructor",
@@ -241,7 +240,6 @@ cc_library(
     testonly = 1,
     hdrs = ["inline-fst.h"],
     deps = [
-        "//openfst/compat:compat_memory",
         "//openfst/lib",
         "//openfst/script",
         "@com_google_absl//absl/log",
@@ -290,7 +288,6 @@ cc_library(
     testonly = 1,
     hdrs = ["fst_test.h"],
     deps = [
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:file-util",
@@ -319,7 +316,6 @@ cc_library(
         ":testdata/lookahead/b5.fst",
     ],
     deps = [
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/log",
@@ -806,7 +802,6 @@ cc_test(
         ":basic-fst",
         ":compactors",
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/lib",
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
@@ -898,7 +893,6 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/memory",
@@ -1030,7 +1024,6 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "//openfst/lib:symbol-table",
@@ -2108,7 +2101,6 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib:symbol-table",
         "@com_google_absl//absl/log",
@@ -2326,7 +2318,6 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",  # build_cleaner: keep
         "//openfst/lib:file-util",
         "//openfst/lib:util",
@@ -2351,7 +2342,6 @@ cc_test(
         linkstatic = True,
         deps = [
             ":rand-fst",
-            "//openfst/compat:compat_memory",
             "//openfst/compat:init",
             "//openfst/compat:seed_sequences",
             "//openfst/lib",
@@ -2491,7 +2481,6 @@ cc_test(
     linkstatic = True,
     deps = [
         ":test_main",
-        "//openfst/compat:compat_memory",
         "//openfst/compat:file_path",
         "//openfst/lib",
         "@com_google_absl//absl/flags:flag",

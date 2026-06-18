@@ -24,7 +24,6 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/register.h"
 #include "openfst/lib/symbol-table.h"

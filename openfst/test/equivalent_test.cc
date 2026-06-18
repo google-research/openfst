@@ -32,7 +32,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
-#include "openfst/compat/compat_memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"

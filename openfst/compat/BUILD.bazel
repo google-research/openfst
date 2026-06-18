@@ -22,23 +22,6 @@ cc_library(
 )
 
 cc_library(
-    name = "compat_memory",
-    hdrs = ["compat_memory.h"],
-)
-
-cc_test(
-    name = "compat_memory_test",
-    srcs = ["compat_memory_test.cc"],
-    linkstatic = True,
-    deps = [
-        ":compat_memory",
-        "//openfst/test:test_main",
-        "@com_google_absl//absl/memory",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_library(
     name = "checksummer",
     hdrs = ["checksummer.h"],
     deps = ["@com_google_absl//absl/strings"],
