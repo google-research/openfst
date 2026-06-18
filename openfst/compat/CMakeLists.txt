@@ -19,7 +19,6 @@ set(COMPAT_HEADERS
     file_path.h
     init.h
     seed_sequences.h
-    status_builder.h
     status_matchers.h
     unaligned.h
 )
