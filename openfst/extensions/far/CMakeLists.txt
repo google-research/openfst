@@ -189,4 +189,6 @@ if(OPENFST_BUILD_TESTS)
       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
     )
   endforeach()
+
+  target_link_libraries(sttable-far_test PRIVATE openfst::status_matchers)
 endif()

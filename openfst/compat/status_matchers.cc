@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OPENFST_COMPAT_STATUS_MATCHERS_H_
-#define OPENFST_COMPAT_STATUS_MATCHERS_H_
+#include "openfst/compat/status_matchers.h"
 
+#include "gtest/gtest.h"
+#include "absl/status/status.h"
 #include "absl/status/status_builder.h"
-#include "absl/status/status_macros.h"
-#include "absl/status/status_matchers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 
 namespace fst {
 
-// Produces fatal test message for `expression` for the builder.
 void AddFatalFailure(absl::string_view expression,
-                     const absl::StatusBuilder& builder);
-
-#define ABSL_ASSERT_OK_AND_ASSIGN(lhs, rexpr)                 \
-  ABSL_ASSIGN_OR_RETURN(/* NOLINT(clang-diagnostic-shadow) */ \
-                        lhs, rexpr, ::fst::AddFatalFailure(#rexpr, _))
+                     const absl::StatusBuilder& builder) {
+  GTEST_MESSAGE_AT_(
+      builder.source_location().file_name(), builder.source_location().line(),
+      ::absl::StrCat(expression, " returned error: ",
+                     ::absl::Status(builder).ToString(
+                         absl::StatusToStringMode::kWithEverything))
+          .c_str(),
+      ::testing::TestPartResult::kFatalFailure);
+}
 
 }  // namespace fst
-
-#endif  // OPENFST_COMPAT_STATUS_MATCHERS_H_

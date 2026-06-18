@@ -46,19 +46,17 @@ cc_test(
 )
 
 cc_library(
-    name = "status_builder",
-    hdrs = ["status_builder.h"],
-    visibility = ["//visibility:private"],
-)
-
-cc_library(
     name = "status_matchers",
     testonly = 1,
+    srcs = ["status_matchers.cc"],
     hdrs = ["status_matchers.h"],
     deps = [
-        ":status_builder",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_builder",
+        "@com_google_absl//absl/status:status_macros",
         "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest",
     ],
 )
 
