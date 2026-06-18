@@ -21,7 +21,6 @@ set(COMPAT_HEADERS
     init.h
     seed_sequences.h
     status_builder.h
-    status_macros.h
     status_matchers.h
     unaligned.h
 )
@@ -36,7 +35,6 @@ if(OPENFST_BUILD_TESTS)
       compat_memory_test
       fastmath_test
       file_path_test
-      status_macros_test
       status_matchers_test
       init_test
       unaligned_test

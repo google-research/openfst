@@ -41,11 +41,11 @@
 #include "absl/hash/hash.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "openfst/compat/status_macros.h"
 #include "openfst/lib/compat-util.h"
 #include "openfst/lib/file-stream-status.h"
 #include "openfst/lib/file-util.h"
@@ -397,8 +397,8 @@ absl::Status SymbolTable::WriteTextWithStatus(const std::string& path,
     return WriteTextWithStatus(std::cout, sep);
   }
   file::FileOutStream strm(path);
-  RETURN_IF_ERROR(GetFileStreamStatus(strm));
-  RETURN_IF_ERROR(WriteTextWithStatus(strm, sep));
+  ABSL_RETURN_IF_ERROR(GetFileStreamStatus(strm));
+  ABSL_RETURN_IF_ERROR(WriteTextWithStatus(strm, sep));
   return CloseFileStream(strm);
 }
 

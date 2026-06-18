@@ -59,6 +59,7 @@ target_link_libraries(
          absl::synchronization
          absl::span
          absl::status
+         absl::status_macros
          absl::random_random
 )
 

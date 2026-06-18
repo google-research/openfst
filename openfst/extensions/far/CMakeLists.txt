@@ -37,6 +37,7 @@ target_link_libraries(
          absl::memory
          absl::status
          absl::statusor
+         absl::status_macros
          absl::strings
          absl::span
 )
