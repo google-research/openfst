@@ -34,7 +34,7 @@ jobs:
       runs-on: ubuntu-latest
       timeout-minutes: 45
       env:
-        USE_BAZEL_VERSION: 9.0.0
+        USE_BAZEL_VERSION: 9.1.1
       steps:
         - uses: actions/checkout@v6
         - name: Setup Bazel

@@ -68,7 +68,8 @@ Please see https://www.openfst.org for extensive documentation.
 
 ### Bazel
 
-OpenFst can be built and tested using [Bazel](https://bazel.build) 8 or newer.
+OpenFst can be built and tested using [Bazel](https://bazel.build) 9.1.1 or
+newer.
 
 ```bash
 # Build the entire project
