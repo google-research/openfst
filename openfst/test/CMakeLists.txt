@@ -64,6 +64,7 @@ set(TESTS
     factor-weight_test
     float-weight_test
     fst-file_test
+    fst_from_tuples_test
     fst_limits_test
     fst_test
     generic_register_test
@@ -172,6 +173,8 @@ foreach(TEST_NAME ${TESTS})
   endif()
 
 endforeach()
+
+target_link_libraries(fst_from_tuples_test PRIVATE openfst::status_matchers)
 
 # algo_test variants
 set(ALGO_TEST_WEIGHTS

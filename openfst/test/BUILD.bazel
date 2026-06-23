@@ -2544,6 +2544,33 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "fst_from_tuples",
+    hdrs = ["fst_from_tuples.h"],
+    deps = [
+        "//openfst/lib:lib_lite",
+        "//openfst/lib:symbol-table",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "fst_from_tuples_test",
+    srcs = ["fst_from_tuples_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":fst_from_tuples",
+        "//openfst/compat:status_matchers",
+        "//openfst/lib:lib_lite",
+        "//openfst/lib:symbol-table",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 # Helper for generic_register_dso_test.sh.
 
 cc_binary(
