@@ -36,12 +36,14 @@ jobs:
       env:
         cache-name: ${{github.job}}
       steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+          with:
+            persist-credentials: false
         - name: Set Build Parallelism
           run: |
             echo "NPROC=$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
         - name: Setup Python
-          uses: actions/setup-python@v6
+          uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         - name: Check Python
           run: python --version
         - name: Install dependendcies
