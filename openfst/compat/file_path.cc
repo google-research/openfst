@@ -99,6 +99,10 @@ absl::string_view Dirname(absl::string_view path) {
   return SplitPath(path).first;
 }
 
+absl::string_view Stem(absl::string_view path) {
+  return SplitBasename(path).first;
+}
+
 absl::string_view Extension(absl::string_view path) {
   return SplitBasename(path).second;
 }

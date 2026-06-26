@@ -81,5 +81,18 @@ TEST(FilePathTest, CheckExtension) {
   EXPECT_EQ("baz", Extension("/a/path.bar/to/foo.bar.baz"));
 }
 
+TEST(FilePathTest, CheckStem) {
+  EXPECT_EQ("foo", Stem("foo.gif"));
+  EXPECT_EQ("foo", Stem("foo."));
+  EXPECT_EQ("", Stem(""));
+  EXPECT_EQ("", Stem("/"));
+  EXPECT_EQ("foo", Stem("foo"));
+  EXPECT_EQ("", Stem("foo/"));
+  EXPECT_EQ("foo", Stem("/a/path/to/foo.gif"));
+  EXPECT_EQ("foo", Stem("/a/path.bar/to/foo.html"));
+  EXPECT_EQ("foo", Stem("/a/path.bar/to/foo"));
+  EXPECT_EQ("foo.bar", Stem("/a/path.bar/to/foo.bar.baz"));
+}
+
 }  // namespace
 }  // namespace fst

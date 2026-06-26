@@ -44,6 +44,10 @@ absl::string_view Basename(absl::string_view path);
 //   input string.
 absl::string_view Dirname(absl::string_view path);
 
+// Returns the part of the basename of path prior to the final ".".  If
+// there is no "." in the basename, this is equivalent to `Basename(path)`.
+absl::string_view Stem(absl::string_view path);
+
 // Returns the part of the basename of path after the final ".".  If
 // there is no "." in the basename, the result is empty.
 absl::string_view Extension(absl::string_view path);
