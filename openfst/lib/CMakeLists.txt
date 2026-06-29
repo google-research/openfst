@@ -76,6 +76,7 @@ set(LIB_HEADERS
     add-on.h
     arc-arena.h
     arc-map.h
+    arc-range.h
     arc.h
     arcfilter.h
     arcsort.h

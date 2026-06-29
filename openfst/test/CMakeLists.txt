@@ -43,6 +43,7 @@ set(TESTS
     add-on_test
     arc-arena_test
     arc-map_test
+    arc-range_test
     arcsort_test
     cache_test
     cast_test

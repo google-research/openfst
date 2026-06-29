@@ -439,6 +439,18 @@ cc_test(
 )
 
 cc_test(
+    name = "arc-range_test",
+    srcs = ["arc-range_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":fst_from_tuples",
+        "//openfst/lib:lib_lite",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
     name = "a-star_test",
     size = "medium",
     srcs = ["a-star_test.cc"],

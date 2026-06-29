@@ -70,6 +70,7 @@ PUBLIC_HEADERS = [
     "arc.h",
     "arc-arena.h",
     "arc-map.h",
+    "arc-range.h",
     "arcfilter.h",
     "arcsort.h",
     "bi-table.h",
