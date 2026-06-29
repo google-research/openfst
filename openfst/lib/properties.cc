@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 
@@ -426,7 +427,7 @@ uint64_t UnionProperties(uint64_t inprops1, uint64_t inprops2, bool delayed) {
 
 namespace internal {
 // Property string names (indexed by bit position).
-const absl::string_view PropertyNames[] = {
+ABSL_CONST_INIT const absl::string_view PropertyNames[] = {
     // Binary.
     "expanded", "mutable", "error", "", "", "", "", "", "", "", "", "", "", "",
     "", "",
