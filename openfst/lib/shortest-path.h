@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "openfst/lib/arc-range.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/connect.h"
@@ -490,9 +491,7 @@ void ShortestPath(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
   VectorFst<RevArc> rfst;
   Reverse(ifst, &rfst);
   auto d = Weight::Zero();
-  for (ArcIterator<VectorFst<RevArc>> aiter(rfst, 0); !aiter.Done();
-       aiter.Next()) {
-    const auto& arc = aiter.Value();
+  for (const auto& arc : GetArcs(rfst, 0)) {
     const auto state = arc.nextstate - 1;
     if (state < distance->size()) {
       d = Plus(d, Times(arc.weight.Reverse(), (*distance)[state]));

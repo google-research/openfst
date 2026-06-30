@@ -29,6 +29,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
+#include "openfst/lib/arc-range.h"
 #include "openfst/lib/cc-visitors.h"
 #include "openfst/lib/connect.h"
 #include "openfst/lib/dfs-visit.h"
@@ -488,9 +489,7 @@ void ReplaceUtil<Arc>::ReplaceLabels(const std::vector<Label>& labels) {
   VectorFst<Arc> pfst(depfst_);
   for (StateId i = 0; i < pfst.NumStates(); ++i) {
     std::vector<Arc> arcs;
-    for (ArcIterator<VectorFst<Arc>> aiter(pfst, i); !aiter.Done();
-         aiter.Next()) {
-      const auto& arc = aiter.Value();
+    for (const auto& arc : GetArcs(pfst, i)) {
       const auto label = nonterminal_array_[arc.nextstate];
       if (label_set.count(label) > 0) arcs.push_back(arc);
     }
@@ -507,9 +506,7 @@ void ReplaceUtil<Arc>::ReplaceLabels(const std::vector<Label>& labels) {
   for (Label o = toporder.size() - 1; o >= 0; --o) {
     std::vector<FstPair> fst_pairs;
     auto s = toporder[o];
-    for (ArcIterator<VectorFst<Arc>> aiter(pfst, s); !aiter.Done();
-         aiter.Next()) {
-      const auto& arc = aiter.Value();
+    for (const auto& arc : GetArcs(pfst, s)) {
       const auto label = nonterminal_array_[arc.nextstate];
       const auto* fst = fst_array_[arc.nextstate];
       fst_pairs.emplace_back(label, fst);
@@ -601,9 +598,7 @@ void ReplaceUtil<Arc>::GetSCCProperties() const {
   if (!(depprops_ & kCyclic)) return;  // No cyclic dependencies.
   // Checks for self-loops in the dependency graph.
   for (StateId scc = 0; scc < depscc_.size(); ++scc) {
-    for (ArcIterator<Fst<Arc>> aiter(depfst_, scc); !aiter.Done();
-         aiter.Next()) {
-      const auto& arc = aiter.Value();
+    for (const auto& arc : GetArcs(depfst_, scc)) {
       if (arc.nextstate == scc) {  // SCC has a self loop.
         depsccprops_[scc] |= kReplaceSCCNonTrivial;
       }

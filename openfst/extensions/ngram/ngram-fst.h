@@ -43,6 +43,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "openfst/extensions/ngram/bitmap-index.h"
+#include "openfst/lib/arc-range.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/file-util.h"
@@ -714,9 +715,7 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A>& fst,
       ++final_bit;
     }
 
-    for (ArcIterator<VectorFst<A>> aiter(context_fst, state); !aiter.Done();
-         aiter.Next()) {
-      const Arc& arc = aiter.Value();
+    for (const auto& arc : GetArcs(context_fst, state)) {
       context_words[context_arc] = arc.ilabel;
       backoff[context_arc] = arc.weight;
       ++context_arc;
