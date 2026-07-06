@@ -38,9 +38,8 @@
 #include <type_traits>
 
 #include "openfst/lib/cache.h"
-#include "openfst/lib/const-fst.h"
+#include "openfst/lib/fst-decl.h"
 #include "openfst/lib/fst.h"
-#include "openfst/lib/vector-fst.h"
 
 namespace fst {
 namespace internal {
