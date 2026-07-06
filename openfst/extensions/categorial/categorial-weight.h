@@ -81,8 +81,9 @@ template <class T>
 Category<T> ReverseCat(Category<T> c);
 
 template <class T>
-std::vector<T> Reduction(std::vector<T> cat, std::set<int> dashes,
-                         std::set<int> slashes, std::list<int> dashes_slashes);
+std::vector<T> Reduction(const std::vector<T>& cat, const std::set<int>& dashes,
+                         const std::set<int>& slashes,
+                         const std::list<int>& dashes_slashes);
 
 // The category definition that underlies the categorial weight. The
 // representation of the category is much as the representation of a "string" in
@@ -231,7 +232,7 @@ Category<T> Division(Category<T> first, Category<T> second) {
 // Helper function for Reduce that builds the various slashes and dashes data
 // structures.
 template <class T>
-void BuildSlashesDashes(size_t c_size, std::vector<T> cat,
+void BuildSlashesDashes(size_t c_size, const std::vector<T>& cat,
                         std::list<int>* dashes_slashes, std::set<int>* dashes,
                         std::set<int>* slashes) {
   std::vector<int> matching_paren(c_size);
@@ -321,12 +322,11 @@ Category<T> Reduce(Category<T> c) {
 // Reduction() is a helper function for Reduce() that performs the actual
 // reductions recursively.
 template <class T>
-std::vector<T> Reduction(std::vector<T> cat, std::set<int> dashes,
-                         std::set<int> slashes, std::list<int> dashes_slashes) {
-  for (std::list<int>::reverse_iterator d = dashes_slashes.rbegin();
-       d != dashes_slashes.rend(); d++) {
-    for (std::set<int>::reverse_iterator s = slashes.rbegin();
-         s != slashes.rend(); s++) {
+std::vector<T> Reduction(const std::vector<T>& cat, const std::set<int>& dashes,
+                         const std::set<int>& slashes,
+                         const std::list<int>& dashes_slashes) {
+  for (auto d = dashes_slashes.rbegin(); d != dashes_slashes.rend(); d++) {
+    for (auto s = slashes.rbegin(); s != slashes.rend(); s++) {
       // We have located the space between a "dash" and a slash. This is the
       // potential reducee.
       if (*d < *s) {
@@ -889,8 +889,8 @@ class WeightGenerate<CategorialWeight<L, C>> {
         max_operations_(max_operations) {}
 
   Weight operator()(absl::BitGenRef bit_gen) const {
-    int n = absl::Uniform(bit_gen, 0, max_string_length_ + allow_zero_);
-    int n_op =
+    const int n = absl::Uniform(bit_gen, 0, max_string_length_ + allow_zero_);
+    const int n_op =
         absl::Uniform(absl::IntervalClosedClosed, bit_gen, 1, max_operations_);
     if (allow_zero_ && n == max_string_length_) return Weight::Zero();
     // Vector of random operations, filled in as below.
@@ -927,7 +927,7 @@ class WeightGenerate<CategorialWeight<L, C>> {
 
  private:
   // Permits Zero() and zero divisors.
-  bool allow_zero_;
+  const bool allow_zero_;
   // Alphabet size for random weights.
   const int alphabet_size_;
   // Alphabet size for random weights.
