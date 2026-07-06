@@ -234,9 +234,9 @@ class LoudsTreeCompactor {
   LoudsTreeCompactor(std::shared_ptr<LoudsTree> tree,
                      std::vector<ArcElement> arcs,
                      std::vector<FinalElement> nodes)
-      : tree_(tree),
-        arcs_(arcs),
-        nodes_(nodes),
+      : tree_(std::move(tree)),
+        arcs_(std::move(arcs)),
+        nodes_(std::move(nodes)),
         elementcompactor_(std::make_shared<LoudsTreeElementCompactor>()) {}
 
   class LoudsTreeState {
@@ -331,7 +331,8 @@ class LoudsTreeCompactor {
     if (!strm) {
       return nullptr;
     }
-    return new LoudsTreeCompactor(tree_, arcs_, nodes_);
+    return new LoudsTreeCompactor(std::move(tree_), std::move(arcs_),
+                                  std::move(nodes_));
   }
 
   void SetState(StateId s, LoudsTreeState* state) const {
