@@ -191,7 +191,7 @@ class STListReader {
   static STListReader<T, Reader>* Open(absl::string_view source) {
     std::vector<std::string> sources;
     sources.push_back(std::string(source));
-    return new STListReader<T, Reader>(sources);
+    return new STListReader<T, Reader>(std::move(sources));
   }
 
   static STListReader<T, Reader>* Open(std::vector<std::string> sources) {

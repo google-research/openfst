@@ -48,7 +48,7 @@ class FstFarReader final : public FarReader<A> {
   static FstFarReader* Open(absl::string_view source) {
     std::vector<std::string> sources;
     sources.push_back(std::string(source));
-    return new FstFarReader<Arc>(sources);
+    return new FstFarReader<Arc>(std::move(sources));
   }
 
   static FstFarReader* Open(std::vector<std::string> sources) {
