@@ -1631,6 +1631,18 @@ sh_test(
 )
 
 cc_test(
+    name = "properties_test",
+    size = "small",
+    srcs = ["properties_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":test_main",
+        "//openfst/lib",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "prune_test",
     size = "medium",
     srcs = ["prune_test.cc"],

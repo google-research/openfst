@@ -89,6 +89,7 @@ set(TESTS
     power-weight-mappers_test
     power-weight_test
     project_test
+    properties_test
     prune_test
     push_test
     queue_test
