@@ -61,6 +61,15 @@ TEST(VerifyTest, StartStateExceedsStates) {
                HasSubstr("FST start state ID exceeds number of states")));
 }
 
+TEST(VerifyTest, StartStateNegative) {
+  VectorFst<StdArc> fst;
+  fst.AddState();
+  fst.SetStart(-2);
+  EXPECT_THAT(VerifyWithStatus(fst),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("FST start state ID is negative")));
+}
+
 TEST(VerifyTest, InputLabelNegative) {
   VectorFst<StdArc> fst;
   fst.AddState();

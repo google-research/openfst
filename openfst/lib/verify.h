@@ -43,7 +43,9 @@ absl::Status VerifyWithStatus(const Fst<Arc>& fst,
   const auto ns = CountStates(fst);
   if (start == kNoStateId && ns > 0) {
     return absl::InvalidArgumentError("Verify: FST start state ID not set");
-  } else if (start >= ns) {
+  } else if (start != kNoStateId && start < 0) {
+    return absl::InvalidArgumentError("Verify: FST start state ID is negative");
+  } else if (start != kNoStateId && start >= ns) {
     return absl::InvalidArgumentError(
         "Verify: FST start state ID exceeds number of states");
   }
