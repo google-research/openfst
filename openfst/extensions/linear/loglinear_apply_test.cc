@@ -29,7 +29,7 @@ namespace {
 using Arc = StdArc;
 using Weight = Arc::Weight;
 
-constexpr float kDelta = 1e-4f;
+constexpr float kTestDelta = 1e-4f;
 
 TEST(LogLinearApplyTest, UnnormalizedApply) {
   VectorFst<Arc> ifst;
@@ -56,7 +56,7 @@ TEST(LogLinearApplyTest, UnnormalizedApply) {
        aiter.Next()) {
     const auto& arc = aiter.Value();
     if (arc.ilabel == 1 && arc.olabel == 3) {
-      EXPECT_NEAR(arc.weight.Value(), 3.0f, kDelta);
+      EXPECT_NEAR(arc.weight.Value(), 3.0f, kTestDelta);
       found = true;
     }
   }
@@ -90,7 +90,7 @@ TEST(LogLinearApplyTest, NormalizedApply) {
   for (ArcIterator<VectorFst<Arc>> aiter(ofst, ofst.Start()); !aiter.Done();
        aiter.Next()) {
     const auto& arc = aiter.Value();
-    EXPECT_NEAR(arc.weight.Value(), expected_weight, kDelta);
+    EXPECT_NEAR(arc.weight.Value(), expected_weight, kTestDelta);
     ++count;
   }
   EXPECT_EQ(count, 2);
