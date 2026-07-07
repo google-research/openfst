@@ -54,6 +54,7 @@ set(TESTS
     concat_test
     connect_test
     determinize_test
+    dfs_visit_test
     difference_test
     disambiguate_test
     edit-fst_test

@@ -782,6 +782,18 @@ sh_test(
 )
 
 cc_test(
+    name = "dfs_visit_test",
+    size = "small",
+    srcs = ["dfs_visit_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":test_main",
+        "//openfst/lib",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "difference_test",
     size = "medium",
     srcs = ["difference_test.cc"],
