@@ -472,6 +472,19 @@ cc_test(
 )
 
 cc_test(
+    name = "bi-table_test",
+    size = "small",
+    srcs = ["bi-table_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":test_main",
+        "//openfst/lib",
+        "@com_google_absl//absl/hash",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "cache_test",
     size = "medium",
     srcs = ["cache_test.cc"],

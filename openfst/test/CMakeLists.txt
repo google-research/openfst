@@ -45,6 +45,7 @@ set(TESTS
     arc-map_test
     arc-range_test
     arcsort_test
+    bi-table_test
     cache_test
     cast_test
     closure_test
