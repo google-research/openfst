@@ -127,6 +127,25 @@ if(OPENFST_BUILD_TESTS)
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
   )
 
+  add_executable(loglinear_apply_test loglinear_apply_test.cc)
+  set_target_properties(
+    loglinear_apply_test
+    PROPERTIES
+      CROSSCOMPILING_EMULATOR
+        "${PROJECT_SOURCE_DIR}/scripts/run_with_test_tmpdir.sh"
+  )
+  target_link_libraries(
+    loglinear_apply_test
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            test_main
+  )
+  gtest_discover_tests(
+    loglinear_apply_test
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+  )
+
   add_executable(trie_test trie_test.cc)
   set_target_properties(
     trie_test

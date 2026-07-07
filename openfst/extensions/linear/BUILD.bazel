@@ -231,6 +231,19 @@ cc_test(
 )
 
 cc_test(
+    name = "loglinear_apply_test",
+    size = "small",
+    srcs = ["loglinear_apply_test.cc"],
+    linkstatic = True,
+    deps = [
+        ":loglinear-apply",
+        "//openfst/lib",
+        "//openfst/test:test_main",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
     name = "trie_test",
     size = "small",
     srcs = ["trie_test.cc"],
