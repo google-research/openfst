@@ -19,10 +19,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
-#include <iostream>
-#include <limits>
-#include <ostream>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -34,19 +30,6 @@ namespace {
 using ::testing::ElementsAreArray;
 using ::testing::FloatEq;
 using ::testing::Pointwise;
-
-// Constants used in timing tests:
-
-// Increase kIterations for more accurate results.
-// Decrease kIterations for a quicker test.
-static const int kIterations = 10000000;
-
-// Timing tests inputs from 0 to kStepSize[f]*kIterations
-static const double kStepSize = 10. / kIterations;
-static const float kStepSizef = 10. / kIterations;
-
-// Multiply WallTimer times by kTimerToNS to get ns of each iteration.
-static const double kTimerToNS = 1000000000. / kIterations;
 
 // If two (usually floating point) numbers are within a certain
 // absolute margin of error.
