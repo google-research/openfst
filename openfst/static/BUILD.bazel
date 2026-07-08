@@ -70,7 +70,7 @@ cc_library(
 )
 
 # If the default file factories are too heavy, use a custom binary with
-# `:fst_main`.
+# `:far_main`.
 cc_binary(
     name = "far",
     linkstatic = True,
