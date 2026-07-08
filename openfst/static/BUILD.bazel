@@ -36,14 +36,6 @@ cc_library(
 cc_library(
     name = "extensions",
     linkstatic = 1,
-    visibility = [
-        "//nlp/fst_util/jax:__pkg__",
-        "//nlp/sweet/bigdawgs:__pkg__",
-        "//research/language_modeling/sentence_explorer/data_generation:__pkg__",
-        "//speech/fst/lmutil:__pkg__",
-        "//speech/util/debug:__pkg__",
-        "//third_party/py/openfst:__subpackages__",
-    ],
     deps = [
         "//openfst/extensions/lookahead:olabel_lookahead-fst",
         "//openfst/extensions/ngram:ngram-fst-file",
