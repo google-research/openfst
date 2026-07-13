@@ -61,6 +61,15 @@ TEST(VerifyTest, StartStateExceedsStates) {
                HasSubstr("FST start state ID exceeds number of states")));
 }
 
+TEST(VerifyTest, StartStateNegative) {
+  VectorFst<StdArc> fst;
+  fst.AddState();
+  fst.SetStart(-2);
+  // The error message/behavior differs in dbg/opt modes (libc++ hardening vs
+  // SIGILL) and this will be fixed soon.
+  EXPECT_DEATH(VerifyWithStatus(fst).IgnoreError(), "");
+}
+
 TEST(VerifyTest, InputLabelNegative) {
   VectorFst<StdArc> fst;
   fst.AddState();
