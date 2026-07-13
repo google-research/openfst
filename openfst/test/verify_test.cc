@@ -58,16 +58,17 @@ TEST(VerifyTest, StartStateExceedsStates) {
   EXPECT_THAT(
       VerifyWithStatus(fst),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("FST start state ID exceeds number of states")));
+               HasSubstr("FST start state ID out of valid range: [0, 0)")));
 }
 
 TEST(VerifyTest, StartStateNegative) {
   VectorFst<StdArc> fst;
   fst.AddState();
   fst.SetStart(-2);
-  // The error message/behavior differs in dbg/opt modes (libc++ hardening vs
-  // SIGILL) and this will be fixed soon.
-  EXPECT_DEATH(VerifyWithStatus(fst).IgnoreError(), "");
+  EXPECT_THAT(
+      VerifyWithStatus(fst),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("FST start state ID out of valid range: [0, 1)")));
 }
 
 TEST(VerifyTest, InputLabelNegative) {
