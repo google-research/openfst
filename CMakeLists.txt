@@ -195,6 +195,9 @@ if(OPENFST_BUILD_TESTS)
   endif()
 
   include(GoogleTest)
+  # Defer GoogleTest discovery to ctest execution time to prevent post-build
+  # CMake test discovery failures on macOS and CI environments.
+  set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
 
   # Google Benchmark
   if(OPENFST_USE_SYSTEM_BENCHMARK)
