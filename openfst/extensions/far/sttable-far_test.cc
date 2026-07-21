@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <fstream>
 #include <ios>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -207,6 +208,30 @@ TEST_F(FarTest, STTableReaderNegativeNumEntries) {
   EXPECT_FALSE(status_or.ok());
   EXPECT_THAT(status_or.status().message(),
               ::testing::HasSubstr("negative number of entries"));
+}
+
+TEST_F(FarTest, STTableReaderOverflowNumEntries) {
+  std::ostringstream ostrm;
+  EXPECT_TRUE(WriteType(ostrm, kSTTableMagicNumber));
+  EXPECT_TRUE(WriteType(ostrm, kSTTableFileVersion));
+
+  // Write a num_entries that causes signed integer overflow when computing
+  // offset.
+  const int64_t num_entries = std::numeric_limits<int64_t>::max();
+  EXPECT_TRUE(WriteType(ostrm, num_entries));
+
+  const std::string data = ostrm.str();
+
+  const std::string filename =
+      JoinPath(::testing::TempDir(), "overflow_entries.far");
+  std::ofstream ofstrm(filename, std::ios_base::binary);
+  ofstrm << data;
+  ofstrm.close();
+
+  auto status_or = STTableFarReader<LogArc>::OpenWithStatus(filename);
+  EXPECT_FALSE(status_or.ok());
+  EXPECT_THAT(status_or.status().message(),
+              ::testing::HasSubstr("too small for"));
 }
 
 }  // namespace

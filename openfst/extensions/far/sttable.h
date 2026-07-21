@@ -372,14 +372,15 @@ class STTableReader {
                          ", negative number of entries: ", num_entries));
       }
       if (num_entries > 0) {
-        const std::streamoff offset =
-            -static_cast<std::streamoff>(sizeof(int64_t)) * (num_entries + 1);
-
-        if (file_size < -offset) {
+        const int64_t max_num_entries =
+            (static_cast<int64_t>(file_size) - 16) / sizeof(int64_t);
+        if (num_entries > max_num_entries) {
           return absl::FailedPreconditionError(
               absl::StrCat("Malformed file: ", sources[i], ", too small for ",
                            num_entries, " entries"));
         }
+        const std::streamoff offset =
+            -static_cast<std::streamoff>(sizeof(int64_t)) * (num_entries + 1);
         streams[i]->seekg(offset, std::ios_base::end);
         positions[i].resize(num_entries);
         for (size_t j = 0; (j < num_entries) && (!streams[i]->fail()); ++j) {
