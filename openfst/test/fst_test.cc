@@ -211,7 +211,13 @@ TEST(FstTest, CompactFstCustomArcTrivialCompactor) {
     std_compact_tester.TestArcIteratorMove();
   }
 
-  // TODO: Add tests on default-constructed Fst.
+  FstTester<CompactFst<CustomArc, TrivialCompactor<CustomArc>>> empty_tester(
+      /*num_states=*/0);
+  const CompactFst<CustomArc, TrivialCompactor<CustomArc>> empty_fst;
+  empty_tester.TestBase(empty_fst);
+  empty_tester.TestExpanded(empty_fst);
+  empty_tester.TestCopy(empty_fst);
+  empty_tester.TestIO(empty_fst);
 }
 
 TEST(FstTest, ConstFstStdArcUint16) {
