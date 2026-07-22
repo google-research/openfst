@@ -297,7 +297,7 @@ void TestStringWeightRead() {
   absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
-void RunTest() {
+TEST(WeightTest, RunTest) {
   absl::BitGen bit_gen(
       fst::MakeTaggedSeedSeq("WEIGHT_TEST"));
   TestTemplatedWeights<float>(bit_gen, absl::GetFlag(FLAGS_repeat));
@@ -532,6 +532,5 @@ void RunTest() {
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  fst::RunTest();
-  return 0;
+  return RUN_ALL_TESTS();
 }
