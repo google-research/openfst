@@ -21,6 +21,7 @@
 #include <fcntl.h>
 
 #include <cstddef>
+#include <limits>
 #include <new>
 
 #include "absl/base/nullability.h"
@@ -141,6 +142,12 @@ MappedFile* absl_nullable MappedFile::MapFromFileDescriptor(int fd, size_t pos,
 
   const size_t offset = pos % pagesize;
   const size_t offset_pos = pos - offset;
+  if (size > std::numeric_limits<size_t>::max() - offset) {
+    LOG(ERROR) << "MapFromFileDescriptor: Integer overflow computing "
+                  "mapping size for fd="
+               << fd << " size=" << size << " offset=" << offset;
+    return nullptr;
+  }
   const size_t upsize = size + offset;
 
 #ifdef _WIN32

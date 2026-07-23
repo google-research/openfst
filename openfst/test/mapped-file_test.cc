@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -221,6 +222,14 @@ TEST_F(MappedFileTest, TestMappingFileDescriptorFails) {
 #endif  // _WIN32 || O_TMPFILE
 }
 
+TEST_F(MappedFileTest, TestMappingFileDescriptorOverflow) {
+  const ScopedFd fd = OpenReadOnly(filename_);
+  ASSERT_NE(fd.fd, -1) << "Could not open testdata file " << filename_;
+  std::unique_ptr<MappedFile> m(MappedFile::MapFromFileDescriptor(
+      fd.fd, /*pos=*/1, /*size=*/std::numeric_limits<size_t>::max()));
+  EXPECT_EQ(m, nullptr);
+}
+
 TEST_F(MappedFileTest, TestNoSuchFile) {
   std::istringstream input_stream;
   std::unique_ptr<MappedFile> m1(
@@ -235,5 +244,6 @@ TEST_F(MappedFileTest, ReadPastEnd) {
       MappedFile::Map(input_stream, false, filename_, 1024));
   EXPECT_TRUE(!m1);
 }
+
 }  // namespace
 }  // namespace fst
