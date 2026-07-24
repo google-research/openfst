@@ -21,6 +21,7 @@
 #define OPENFST_EXTENSIONS_COMPRESS_COMPRESS_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <ios>
 #include <iostream>
@@ -485,11 +486,22 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
   std::vector<Transition> current_old_output;
   std::vector<std::pair<StateId, Transition>> actual_old_dict_numbers;
   std::vector<Transition> actual_old_dict_transitions;
-  auto arc_weight_it = arc_weight_.begin();
   Transition default_transition;
   StateId seen_states = 1;
-  // Adds states..
-  const StateId num_states = input.front();
+  size_t input_idx = 0;
+  // Safely reads the next token from the compressed input stream, returning
+  // false if the end of the input is reached unexpectedly.
+  auto read_next_input = [&](StateId* val) -> bool {
+    if (input_idx >= input.size()) return false;
+    *val = input[input_idx++];
+    return true;
+  };
+  StateId num_states = 0;
+  if (!read_next_input(&num_states) || num_states < 0) {
+    FSTERROR() << "Compressor::Decode: Missing or invalid num_states";
+    fst->SetProperties(kError, kError);
+    return;
+  }
   if (num_states > 0) {
     const StateId start_state = fst->AddState();
     fst->SetStart(start_state);
@@ -497,8 +509,14 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
       fst->AddState();
     }
   }
-  auto main_it = input.cbegin();
-  ++main_it;
+  size_t weight_idx = 0;
+  // Safely reads the next arc transition weight from the stored arc weights
+  // vector, returning false if weights are exhausted prematurely.
+  auto read_next_weight = [&](Weight* val) -> bool {
+    if (weight_idx >= arc_weight_.size()) return false;
+    *val = arc_weight_[weight_idx++];
+    return true;
+  };
   for (StateId current_state = 0; current_state < num_states; ++current_state) {
     if (current_state >= seen_states) ++seen_states;
     current_new_input.clear();
@@ -506,16 +524,29 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
     current_old_input.clear();
     current_old_output.clear();
     // New states.
-    StateId current_number_new_elements = *main_it;
-    ++main_it;
+    StateId current_number_new_elements = 0;
+    if (!read_next_input(&current_number_new_elements) ||
+        current_number_new_elements < 0) {
+      FSTERROR() << "Compressor::Decode: Missing or invalid new elements count";
+      fst->SetProperties(kError, kError);
+      return;
+    }
     for (StateId new_integer = 0; new_integer < current_number_new_elements;
          ++new_integer) {
       std::pair<StateId, LZLabel> temp_new_dict_element;
-      temp_new_dict_element.first = *main_it;
-      ++main_it;
+      if (!read_next_input(&temp_new_dict_element.first)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input in "
+                   << "new dictionary";
+        fst->SetProperties(kError, kError);
+        return;
+      }
       LZLabel temp_label;
-      temp_label.label = *main_it;
-      ++main_it;
+      if (!read_next_input(&temp_label.label)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input in "
+                   << "new label";
+        fst->SetProperties(kError, kError);
+        return;
+      }
       temp_new_dict_element.second = temp_label;
       current_new_input.push_back(temp_new_dict_element);
     }
@@ -525,33 +556,60 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
       return;
     }
     for (const auto& label : current_new_output) {
+      if (seen_states < 0 || seen_states >= num_states) {
+        FSTERROR() << "Compressor::Decode: Arc destination state out of "
+                   << "bounds: " << seen_states;
+        fst->SetProperties(kError, kError);
+        return;
+      }
       if (!unweighted) {
+        Weight w;
+        if (!read_next_weight(&w)) {
+          FSTERROR() << "Compressor::Decode: Unexpected end of arc weights";
+          fst->SetProperties(kError, kError);
+          return;
+        }
         fst->AddArc(current_state,
-                    Arc(label.label, label.label, *arc_weight_it, seen_states));
-        ++arc_weight_it;
+                    Arc(label.label, label.label, w, seen_states));
       } else {
         fst->AddArc(current_state,
                     Arc(label.label, label.label, Weight::One(), seen_states));
       }
       ++seen_states;
     }
-    StateId current_number_old_elements = *main_it;
-    ++main_it;
-    StateId is_zero_removed = *main_it;
-    ++main_it;
+    StateId current_number_old_elements = 0;
+    if (!read_next_input(&current_number_old_elements) ||
+        current_number_old_elements < 0) {
+      FSTERROR() << "Compressor::Decode: Missing or invalid old elements count";
+      fst->SetProperties(kError, kError);
+      return;
+    }
+    StateId is_zero_removed = 0;
+    if (!read_next_input(&is_zero_removed) || is_zero_removed < 0) {
+      FSTERROR() << "Compressor::Decode: Missing or invalid is_zero_removed "
+                 << "flag";
+      fst->SetProperties(kError, kError);
+      return;
+    }
     StateId previous = 0;
     actual_old_dict_numbers.clear();
     for (StateId new_integer = 0; new_integer < current_number_old_elements;
          ++new_integer) {
       std::pair<StateId, Transition> pair_temp_transition;
+      StateId val = 0;
+      if (!read_next_input(&val)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input in "
+                   << "old dictionary";
+        fst->SetProperties(kError, kError);
+        return;
+      }
       if (new_integer == 0) {
-        pair_temp_transition.first = *main_it;
-        previous = *main_it;
+        pair_temp_transition.first = val;
+        previous = val;
       } else {
-        pair_temp_transition.first = *main_it + previous;
+        pair_temp_transition.first = val + previous;
         previous = pair_temp_transition.first;
       }
-      ++main_it;
       Transition temp_test;
       if (!dict_old.SingleDecode(pair_temp_transition.first, &temp_test)) {
         FSTERROR() << "Compressor::Decode: failed";
@@ -566,22 +624,38 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
     std::sort(actual_old_dict_numbers.begin(), actual_old_dict_numbers.end(),
               old_dict_compare);
     // Transitions.
+    if (current_number_old_elements < is_zero_removed) {
+      FSTERROR() << "Compressor::Decode: is_zero_removed exceeds old "
+                 << "elements count";
+      fst->SetProperties(kError, kError);
+      return;
+    }
     previous = 0;
     actual_old_dict_transitions.clear();
     for (StateId new_integer = 0;
          new_integer < current_number_old_elements - is_zero_removed;
          ++new_integer) {
       Transition temp_transition;
+      StateId val = 0;
+      if (!read_next_input(&val)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input in "
+                   << "transitions";
+        fst->SetProperties(kError, kError);
+        return;
+      }
       if (new_integer == 0) {
-        temp_transition.nextstate = *main_it;
-        previous = *main_it;
+        temp_transition.nextstate = val;
+        previous = val;
       } else {
-        temp_transition.nextstate = *main_it + previous;
+        temp_transition.nextstate = val + previous;
         previous = temp_transition.nextstate;
       }
-      ++main_it;
-      temp_transition.label = *main_it;
-      ++main_it;
+      if (!read_next_input(&temp_transition.label)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input in "
+                   << "transition label";
+        fst->SetProperties(kError, kError);
+        return;
+      }
       actual_old_dict_transitions.push_back(temp_transition);
     }
     if (is_zero_removed == 1) {
@@ -628,10 +702,20 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
     }
     for (auto it = current_old_output.cbegin(); it != current_old_output.cend();
          ++it) {
+      if (it->nextstate < 0 || it->nextstate >= num_states) {
+        FSTERROR() << "Compressor::Decode: Arc destination state out of "
+                   << "bounds: " << it->nextstate;
+        fst->SetProperties(kError, kError);
+        return;
+      }
       if (!unweighted) {
-        fst->AddArc(current_state,
-                    Arc(it->label, it->label, *arc_weight_it, it->nextstate));
-        ++arc_weight_it;
+        Weight w;
+        if (!read_next_weight(&w)) {
+          FSTERROR() << "Compressor::Decode: Unexpected end of arc weights";
+          fst->SetProperties(kError, kError);
+          return;
+        }
+        fst->AddArc(current_state, Arc(it->label, it->label, w, it->nextstate));
       } else {
         fst->AddArc(current_state,
                     Arc(it->label, it->label, Weight::One(), it->nextstate));
@@ -639,16 +723,46 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
     }
   }
   // Adds the final states.
-  StateId number_of_final_states = *main_it;
+  StateId number_of_final_states = 0;
+  if (!read_next_input(&number_of_final_states) || number_of_final_states < 0) {
+    FSTERROR() << "Compressor::Decode: Missing or invalid final states count";
+    fst->SetProperties(kError, kError);
+    return;
+  }
   if (number_of_final_states > 0) {
-    ++main_it;
+    size_t final_weight_idx = 0;
+    // Safely reads the next final state weight from the stored final weights
+    // vector, returning false if final state weights are exhausted prematurely.
+    auto read_next_final_weight = [&](Weight* val) -> bool {
+      if (final_weight_idx >= final_weight_.size()) return false;
+      *val = final_weight_[final_weight_idx++];
+      return true;
+    };
     for (StateId temp_int = 0; temp_int < number_of_final_states; ++temp_int) {
-      if (unweighted) {
-        fst->SetFinal(*main_it, Weight::One());
-      } else {
-        fst->SetFinal(*main_it, final_weight_[temp_int]);
+      StateId state_id = 0;
+      if (!read_next_input(&state_id)) {
+        FSTERROR() << "Compressor::Decode: Unexpected end of input reading "
+                   << "final state ID";
+        fst->SetProperties(kError, kError);
+        return;
       }
-      ++main_it;
+      if (state_id < 0 || state_id >= num_states) {
+        FSTERROR() << "Compressor::Decode: Final state ID out of bounds: "
+                   << state_id;
+        fst->SetProperties(kError, kError);
+        return;
+      }
+      if (unweighted) {
+        fst->SetFinal(state_id, Weight::One());
+      } else {
+        Weight w;
+        if (!read_next_final_weight(&w)) {
+          FSTERROR() << "Compressor::Decode: Unexpected end of final weights";
+          fst->SetProperties(kError, kError);
+          return;
+        }
+        fst->SetFinal(state_id, w);
+      }
     }
   }
 }

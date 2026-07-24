@@ -110,6 +110,7 @@ cc_test(
         "compress_test.cc",
     ],
     data = [
+        ":testdata/quantize_weights_input.fst",
         ":testdata/unweight.fst",
     ],
     linkstatic = True,
@@ -118,6 +119,7 @@ cc_test(
         ":elias",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "//openfst/lib:util",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
         "@com_google_googletest//:gtest",

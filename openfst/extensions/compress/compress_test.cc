@@ -33,7 +33,9 @@
 #include "openfst/lib/arc.h"
 #include "openfst/lib/isomorphic.h"
 #include "openfst/lib/mutable-fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/test-properties.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 
 using ::fst::Elias;
@@ -42,6 +44,8 @@ using ::fst::StdArc;
 using ::fst::StdMutableFst;
 using ::fst::StdVectorFst;
 using ::fst::internal::ExpandLZCode;
+
+using StateId = StdArc::StateId;
 
 namespace fst {
 namespace {
@@ -54,9 +58,16 @@ class CompressTest : public testing::Test {
         "/openfst/extensions/compress/testdata",
         "unweight.fst");
     unweight_fst_.reset(StdVectorFst::Read(unweighted_fstname));
+
+    const std::string weighted_fstname = JoinPath(
+        std::string("."),
+        "/openfst/extensions/compress/testdata",
+        "quantize_weights_input.fst");
+    weight_fst_.reset(StdVectorFst::Read(weighted_fstname));
   }
 
   std::unique_ptr<StdMutableFst> unweight_fst_;
+  std::unique_ptr<StdMutableFst> weight_fst_;
 };
 
 // Testing if the output after decode and encode is isomorphic to
@@ -68,6 +79,18 @@ TEST_F(CompressTest, UnWeightedDecodeAndEncode) {
       JoinPath(::testing::TempDir(), "unweight_output.fstz");
   ASSERT_TRUE(Compress(input_fst, unweighted_output));
   ASSERT_TRUE(Decompress(unweighted_output, &output_fst));
+  EXPECT_TRUE(Isomorphic(input_fst, output_fst));
+}
+
+// Testing if the output after decode and encode is isomorphic to
+// the original weighted fst
+TEST_F(CompressTest, WeightedDecodeAndEncode) {
+  StdVectorFst input_fst(*weight_fst_);
+  StdVectorFst output_fst;
+  const std::string weighted_output =
+      JoinPath(::testing::TempDir(), "weight_output.fstz");
+  ASSERT_TRUE(Compress(input_fst, weighted_output));
+  ASSERT_TRUE(Decompress(weighted_output, &output_fst));
   EXPECT_TRUE(Isomorphic(input_fst, output_fst));
 }
 
@@ -190,11 +213,68 @@ TEST_F(CompressTest, BatchDecodeExactEnd) {
   EXPECT_EQ(output[0], 2);
 }
 
+TEST_F(CompressTest, DecodeProcessedFstFailsOnEmptyInput) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnTruncatedInput) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {2};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnNegativeCounts) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {-1};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnOutOfBoundsArcDestination) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {2, 2, 0, 10, 0, 20};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnOutOfBoundsFinalState) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {2, 0, 0, 0, 0, 0, 0, 1, 999};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnTruncatedArcWeights) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {2, 1, 0, 10};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/false);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnTruncatedFinalWeights) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  std::vector<StateId> input = {2, 0, 0, 0, 0, 0, 0, 1, 0};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/false);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
 }  // namespace
 }  // namespace fst
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_fst_verify_properties, true);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
