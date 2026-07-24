@@ -135,11 +135,15 @@ class NGramFstImpl : public FstImpl<A> {
       return nullptr;
     }
     if (num_states == 0 || num_states > kMaxStates ||
-        num_futures > kMaxFutures || num_final > kMaxStates) {
+        num_futures > kMaxFutures || num_final > num_states) {
       LOG(ERROR) << "NGramFst::Read: Invalid size";
       return nullptr;
     }
     size_t size = Storage(num_states, num_futures, num_final);
+    if (size < offset) {
+      LOG(ERROR) << "NGramFst::Read: Storage size calculation overflowed";
+      return nullptr;
+    }
     std::unique_ptr<MappedFile> data_region(MappedFile::Allocate(size));
     if (!data_region) {
       LOG(ERROR) << "NGramFst::Read: MappedFile allocation failed";

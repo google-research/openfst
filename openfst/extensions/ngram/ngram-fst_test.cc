@@ -39,6 +39,7 @@
 #include "openfst/lib/fst.h"
 #include "openfst/lib/matcher.h"
 #include "openfst/lib/mutable-fst.h"
+#include "openfst/lib/power-weight.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/statesort.h"
 #include "openfst/lib/util.h"
@@ -231,6 +232,46 @@ TEST(NGramFstTest, ReadFailsOnLargeSize) {
   std::string in_data = ostrm.str();
   std::istringstream istrm(in_data);
   EXPECT_EQ(NGramFst<StdArc>::Read(istrm, FstReadOptions()), nullptr);
+}
+
+TEST(NGramFstTest, ReadFailsWhenNumFinalExceedsNumStates) {
+  FstHeader hdr;
+  hdr.SetFstType("ngram");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(4);
+  std::ostringstream ostrm;
+  hdr.Write(ostrm, "");
+  const uint64_t num_states = 1;
+  const uint64_t num_futures = 0;
+  const uint64_t num_final = 2;
+  ostrm.write(reinterpret_cast<const char*>(&num_states), sizeof(num_states));
+  ostrm.write(reinterpret_cast<const char*>(&num_futures), sizeof(num_futures));
+  ostrm.write(reinterpret_cast<const char*>(&num_final), sizeof(num_final));
+  std::string in_data = ostrm.str();
+  std::istringstream istrm(in_data);
+  EXPECT_EQ(NGramFst<StdArc>::Read(istrm, FstReadOptions()), nullptr);
+}
+
+TEST(NGramFstTest, ReadFailsWhenStorageCalculationOverflows) {
+  using LargeWeight = PowerWeight<TropicalWeight, 16>;
+  using LargeArc = ArcTpl<LargeWeight>;
+  FstHeader hdr;
+  hdr.SetFstType("ngram");
+  hdr.SetArcType(LargeArc::Type());
+  hdr.SetVersion(4);
+  std::ostringstream ostrm;
+  hdr.Write(ostrm, "");
+  // Choose values <= kMaxStates that cause 64-bit wrap-around in Storage()
+  // so that the calculated size is 0 (< offset == 24), triggering overflow.
+  const uint64_t num_states = (1ULL << 58) - 1;  // kMaxStates
+  const uint64_t num_futures = 0;
+  const uint64_t num_final = (1ULL << 58) - (1ULL << 54) - (1ULL << 51) - 2;
+  ostrm.write(reinterpret_cast<const char*>(&num_states), sizeof(num_states));
+  ostrm.write(reinterpret_cast<const char*>(&num_futures), sizeof(num_futures));
+  ostrm.write(reinterpret_cast<const char*>(&num_final), sizeof(num_final));
+  std::string in_data = ostrm.str();
+  std::istringstream istrm(in_data);
+  EXPECT_EQ(NGramFst<LargeArc>::Read(istrm, FstReadOptions()), nullptr);
 }
 
 TEST(NGramFstImplTest, StorageTest) {
