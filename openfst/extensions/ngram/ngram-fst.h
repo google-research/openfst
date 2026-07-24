@@ -140,7 +140,7 @@ class NGramFstImpl : public FstImpl<A> {
       return nullptr;
     }
     size_t size = Storage(num_states, num_futures, num_final);
-    if (size < offset) {
+    if (size == 0 || size < offset) {
       LOG(ERROR) << "NGramFst::Read: Storage size calculation overflowed";
       return nullptr;
     }
@@ -208,8 +208,15 @@ class NGramFstImpl : public FstImpl<A> {
     data->nstates = num_states_;
   }
 
+  // Calculates the required byte storage size for the FST data region.
+  // Returns 0 if input counts are invalid (e.g., exceeding kMaxStates or
+  // kMaxFutures, or num_final > num_states) or if integer overflow occurs.
   static size_t Storage(uint64_t num_states, uint64_t num_futures,
                         uint64_t num_final) {
+    if (num_states == 0 || num_states > kMaxStates ||
+        num_futures > kMaxFutures || num_final > kMaxStates) {
+      return 0;
+    }
     uint64_t b64;
     Weight weight;
     Label label;
@@ -225,6 +232,11 @@ class NGramFstImpl : public FstImpl<A> {
     offset = (offset + sizeof(weight) - 1) & ~(sizeof(weight) - 1);
     offset += (num_states + 1) * sizeof(weight) + num_final * sizeof(weight) +
               (num_futures + 1) * sizeof(weight);
+    // If wrap-around occurred during accumulation, offset will be smaller than
+    // the initial 24-byte header count size.
+    if (offset < sizeof(num_states) + sizeof(num_futures) + sizeof(num_final)) {
+      return 0;
+    }
     return offset;
   }
 
@@ -658,6 +670,11 @@ NGramFstImpl<A>::NGramFstImpl(const Fst<A>& fst,
   Weight weight;
   Label label = kNoLabel;
   const size_t storage = Storage(num_states, num_futures, num_final);
+  if (storage == 0) {
+    FSTERROR() << "NGramFst: Storage size calculation failed or overflowed";
+    SetProperties(kError, kError);
+    return;
+  }
   std::unique_ptr<MappedFile> data_region(MappedFile::Allocate(storage));
   char* data = static_cast<char*>(data_region->mutable_data());
   memset(data, 0, storage);

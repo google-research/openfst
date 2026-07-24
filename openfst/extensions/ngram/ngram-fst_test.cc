@@ -281,4 +281,14 @@ TEST(NGramFstImplTest, StorageTest) {
   EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(2, 2, 3), 104);
 }
 
+TEST(NGramFstImplTest, StorageReturnsZeroOnInvalidOrOverflow) {
+  const uint64_t max_u64 = std::numeric_limits<uint64_t>::max();
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(max_u64, max_u64, max_u64),
+            0);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(0, 0, 0), 0);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(max_u64, 1, 1), 0);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(1, max_u64, 1), 0);
+  EXPECT_EQ(internal::NGramFstImpl<StdArc>::Storage(1, 1, max_u64), 0);
+}
+
 }  // namespace fst
