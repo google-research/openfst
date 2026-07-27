@@ -21,11 +21,16 @@
 
 #include <array>
 #include <cstdint>
+#include <list>
 #include <map>
+#include <set>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "absl/container/flat_hash_map.h"
 
 namespace fst {
 namespace {
@@ -84,6 +89,41 @@ TEST(WriteReadTest, VectorMapIntInt) {
 
 TEST(WriteReadTest, Array) {
   std::array<int32_t, 3> a{10, 20, 30}, b{0, 0, 0};
+  EXPECT_NE(a, b);
+  WriteRead(a, &b);
+  EXPECT_EQ(a, b);
+}
+
+TEST(WriteReadTest, List) {
+  std::list<int> a{10, 20, 30}, b;
+  EXPECT_NE(a, b);
+  WriteRead(a, &b);
+  EXPECT_EQ(a, b);
+}
+
+TEST(WriteReadTest, Set) {
+  std::set<int> a{10, 20, 30}, b;
+  EXPECT_NE(a, b);
+  WriteRead(a, &b);
+  EXPECT_EQ(a, b);
+}
+
+TEST(WriteReadTest, UnorderedSet) {
+  std::unordered_set<int> a{10, 20, 30}, b;
+  EXPECT_NE(a, b);
+  WriteRead(a, &b);
+  EXPECT_EQ(a, b);
+}
+
+TEST(WriteReadTest, UnorderedMap) {
+  std::unordered_map<int, int> a{{1, 10}, {2, 20}}, b;
+  EXPECT_NE(a, b);
+  WriteRead(a, &b);
+  EXPECT_EQ(a, b);
+}
+
+TEST(WriteReadTest, FlatHashMap) {
+  absl::flat_hash_map<int, int> a{{1, 10}, {2, 20}}, b;
   EXPECT_NE(a, b);
   WriteRead(a, &b);
   EXPECT_EQ(a, b);

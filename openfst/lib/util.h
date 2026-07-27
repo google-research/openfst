@@ -161,7 +161,7 @@ template <typename T, class A,
           typename std::enable_if_t<std::is_class_v<T>, T>* = nullptr>
 inline std::istream& ReadVectorType(std::istream& strm, std::vector<T, A>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, int64_t n) { v->reserve(n); });
 }
 
 // Vector of numerics (boolean, integral, floating-point, char) or enum case.
@@ -198,29 +198,29 @@ std::istream& ReadType(std::istream& strm, std::vector<T...>* c) {
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::list<T...>* c) {
-  return internal::ReadContainerType(strm, c, [](decltype(c) v, int n) {});
+  return internal::ReadContainerType(strm, c, [](decltype(c) v, int64_t n) {});
 }
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::set<T...>* c) {
-  return internal::ReadContainerType(strm, c, [](decltype(c) v, int n) {});
+  return internal::ReadContainerType(strm, c, [](decltype(c) v, int64_t n) {});
 }
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::map<T...>* c) {
-  return internal::ReadContainerType(strm, c, [](decltype(c) v, int n) {});
+  return internal::ReadContainerType(strm, c, [](decltype(c) v, int64_t n) {});
 }
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::unordered_set<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, int64_t n) { v->reserve(n); });
 }
 
 template <class... T>
 std::istream& ReadType(std::istream& strm, std::unordered_map<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, int64_t n) { v->reserve(n); });
 }
 
 // Writes types to an output stream.
@@ -533,7 +533,7 @@ namespace fst {
 template <class... T>
 std::istream& ReadType(std::istream& strm, absl::flat_hash_map<T...>* c) {
   return internal::ReadContainerType(
-      strm, c, [](decltype(c) v, size_t n) { v->reserve(n); });
+      strm, c, [](decltype(c) v, int64_t n) { v->reserve(n); });
 }
 
 template <typename... T>
