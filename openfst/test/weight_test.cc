@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <sstream>
 #include <utility>
 
@@ -525,6 +526,85 @@ TEST(WeightTest, RunTest) {
   TestSparsePowerWeightGetSetValue();
 
   TestFloatEqualityIsReflexive();
+}
+
+TEST(WeightReadTest, ReadNegativeSizeFails) {
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  std::ostringstream os;
+  constexpr int32_t bad_size = -5;
+  WriteType(os, bad_size);
+  std::string data = os.str();
+
+  {
+    StringWeight<int> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  {
+    SetWeight<int, SET_INTERSECT_UNION> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  {
+    struct Options {
+      using Compare = NaturalLess<TropicalWeight>;
+      using ReverseOptions = Options;
+      struct Merge {
+        TropicalWeight operator()(const TropicalWeight& w1,
+                                  const TropicalWeight& w2) const {
+          return w1;
+        }
+      };
+    };
+    UnionWeight<TropicalWeight, Options> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
+}
+
+TEST(WeightReadTest, ReadOversizedSizeFails) {
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  std::ostringstream os;
+  // Minimum 4 bytes per label/weight.
+  constexpr int32_t bad_size = (std::numeric_limits<int32_t>::max() / 4) + 1;
+  WriteType(os, bad_size);
+  std::string data = os.str();
+
+  {
+    StringWeight<int> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  {
+    SetWeight<int, SET_INTERSECT_UNION> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  {
+    struct Options {
+      using Compare = NaturalLess<TropicalWeight>;
+      using ReverseOptions = Options;
+      struct Merge {
+        TropicalWeight operator()(const TropicalWeight& w1,
+                                  const TropicalWeight& w2) const {
+          return w1;
+        }
+      };
+    };
+    UnionWeight<TropicalWeight, Options> w;
+    std::istringstream is(data);
+    w.Read(is);
+    EXPECT_TRUE(is.fail());
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
 }  // namespace

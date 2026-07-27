@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <list>
 #include <ostream>
 #include <random>
@@ -279,11 +280,23 @@ class UnionWeightReverseIterator {
 template <class W, class O>
 inline std::istream& UnionWeight<W, O>::Read(std::istream& istrm) {
   Clear();
-  int32_t size;
+  int32_t size = -1;
   ReadType(istrm, &size);
+  if (!istrm || size < 0) {
+    FSTERROR() << "UnionWeight::Read: Read failed or invalid size: " << size;
+    if (!istrm.fail()) istrm.setstate(std::ios_base::failbit);
+    return istrm;
+  }
+  constexpr int32_t kMinBytesPerWeight = 4;
+  if (size > std::numeric_limits<int32_t>::max() / kMinBytesPerWeight) {
+    FSTERROR() << "UnionWeight::Read: Size (" << size
+               << ") causes integer overflow.";
+    istrm.setstate(std::ios_base::failbit);
+    return istrm;
+  }
   for (int i = 0; i < size; ++i) {
     W weight;
-    ReadType(istrm, &weight);
+    if (!ReadType(istrm, &weight)) return istrm;
     PushBack(weight, true);
   }
   return istrm;

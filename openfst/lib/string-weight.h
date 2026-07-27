@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <ios>
 #include <istream>
+#include <limits>
 #include <list>
 #include <optional>
 #include <ostream>
@@ -241,10 +242,18 @@ class StringWeightReverseIterator {
 template <typename Label, StringType S>
 inline std::istream& StringWeight<Label, S>::Read(std::istream& strm) {
   Clear();
-  int32_t size;
+  int32_t size = -1;
   ReadType(strm, &size);
-  if (size < 0) {
-    FSTERROR() << "StringWeight::Read: Invalid size " << size;
+  if (!strm || size < 0) {
+    FSTERROR() << "StringWeight::Read: Read failed or invalid size: " << size;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  if (size > std::numeric_limits<int32_t>::max() /
+                 static_cast<int32_t>(sizeof(Label))) {
+    FSTERROR() << "StringWeight::Read: Size (" << size
+               << ") causes integer overflow.";
+    strm.setstate(std::ios_base::failbit);
     return strm;
   }
   for (int32_t i = 0; i < size; ++i) {

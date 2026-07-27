@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <ios>
 #include <istream>
+#include <limits>
 #include <list>
 #include <optional>
 #include <ostream>
@@ -255,11 +256,23 @@ class SetWeightIterator {
 template <typename Label, SetType S>
 inline std::istream& SetWeight<Label, S>::Read(std::istream& strm) {
   Clear();
-  int32_t size;
+  int32_t size = -1;
   ReadType(strm, &size);
+  if (!strm || size < 0) {
+    FSTERROR() << "SetWeight::Read: Read failed or invalid size: " << size;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  if (size > std::numeric_limits<int32_t>::max() /
+                 static_cast<int32_t>(sizeof(Label))) {
+    FSTERROR() << "SetWeight::Read: Size (" << size
+               << ") causes integer overflow.";
+    strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
   for (int32_t i = 0; i < size; ++i) {
     Label label;
-    ReadType(strm, &label);
+    if (!ReadType(strm, &label)) return strm;
     PushBack(label);
   }
   return strm;
