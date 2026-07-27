@@ -33,6 +33,9 @@ build:dev --copt=-O1
 # ------------------------------------------------------------------------------
 
 build:gcc_clang --cxxopt=-std=c++17
+# Required for Clang in C++17 mode (which disables sized deallocation by
+# default) to support 3-argument operator delete in mapped-file.cc.
+build:gcc_clang --cxxopt=-fsized-deallocation
 build:gcc_clang --cxxopt=-Wno-sign-compare
 build:gcc_clang --cxxopt=-Wno-deprecated-declarations
 # TODO: b/476056201 - This warning is enabled in Google, so unclear why it is

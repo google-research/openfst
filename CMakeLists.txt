@@ -105,6 +105,9 @@ if(MSVC)
 else()
   add_compile_options(
     -Wall
+    # Required for Clang in C++17 mode (which disables sized deallocation by
+    # default) to support 3-argument operator delete in mapped-file.cc.
+    -fsized-deallocation
     -Wno-deprecated-declarations
     # TODO: b/476056201 - This warning is enabled in Google, so unclear why it
     # is failing here.  Investigate, fix, and re-enable.
