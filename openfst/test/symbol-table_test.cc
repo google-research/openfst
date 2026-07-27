@@ -19,7 +19,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -454,5 +456,33 @@ TEST_P(RemoveOneSymbolTest, RemoveKeyAndCheck) {
 
 INSTANTIATE_TEST_SUITE_P(RemoveEachKey, RemoveOneSymbolTest,
                          ::testing::Range(0, 20));
+
+TEST(SymbolTableReadTest, ReadNegativeSizeFails) {
+  SymbolTable syms("test");
+  std::ostringstream os;
+  syms.Write(os);
+  std::string data = os.str();
+  ASSERT_GE(data.size(), sizeof(int64_t));
+  constexpr int64_t bad_size = -5;
+  std::memcpy(&data[data.size() - sizeof(int64_t)], &bad_size, sizeof(int64_t));
+  std::istringstream is(data);
+  std::unique_ptr<SymbolTable> read_syms(SymbolTable::Read(is, "test"));
+  EXPECT_EQ(read_syms, nullptr);
+}
+
+TEST(SymbolTableReadTest, ReadOversizedSizeFails) {
+  SymbolTable syms("test");
+  std::ostringstream os;
+  syms.Write(os);
+  std::string data = os.str();
+  ASSERT_GE(data.size(), sizeof(int64_t));
+  // Minimum 12 bytes per symbol entry: 4-byte string size + 8-byte key.
+  constexpr int64_t bad_size = (std::numeric_limits<int64_t>::max() / 12) + 1;
+  std::memcpy(&data[data.size() - sizeof(int64_t)], &bad_size, sizeof(int64_t));
+  std::istringstream is(data);
+  std::unique_ptr<SymbolTable> read_syms(SymbolTable::Read(is, "test"));
+  EXPECT_EQ(read_syms, nullptr);
+}
+
 }  // namespace
 }  // namespace fst

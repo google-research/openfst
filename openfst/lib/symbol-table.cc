@@ -27,6 +27,7 @@
 #include <ios>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <sstream>
@@ -301,10 +302,20 @@ SymbolTableImpl* absl_nullable SymbolTableImpl::Read(std::istream& strm,
   ReadType(strm, &name);
   auto impl = std::make_unique<SymbolTableImpl>(name);
   ReadType(strm, &impl->available_key_);
-  int64_t size;
+  int64_t size = -1;
   ReadType(strm, &size);
-  if (strm.fail()) {
-    LOG(ERROR) << "SymbolTable::Read: Read failed: " << source;
+  if (strm.fail() || size < 0) {
+    LOG(ERROR) << "SymbolTable::Read: Read failed or invalid size (" << size
+               << "): " << source;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return nullptr;
+  }
+  // Minimum 12 bytes per symbol entry: 4-byte string size + 8-byte key.
+  constexpr int64_t kMinBytesPerSymbol = 12;
+  if (size > std::numeric_limits<int64_t>::max() / kMinBytesPerSymbol) {
+    LOG(ERROR) << "SymbolTable::Read: Symbol count (" << size
+               << ") causes integer overflow: " << source;
+    strm.setstate(std::ios_base::failbit);
     return nullptr;
   }
   std::string symbol;
