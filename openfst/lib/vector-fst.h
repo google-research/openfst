@@ -492,10 +492,21 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
     impl->BaseImpl::AddState();
     auto* vstate = impl->GetState(state);
     vstate->SetFinal(weight);
-    int64_t narcs;
+    int64_t narcs = -1;
     ReadType(strm, &narcs);
-    if (!strm) {
-      LOG(ERROR) << "VectorFst::Read: Read failed: " << opts.source;
+    if (!strm || narcs < 0) {
+      LOG(ERROR) << "VectorFst::Read: Read failed or invalid arc count ("
+                 << narcs << ") for state " << state << ": " << opts.source;
+      if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+      return nullptr;
+    }
+    if (narcs == 0) continue;
+    // Minimum 16 bytes per arc: ilabel + olabel + weight + nextstate.
+    constexpr int64_t kMinBytesPerArc = 16;
+    if (narcs > std::numeric_limits<int64_t>::max() / kMinBytesPerArc) {
+      LOG(ERROR) << "VectorFst::Read: Arc count (" << narcs
+                 << ") causes integer overflow: " << opts.source;
+      strm.setstate(std::ios_base::failbit);
       return nullptr;
     }
     impl->ReserveArcs(state, narcs);

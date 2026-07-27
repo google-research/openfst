@@ -20,7 +20,11 @@
 #include "openfst/lib/vector-fst.h"
 
 #include <array>
+#include <cstring>
+#include <limits>
+#include <memory>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <typeinfo>
@@ -639,6 +643,43 @@ TEST(VectorFstAddStates, VectorFstAddStates) {
     ++count;
   }
   EXPECT_EQ(kNumStates, count);
+}
+
+TEST(VectorFstReadTest, ReadNegativeArcCountFails) {
+  StdVectorFst fst;
+  fst.AddState();
+  fst.SetStart(0);
+  fst.SetFinal(0, StdArc::Weight::One());
+  std::ostringstream os;
+  fst.Write(os, FstWriteOptions("test"));
+  std::string data = os.str();
+  ASSERT_GE(data.size(), sizeof(int64_t));
+  constexpr int64_t bad_narcs = -5;
+  std::memcpy(&data[data.size() - sizeof(int64_t)], &bad_narcs,
+              sizeof(int64_t));
+  std::istringstream is(data);
+  std::unique_ptr<StdVectorFst> read_fst(
+      StdVectorFst::Read(is, FstReadOptions("test")));
+  EXPECT_EQ(read_fst, nullptr);
+}
+
+TEST(VectorFstReadTest, ReadOversizedArcCountFails) {
+  StdVectorFst fst;
+  fst.AddState();
+  fst.SetStart(0);
+  fst.SetFinal(0, StdArc::Weight::One());
+  std::ostringstream os;
+  fst.Write(os, FstWriteOptions("test"));
+  std::string data = os.str();
+  ASSERT_GE(data.size(), sizeof(int64_t));
+  // Minimum 16 bytes per arc: ilabel + olabel + weight + nextstate.
+  constexpr int64_t bad_narcs = (std::numeric_limits<int64_t>::max() / 16) + 1;
+  std::memcpy(&data[data.size() - sizeof(int64_t)], &bad_narcs,
+              sizeof(int64_t));
+  std::istringstream is(data);
+  std::unique_ptr<StdVectorFst> read_fst(
+      StdVectorFst::Read(is, FstReadOptions("test")));
+  EXPECT_EQ(read_fst, nullptr);
 }
 
 }  // namespace
