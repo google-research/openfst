@@ -216,15 +216,25 @@ LinearFstData<A>::PossibleOutputLabels(Label word) const {
 template <class A>
 inline LinearFstData<A>* LinearFstData<A>::Read(std::istream& strm) {
   std::unique_ptr<LinearFstData<A>> data(new LinearFstData<A>());
-  ReadType(strm, &(data->max_future_size_));
-  ReadType(strm, &(data->max_input_label_));
+  if (!ReadType(strm, &(data->max_future_size_)) ||
+      !ReadType(strm, &(data->max_input_label_))) {
+    FSTERROR() << "LinearFstData::Read: Read failed reading header data";
+    return nullptr;
+  }
   // Feature groups
   size_t num_groups = 0;
-  ReadType(strm, &num_groups);
+  if (!ReadType(strm, &num_groups)) {
+    FSTERROR() << "LinearFstData::Read: Read failed reading num_groups";
+    return nullptr;
+  }
   data->groups_.resize(num_groups);
   for (size_t i = 0; i < num_groups; ++i) {
     FeatureGroup<A>* group = FeatureGroup<A>::Read(strm);
-    if (group == nullptr) return nullptr;
+    if (group == nullptr) {
+      FSTERROR() << "LinearFstData::Read: Read failed reading feature group "
+                 << i;
+      return nullptr;
+    }
     data->groups_[i].reset(group);
   }
   // Other data
@@ -232,7 +242,11 @@ inline LinearFstData<A>* LinearFstData<A>::Read(std::istream& strm) {
   ReadType(strm, &(data->output_pool_));
   ReadType(strm, &(data->output_set_));
   ReadType(strm, &(data->group_feat_map_));
-  if (!strm) return nullptr;
+  if (!strm) {
+    FSTERROR()
+        << "LinearFstData::Read: Read failed reading attributes or pools";
+    return nullptr;
+  }
   // Make sure there are enough input attributes.
   if (data->input_attribs_.size() <= data->max_input_label_) {
     FSTERROR() << "LinearFstData::Read: input_attribs size "
