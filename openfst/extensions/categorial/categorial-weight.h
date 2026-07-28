@@ -669,13 +669,19 @@ class CategorialWeight {
 template <typename L, CategoryType S>
 inline std::istream& CategorialWeight<L, S>::Read(std::istream& strm) {
   value_.Clear();
-  int32_t size;
-  bool isone;
+  int32_t size = -1;
+  bool isone = false;
   ReadType(strm, &isone);
   ReadType(strm, &size);
+  if (!strm || size < 0) {
+    FSTERROR() << "CategorialWeight::Read: Read failed or invalid size: "
+               << size;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
   for (int i = 0; i < size; ++i) {
     L label;
-    ReadType(strm, &label);
+    if (!ReadType(strm, &label)) return strm;
     value_.PushBack(label);
   }
   value_.set_one(isone);
