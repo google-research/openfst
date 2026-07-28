@@ -770,11 +770,19 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId>& input,
 template <class Arc>
 void Compressor<Arc>::ReadWeight(std::istream& strm,
                                  std::vector<Weight>* output) {
-  int64_t size;
+  int64_t size = -1;
   Weight weight;
   ReadType(strm, &size);
+  if (!strm || size < 0) {
+    FSTERROR() << "Compressor::ReadWeight: Read failed or invalid size: "
+               << size;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return;
+  }
+  output->clear();
+  output->reserve(size);
   for (int64_t i = 0; i < size; ++i) {
-    weight.Read(strm);
+    if (!weight.Read(strm)) return;
     output->push_back(weight);
   }
 }
@@ -796,10 +804,20 @@ template <class Arc>
   std::vector<bool> bool_code;
   uint8_t block = 0;
   uint8_t msb = 128;
-  int64_t data_size;
+  int64_t data_size = -1;
   ReadType(strm, &data_size);
+  if (!strm || data_size < 0) {
+    FSTERROR() << "Decompress: Read failed or invalid data_size: " << data_size
+               << ": " << source;
+    if (!strm.fail()) strm.setstate(std::ios_base::failbit);
+    return false;
+  }
   for (int64_t i = 0; i < data_size; ++i) {
-    ReadType(strm, &block);
+    if (!ReadType(strm, &block)) {
+      FSTERROR() << "Decompress: Unexpected end of input reading block " << i
+                 << ": " << source;
+      return false;
+    }
     for (int j = 0; j < 8; ++j) {
       uint8_t temp = msb & block;
       bool_code.push_back(temp == 128);
@@ -814,6 +832,10 @@ template <class Arc>
   if (unweighted == 0) {
     ReadWeight(strm, &arc_weight_);
     ReadWeight(strm, &final_weight_);
+    if (!strm) {
+      FSTERROR() << "Decompress: Read failed reading weights: " << source;
+      return false;
+    }
   }
   DecodeProcessedFst(int_code, fst, unweighted);
   DecodeForCompress(fst, *encoder);
