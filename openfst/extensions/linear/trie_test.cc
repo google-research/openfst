@@ -74,7 +74,7 @@ class TrieTopologyTester {
     EXPECT_FALSE(trie != copy);
   }
 
-  static void InsertionAndSerilization() {
+  static void InsertionAndSerialization() {
     TrieTopology trie;
     // Insertion
     for (absl::string_view key : kTestKeys) {
@@ -95,7 +95,7 @@ class TrieTopologyTester {
         prev_node = node;
       }
     }
-    // Serilization
+    // Serialization
     {
       TrieTopology copy;
       ASSERT_TRUE(trie != copy);
@@ -117,9 +117,9 @@ TEST(NestedTrieTopologyTest, EmptyTrie) {
   TrieTopologyTester<NestedTrieTopology<int, std::hash<int>>>::EmptyTrie();
 }
 
-TEST(NestedTrieTopologyTest, InsertionAndSerilization) {
+TEST(NestedTrieTopologyTest, InsertionAndSerialization) {
   TrieTopologyTester<
-      NestedTrieTopology<int, std::hash<int>>>::InsertionAndSerilization();
+      NestedTrieTopology<int, std::hash<int>>>::InsertionAndSerialization();
 }
 
 TEST(NestedTrieTopologyTest, ChildrenOf) {
@@ -144,9 +144,9 @@ TEST(FlatTrieTopologyTest, EmptyTrie) {
   TrieTopologyTester<FlatTrieTopology<int, std::hash<int>>>::EmptyTrie();
 }
 
-TEST(FlatTrieTopologyTest, InsertionAndSerilization) {
+TEST(FlatTrieTopologyTest, InsertionAndSerialization) {
   TrieTopologyTester<
-      FlatTrieTopology<int, std::hash<int>>>::InsertionAndSerilization();
+      FlatTrieTopology<int, std::hash<int>>>::InsertionAndSerialization();
 }
 
 TEST(FlatTrieTopologyTest, Conversion) {
@@ -169,7 +169,7 @@ template <class Trie>
 class TrieTester : public TrieTopologyTester<Trie> {
  public:
   using TrieTopologyTester<Trie>::EmptyTrie;
-  using TrieTopologyTester<Trie>::InsertionAndSerilization;
+  using TrieTopologyTester<Trie>::InsertionAndSerialization;
 
   static void AgreeWithTopology() {
     Trie trie;
@@ -203,7 +203,7 @@ TEST(MutableTrieTest, BasicOperations) {
   typedef MutableTrie<int, int, NestedTrieTopology<int, std::hash<int>>>
       TestTrie;
   TrieTester<TestTrie>::EmptyTrie();
-  TrieTester<TestTrie>::InsertionAndSerilization();
+  TrieTester<TestTrie>::InsertionAndSerialization();
   TrieTester<TestTrie>::AgreeWithTopology();
 }
 
