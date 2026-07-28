@@ -232,7 +232,7 @@ inline std::istream& NestedTrieTopology<L, H>::Read(std::istream& strm) {
     new_trie.nodes_.push_back(std::make_unique<NextMap>());
   }
   for (size_t i = 0; i < num_nodes; ++i) {
-    ReadType(strm, new_trie.nodes_[i].get());
+    if (!ReadType(strm, new_trie.nodes_[i].get())) return strm;
   }
   if (strm) swap(new_trie);
   return strm;
