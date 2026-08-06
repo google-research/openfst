@@ -62,11 +62,6 @@ if(OPENFST_ENABLE_GRM)
   set(_def_grm ON)
 endif()
 
-set(_def_ngram OFF)
-if(OPENFST_ENABLE_FSTS OR OPENFST_ENABLE_GRM)
-  set(_def_ngram ON)
-endif()
-
 option(OPENFST_ENABLE_BIN "Enable fst::script and executables" ON)
 option(OPENFST_ENABLE_COMPACT_FSTS "Enable CompactFst extensions" ${_def_fsts})
 option(OPENFST_ENABLE_COMPRESS "Enable compression extension" ${_def_fsts})
@@ -79,7 +74,7 @@ option(OPENFST_ENABLE_LOOKAHEAD_FSTS "Enable LookAheadFst extensions"
        ${_def_fsts}
 )
 option(OPENFST_ENABLE_MPDT "Enable MPDT extensions" ${_def_grm})
-option(OPENFST_ENABLE_NGRAM_FSTS "Enable NGramFst extensions" ${_def_ngram})
+option(OPENFST_ENABLE_NGRAM_FSTS "Enable NGramFst extensions" ${_def_fsts})
 option(OPENFST_ENABLE_PDT "Enable PDT extensions" ${_def_grm})
 option(OPENFST_ENABLE_PYTHON "Enable Python extension" OFF)
 option(OPENFST_ENABLE_SPECIAL "Enable special-matcher extensions" ${_def_fsts})
