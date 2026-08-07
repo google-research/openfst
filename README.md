@@ -114,37 +114,28 @@ cmake --install build --prefix /usr/local
 You can enable or disable specific features using CMake options (default is
 `OFF` unless noted):
 
-| Option                          | Description                | Default |
-| :------------------------------ | :------------------------- | :------ |
-| `OPENFST_ENABLE_BIN`            | Build `fst::script` and    | `ON`    |
-:                                 : command-line executables   :         :
-| `OPENFST_ENABLE_CATEGORIAL`     | Enable categorial semiring | `OFF`   |
-:                                 : extension                  :         :
-| `OPENFST_ENABLE_COMPACT_FSTS`   | Enable CompactFst          | `OFF`   |
-:                                 : extensions                 :         :
-| `OPENFST_ENABLE_COMPRESS`       | Enable compression         | `OFF`   |
-:                                 : extension                  :         :
-| `OPENFST_ENABLE_CONST_FSTS`     | Enable ConstFst extensions | `OFF`   |
-| `OPENFST_ENABLE_FAR`            | Enable FAR extensions      | `OFF`   |
-| `OPENFST_ENABLE_LINEAR_FSTS`    | Enable                     | `OFF`   |
-:                                 : LinearTagger/ClassifierFst :         :
-:                                 : extensions                 :         :
-| `OPENFST_ENABLE_LOOKAHEAD_FSTS` | Enable LookAheadFst        | `OFF`   |
-:                                 : extensions                 :         :
-| `OPENFST_ENABLE_MPDT`           | Enable MPDT extensions     | `OFF`   |
-| `OPENFST_ENABLE_NGRAM_FSTS`     | Enable NGramFst extensions | `OFF`   |
-| `OPENFST_ENABLE_PDT`            | Enable PDT extensions      | `OFF`   |
-| `OPENFST_ENABLE_PYTHON`         | Enable Python extension    | `OFF`   |
-| `OPENFST_ENABLE_SPECIAL`        | Enable special-matcher     | `OFF`   |
-:                                 : extensions                 :         :
+Option                          | Description                                      | Default
+:------------------------------ | :----------------------------------------------- | :------
+`OPENFST_ENABLE_BIN`            | Build `fst::script` and command-line executables | `ON`
+`OPENFST_ENABLE_CATEGORIAL`     | Enable categorial semiring extension             | `OFF`
+`OPENFST_ENABLE_COMPACT_FSTS`   | Enable CompactFst extensions                     | `OFF`
+`OPENFST_ENABLE_COMPRESS`       | Enable compression extension                     | `OFF`
+`OPENFST_ENABLE_CONST_FSTS`     | Enable ConstFst extensions                       | `OFF`
+`OPENFST_ENABLE_FAR`            | Enable FAR extensions                            | `OFF`
+`OPENFST_ENABLE_LINEAR_FSTS`    | Enable LinearTagger/ClassifierFst extensions     | `OFF`
+`OPENFST_ENABLE_LOOKAHEAD_FSTS` | Enable LookAheadFst extensions                   | `OFF`
+`OPENFST_ENABLE_MPDT`           | Enable MPDT extensions                           | `OFF`
+`OPENFST_ENABLE_NGRAM_FSTS`     | Enable NGramFst extensions                       | `OFF`
+`OPENFST_ENABLE_PDT`            | Enable PDT extensions                            | `OFF`
+`OPENFST_ENABLE_PYTHON`         | Enable Python extension                          | `OFF`
+`OPENFST_ENABLE_SPECIAL`        | Enable special-matcher extensions                | `OFF`
 
 There are also meta-options to enable groups of extensions:
 
-| Option                | Description                                         |
-| :-------------------- | :-------------------------------------------------- |
-| `OPENFST_ENABLE_FSTS` | Enable all FST extensions (Compact, Const, Linear,  |
-:                       : LookAhead, NGram, Special, Compress)                :
-| `OPENFST_ENABLE_GRM`  | Enable all dependencies of OpenGrm (FAR, PDT, MPDT) |
+Option                | Description
+:-------------------- | :----------
+`OPENFST_ENABLE_FSTS` | Enable all FST extensions (Compact, Const, Linear, LookAhead, NGram, Special, Compress)
+`OPENFST_ENABLE_GRM`  | Enable all dependencies of OpenGrm (FAR, PDT, MPDT)
 
 Example usage:
 
