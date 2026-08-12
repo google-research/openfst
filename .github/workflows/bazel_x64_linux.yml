@@ -36,7 +36,7 @@ jobs:
       env:
         USE_BAZEL_VERSION: 9.1.1
       steps:
-        - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
           with:
             persist-credentials: false
         - name: Setup Bazel
@@ -44,8 +44,10 @@ jobs:
           with:
             # Avoid downloading Bazel every time.
             bazelisk-cache: true
-            # Store build cache per workflow.
-            disk-cache: ${{github.workflow}}
+            # Store build cache per workflow. In addition to default files
+            # (MODULE.bazel, WORKSPACE, BUILD.bazel) hashed by setup-bazel,
+            # explicitly include .bazelrc and .bzl files in the cache key.
+            disk-cache: ${{github.workflow}}-${{hashFiles('.bazelrc', '**/*.bzl')}}
             # Share repository cache between workflows.
             repository-cache: true
         - name: Check Bazelisk
