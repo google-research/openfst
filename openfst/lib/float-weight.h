@@ -267,7 +267,7 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
   }
 
   TropicalWeightTpl<T> Quantize(float delta = kDelta) const {
-    if (!Member() || Value() == Limits::PosInfinity()) {
+    if (!Member() || Value() == Limits::PosInfinity() || Value() == 0.0F) {
       return *this;
     } else {
       return TropicalWeightTpl<T>(std::floor(Value() / delta + 0.5F) * delta);
@@ -438,7 +438,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
   }
 
   LogWeightTpl Quantize(float delta = kDelta) const {
-    if (!Member() || Value() == Limits::PosInfinity()) {
+    if (!Member() || Value() == Limits::PosInfinity() || Value() == 0.0F) {
       return *this;
     } else {
       return LogWeightTpl(std::floor(Value() / delta + 0.5F) * delta);
@@ -640,7 +640,7 @@ class RealWeightTpl : public FloatWeightTpl<T> {
   }
 
   RealWeightTpl Quantize(float delta = kDelta) const {
-    if (!Member() || Value() == Limits::PosInfinity()) {
+    if (!Member() || Value() == Limits::PosInfinity() || Value() == 0.0F) {
       return *this;
     } else {
       return RealWeightTpl(std::floor(Value() / delta + 0.5F) * delta);
