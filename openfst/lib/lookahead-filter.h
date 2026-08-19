@@ -330,12 +330,20 @@ class PushWeightsComposeFilter {
     const auto& lweight = LookAheadArc()
                               ? Selector().GetMatcher()->LookAheadWeight()
                               : Weight::One();
-    const auto& fs2 = fs_.GetState2();
-    const auto& fweight = fs2.GetWeight();
     // Disallows Zero() weight futures.
     if (lweight == Weight::Zero()) return FilterState::NoState();
+    const auto& fs2 = fs_.GetState2();
+    const auto& fweight = fs2.GetWeight();
+    // Fast path: if the pushed lookahead weight is unchanged from the current
+    // filter state, semiring arithmetic simplifies to a no-op and the filter
+    // state weight is already quantized.
+    if (lweight == fweight) {
+      return FilterState(fs1, fs2);
+    }
     arc2->weight = Divide(Times(arc2->weight, lweight), fweight);
-    return FilterState(fs1, FilterState2(lweight.Quantize()));
+    return FilterState(
+        fs1, FilterState2(lweight == Weight::One() ? Weight::One()
+                                                   : lweight.Quantize()));
   }
 
   void FilterFinal(Weight* weight1, Weight* weight2) const {
