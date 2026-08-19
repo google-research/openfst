@@ -400,199 +400,89 @@ class Adder<SignedLogWeightTpl<T>> {
 };
 
 // Converts to tropical.
-template <>
-struct WeightConvert<SignedLogWeight, TropicalWeight> {
-  TropicalWeight operator()(const SignedLogWeight& weight) const {
-    if (!SignedLogConvertCheck<SignedLogWeight, TropicalWeight>(weight)) {
-      return TropicalWeight::NoWeight();
+template <class T, class U>
+struct WeightConvert<SignedLogWeightTpl<T>, TropicalWeightTpl<U>> {
+  using FromWeight = SignedLogWeightTpl<T>;
+  using ToWeight = TropicalWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    if (!SignedLogConvertCheck<FromWeight, ToWeight>(weight)) {
+      return ToWeight::NoWeight();
     }
-    return TropicalWeight(weight.Value2().Value());
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, TropicalWeight> {
-  TropicalWeight operator()(const SignedLog64Weight& weight) const {
-    if (!SignedLogConvertCheck<SignedLog64Weight, TropicalWeight>(weight)) {
-      return TropicalWeight::NoWeight();
-    }
-    return TropicalWeight(weight.Value2().Value());
+    return ToWeight(weight.Value2().Value());
   }
 };
 
 // Converts to log.
-template <>
-struct WeightConvert<SignedLogWeight, LogWeight> {
-  LogWeight operator()(const SignedLogWeight& weight) const {
-    if (!SignedLogConvertCheck<SignedLogWeight, LogWeight>(weight)) {
-      return LogWeight::NoWeight();
+template <class T, class U>
+struct WeightConvert<SignedLogWeightTpl<T>, LogWeightTpl<U>> {
+  using FromWeight = SignedLogWeightTpl<T>;
+  using ToWeight = LogWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    if (!SignedLogConvertCheck<FromWeight, ToWeight>(weight)) {
+      return ToWeight::NoWeight();
     }
-    return LogWeight(weight.Value2().Value());
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, LogWeight> {
-  LogWeight operator()(const SignedLog64Weight& weight) const {
-    if (!SignedLogConvertCheck<SignedLog64Weight, LogWeight>(weight)) {
-      return LogWeight::NoWeight();
-    }
-    return LogWeight(weight.Value2().Value());
-  }
-};
-
-// Converts to log64.
-template <>
-struct WeightConvert<SignedLogWeight, Log64Weight> {
-  Log64Weight operator()(const SignedLogWeight& weight) const {
-    if (!SignedLogConvertCheck<SignedLogWeight, Log64Weight>(weight)) {
-      return Log64Weight::NoWeight();
-    }
-    return Log64Weight(weight.Value2().Value());
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, Log64Weight> {
-  Log64Weight operator()(const SignedLog64Weight& weight) const {
-    if (!SignedLogConvertCheck<SignedLog64Weight, Log64Weight>(weight)) {
-      return Log64Weight::NoWeight();
-    }
-    return Log64Weight(weight.Value2().Value());
+    return ToWeight(weight.Value2().Value());
   }
 };
 
 // Converts to real.
-template <>
-struct WeightConvert<SignedLogWeight, RealWeight> {
-  RealWeight operator()(const SignedLogWeight& weight) const {
-    return RealWeight(weight.Value1().Value() * exp(-weight.Value2().Value()));
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, RealWeight> {
-  RealWeight operator()(const SignedLog64Weight& weight) const {
-    return RealWeight(weight.Value1().Value() * exp(-weight.Value2().Value()));
-  }
-};
-
-// Converts to real64.
-template <>
-struct WeightConvert<SignedLogWeight, Real64Weight> {
-  Real64Weight operator()(const SignedLogWeight& weight) const {
-    return Real64Weight(weight.Value1().Value() *
-                        exp(-weight.Value2().Value()));
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, Real64Weight> {
-  Real64Weight operator()(const SignedLog64Weight& weight) const {
-    return Real64Weight(weight.Value1().Value() *
-                        exp(-weight.Value2().Value()));
+template <class T, class U>
+struct WeightConvert<SignedLogWeightTpl<T>, RealWeightTpl<U>> {
+  using FromWeight = SignedLogWeightTpl<T>;
+  using ToWeight = RealWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(weight.Value1().Value() * exp(-weight.Value2().Value()));
   }
 };
 
 // Converts to signed log.
-template <>
-struct WeightConvert<TropicalWeight, SignedLogWeight> {
-  SignedLogWeight operator()(const TropicalWeight& weight) const {
-    return SignedLogWeight(SignedLogWeight::W1(1.0),
-                           SignedLogWeight::W2(weight.Value()));
+template <class T, class U>
+struct WeightConvert<TropicalWeightTpl<T>, SignedLogWeightTpl<U>> {
+  using FromWeight = TropicalWeightTpl<T>;
+  using ToWeight = SignedLogWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(typename ToWeight::W1(1.0),
+                    typename ToWeight::W2(weight.Value()));
   }
 };
 
-template <>
-struct WeightConvert<LogWeight, SignedLogWeight> {
-  SignedLogWeight operator()(const LogWeight& weight) const {
-    return SignedLogWeight(SignedLogWeight::W1(1.0),
-                           SignedLogWeight::W2(weight.Value()));
+template <class T, class U>
+struct WeightConvert<LogWeightTpl<T>, SignedLogWeightTpl<U>> {
+  using FromWeight = LogWeightTpl<T>;
+  using ToWeight = SignedLogWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(typename ToWeight::W1(1.0),
+                    typename ToWeight::W2(weight.Value()));
   }
 };
 
-template <>
-struct WeightConvert<Log64Weight, SignedLogWeight> {
-  SignedLogWeight operator()(const Log64Weight& weight) const {
-    return SignedLogWeight(SignedLogWeight::W1(1.0),
-                           SignedLogWeight::W2(weight.Value()));
+template <class T, class U>
+struct WeightConvert<RealWeightTpl<T>, SignedLogWeightTpl<U>> {
+  using FromWeight = RealWeightTpl<T>;
+  using ToWeight = SignedLogWeightTpl<U>;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(typename ToWeight::W1(weight.Value() >= 0 ? 1.0 : -1.0),
+                    typename ToWeight::W2(-log(std::abs(weight.Value()))));
   }
 };
 
-template <>
-struct WeightConvert<RealWeight, SignedLogWeight> {
-  SignedLogWeight operator()(const RealWeight& weight) const {
-    return SignedLogWeight(
-        SignedLogWeight::W1(weight.Value() >= 0 ? 1.0 : -1.0),
-        SignedLogWeight::W2(-log(std::abs(weight.Value()))));
-  }
-};
-
-template <>
-struct WeightConvert<Real64Weight, SignedLogWeight> {
-  SignedLogWeight operator()(const Real64Weight& weight) const {
-    return SignedLogWeight(
-        SignedLogWeight::W1(weight.Value() >= 0 ? 1.0 : -1.0),
-        SignedLogWeight::W2(-log(std::abs(weight.Value()))));
-  }
-};
-
-template <>
-struct WeightConvert<SignedLog64Weight, SignedLogWeight> {
-  SignedLogWeight operator()(const SignedLog64Weight& weight) const {
-    return SignedLogWeight(weight.Value1(),
-                           SignedLogWeight::W2(weight.Value2().Value()));
-  }
-};
-
-// Converts to signed log64.
-template <>
-struct WeightConvert<TropicalWeight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const TropicalWeight& weight) const {
-    return SignedLog64Weight(SignedLog64Weight::W1(1.0),
-                             Log64Weight(weight.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<LogWeight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const LogWeight& weight) const {
-    return SignedLog64Weight(SignedLog64Weight::W1(1.0),
-                             SignedLog64Weight::W2(weight.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<Log64Weight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const Log64Weight& weight) const {
-    return SignedLog64Weight(SignedLog64Weight::W1(1.0),
-                             SignedLog64Weight::W2(weight.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<RealWeight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const RealWeight& weight) const {
-    return SignedLog64Weight(
-        SignedLog64Weight::W1(weight.Value() >= 0 ? 1.0 : -1.0),
-        SignedLog64Weight::W2(-log(std::abs(weight.Value()))));
-  }
-};
-
-template <>
-struct WeightConvert<Real64Weight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const Real64Weight& weight) const {
-    return SignedLog64Weight(
-        SignedLog64Weight::W1(weight.Value() >= 0 ? 1.0 : -1.0),
-        SignedLog64Weight::W2(-log(std::abs(weight.Value()))));
-  }
-};
-
+// Converts between signed log and signed log64.
 template <>
 struct WeightConvert<SignedLogWeight, SignedLog64Weight> {
-  SignedLog64Weight operator()(const SignedLogWeight& weight) const {
-    return SignedLog64Weight(weight.Value1(),
-                             SignedLog64Weight::W2(weight.Value2().Value()));
+  using FromWeight = SignedLogWeight;
+  using ToWeight = SignedLog64Weight;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(weight.Value1(),
+                    typename ToWeight::W2(weight.Value2().Value()));
+  }
+};
+template <>
+struct WeightConvert<SignedLog64Weight, SignedLogWeight> {
+  using FromWeight = SignedLog64Weight;
+  using ToWeight = SignedLogWeight;
+  ToWeight operator()(const FromWeight& weight) const {
+    return ToWeight(weight.Value1(),
+                    typename ToWeight::W2(weight.Value2().Value()));
   }
 };
 

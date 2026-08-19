@@ -847,42 +847,35 @@ constexpr MinMaxWeightTpl<T> Divide(const MinMaxWeightTpl<T>& w1,
 }
 
 // Converts to tropical.
-template <>
-struct WeightConvert<LogWeight, TropicalWeight> {
-  constexpr TropicalWeight operator()(const LogWeight& w) const {
-    return TropicalWeight(w.Value());
-  }
-};
-
-template <>
-struct WeightConvert<Log64Weight, TropicalWeight> {
-  constexpr TropicalWeight operator()(const Log64Weight& w) const {
-    return TropicalWeight(w.Value());
+template <class T, class U>
+struct WeightConvert<LogWeightTpl<T>, TropicalWeightTpl<U>> {
+  constexpr TropicalWeightTpl<U> operator()(const LogWeightTpl<T>& w) const {
+    return TropicalWeightTpl<U>(w.Value());
   }
 };
 
 // Converts to log.
-template <>
-struct WeightConvert<TropicalWeight, LogWeight> {
-  constexpr LogWeight operator()(const TropicalWeight& w) const {
-    return LogWeight(w.Value());
+template <class T, class U>
+struct WeightConvert<TropicalWeightTpl<T>, LogWeightTpl<U>> {
+  constexpr LogWeightTpl<U> operator()(const TropicalWeightTpl<T>& w) const {
+    return LogWeightTpl<U>(w.Value());
   }
 };
 
-template <>
-struct WeightConvert<RealWeight, LogWeight> {
-  LogWeight operator()(const RealWeight& w) const {
-    return LogWeight(-log(w.Value()));
+template <class T, class U>
+struct WeightConvert<RealWeightTpl<T>, LogWeightTpl<U>> {
+  LogWeightTpl<U> operator()(const RealWeightTpl<T>& w) const {
+    return LogWeightTpl<U>(-log(w.Value()));
   }
 };
 
+// Converts between log and log64.
 template <>
-struct WeightConvert<Real64Weight, LogWeight> {
-  LogWeight operator()(const Real64Weight& w) const {
-    return LogWeight(-log(w.Value()));
+struct WeightConvert<LogWeight, Log64Weight> {
+  constexpr Log64Weight operator()(const LogWeight& w) const {
+    return Log64Weight(w.Value());
   }
 };
-
 template <>
 struct WeightConvert<Log64Weight, LogWeight> {
   constexpr LogWeight operator()(const Log64Weight& w) const {
@@ -890,76 +883,25 @@ struct WeightConvert<Log64Weight, LogWeight> {
   }
 };
 
-// Converts to log64.
-template <>
-struct WeightConvert<TropicalWeight, Log64Weight> {
-  constexpr Log64Weight operator()(const TropicalWeight& w) const {
-    return Log64Weight(w.Value());
-  }
-};
-
-template <>
-struct WeightConvert<RealWeight, Log64Weight> {
-  Log64Weight operator()(const RealWeight& w) const {
-    return Log64Weight(-log(w.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<Real64Weight, Log64Weight> {
-  Log64Weight operator()(const Real64Weight& w) const {
-    return Log64Weight(-log(w.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<LogWeight, Log64Weight> {
-  constexpr Log64Weight operator()(const LogWeight& w) const {
-    return Log64Weight(w.Value());
-  }
-};
-
 // Converts to real.
-template <>
-struct WeightConvert<LogWeight, RealWeight> {
-  RealWeight operator()(const LogWeight& w) const {
-    return RealWeight(exp(-w.Value()));
+template <class T, class U>
+struct WeightConvert<LogWeightTpl<T>, RealWeightTpl<U>> {
+  RealWeightTpl<U> operator()(const LogWeightTpl<T>& w) const {
+    return RealWeightTpl<U>(exp(-w.Value()));
   }
 };
 
-template <>
-struct WeightConvert<Log64Weight, RealWeight> {
-  RealWeight operator()(const Log64Weight& w) const {
-    return RealWeight(exp(-w.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<Real64Weight, RealWeight> {
-  constexpr RealWeight operator()(const Real64Weight& w) const {
-    return RealWeight(w.Value());
-  }
-};
-
-// Converts to real64
-template <>
-struct WeightConvert<LogWeight, Real64Weight> {
-  Real64Weight operator()(const LogWeight& w) const {
-    return Real64Weight(exp(-w.Value()));
-  }
-};
-
-template <>
-struct WeightConvert<Log64Weight, Real64Weight> {
-  Real64Weight operator()(const Log64Weight& w) const {
-    return Real64Weight(exp(-w.Value()));
-  }
-};
-
+// Converts between real and real64.
 template <>
 struct WeightConvert<RealWeight, Real64Weight> {
   constexpr Real64Weight operator()(const RealWeight& w) const {
     return Real64Weight(w.Value());
+  }
+};
+template <>
+struct WeightConvert<Real64Weight, RealWeight> {
+  constexpr RealWeight operator()(const Real64Weight& w) const {
+    return RealWeight(w.Value());
   }
 };
 
