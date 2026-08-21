@@ -519,6 +519,37 @@ void BM_WeightHash_Random(benchmark::State& state) {
   }
 }
 
+// Measures time to quantize a vector of elements with random values.
+template <typename W>
+void BM_Quantize(benchmark::State& state) {
+  const int size = state.range(0);
+  std::vector<W> weights;
+  weights.reserve(size);
+  std::mt19937_64 bitgen;
+  for (int i = 0; i < size; ++i) {
+    weights.emplace_back(MakeRandomWeight<W>(bitgen));
+  }
+  while (state.KeepRunningBatch(size)) {
+    for (const auto& w : weights) {
+      benchmark::DoNotOptimize(w.Quantize());
+    }
+  }
+}
+
+// Measures latency to quantize weights with a loop-carried dependency.
+template <typename W>
+void BM_QuantizeLatency(benchmark::State& state) {
+  const int size = state.range(0);
+  std::mt19937_64 bitgen;
+  W w = MakeRandomWeight<W>(bitgen);
+  while (state.KeepRunningBatch(size)) {
+    for (int i = 0; i < size; ++i) {
+      w = w.Quantize();
+    }
+    benchmark::DoNotOptimize(w);
+  }
+}
+
 // Counts collisions in a large set of partially random, partially
 // sequential inputs.
 template <typename W>
@@ -765,6 +796,45 @@ BENCHMARK_TEMPLATE(BM_WeightHash_SAC, TropicalWeight);
 BENCHMARK_TEMPLATE(BM_WeightHash_SAC, TupleWeight<LogWeight, 3>);
 BENCHMARK_TEMPLATE(BM_WeightHash_SAC, TupleWeight<SignedLog64Weight, 3>);
 BENCHMARK_TEMPLATE(BM_WeightHash_SAC, TupleWeight<TropicalWeight, 3>);
+
+// Quantize.
+BENCHMARK_TEMPLATE(BM_Quantize, SignedLog64Weight)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, LogWeight)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, TropicalWeight)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, StringWeight<int>)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, TupleWeight<LogWeight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, TupleWeight<SignedLog64Weight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, TupleWeight<TropicalWeight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, SparseTupleWeight<LogWeight, int>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, SparseTupleWeight<SignedLog64Weight, int>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_Quantize, SparseTupleWeight<TropicalWeight, int>)
+    ->Range(1 << 10, 1 << 16);
+
+// Quantize Latency.
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, SignedLog64Weight)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, LogWeight)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, TropicalWeight)->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, StringWeight<int>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, TupleWeight<LogWeight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, TupleWeight<SignedLog64Weight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, TupleWeight<TropicalWeight, 3>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, SparseTupleWeight<LogWeight, int>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency,
+                   SparseTupleWeight<SignedLog64Weight, int>)
+    ->Range(1 << 10, 1 << 16);
+BENCHMARK_TEMPLATE(BM_QuantizeLatency, SparseTupleWeight<TropicalWeight, int>)
+    ->Range(1 << 10, 1 << 16);
 
 }  // namespace
 }  // namespace fst
