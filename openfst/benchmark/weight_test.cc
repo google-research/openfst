@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <random>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -89,12 +90,12 @@ SignedLog64Weight MakeWeight<SignedLog64Weight>(float w) {
 }
 
 template <typename W>
-W MakeRandomWeight(absl::BitGen& bitgen) {
+W MakeRandomWeight(std::mt19937_64& bitgen) {
   return W(absl::Uniform(bitgen, -10.0, 10.0));
 }
 
 template <>
-SignedLog64Weight MakeRandomWeight<SignedLog64Weight>(absl::BitGen& bitgen) {
+SignedLog64Weight MakeRandomWeight<SignedLog64Weight>(std::mt19937_64& bitgen) {
   return SignedLog64Weight(TropicalWeight(absl::Uniform(bitgen, -10.0, 10.0)),
                            Log64Weight(absl::Uniform(bitgen, -10.0, 10.0)));
 }
@@ -105,7 +106,7 @@ StringWeight<int> MakeWeight<StringWeight<int>>(float w) {
 }
 
 template <>
-StringWeight<int> MakeRandomWeight<StringWeight<int>>(absl::BitGen& bitgen) {
+StringWeight<int> MakeRandomWeight<StringWeight<int>>(std::mt19937_64& bitgen) {
   StringWeight<int> sw;
   const int length = absl::Uniform(bitgen, 1, 10);
   for (int i = 0; i < length; ++i) {
@@ -121,7 +122,7 @@ TupleWeight<LogWeight, 3> MakeWeight<TupleWeight<LogWeight, 3>>(float w) {
 
 template <>
 TupleWeight<LogWeight, 3> MakeRandomWeight<TupleWeight<LogWeight, 3>>(
-    absl::BitGen& bitgen) {
+    std::mt19937_64& bitgen) {
   return TupleWeight<LogWeight, 3>(
       LogWeight(absl::Uniform(bitgen, -10.0, 10.0)));
 }
@@ -134,7 +135,7 @@ SparseTupleWeight<LogWeight, int> MakeWeight<SparseTupleWeight<LogWeight, int>>(
 
 template <>
 SparseTupleWeight<LogWeight, int>
-MakeRandomWeight<SparseTupleWeight<LogWeight, int>>(absl::BitGen& bitgen) {
+MakeRandomWeight<SparseTupleWeight<LogWeight, int>>(std::mt19937_64& bitgen) {
   SparseTupleWeight<LogWeight, int> sw;
   const int length = absl::Uniform(bitgen, 1, 10);
   for (int i = 0; i < length; ++i) {
@@ -152,7 +153,7 @@ TupleWeight<SignedLog64Weight, 3> MakeWeight<TupleWeight<SignedLog64Weight, 3>>(
 
 template <>
 TupleWeight<SignedLog64Weight, 3>
-MakeRandomWeight<TupleWeight<SignedLog64Weight, 3>>(absl::BitGen& bitgen) {
+MakeRandomWeight<TupleWeight<SignedLog64Weight, 3>>(std::mt19937_64& bitgen) {
   return TupleWeight<SignedLog64Weight, 3>(
       SignedLog64Weight(TropicalWeight(absl::Uniform(bitgen, -10.0, 10.0)),
                         Log64Weight(absl::Uniform(bitgen, -10.0, 10.0))));
@@ -166,7 +167,7 @@ TupleWeight<TropicalWeight, 3> MakeWeight<TupleWeight<TropicalWeight, 3>>(
 
 template <>
 TupleWeight<TropicalWeight, 3> MakeRandomWeight<TupleWeight<TropicalWeight, 3>>(
-    absl::BitGen& bitgen) {
+    std::mt19937_64& bitgen) {
   return TupleWeight<TropicalWeight, 3>(
       TropicalWeight(absl::Uniform(bitgen, -10.0, 10.0)));
 }
@@ -183,7 +184,7 @@ MakeWeight<SparseTupleWeight<SignedLog64Weight, int>>(float w) {
 template <>
 SparseTupleWeight<SignedLog64Weight, int>
 MakeRandomWeight<SparseTupleWeight<SignedLog64Weight, int>>(
-    absl::BitGen& bitgen) {
+    std::mt19937_64& bitgen) {
   SparseTupleWeight<SignedLog64Weight, int> sw;
   const int length = absl::Uniform(bitgen, 1, 10);
   for (int i = 0; i < length; ++i) {
@@ -203,7 +204,8 @@ MakeWeight<SparseTupleWeight<TropicalWeight, int>>(float w) {
 
 template <>
 SparseTupleWeight<TropicalWeight, int>
-MakeRandomWeight<SparseTupleWeight<TropicalWeight, int>>(absl::BitGen& bitgen) {
+MakeRandomWeight<SparseTupleWeight<TropicalWeight, int>>(
+    std::mt19937_64& bitgen) {
   SparseTupleWeight<TropicalWeight, int> sw;
   const int length = absl::Uniform(bitgen, 1, 10);
   for (int i = 0; i < length; ++i) {
@@ -247,7 +249,7 @@ void BM_Collisions_Generic(benchmark::State& state, const Container& weights,
 template <typename W, typename Generator, typename Hasher>
 void BM_Avalanche_Generic(benchmark::State& state, Generator generator,
                           Hasher hasher) {
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   const int num_samples = 1000;
   for (auto _ : state) {
     int64_t total_changed_bits = 0;
@@ -286,7 +288,7 @@ void BM_Avalanche_Generic(benchmark::State& state, Generator generator,
 template <typename W, typename Generator, typename Hasher>
 void BM_SAC_Generic(benchmark::State& state, Generator generator,
                     Hasher hasher) {
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   const int num_samples = 1000;
   const size_t num_bytes = sizeof(W);
   const size_t num_bits = num_bytes * 8;
@@ -361,7 +363,7 @@ void BM_PairWeightHash_Random(benchmark::State& state) {
   const int size = state.range(0);
   std::vector<PairWeight<W, W>> weights;
   weights.reserve(size);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeRandomWeight<W>(bitgen),
                          MakeRandomWeight<W>(bitgen));
@@ -380,7 +382,7 @@ void BM_PairWeightHash_Collisions(benchmark::State& state) {
   const int size = 100000;
   std::vector<PairWeight<W, W>> weights;
   weights.reserve(size);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeRandomWeight<W>(bitgen), MakeWeight<W>(i));
   }
@@ -391,7 +393,7 @@ template <typename W>
 void BM_PairWeightHash_Avalanche(benchmark::State& state) {
   BM_Avalanche_Generic<PairWeight<W, W>>(
       state,
-      [](absl::BitGen& bitgen) {
+      [](std::mt19937_64& bitgen) {
         return PairWeight<W, W>(MakeRandomWeight<W>(bitgen),
                                 MakeRandomWeight<W>(bitgen));
       },
@@ -402,7 +404,7 @@ template <typename W>
 void BM_PairWeightHash_SAC(benchmark::State& state) {
   BM_SAC_Generic<PairWeight<W, W>>(
       state,
-      [](absl::BitGen& bitgen) {
+      [](std::mt19937_64& bitgen) {
         return PairWeight<W, W>(MakeRandomWeight<W>(bitgen),
                                 MakeRandomWeight<W>(bitgen));
       },
@@ -416,7 +418,7 @@ void BM_PairWeightHash_SwappedElements(benchmark::State& state) {
   const int size = state.range(0);
   std::vector<PairWeight<W, W>> weights;
   weights.reserve(size * 2);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   for (int i = 0; i < size; ++i) {
     const W w1 = MakeRandomWeight<W>(bitgen);
     const W w2 = MakeRandomWeight<W>(bitgen);
@@ -506,7 +508,7 @@ void BM_WeightHash_Random(benchmark::State& state) {
   const int size = state.range(0);
   std::vector<W> weights;
   weights.reserve(size);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeRandomWeight<W>(bitgen));
   }
@@ -524,7 +526,7 @@ void BM_WeightHash_Collisions(benchmark::State& state) {
   const int size = 100000;
   std::vector<W> weights;
   weights.reserve(size);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   for (int i = 0; i < size; ++i) {
     weights.emplace_back(MakeRandomWeight<W>(bitgen));
   }
@@ -580,7 +582,8 @@ void BM_WeightHash_Lookup(benchmark::State& state) {
 template <typename W>
 void BM_WeightHash_Avalanche(benchmark::State& state) {
   BM_Avalanche_Generic<W>(
-      state, [](absl::BitGen& bitgen) { return MakeRandomWeight<W>(bitgen); },
+      state,
+      [](std::mt19937_64& bitgen) { return MakeRandomWeight<W>(bitgen); },
       [](const W& w) { return w.Hash(); });
 }
 
@@ -588,7 +591,8 @@ void BM_WeightHash_Avalanche(benchmark::State& state) {
 template <typename W>
 void BM_WeightHash_SAC(benchmark::State& state) {
   BM_SAC_Generic<W>(
-      state, [](absl::BitGen& bitgen) { return MakeRandomWeight<W>(bitgen); },
+      state,
+      [](std::mt19937_64& bitgen) { return MakeRandomWeight<W>(bitgen); },
       [](const W& w) { return w.Hash(); });
 }
 

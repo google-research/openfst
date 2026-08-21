@@ -37,7 +37,10 @@ constexpr int kMaxUnions = 37;    // Max # of Union operations.
 constexpr int kNumTestRuns = 10;  // Number of separate random test runs.
 
 namespace {
-int Rand(int n, absl::BitGen& bit_gen) { return absl::Uniform(bit_gen, 1, n); }
+template <typename Gen>
+int Rand(int n, Gen& bit_gen) {
+  return absl::Uniform(bit_gen, 1, n);
+}
 }  // namespace
 
 class UnionFindTest : public testing::Test {
@@ -167,8 +170,7 @@ static void BM_UnionFind(benchmark::State& state) {
   const int elements = state.range(0);
 
   fst::UnionFind<int> uf(elements, -1);
-  absl::BitGen bit_gen(fst::MakeTaggedSeedSeq(
-      "BM_UNION_FIND"));
+  std::mt19937_64 bit_gen;
 
   // Multiply by 10 to run for longer than the benchmark usually wants
   // us to. We get slightly better numerical stability that way.

@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <tuple>
 #include <utility>
 
@@ -57,7 +58,7 @@ namespace {
 // a pair of count of bits set and the sum of the indices of the set bits.
 std::pair<uint32_t, int64_t> FillBitMap(int percent_filled, uint64_t* bm,
                                         int num_bits) {
-  absl::BitGen gen;
+  std::mt19937_64 gen;
   std::pair<uint32_t, int64_t> bitmap_info_pair(0, 0);
   CHECK_GE(percent_filled, 0);
   CHECK_LE(percent_filled, 100);
@@ -75,7 +76,7 @@ std::pair<uint32_t, int64_t> FillBitMap(int percent_filled, uint64_t* bm,
 std::unique_ptr<uint32_t[]> GenerateRandomBatch(uint32_t batch_size,
                                                 uint32_t hi_val) {
   auto batch = absl::make_unique_for_overwrite<uint32_t[]>(batch_size);
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   std::generate_n(&batch[0], batch_size,
                   [&]() { return absl::Uniform<uint32_t>(bitgen, 0, hi_val); });
   return batch;

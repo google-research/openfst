@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -50,7 +51,7 @@ std::string Testfile() {
 }
 
 std::vector<std::vector<StdArc::Label>> GetWords(size_t n, size_t sigma) {
-  absl::BitGen bitgen;
+  std::mt19937_64 bitgen;
   std::vector<std::vector<StdArc::Label>> output;
   for (int i = 0; i < n; i++) {
     std::vector<StdArc::Label> tempvector;
