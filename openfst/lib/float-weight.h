@@ -270,7 +270,10 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
     if (!Member() || Value() == Limits::PosInfinity()) {
       return *this;
     } else {
-      return TropicalWeightTpl<T>(std::floor(Value() / delta + 0.5F) * delta);
+      // TODO: Use `std::roundeven` when it exists; see if it's in C++29 when
+      // that is finalized.
+      return TropicalWeightTpl<T>(std::nearbyint(Value() * (1.0F / delta)) *
+                                  delta);
     }
   }
 
@@ -441,7 +444,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
     if (!Member() || Value() == Limits::PosInfinity()) {
       return *this;
     } else {
-      return LogWeightTpl(std::floor(Value() / delta + 0.5F) * delta);
+      return LogWeightTpl(std::nearbyint(Value() * (1.0F / delta)) * delta);
     }
   }
 
@@ -643,7 +646,7 @@ class RealWeightTpl : public FloatWeightTpl<T> {
     if (!Member() || Value() == Limits::PosInfinity()) {
       return *this;
     } else {
-      return RealWeightTpl(std::floor(Value() / delta + 0.5F) * delta);
+      return RealWeightTpl(std::nearbyint(Value() * (1.0F / delta)) * delta);
     }
   }
 
@@ -806,7 +809,7 @@ class MinMaxWeightTpl : public FloatWeightTpl<T> {
         Value() == Limits::PosInfinity()) {
       return *this;
     } else {
-      return MinMaxWeightTpl(std::floor(Value() / delta + 0.5F) * delta);
+      return MinMaxWeightTpl(std::nearbyint(Value() * (1.0F / delta)) * delta);
     }
   }
 
