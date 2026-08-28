@@ -212,12 +212,23 @@ std::pair<size_t, size_t> BitmapIndex::Select0s(size_t bit_index) const {
     const int next_nth = absl::countr_zero(masked_inv_word);
     return {kStorageBitSize * word_index + nth,
             kStorageBitSize * word_index + next_nth};
-  } else {
-    // TODO: Try other words in the block.
-    // This should not be massively important. With a bit density of 1/2,
-    // 31/32 zeros in a word have the next zero in the same word.
-    return {kStorageBitSize * word_index + nth, Select0(bit_index + 1)};
   }
+  // Scan subsequent words in the same 8-word rank block for the next zero
+  // bit. Because all 8 words in a block span 64 bytes (one L1 cache line),
+  // checking adjacent words here avoids a redundant rank index search in
+  // Select0(bit_index + 1).
+  const uint32_t block_end = std::min<uint32_t>(
+      StorageSize(num_bits_), (block_index + 1) * kUnitsPerRankIndexEntry);
+  for (uint32_t next_word_idx = word_index + 1; next_word_idx < block_end;
+       ++next_word_idx) {
+    const uint64_t next_inv_word = ~bits_[next_word_idx];
+    if (next_inv_word != 0) {
+      const int next_nth = absl::countr_zero(next_inv_word);
+      return {kStorageBitSize * word_index + nth,
+              kStorageBitSize * next_word_idx + next_nth};
+    }
+  }
+  return {kStorageBitSize * word_index + nth, Select0(bit_index + 1)};
 }
 
 uint32_t BitmapIndex::GetIndexOnesCount(size_t array_index) const {

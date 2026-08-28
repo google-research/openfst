@@ -24,6 +24,7 @@
 #include <random>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
@@ -571,7 +572,111 @@ TEST_P(BitmapIndexSelectTest, TestRankSelectZeros) {
   }
 }
 
-// Set 1 in sparsity bits to 1.
+TEST_P(BitmapIndexSelectTest, Select0sBlockBoundaries) {
+  // Test 4 rank blocks (4 * 512 = 2048 bits).
+  constexpr size_t kNumBits = 2048;
+  auto bm = std::make_unique<uint64_t[]>(BitmapIndex::StorageSize(kNumBits));
+  // Pairs of (zero0_bit, zero1_bit) testing:
+  // 1. Same word (e.g. bits 10, 20 in word 0).
+  // 2. Intra-block adjacent words (e.g. bit 63 in word 0, bit 64 in word 1).
+  // 3. Intra-block non-adjacent words (e.g. bit 10 in word 0, bit 450 in
+  //    word 7).
+  // 4. Exact rank block boundary (e.g. bit 511 in word 7 [block 0], bit 512
+  //    in word 8 [block 1]).
+  // 5. Cross-block spanning multiple all-ones blocks (e.g. bit 100 in block 0,
+  //    bit 1600 in block 3).
+  const std::vector<std::pair<size_t, size_t>> test_pairs = {
+      {10, 20},     // Same word (word 0).
+      {63, 64},     // Intra-block adjacent words (word 0 and word 1).
+      {10, 450},    // Intra-block distant words (word 0 and word 7).
+      {511, 512},   // Exact rank block boundary (word 7 [block 0] -> word 8
+                    // [block 1]).
+      {10, 512},    // Word 0 [block 0] to word 8 [block 1] (words 1..7 ones).
+      {500, 520},   // Word 7 [block 0] to word 8 [block 1].
+      {100, 1600},  // Block 0 to Block 3 (spanning multiple all-ones blocks).
+  };
+  for (const auto& [z0, z1] : test_pairs) {
+    std::fill_n(bm.get(), BitmapIndex::StorageSize(kNumBits), ~uint64_t{0});
+    BitmapIndex::Clear(bm.get(), z0);
+    BitmapIndex::Clear(bm.get(), z1);
+    BitmapIndex map(bm.get(), kNumBits, enable_select_0_index_,
+                    enable_select_1_index_);
+    EXPECT_EQ(2, map.Bits() - map.GetOnesCount());
+    const std::pair<size_t, size_t> zeros0 = map.Select0s(0);
+    EXPECT_EQ(zeros0.first, z0);
+    EXPECT_EQ(zeros0.second, z1);
+    EXPECT_EQ(zeros0.first, map.Select0(0));
+    EXPECT_EQ(zeros0.second, map.Select0(1));
+
+    const std::pair<size_t, size_t> zeros1 = map.Select0s(1);
+    EXPECT_EQ(zeros1.first, z1);
+    EXPECT_EQ(zeros1.second, kNumBits);
+    EXPECT_EQ(zeros1.first, map.Select0(1));
+    EXPECT_EQ(zeros1.second, map.Select0(2));
+  }
+
+  // Multi-zero boundary chain testing transitions across all boundaries in a
+  // single bitmap.
+  const std::vector<size_t> chain_zeros = {
+      63, 64, 65, 511, 512, 513, 1023, 1024, 1025, 1535, 1536,
+  };
+  std::fill_n(bm.get(), BitmapIndex::StorageSize(kNumBits), ~uint64_t{0});
+  for (size_t z : chain_zeros) {
+    BitmapIndex::Clear(bm.get(), z);
+  }
+  BitmapIndex chain_map(bm.get(), kNumBits, enable_select_0_index_,
+                        enable_select_1_index_);
+  EXPECT_EQ(chain_zeros.size(), chain_map.Bits() - chain_map.GetOnesCount());
+  for (size_t k = 0; k < chain_zeros.size(); ++k) {
+    const std::pair<size_t, size_t> zeros = chain_map.Select0s(k);
+    EXPECT_EQ(zeros.first, chain_zeros[k]);
+    EXPECT_EQ(zeros.first, chain_map.Select0(k));
+    if (k + 1 < chain_zeros.size()) {
+      EXPECT_EQ(zeros.second, chain_zeros[k + 1]);
+      EXPECT_EQ(zeros.second, chain_map.Select0(k + 1));
+    } else {
+      EXPECT_EQ(zeros.second, kNumBits);
+      EXPECT_EQ(zeros.second, chain_map.Select0(k + 1));
+    }
+  }
+}
+
+TEST_P(BitmapIndexSelectTest, Select0sRandomBitmaps) {
+  std::mt19937_64 bitgen;
+  for (const int num_bits : {64, 128, 511, 512, 513, 1024, 2048}) {
+    auto bm = std::make_unique<uint64_t[]>(BitmapIndex::StorageSize(num_bits));
+    for (const double zero_prob : {0.01, 0.05, 0.1, 0.5, 0.9, 0.99}) {
+      std::fill_n(bm.get(), BitmapIndex::StorageSize(num_bits), 0);
+      for (int i = 0; i < num_bits; ++i) {
+        if (!absl::Bernoulli(bitgen, zero_prob)) {
+          BitmapIndex::Set(bm.get(), i);
+        }
+      }
+      BitmapIndex map(bm.get(), num_bits, enable_select_0_index_,
+                      enable_select_1_index_);
+      const uint32_t num_zeros = map.Bits() - map.GetOnesCount();
+      for (uint32_t k = 0; k < num_zeros; ++k) {
+        const std::pair<size_t, size_t> zeros = map.Select0s(k);
+        EXPECT_EQ(zeros.first, map.Select0(k))
+            << "k=" << k << " num_bits=" << num_bits << " prob=" << zero_prob;
+        if (k + 1 < num_zeros) {
+          EXPECT_EQ(zeros.second, map.Select0(k + 1))
+              << "k=" << k << " num_bits=" << num_bits << " prob=" << zero_prob;
+        } else {
+          EXPECT_EQ(zeros.second, num_bits)
+              << "k=" << k << " num_bits=" << num_bits << " prob=" << zero_prob;
+        }
+      }
+    }
+  }
+}
+
+// Verifies Rank1, Rank0, Select1, Select0, and Select0s on regular sparse
+// bitmaps where every `sparsity`-th bit is set to 1.
+// Iterates through all bit positions `i` in the bitmap:
+// - If bit `i` is 1, validates Rank1 and Select1.
+// - If bit `i` is 0, validates Rank0, Select0, and Select0s (verifying that
+//   Select0s(rank0) matches (Select0(rank0), Select0(rank0 + 1))).
 void TestRankSelectWithSparsity(int sparsity, int num_bits,
                                 bool enable_select_0_index,
                                 bool enable_select_1_index) {
@@ -606,6 +711,16 @@ void TestRankSelectWithSparsity(int sparsity, int num_bits,
       if (rank0 < num_bits - imap.GetOnesCount()) {
         EXPECT_EQ(i, imap.Select0(rank0))
             << rank0 << " " << sparsity << " " << num_bits;
+        const std::pair<size_t, size_t> zeros = imap.Select0s(rank0);
+        EXPECT_EQ(zeros.first, imap.Select0(rank0))
+            << rank0 << " " << sparsity << " " << num_bits;
+        if (rank0 + 1 < num_bits - imap.GetOnesCount()) {
+          EXPECT_EQ(zeros.second, imap.Select0(rank0 + 1))
+              << rank0 << " " << sparsity << " " << num_bits;
+        } else {
+          EXPECT_EQ(zeros.second, num_bits)
+              << rank0 << " " << sparsity << " " << num_bits;
+        }
       } else {
         EXPECT_EQ(num_bits, imap.Select0(rank0))
             << rank0 << " " << sparsity << " " << num_bits;
