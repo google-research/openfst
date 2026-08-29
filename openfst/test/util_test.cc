@@ -209,5 +209,81 @@ TEST(CompactSetTest, DenseRange) {
   EXPECT_FALSE(values.Member(6));
 }
 
+TEST(WriteReadTest, StringOversizedReadFails) {
+  std::ostringstream out;
+  WriteType(out, static_cast<int32_t>(100 * 1024 * 1024 + 1));
+  std::istringstream in(out.str());
+  std::string s;
+  ReadType(in, &s);
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(WriteReadTest, StringNegativeReadFails) {
+  std::ostringstream out;
+  WriteType(out, static_cast<int32_t>(-10));
+  std::istringstream in(out.str());
+  std::string s;
+  ReadType(in, &s);
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(WriteReadTest, VectorOversizedReadFails) {
+  std::ostringstream out;
+  WriteType(out, static_cast<int64_t>(1LL << 30));
+  std::istringstream in(out.str());
+  std::vector<int32_t> v;
+  ReadType(in, &v);
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(WriteReadTest, VectorNegativeReadFails) {
+  std::ostringstream out;
+  WriteType(out, static_cast<int64_t>(-5));
+  std::istringstream in(out.str());
+  std::vector<int32_t> v;
+  ReadType(in, &v);
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(WriteReadTest, ValidateReadSizePublicApi) {
+  std::ostringstream out;
+  out << "hello";
+  std::istringstream in(out.str());
+  EXPECT_TRUE(ValidateReadSize(in, 5, kDefaultMaxNonSeekableRead));
+  // Requesting > 8 MiB triggers the seekable stream bounds check. Because the
+  // stream only contains 5 bytes ("hello"), the requested size exceeds the
+  // remaining length, causing ValidateReadSize to fail and set failbit.
+  EXPECT_FALSE(
+      ValidateReadSize(in, (8 << 20) + 100, kDefaultMaxNonSeekableRead));
+  EXPECT_TRUE(in.fail());
+}
+
+class NonSeekableStringStream : public std::istream {
+ public:
+  explicit NonSeekableStringStream(const std::string& str)
+      : std::istream(&buf_), buf_(str) {}
+
+ private:
+  class NonSeekableBuf : public std::stringbuf {
+   public:
+    explicit NonSeekableBuf(const std::string& str) : std::stringbuf(str) {}
+    pos_type seekoff(off_type, std::ios_base::seekdir,
+                     std::ios_base::openmode) override {
+      return pos_type(off_type(-1));
+    }
+    pos_type seekpos(pos_type, std::ios_base::openmode) override {
+      return pos_type(off_type(-1));
+    }
+  };
+  NonSeekableBuf buf_;
+};
+
+TEST(WriteReadTest, ValidateReadSizeNonSeekableCustomLimit) {
+  NonSeekableStringStream in("data");
+  EXPECT_TRUE(ValidateReadSize(in, 500, /*max_non_seekable_read=*/1024));
+  EXPECT_FALSE(ValidateReadSize(in, 2000, /*max_non_seekable_read=*/1024));
+  EXPECT_TRUE(in.fail());
+}
+
 }  // namespace
 }  // namespace fst

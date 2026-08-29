@@ -20,6 +20,7 @@
 #ifndef OPENFST_LIB_UTIL_H_
 #define OPENFST_LIB_UTIL_H_
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +28,7 @@
 #include <iostream>
 #include <istream>
 #include <iterator>
+#include <limits>
 #include <list>
 #include <map>
 #include <optional>
@@ -70,11 +72,61 @@ namespace fst {
 // different endiannesses.
 
 namespace internal {
+
 // Whether the scalar type is supported by `ReadType`/`WriteType`.
 template <class T>
 inline constexpr bool IsScalarIOTypeV =
     std::is_arithmetic_v<T> || std::is_enum_v<T>;
+
 }  // namespace internal
+
+// Default maximum read size (512 MiB / 536,870,912 bytes) when reading from a
+// non-seekable stream (such as stdin or a pipe).
+inline constexpr int64_t kDefaultMaxNonSeekableRead = 512LL << 20;
+
+// Verifies that requested allocation of `num_bytes` is reasonable given
+// stream state. Returns true if `num_bytes` is non-negative and within
+// allowed bounds; otherwise sets `strm` failbit and returns false. To avoid
+// expensive stream seeking overhead on small deserializations, seekable stream
+// bounds are only checked when `num_bytes` exceeds 8 MiB. For non-seekable
+// streams (such as stdin or pipes), `num_bytes` is checked against
+// `max_non_seekable_read`.
+inline bool ValidateReadSize(std::istream& strm, int64_t num_bytes,
+                             int64_t max_non_seekable_read) {
+  if (num_bytes < 0) {
+    strm.setstate(std::ios_base::failbit);
+    return false;
+  }
+  if (num_bytes == 0) return true;
+  // Only inspect stream bounds via seekg if the requested allocation is
+  // large (e.g., > 8 MiB), to avoid expensive buffer flushing and seek
+  // overhead on every small string/symbol deserialization in file streams.
+  constexpr int64_t kSeekCheckThreshold = 8 << 20;
+  if (num_bytes > kSeekCheckThreshold) {
+    const auto cur_pos = strm.tellg();
+    if (cur_pos >= 0) {
+      strm.seekg(0, std::ios_base::end);
+      const auto end_pos = strm.tellg();
+      strm.seekg(cur_pos, std::ios_base::beg);
+      if (end_pos >= cur_pos && num_bytes > end_pos - cur_pos) {
+        LOG(ERROR) << "ReadType: Requested read size (" << num_bytes
+                   << ") exceeds remaining stream length (" << end_pos - cur_pos
+                   << ")";
+        strm.setstate(std::ios_base::failbit);
+        return false;
+      }
+      return true;
+    }
+  }
+  if (num_bytes > max_non_seekable_read) {
+    LOG(ERROR) << "ReadType: Requested read size (" << num_bytes
+               << ") exceeds maximum allowed limit (" << max_non_seekable_read
+               << ") for non-seekable streams.";
+    strm.setstate(std::ios_base::failbit);
+    return false;
+  }
+  return true;
+}
 
 // Reads types from an input stream.
 
@@ -104,7 +156,11 @@ inline std::istream& ReadType(std::istream& strm, std::string* s) {
   s->clear();
   int32_t ns = 0;
   ReadType(strm, &ns);
-  if (!strm || ns <= 0) return strm;
+  if (!strm || ns <= 0) {
+    if (ns < 0) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  if (!ValidateReadSize(strm, ns, kDefaultMaxNonSeekableRead)) return strm;
   s->resize(ns);
   ReadType(strm, ns, s->data());
   return strm;
@@ -145,10 +201,15 @@ std::istream& ReadContainerType(std::istream& strm, C* c, ReserveFn reserve) {
   c->clear();
   int64_t n = 0;
   ReadType(strm, &n);
-  if (!strm || n <= 0) return strm;
-  reserve(c, n);
+  if (!strm || n <= 0) {
+    if (n < 0) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  const int64_t kMaxInitialReserve = 1 << 20;
+  reserve(c, std::min(n, kMaxInitialReserve));
   auto insert = std::inserter(*c, c->begin());
   for (int64_t i = 0; i < n; ++i) {
+    if (!strm) break;
     typename C::value_type value;
     ReadType(strm, &value);
     *insert = value;
@@ -171,7 +232,18 @@ inline std::istream& ReadVectorType(std::istream& strm, std::vector<T, A>* c) {
   c->clear();
   int64_t n = 0;
   ReadType(strm, &n);
-  if (!strm || n <= 0) return strm;
+  if (!strm || n <= 0) {
+    if (n < 0) strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  if (sizeof(T) > 1 && n > std::numeric_limits<int64_t>::max() /
+                               static_cast<int64_t>(sizeof(T))) {
+    strm.setstate(std::ios_base::failbit);
+    return strm;
+  }
+  if (!ValidateReadSize(strm, sizeof(T) * n, kDefaultMaxNonSeekableRead)) {
+    return strm;
+  }
   c->resize(n);
   ReadType(strm, n, c->data());
   return strm;
