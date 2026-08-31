@@ -227,14 +227,13 @@ class Adder {
   Weight sum_;
 };
 
-// General weight converter: raises error.
+// General weight converter: `operator()` is intentionally undefined to raise
+// compiler error if used.
 template <class W1, class W2>
 struct WeightConvert {
-  W2 operator()(W1 w1) const {
-    FSTERROR() << "WeightConvert: Can't convert weight from " << W1::Type()
-               << " to " << W2::Type();
-    return W2::NoWeight();
-  }
+  // Weights cannot be converted unless `WeightConvert` is specialized for a
+  // given ordered pair of weight types.
+  W2 operator()(W1 w1) const = delete;
 };
 
 // Specialized weight converter to self.
