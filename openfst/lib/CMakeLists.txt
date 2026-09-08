@@ -45,6 +45,7 @@ target_link_libraries(
   fst
   PUBLIC absl::base
          absl::core_headers
+         absl::no_destructor
          absl::flat_hash_map
          absl::flat_hash_set
          absl::node_hash_set

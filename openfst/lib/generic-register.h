@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "absl/base/nullability.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/log/log.h"
@@ -65,9 +66,9 @@ class GenericRegister {
   using KeyLookupRef = typename internal::KeyLookupReferenceType<KeyType>::type;
   using Entry = EntryType;
 
-  static RegisterType* GetRegister() {
-    static auto reg = new RegisterType;
-    return reg;
+  static RegisterType* absl_nonnull GetRegister() {
+    static absl::NoDestructor<RegisterType> reg;
+    return reg.get();
   }
 
   void SetEntry(const KeyType& key, const EntryType& entry) {
@@ -108,7 +109,7 @@ class GenericRegister {
     return *entry;
   }
 
-  const EntryType* LookupEntry(KeyLookupRef key) const {
+  const EntryType* absl_nullable LookupEntry(KeyLookupRef key) const {
     absl::ReaderMutexLock l(register_lock_);
     if (const auto it = register_table_.find(key);
         it != register_table_.end()) {

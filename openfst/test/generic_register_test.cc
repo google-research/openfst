@@ -36,7 +36,8 @@ TEST(GenericRegister, SimpleRegistrationWorks) {
 
   MyRegister* reg = MyRegister::GetRegister();
 
-  ASSERT_EQ("bar", reg->GetEntry("foo"));
+  ASSERT_NE(reg, nullptr);
+  EXPECT_EQ("bar", reg->GetEntry("foo"));
 }
 
 TEST(GenericRegister, ConcurrentReaders) {
