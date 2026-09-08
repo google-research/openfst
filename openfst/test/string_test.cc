@@ -378,5 +378,20 @@ TEST(StringTest, CustomSeparators) {
   EXPECT_EQ(out, "AxBxAxAxB");
 }
 
+TEST(StringTest, EmptySeparator) {
+  SymbolTable syms;
+  syms.AddSymbol("A", 1);
+  syms.AddSymbol("B", 2);
+  const std::vector<int32_t> labels{1, 2};
+  std::string str;
+  EXPECT_TRUE(LabelsToString<int32_t>(labels, &str, TokenType::SYMBOL, &syms,
+                                      /*sep=*/""));
+  EXPECT_EQ(str, "AB");
+
+  EXPECT_TRUE(LabelsToString<int32_t>(labels, &str, TokenType::SYMBOL,
+                                      /*syms=*/nullptr, /*sep=*/""));
+  EXPECT_EQ(str, "12");
+}
+
 }  // namespace
 }  // namespace fst

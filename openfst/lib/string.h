@@ -25,7 +25,6 @@
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -128,12 +127,12 @@ template <class Label>
 bool LabelsToSymbolString(absl::Span<const Label> labels, std::string* str,
                           const SymbolTable& syms, absl::string_view sep,
                           bool omit_epsilon) {
-  std::stringstream ostrm;
-  sep.remove_prefix(sep.size() - 1);  // We only respect the final char of sep.
+  const absl::string_view separator =
+      sep.empty() ? sep : sep.substr(sep.size() - 1);
+  std::string result;
   absl::string_view delim = "";
   for (auto label : labels) {
     if (omit_epsilon && !label) continue;
-    ostrm << delim;
     const std::string& symbol = syms.Find(label);
     if (symbol.empty()) {
       LOG(ERROR) << "LabelsToSymbolString: Label " << label
@@ -141,11 +140,11 @@ bool LabelsToSymbolString(absl::Span<const Label> labels, std::string* str,
                  << syms.Name();
       return false;
     }
-    ostrm << symbol;
-    delim = sep;
+    absl::StrAppend(&result, delim, symbol);
+    delim = separator;
   }
-  *str = ostrm.str();
-  return !!ostrm;
+  *str = std::move(result);
+  return true;
 }
 
 // The last character of 'sep' is used as a separator between symbols.
@@ -154,17 +153,16 @@ bool LabelsToSymbolString(absl::Span<const Label> labels, std::string* str,
 template <class Label>
 bool LabelsToNumericString(absl::Span<const Label> labels, std::string* str,
                            absl::string_view sep, bool omit_epsilon) {
-  std::stringstream ostrm;
-  sep.remove_prefix(sep.size() - 1);  // We only respect the final char of sep.
+  str->clear();
+  const absl::string_view separator =
+      sep.empty() ? sep : sep.substr(sep.size() - 1);
   absl::string_view delim = "";
   for (auto label : labels) {
     if (omit_epsilon && !label) continue;
-    ostrm << delim;
-    ostrm << label;
-    delim = sep;
+    absl::StrAppend(str, delim, int64_t{label});
+    delim = separator;
   }
-  *str = ostrm.str();
-  return !!ostrm;
+  return true;
 }
 
 }  // namespace internal
