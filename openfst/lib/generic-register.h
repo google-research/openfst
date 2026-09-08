@@ -23,6 +23,7 @@
 #include <string>
 
 #include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
@@ -108,7 +109,7 @@ class GenericRegister {
   }
 
   const EntryType* LookupEntry(KeyLookupRef key) const {
-    absl::MutexLock l(register_lock_);
+    absl::ReaderMutexLock l(register_lock_);
     if (const auto it = register_table_.find(key);
         it != register_table_.end()) {
       return &it->second;
@@ -118,7 +119,8 @@ class GenericRegister {
   }
 
   mutable absl::Mutex register_lock_;
-  std::map<KeyType, EntryType, std::less<>> register_table_;
+  std::map<KeyType, EntryType, std::less<>> register_table_
+      ABSL_GUARDED_BY(register_lock_);
 };
 
 // Generic register-er class capable of creating new register entries in the

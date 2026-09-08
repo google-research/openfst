@@ -15,11 +15,17 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <thread>
+#include <vector>
+
 #include "gtest/gtest.h"
 #include "openfst/test/my_register.h"
 
 namespace fst {
 namespace {
+
+constexpr int kNumConcurrentReaderThreads = 8;
+constexpr int kNumConcurrentReaderIterations = 1000;
 
 // Simple test that ensures Generic Registers and Generic Registerers work in
 // the most basic of cases, i.e., that a just-stored key-value pair can be
@@ -31,6 +37,29 @@ TEST(GenericRegister, SimpleRegistrationWorks) {
   MyRegister* reg = MyRegister::GetRegister();
 
   ASSERT_EQ("bar", reg->GetEntry("foo"));
+}
+
+TEST(GenericRegister, ConcurrentReaders) {
+  static MyRegisterer register_apple("apple", "pie");
+  static MyRegisterer register_banana("banana", "split");
+
+  MyRegister* reg = MyRegister::GetRegister();
+
+  std::vector<std::thread> threads;
+  threads.reserve(kNumConcurrentReaderThreads);
+
+  for (int i = 0; i < kNumConcurrentReaderThreads; ++i) {
+    threads.emplace_back([reg]() {
+      for (int j = 0; j < kNumConcurrentReaderIterations; ++j) {
+        EXPECT_EQ("pie", reg->GetEntry("apple"));
+        EXPECT_EQ("split", reg->GetEntry("banana"));
+      }
+    });
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
 }
 
 }  // namespace
