@@ -21,16 +21,22 @@
 
 #include <array>
 #include <cstdint>
+#include <ios>
+#include <istream>
 #include <list>
 #include <map>
 #include <set>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace fst {
 namespace {
@@ -207,6 +213,146 @@ TEST(CompactSetTest, DenseRange) {
   EXPECT_TRUE(values.Member(5));
   EXPECT_FALSE(values.Member(2));
   EXPECT_FALSE(values.Member(6));
+}
+
+TEST(SpanInStreamTest, EmptyStream) {
+  SpanInStream in(absl::string_view(""));
+  EXPECT_EQ(in.tellg(), 0);
+  EXPECT_EQ(in.get(), std::char_traits<char>::eof());
+  EXPECT_TRUE(in.eof());
+  EXPECT_TRUE(in.fail());
+  EXPECT_EQ(in.rdbuf()->in_avail(), 0);
+}
+
+TEST(SpanInStreamTest, FormattedReading) {
+  SpanInStream in("hello 42 3.14");
+  std::string word;
+  int integer_val = 0;
+  double float_val = 0.0;
+  in >> word >> integer_val >> float_val;
+  EXPECT_EQ(word, "hello");
+  EXPECT_EQ(integer_val, 42);
+  EXPECT_DOUBLE_EQ(float_val, 3.14);
+}
+
+TEST(SpanInStreamTest, BulkRead) {
+  const std::string data = "abcdefghijklmnopqrstuvwxyz";
+  SpanInStream in(data);
+  char buf[11] = {};
+
+  in.read(buf, 10);
+  EXPECT_EQ(in.gcount(), 10);
+  buf[10] = '\0';
+  EXPECT_STREQ(buf, "abcdefghij");
+
+  in.read(buf, 10);
+  EXPECT_EQ(in.gcount(), 10);
+  buf[10] = '\0';
+  EXPECT_STREQ(buf, "klmnopqrst");
+
+  in.read(buf, 10);
+  EXPECT_EQ(in.gcount(), 6);
+  buf[6] = '\0';
+  EXPECT_STREQ(buf, "uvwxyz");
+  EXPECT_TRUE(in.eof());
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(SpanInStreamTest, Seeking) {
+  SpanInStream in("0123456789");
+  EXPECT_EQ(in.tellg(), 0);
+
+  in.seekg(5, std::ios_base::beg);
+  EXPECT_EQ(in.tellg(), 5);
+  EXPECT_EQ(in.get(), '5');
+
+  in.seekg(2, std::ios_base::cur);
+  EXPECT_EQ(in.tellg(), 8);
+  EXPECT_EQ(in.get(), '8');
+
+  in.seekg(-3, std::ios_base::end);
+  EXPECT_EQ(in.tellg(), 7);
+  EXPECT_EQ(in.get(), '7');
+
+  // Seek out of bounds sets failbit.
+  in.seekg(-1, std::ios_base::beg);
+  EXPECT_TRUE(in.fail());
+  in.clear();
+
+  in.seekg(20, std::ios_base::beg);
+  EXPECT_TRUE(in.fail());
+}
+
+TEST(SpanInStreamTest, UngetAndPutback) {
+  SpanInStream in("abc");
+  EXPECT_EQ(in.get(), 'a');
+  in.unget();
+  EXPECT_EQ(in.get(), 'a');
+  EXPECT_EQ(in.get(), 'b');
+  in.putback('b');
+  EXPECT_EQ(in.get(), 'b');
+  EXPECT_EQ(in.get(), 'c');
+  EXPECT_EQ(in.get(), std::char_traits<char>::eof());
+}
+
+TEST(SpanInStreamTest, SpanCharAndUint8) {
+  const std::vector<char> chars = {'t', 'e', 's', 't'};
+  SpanInStream in_chars(absl::MakeConstSpan(chars));
+  std::string s;
+  in_chars >> s;
+  EXPECT_EQ(s, "test");
+
+  const std::vector<uint8_t> bytes = {'b', 'y', 't', 'e', 's'};
+  SpanInStream in_bytes(absl::MakeConstSpan(bytes));
+  std::string b;
+  in_bytes >> b;
+  EXPECT_EQ(b, "bytes");
+}
+
+TEST(SpanInStreamTest, OpenFstReadTypeIntegration) {
+  std::ostringstream out;
+  const int32_t orig_val = 12345;
+  const std::string orig_str = "openfst_zero_copy";
+  WriteType(out, orig_val);
+  WriteType(out, orig_str);
+
+  const std::string serialized = out.str();
+  SpanInStream in(serialized);
+  int32_t read_val = 0;
+  std::string read_str;
+  ReadType(in, &read_val);
+  ReadType(in, &read_str);
+
+  EXPECT_EQ(read_val, orig_val);
+  EXPECT_EQ(read_str, orig_str);
+}
+
+struct DummyWeight {
+  float value = 0.0f;
+
+  static DummyWeight NoWeight() { return DummyWeight{-1.0f}; }
+
+  friend std::istream& operator>>(std::istream& is, DummyWeight& w) {
+    return is >> w.value;
+  }
+};
+
+TEST(StrToWeightTest, ValidWeight) {
+  DummyWeight w = StrToWeight<DummyWeight>("1.5");
+  EXPECT_FLOAT_EQ(w.value, 1.5f);
+}
+
+TEST(StrToWeightTest, NegativeWeight) {
+  DummyWeight w = StrToWeight<DummyWeight>("-2.25");
+  EXPECT_FLOAT_EQ(w.value, -2.25f);
+}
+
+TEST(StrToWeightTest, InvalidWeight) {
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  DummyWeight w = StrToWeight<DummyWeight>("not_a_number");
+  EXPECT_FLOAT_EQ(w.value, -1.0f);
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
 }  // namespace

@@ -20,9 +20,11 @@
 #ifndef OPENFST_LIB_UTIL_H_
 #define OPENFST_LIB_UTIL_H_
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <ios>
 #include <iostream>
 #include <istream>
@@ -33,6 +35,7 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <streambuf>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -48,6 +51,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/lib/mapped-file.h"
 
@@ -339,6 +343,155 @@ std::ostream& WriteType(std::ostream& strm, const std::unordered_set<T...>& c) {
   return internal::WriteContainer(strm, c);
 }
 
+// Non-owning streambuf that wraps contiguous memory (absl::string_view or
+// absl::Span). Does not allocate or copy underlying data.
+class SpanInStreamBuffer : public std::streambuf {
+ public:
+  explicit SpanInStreamBuffer(absl::string_view view) {
+    Init(view.data(), view.size());
+  }
+
+  explicit SpanInStreamBuffer(const char* s) {
+    Init(s, s != nullptr ? std::strlen(s) : 0);
+  }
+
+  explicit SpanInStreamBuffer(const std::string& s) {
+    Init(s.data(), s.size());
+  }
+
+  SpanInStreamBuffer(std::string&&) = delete;
+
+  explicit SpanInStreamBuffer(absl::Span<const char> span) {
+    Init(span.data(), span.size());
+  }
+
+  explicit SpanInStreamBuffer(absl::Span<const uint8_t> span) {
+    Init(reinterpret_cast<const char*>(span.data()), span.size());
+  }
+
+  SpanInStreamBuffer(const SpanInStreamBuffer&) = delete;
+  SpanInStreamBuffer& operator=(const SpanInStreamBuffer&) = delete;
+  SpanInStreamBuffer(SpanInStreamBuffer&&) = delete;
+  SpanInStreamBuffer& operator=(SpanInStreamBuffer&&) = delete;
+
+ protected:
+  std::streamsize xsgetn(char_type* s, std::streamsize count) override {
+    if (count <= 0) return 0;
+    const std::streamsize available = egptr() - gptr();
+    const std::streamsize to_read = std::min(count, available);
+    if (to_read > 0) {
+      std::memcpy(s, gptr(), static_cast<size_t>(to_read));
+      setg(eback(), gptr() + to_read, egptr());
+    }
+    return to_read;
+  }
+
+  int_type underflow() override {
+    if (gptr() < egptr()) {
+      return traits_type::to_int_type(*gptr());
+    }
+    return traits_type::eof();
+  }
+
+  int_type pbackfail(int_type c = traits_type::eof()) override {
+    if (gptr() <= eback()) return traits_type::eof();
+    if (!traits_type::eq_int_type(c, traits_type::eof()) &&
+        traits_type::to_char_type(c) != gptr()[-1]) {
+      return traits_type::eof();
+    }
+    setg(eback(), gptr() - 1, egptr());
+    return traits_type::not_eof(c);
+  }
+
+  std::streamsize showmanyc() override { return egptr() - gptr(); }
+
+  pos_type seekoff(off_type off, std::ios_base::seekdir dir,
+                   std::ios_base::openmode which = std::ios_base::in) override {
+    if (!(which & std::ios_base::in)) return pos_type(off_type(-1));
+    if (eback() == nullptr) {
+      return (off == 0) ? pos_type(0) : pos_type(off_type(-1));
+    }
+    char* target = nullptr;
+    switch (dir) {
+      case std::ios_base::beg:
+        target = eback() + off;
+        break;
+      case std::ios_base::cur:
+        target = gptr() + off;
+        break;
+      case std::ios_base::end:
+        target = egptr() + off;
+        break;
+      default:
+        return pos_type(off_type(-1));
+    }
+    if (target < eback() || target > egptr()) return pos_type(off_type(-1));
+    setg(eback(), target, egptr());
+    return pos_type(gptr() - eback());
+  }
+
+  pos_type seekpos(pos_type pos,
+                   std::ios_base::openmode which = std::ios_base::in) override {
+    return seekoff(off_type(pos), std::ios_base::beg, which);
+  }
+
+ private:
+  void Init(const char* data, size_t size) {
+    char* begin = const_cast<char*>(data);
+    char* end = (begin != nullptr) ? begin + size : nullptr;
+    setg(begin, begin, end);
+  }
+};
+
+namespace internal {
+
+// Base class ensuring that the streambuf is constructed before std::istream
+// initializes its stream buffer pointer.
+class SpanInStreamBase {
+ protected:
+  SpanInStreamBuffer buf_;
+
+  explicit SpanInStreamBase(absl::string_view view) : buf_(view) {}
+  explicit SpanInStreamBase(const char* s) : buf_(s) {}
+  explicit SpanInStreamBase(const std::string& s) : buf_(s) {}
+  SpanInStreamBase(std::string&&) = delete;
+  explicit SpanInStreamBase(absl::Span<const char> span) : buf_(span) {}
+  explicit SpanInStreamBase(absl::Span<const uint8_t> span) : buf_(span) {}
+};
+
+}  // namespace internal
+
+// Drop-in zero-copy std::istream replacement for in-memory buffers (such as
+// absl::string_view or absl::Span). Does not allocate or copy underlying data.
+class SpanInStream : private internal::SpanInStreamBase, public std::istream {
+ public:
+  explicit SpanInStream(absl::string_view view)
+      : internal::SpanInStreamBase(view), std::istream(&buf_) {}
+
+  explicit SpanInStream(const char* s)
+      : internal::SpanInStreamBase(s), std::istream(&buf_) {}
+
+  explicit SpanInStream(const std::string& s)
+      : internal::SpanInStreamBase(s), std::istream(&buf_) {}
+
+  SpanInStream(std::string&&) = delete;
+
+  explicit SpanInStream(absl::Span<const char> span)
+      : internal::SpanInStreamBase(span), std::istream(&buf_) {}
+
+  explicit SpanInStream(absl::Span<const uint8_t> span)
+      : internal::SpanInStreamBase(span), std::istream(&buf_) {}
+
+  SpanInStream(const SpanInStream&) = delete;
+  SpanInStream& operator=(const SpanInStream&) = delete;
+  SpanInStream(SpanInStream&&) = delete;
+  SpanInStream& operator=(SpanInStream&&) = delete;
+
+  SpanInStreamBuffer* rdbuf() const {
+    return const_cast<SpanInStreamBuffer*>(&buf_);
+  }
+};
+
 // Utilities for converting between int64_t or Weight and string.
 
 // Parses a 64-bit signed integer in some base out of an input string. The
@@ -353,7 +506,7 @@ int64_t StrToInt64(absl::string_view s, absl::string_view source, size_t nline,
 template <typename Weight>
 Weight StrToWeight(absl::string_view s) {
   Weight w;
-  std::istringstream strm(std::string{s});
+  SpanInStream strm(s);
   strm >> w;
   if (!strm) {
     FSTERROR() << "StrToWeight: Bad weight: " << s;
