@@ -120,7 +120,7 @@ bool ConvertStringToLabels(
   return false;  // Unreachable.
 }
 
-// The last character of 'sep' is used as a separator between symbols.
+// The last ASCII character of 'sep' is used as a separator between symbols.
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
@@ -147,7 +147,7 @@ bool LabelsToSymbolString(absl::Span<const Label> labels, std::string* str,
   return true;
 }
 
-// The last character of 'sep' is used as a separator between symbols.
+// The last ASCII character of 'sep' is used as a separator between symbols.
 // Additionally, epsilon symbols will be printed only if omit_epsilon
 // is false.
 template <class Label>
@@ -181,8 +181,8 @@ class StringCompiler {
       : token_type_(token_type), syms_(syms), unknown_label_(unknown_label) {}
 
   // Compiles string into an FST. With SYMBOL token type, sep is used to
-  // specify the set of char separators between symbols, in addition of '\n',
-  // which is always treated as a separator. Returns true on success.
+  // specify the set of ASCII character separators between symbols, in addition
+  // to '\n', which is always treated as a separator. Returns true on success.
   template <class FST>
   bool operator()(
       absl::string_view str, FST* fst,
@@ -340,9 +340,9 @@ bool StringFstToOutputLabels(const Fst<Arc>& fst,
 }
 
 // Converts a list of symbols to a string. If the token type is SYMBOL, the last
-// character of sep is used to separate textual symbols. Additionally, if the
-// token type is SYMBOL, epsilon symbols will be printed only if omit_epsilon
-// is false. Returns true on success.
+// ASCII character of sep is used to separate textual symbols. Additionally, if
+// the token type is SYMBOL, epsilon symbols will be printed only if
+// omit_epsilon is false. Returns true on success.
 template <class Label>
 bool LabelsToString(
     absl::Span<const Label> labels, std::string* str,
@@ -378,8 +378,9 @@ class StringPrinter {
                          bool omit_epsilon = true)
       : token_type_(token_type), syms_(syms), omit_epsilon_(omit_epsilon) {}
 
-  // Converts the FST into a string. With SYMBOL token type, the last character
-  // of sep is used as a separator between symbols. Returns true on success.
+  // Converts the FST into a string. With SYMBOL token type, the last ASCII
+  // character of sep is used as a separator between symbols. Returns true on
+  // success.
   bool operator()(
       const Fst<Arc>& fst, std::string* str,
       absl::string_view sep = absl::GetFlag(FLAGS_fst_field_separator)) const {
