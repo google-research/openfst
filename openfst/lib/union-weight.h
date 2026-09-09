@@ -30,7 +30,6 @@
 #include <limits>
 #include <list>
 #include <ostream>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -412,7 +411,7 @@ inline std::istream& operator>>(std::istream& istrm,
     weight = UnionWeight<W, O>::NoWeight();
   } else {
     weight = UnionWeight<W, O>::Zero();
-    std::istringstream sstrm(s);
+    SpanInStream sstrm(s);
     CompositeWeightReader reader(sstrm);
     reader.ReadBegin();
     bool more = true;

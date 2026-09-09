@@ -607,6 +607,75 @@ TEST(WeightReadTest, ReadOversizedSizeFails) {
   absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
+TEST(CompositeWeightTest, SpanInStreamCompositeWeightReader) {
+  const std::string input = "1.5,2.5";
+  SpanInStream is(input);
+  CompositeWeightReader reader(is, ',', {0, 0});
+  reader.ReadBegin();
+  TropicalWeight w1;
+  EXPECT_TRUE(reader.ReadElement(&w1));
+  EXPECT_TRUE(ApproxEqual(w1, TropicalWeight(1.5f)));
+  TropicalWeight w2;
+  EXPECT_FALSE(reader.ReadElement(&w2, /*last=*/true));
+  EXPECT_TRUE(ApproxEqual(w2, TropicalWeight(2.5f)));
+  reader.ReadEnd();
+  EXPECT_FALSE(is.fail());
+}
+
+TEST(CompositeWeightTest, PairWeightStreamRead) {
+  const PairWeight<TropicalWeight, TropicalWeight> pw(TropicalWeight(1.5f),
+                                                      TropicalWeight(2.5f));
+  std::ostringstream os;
+  os << pw;
+  const std::string serialized = os.str();
+  PairWeight<TropicalWeight, TropicalWeight> read_pw;
+  SpanInStream is(serialized);
+  is >> read_pw;
+  EXPECT_FALSE(is.fail());
+  EXPECT_EQ(pw, read_pw);
+}
+
+TEST(CompositeWeightTest, UnionWeightStreamRead) {
+  struct Options {
+    using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+    using ReverseOptions [[maybe_unused]] = Options;
+    struct Merge {
+      TropicalWeight operator()(const TropicalWeight& w1,
+                                const TropicalWeight& w2) const {
+        return w1;
+      }
+    };
+  };
+  using UW = UnionWeight<TropicalWeight, Options>;
+  UW uw;
+  uw.PushBack(TropicalWeight(1.0f), /*srt=*/true);
+  uw.PushBack(TropicalWeight(2.0f), /*srt=*/true);
+  std::ostringstream os;
+  os << uw;
+
+  const std::string serialized = os.str();
+  UW read_uw;
+  SpanInStream is(serialized);
+  is >> read_uw;
+  EXPECT_FALSE(is.fail());
+  EXPECT_EQ(uw, read_uw);
+
+  UW zero_uw;
+  SpanInStream is_zero("EmptySet");
+  is_zero >> zero_uw;
+  EXPECT_FALSE(is_zero.fail());
+  EXPECT_EQ(zero_uw, UW::Zero());
+
+  UW bad_uw;
+  SpanInStream is_bad("BadSet");
+  is_bad >> bad_uw;
+  EXPECT_FALSE(is_bad.fail());
+  EXPECT_FALSE(bad_uw.Member());
+  std::ostringstream os_bad;
+  os_bad << bad_uw;
+  EXPECT_EQ(os_bad.str(), "BadSet");
+}
+
 }  // namespace
 }  // namespace fst
 

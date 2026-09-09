@@ -27,7 +27,6 @@
 #include <iostream>
 #include <istream>
 #include <ostream>
-#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -390,7 +389,7 @@ inline bool CompositeWeightReader::ReadElement(T* comp, bool last) {
     istrm_.clear(std::ios::badbit);
     return false;
   }
-  std::istringstream istrm(s);
+  SpanInStream istrm(s);
   istrm >> *comp;
   // Skips separator/close parenthesis.
   if (c_ != std::istream::traits_type::eof() && !std::isspace(c_)) {
