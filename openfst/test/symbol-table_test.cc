@@ -484,5 +484,48 @@ TEST(SymbolTableReadTest, ReadOversizedSizeFails) {
   EXPECT_EQ(read_syms, nullptr);
 }
 
+TEST(SymbolTableStringTest, RoundTripStringAndStringView) {
+  SymbolTable orig("test_syms");
+  EXPECT_EQ(orig.AddSymbol("eps", 0), 0);
+  EXPECT_EQ(orig.AddSymbol("a", 1), 1);
+  EXPECT_EQ(orig.AddSymbol("b", 2), 2);
+  EXPECT_EQ(orig.AddSymbol("c", 100), 100);
+
+  std::string serialized;
+  SymbolTableToString(&orig, &serialized);
+  ASSERT_FALSE(serialized.empty());
+
+  // Test with std::string argument (implicit conversion to absl::string_view).
+  std::unique_ptr<SymbolTable> from_string(StringToSymbolTable(serialized));
+  ASSERT_THAT(from_string, NotNull());
+  EXPECT_EQ(from_string->Name(), orig.Name());
+  EXPECT_EQ(from_string->NumSymbols(), 4);
+  EXPECT_EQ(from_string->Find(0), "eps");
+  EXPECT_EQ(from_string->Find(1), "a");
+  EXPECT_EQ(from_string->Find(2), "b");
+  EXPECT_EQ(from_string->Find(100), "c");
+  EXPECT_TRUE(CompatSymbols(&orig, from_string.get()));
+
+  // Test with absl::string_view explicitly.
+  absl::string_view view = serialized;
+  std::unique_ptr<SymbolTable> from_view(StringToSymbolTable(view));
+  ASSERT_THAT(from_view, NotNull());
+  EXPECT_EQ(from_view->Name(), orig.Name());
+  EXPECT_EQ(from_view->NumSymbols(), 4);
+  EXPECT_TRUE(CompatSymbols(&orig, from_view.get()));
+}
+
+TEST(SymbolTableStringTest, InvalidStringReturnsNullptr) {
+  // Empty string.
+  EXPECT_THAT(StringToSymbolTable(""), IsNull());
+
+  // Truncated / malformed header.
+  EXPECT_THAT(StringToSymbolTable("short"), IsNull());
+
+  // Arbitrary invalid binary payload.
+  EXPECT_THAT(StringToSymbolTable("invalid_binary_symbol_table_data"),
+              IsNull());
+}
+
 }  // namespace
 }  // namespace fst

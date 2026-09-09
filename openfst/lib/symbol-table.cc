@@ -436,8 +436,8 @@ void SymbolTableToString(const SymbolTable* table, std::string* result) {
   *result = ostrm.str();
 }
 
-SymbolTable* StringToSymbolTable(const std::string& str) {
-  std::istringstream istrm(str);
+SymbolTable* absl_nullable StringToSymbolTable(absl::string_view str) {
+  SpanInStream istrm(str);
   return SymbolTable::Read(istrm, /*source=*/"string");
 }
 

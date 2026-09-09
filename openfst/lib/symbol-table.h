@@ -607,7 +607,7 @@ bool CompatSymbols(const SymbolTable* syms1, const SymbolTable* syms2,
 
 void SymbolTableToString(const SymbolTable* table, std::string* result);
 
-SymbolTable* StringToSymbolTable(const std::string& str);
+SymbolTable* absl_nullable StringToSymbolTable(absl::string_view str);
 
 }  // namespace fst
 
