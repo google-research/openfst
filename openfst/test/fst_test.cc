@@ -29,10 +29,12 @@
 #include "absl/base/no_destructor.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/edit-fst.h"
+#include "openfst/lib/equal.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
 #include "openfst/lib/fst.h"
@@ -339,6 +341,44 @@ TEST(FstTest, ReadHeaderOutputSymbolsTruncated) {
   FstReadOptions opts("test");
   std::unique_ptr<VectorFst<StdArc>> fst(VectorFst<StdArc>::Read(strm, opts));
   EXPECT_EQ(fst, nullptr);
+}
+
+TEST(FstStringTest, RoundTripStringAndStringView) {
+  VectorFst<StdArc> orig;
+  const auto s0 = orig.AddState();
+  orig.SetStart(s0);
+  const auto s1 = orig.AddState();
+  orig.SetFinal(s1, TropicalWeight::One());
+  orig.AddArc(s0, StdArc(1, 2, TropicalWeight(0.5), s1));
+
+  const std::string serialized = FstToString(orig);
+  ASSERT_FALSE(serialized.empty());
+
+  // Test with std::string argument (implicit conversion to absl::string_view).
+  std::unique_ptr<Fst<StdArc>> from_string(StringToFst<StdArc>(serialized));
+  ASSERT_NE(from_string, nullptr);
+  EXPECT_EQ(from_string->Start(), s0);
+  EXPECT_EQ(from_string->Final(s1), TropicalWeight::One());
+  EXPECT_TRUE(Equal(orig, *from_string));
+
+  // Test with explicit absl::string_view argument.
+  const absl::string_view view = serialized;
+  std::unique_ptr<Fst<StdArc>> from_view(StringToFst<StdArc>(view));
+  ASSERT_NE(from_view, nullptr);
+  EXPECT_EQ(from_view->Start(), s0);
+  EXPECT_EQ(from_view->Final(s1), TropicalWeight::One());
+  EXPECT_TRUE(Equal(orig, *from_view));
+}
+
+TEST(FstStringTest, InvalidStringReturnsNullptr) {
+  // Empty string.
+  EXPECT_EQ(StringToFst<StdArc>(""), nullptr);
+
+  // Truncated header.
+  EXPECT_EQ(StringToFst<StdArc>("short"), nullptr);
+
+  // Arbitrary invalid binary payload.
+  EXPECT_EQ(StringToFst<StdArc>("invalid_binary_fst_data"), nullptr);
 }
 
 }  // namespace

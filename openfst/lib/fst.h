@@ -1029,9 +1029,11 @@ void FstToString(const Fst<Arc>& fst, std::string* result,
 }
 
 template <class Arc>
-Fst<Arc>* StringToFst(absl::string_view s) {
-  std::istringstream istrm((std::string(s)));
-  return Fst<Arc>::Read(istrm, FstReadOptions("StringToFst"));
+Fst<Arc>* absl_nullable StringToFst(
+    absl::string_view s,
+    const FstReadOptions& options = FstReadOptions("StringToFst")) {
+  SpanInStream istrm(s);
+  return Fst<Arc>::Read(istrm, options);
 }
 
 }  // namespace fst
