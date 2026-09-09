@@ -25,7 +25,6 @@
 #include <istream>
 #include <memory>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -208,7 +207,7 @@ class FstCompiler {
 
   Weight StrToWeight(absl::string_view s, bool allow_zero) const {
     Weight w;
-    std::istringstream strm(std::string{s});
+    SpanInStream strm(s);
     strm >> w;
     if (!strm || (!allow_zero && w == Weight::Zero())) {
       FSTERROR() << "FstCompiler: Bad weight = \"" << s

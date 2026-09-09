@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -38,6 +39,7 @@
 #include "openfst/lib/weight.h"
 #include "openfst/script/arc-class.h"
 #include "openfst/script/arciterator-class.h"
+#include "openfst/script/compile-impl.h"
 #include "openfst/script/decode.h"
 #include "openfst/script/encode.h"
 #include "openfst/script/encodemapper-class.h"
@@ -288,6 +290,37 @@ TEST_F(ClassTest, EncodeMapperClassOperations) {
   Encode(&vfstc, &encoder);
   Decode(&vfstc, encoder);
   ASSERT_TRUE(Equal(vfstc_copy, vfstc));
+}
+
+TEST(CompileTest, FstCompilerCompilesTextWithWeights) {
+  const std::string text =
+      "0 1 1 2 0.5\n"
+      "1 2 3 4 1.5\n"
+      "2 2.5\n";
+  std::istringstream istrm(text);
+  FstCompiler<StdArc> compiler(istrm, "test", nullptr, nullptr, nullptr,
+                               /*accep=*/false, /*ikeep=*/false,
+                               /*okeep=*/false,
+                               /*nkeep=*/false);
+  const auto& fst = compiler.Fst();
+  EXPECT_FALSE(fst.Properties(kError, true));
+  EXPECT_EQ(fst.NumStates(), 3);
+  EXPECT_EQ(fst.Start(), 0);
+  EXPECT_FLOAT_EQ(fst.Final(2).Value(), 2.5f);
+}
+
+TEST(CompileTest, FstCompilerBadWeightSetsError) {
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  const std::string text = "0 1 1 2 not_a_weight\n";
+  std::istringstream istrm(text);
+  FstCompiler<StdArc> compiler(istrm, "test", nullptr, nullptr, nullptr,
+                               /*accep=*/false, /*ikeep=*/false,
+                               /*okeep=*/false,
+                               /*nkeep=*/false);
+  const auto& fst = compiler.Fst();
+  EXPECT_TRUE(fst.Properties(kError, true));
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
 }
 
 }  // namespace
