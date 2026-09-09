@@ -25,6 +25,7 @@
 #include "openfst/extensions/far/far-class.h"
 #include "openfst/extensions/far/far-test-base.h"
 #include "openfst/extensions/far/far-type.h"
+#include "openfst/extensions/far/far.h"
 #include "openfst/extensions/far/sstable-far-reader.h"
 #include "openfst/extensions/far/sstable-far-writer.h"
 #include "openfst/lib/arc.h"
@@ -294,6 +295,33 @@ TEST_F(FarTest, SSTableEmptyFarClass) {
   auto* typed_reader = reader->GetFarReader<ErrorArc>();
   ASSERT_THAT(typed_reader, NotNull());
   EXPECT_EQ(typed_reader->Type(), FarType::SSTABLE);
+}
+
+TEST_F(FarTest, FarHeaderReadSSTable) {
+  std::unique_ptr<SSTableFarWriter<LogArc>> writer(
+      SSTableFarWriter<LogArc>::Create(
+          JoinPath(::testing::TempDir(), "test_header.far")));
+  writer->Add("1", *fst1_);
+  writer.reset();
+
+  FarHeader hdr;
+  ASSERT_TRUE(
+      hdr.Read(JoinPath(::testing::TempDir(), "test_header.far")));
+  EXPECT_EQ(hdr.FarType(), FarType::SSTABLE);
+  EXPECT_EQ(hdr.ArcType(), LogArc::Type());
+}
+
+TEST_F(FarTest, FarHeaderReadEmptySSTable) {
+  std::unique_ptr<SSTableFarWriter<LogArc>> writer(
+      SSTableFarWriter<LogArc>::Create(
+          JoinPath(::testing::TempDir(), "test_empty_header.far")));
+  writer.reset();
+
+  FarHeader hdr;
+  ASSERT_TRUE(
+      hdr.Read(JoinPath(::testing::TempDir(), "test_empty_header.far")));
+  EXPECT_EQ(hdr.FarType(), FarType::SSTABLE);
+  EXPECT_EQ(hdr.ArcType(), ErrorArc::Type());
 }
 
 }  // namespace
