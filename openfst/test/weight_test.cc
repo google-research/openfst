@@ -24,7 +24,9 @@
 #include <limits>
 #include <sstream>
 #include <utility>
+#include <vector>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
@@ -674,6 +676,50 @@ TEST(CompositeWeightTest, UnionWeightStreamRead) {
   std::ostringstream os_bad;
   os_bad << bad_uw;
   EXPECT_EQ(os_bad.str(), "BadSet");
+}
+
+TEST(SetWeightTest, MultiElementVectorOperations) {
+  SetWeight<int> sw;
+  sw.PushBack(1);
+  sw.PushBack(3);
+  sw.PushBack(5);
+  EXPECT_EQ(sw.Size(), 3);
+  EXPECT_EQ(sw.Back(), 5);
+
+  std::vector<int> extracted;
+  for (SetWeightIterator<SetWeight<int>> it(sw); !it.Done(); it.Next()) {
+    extracted.push_back(it.Value());
+  }
+  EXPECT_THAT(extracted, ::testing::ElementsAre(1, 3, 5));
+
+  SetWeight<int> copy_sw = sw;
+  EXPECT_EQ(copy_sw, sw);
+}
+
+TEST(UnionWeightTest, MultiElementVectorOperationsAndSort) {
+  struct Options {
+    using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+    using ReverseOptions [[maybe_unused]] = Options;
+    struct Merge {
+      TropicalWeight operator()(const TropicalWeight& w1,
+                                const TropicalWeight& w2) const {
+        return w1;
+      }
+    };
+  };
+  using UW = UnionWeight<TropicalWeight, Options>;
+  UW uw;
+  uw.PushBack(TropicalWeight(5.0f), /*srt=*/false);
+  uw.PushBack(TropicalWeight(1.0f), /*srt=*/false);
+  uw.PushBack(TropicalWeight(3.0f), /*srt=*/false);
+  uw.Sort();
+
+  std::vector<float> values;
+  for (UnionWeightIterator<TropicalWeight, Options> it(uw); !it.Done();
+       it.Next()) {
+    values.push_back(it.Value().Value());
+  }
+  EXPECT_THAT(values, ::testing::ElementsAre(1.0f, 3.0f, 5.0f));
 }
 
 }  // namespace

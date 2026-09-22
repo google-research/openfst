@@ -28,7 +28,6 @@
 #include <ios>
 #include <istream>
 #include <limits>
-#include <list>
 #include <optional>
 #include <ostream>
 #include <random>
@@ -208,7 +207,7 @@ class SetWeight {
 
  private:
   Label first_ = kSetEmpty;  // First label in set (kSetEmpty if empty).
-  std::list<Label> rest_;    // Remaining labels in set.
+  std::vector<Label> rest_;  // Remaining labels in set.
 };
 
 // Traverses set in forward direction.

@@ -22,16 +22,17 @@
 #ifndef OPENFST_LIB_UNION_WEIGHT_H_
 #define OPENFST_LIB_UNION_WEIGHT_H_
 
+#include <algorithm>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <istream>
 #include <limits>
-#include <list>
 #include <ostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/base/no_destructor.h"
 #include "absl/random/bit_gen_ref.h"
@@ -164,7 +165,7 @@ class UnionWeight {
 
   // Sorts the elements of the set. Assumes that first_, if present, is the
   // least element.
-  void Sort() { rest_.sort(comp_); }
+  void Sort() { std::sort(rest_.begin(), rest_.end(), comp_); }
 
  private:
   W& Back() {
@@ -177,8 +178,8 @@ class UnionWeight {
 
   UnionWeight(W w1, W w2) : first_(std::move(w1)), rest_(1, std::move(w2)) {}
 
-  W first_;            // First weight in set.
-  std::list<W> rest_;  // Remaining weights in set.
+  W first_;              // First weight in set.
+  std::vector<W> rest_;  // Remaining weights in set.
   Compare comp_;
   Merge merge_;
 };
@@ -235,9 +236,9 @@ class UnionWeightIterator {
 
  private:
   const W& first_;
-  const std::list<W>& rest_;
+  const std::vector<W>& rest_;
   bool init_;  // in the initialized state?
-  typename std::list<W>::const_iterator it_;
+  typename std::vector<W>::const_iterator it_;
 };
 
 // Traverses union weight in backward direction.
@@ -269,9 +270,9 @@ class UnionWeightReverseIterator {
 
  private:
   const L& first_;
-  const std::list<L>& rest_;
+  const std::vector<L>& rest_;
   bool fin_;  // in the final state?
-  typename std::list<L>::const_reverse_iterator it_;
+  typename std::vector<L>::const_reverse_iterator it_;
 };
 
 // UnionWeight member functions follow that require UnionWeightIterator.
