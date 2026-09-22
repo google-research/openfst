@@ -275,6 +275,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":benchmark_main",
+        "//openfst/lib:util",
         "//openfst/lib:weight",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:flags",

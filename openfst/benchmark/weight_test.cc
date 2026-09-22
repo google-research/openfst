@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <random>
+#include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -35,6 +36,7 @@
 #include "openfst/lib/string-weight.h"
 #include "openfst/lib/tuple-weight.h"
 #include "openfst/lib/union-weight.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 namespace {
@@ -136,6 +138,27 @@ void BM_SignedLogWeight(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_SignedLogWeight)->Range(1, 1 << 21);
+
+// Benchmarks WeightToStr conversion.
+template <typename Weight>
+void BM_WeightToStr(benchmark::State& state) {
+  const int size = state.range(0);
+  std::vector<Weight> weights;
+  weights.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    weights.push_back(Weight(static_cast<float>(i) * 0.125f));
+  }
+
+  for (auto _ : state) {
+    for (const auto& w : weights) {
+      std::string s = WeightToStr(w);
+      benchmark::DoNotOptimize(s);
+    }
+  }
+  state.SetItemsProcessed(state.iterations() * size);
+}
+BENCHMARK_TEMPLATE(BM_WeightToStr, TropicalWeight)->Range(1, 1 << 12);
+BENCHMARK_TEMPLATE(BM_WeightToStr, LogWeight)->Range(1, 1 << 12);
 
 template <typename W>
 W MakeWeight(float w) {
