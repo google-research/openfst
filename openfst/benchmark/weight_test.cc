@@ -14,6 +14,8 @@
 
 // Benchmark for FST weight classes.
 
+#include "openfst/lib/weight.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -32,6 +34,7 @@
 #include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/string-weight.h"
 #include "openfst/lib/tuple-weight.h"
+#include "openfst/lib/union-weight.h"
 
 namespace fst {
 namespace {
@@ -60,6 +63,61 @@ void BM_SetWeight(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_SetWeight)->Range(1, 1 << 12);
+
+struct BenchmarkUnionWeightOptions {
+  using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+  using ReverseOptions [[maybe_unused]] = BenchmarkUnionWeightOptions;
+
+  struct Merge {
+    TropicalWeight operator()(const TropicalWeight& w1,
+                              const TropicalWeight& w2) const {
+      return w1;
+    }
+  };
+};
+
+using TropicalUnionWeight =
+    UnionWeight<TropicalWeight, BenchmarkUnionWeightOptions>;
+
+// Tests move constructor, copy, and resize of UnionWeight.
+void BM_UnionWeight(benchmark::State& state) {
+  static constexpr int kSetSize = 1 << 12;
+  TropicalUnionWeight union_weight;
+  for (int i = 1; i <= kSetSize; ++i) {
+    union_weight.PushBack(TropicalWeight(static_cast<float>(i)), /*srt=*/true);
+  }
+
+  const int size = state.range(0);
+  std::vector<TropicalUnionWeight> weights;
+  weights.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    weights.push_back(union_weight);
+  }
+
+  for (auto _ : state) {
+    weights.resize(size * 10);
+    weights.resize(size);
+    weights.shrink_to_fit();
+  }
+}
+BENCHMARK(BM_UnionWeight)->Range(1, 1 << 12);
+
+// Tests two-way merge loop of Plus(UnionWeight, UnionWeight).
+void BM_UnionWeightPlus(benchmark::State& state) {
+  const int size = state.range(0);
+  TropicalUnionWeight w1;
+  TropicalUnionWeight w2;
+  for (int i = 0; i < size; ++i) {
+    w1.PushBack(TropicalWeight(static_cast<float>(2 * i)), /*srt=*/true);
+    w2.PushBack(TropicalWeight(static_cast<float>(2 * i + 1)), /*srt=*/true);
+  }
+
+  for (auto _ : state) {
+    TropicalUnionWeight sum = Plus(w1, w2);
+    benchmark::DoNotOptimize(sum);
+  }
+}
+BENCHMARK(BM_UnionWeightPlus)->Range(1, 1 << 12);
 
 // Tests move constructor of SignedLogWeight.
 void BM_SignedLogWeight(benchmark::State& state) {
