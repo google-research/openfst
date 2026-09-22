@@ -39,6 +39,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/weight.h"
@@ -136,6 +137,19 @@ class FloatWeightTpl {
   }
 
   constexpr const T& Value() const { return value_; }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const FloatWeightTpl& w) {
+    if (w.value_ == FloatLimits<T>::PosInfinity()) {
+      sink.Append("Infinity");
+    } else if (w.value_ == FloatLimits<T>::NegInfinity()) {
+      sink.Append("-Infinity");
+    } else if (internal::IsNan(w.value_)) {
+      sink.Append("BadNumber");
+    } else {
+      absl::Format(&sink, "%.9g", w.value_);
+    }
+  }
 
  protected:
   static constexpr absl::string_view GetPrecisionString() {

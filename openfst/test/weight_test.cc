@@ -33,6 +33,7 @@
 #include "openfst/compat/seed_sequences.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "openfst/lib/expectation-weight.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/lexicographic-weight.h"
@@ -720,6 +721,57 @@ TEST(UnionWeightTest, MultiElementVectorOperationsAndSort) {
     values.push_back(it.Value().Value());
   }
   EXPECT_THAT(values, ::testing::ElementsAre(1.0f, 3.0f, 5.0f));
+}
+
+TEST(WeightStringifyTest, AbslStringifyAndWeightToStr) {
+  // Test finite values with absl::StrCat and WeightToStr.
+  EXPECT_EQ(absl::StrCat(TropicalWeight(1.5f)), "1.5");
+  EXPECT_EQ(absl::StrCat(TropicalWeight(0.0f)), "0");
+  EXPECT_EQ(absl::StrCat(TropicalWeight(-2.5f)), "-2.5");
+  EXPECT_EQ(absl::StrCat(LogWeight(3.14159f)), "3.14159012");
+  EXPECT_EQ(absl::StrCat(Log64Weight(2.718281828)), "2.71828183");
+
+  EXPECT_EQ(WeightToStr(TropicalWeight(1.5f)), "1.5");
+  EXPECT_EQ(WeightToStr(TropicalWeight(0.0f)), "0");
+  EXPECT_EQ(WeightToStr(TropicalWeight(-2.5f)), "-2.5");
+  EXPECT_EQ(WeightToStr(LogWeight(3.14159f)), "3.14159012");
+  EXPECT_EQ(WeightToStr(Log64Weight(2.718281828)), "2.71828183");
+
+  // Test special infinity and NaN values.
+  EXPECT_EQ(absl::StrCat(TropicalWeight(FloatLimits<float>::PosInfinity())),
+            "Infinity");
+  EXPECT_EQ(absl::StrCat(TropicalWeight(FloatLimits<float>::NegInfinity())),
+            "-Infinity");
+  EXPECT_EQ(absl::StrCat(TropicalWeight(FloatLimits<float>::NumberBad())),
+            "BadNumber");
+
+  EXPECT_EQ(WeightToStr(TropicalWeight(FloatLimits<float>::PosInfinity())),
+            "Infinity");
+  EXPECT_EQ(WeightToStr(TropicalWeight(FloatLimits<float>::NegInfinity())),
+            "-Infinity");
+  EXPECT_EQ(WeightToStr(TropicalWeight(FloatLimits<float>::NumberBad())),
+            "BadNumber");
+
+  // Verify round-tripping with StrToWeight.
+  EXPECT_EQ(StrToWeight<TropicalWeight>(WeightToStr(TropicalWeight(1.5f))),
+            TropicalWeight(1.5f));
+  EXPECT_EQ(StrToWeight<TropicalWeight>(WeightToStr(TropicalWeight::Zero())),
+            TropicalWeight::Zero());
+  EXPECT_EQ(StrToWeight<TropicalWeight>(WeightToStr(TropicalWeight::One())),
+            TropicalWeight::One());
+
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  const TropicalWeight no_w =
+      StrToWeight<TropicalWeight>(WeightToStr(TropicalWeight::NoWeight()));
+  EXPECT_FALSE(no_w.Member());
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
+
+  // Test fallback in WeightToStr for non-AbslStringify composite weights.
+  StringWeight<int> sw;
+  sw.PushBack(10);
+  sw.PushBack(20);
+  EXPECT_EQ(WeightToStr(sw), "10_20");
 }
 
 }  // namespace

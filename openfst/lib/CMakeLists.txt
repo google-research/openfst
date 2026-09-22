@@ -57,6 +57,7 @@ target_link_libraries(
          absl::check
          absl::memory
          absl::strings
+         absl::str_format
          absl::synchronization
          absl::span
          absl::status

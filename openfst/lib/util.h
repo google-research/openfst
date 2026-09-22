@@ -49,6 +49,8 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/has_absl_stringify.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -517,10 +519,14 @@ Weight StrToWeight(absl::string_view s) {
 
 template <typename Weight>
 std::string WeightToStr(Weight w) {
-  std::ostringstream strm;
-  strm.precision(9);
-  strm << w;
-  return strm.str();
+  if constexpr (absl::HasAbslStringify<Weight>::value) {
+    return absl::StrCat(w);
+  } else {
+    std::ostringstream strm;
+    strm.precision(9);
+    strm << w;
+    return strm.str();
+  }
 }
 
 // Utilities for reading/writing integer pairs (typically labels).
