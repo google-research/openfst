@@ -20,7 +20,6 @@
 
 #include <cstddef>
 #include <istream>
-#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -29,6 +28,10 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "openfst/extensions/linear/linear-fst-data-builder.h"
 #include "openfst/extensions/linear/linear-fst-data.h"
 #include "openfst/extensions/linear/linear-fst.h"
@@ -62,7 +65,7 @@ bool ValidateEmptySymbol();
 // either returns `kNoLabel` for later processing or decides the label
 // right away.
 template <class Arc>
-inline typename Arc::Label LookUp(const std::string& str, SymbolTable* syms) {
+inline typename Arc::Label LookUp(absl::string_view str, SymbolTable* syms) {
   if (str == absl::GetFlag(FLAGS_start_symbol)) {
     return str == absl::GetFlag(FLAGS_end_symbol)
                ? kNoLabel
@@ -77,12 +80,10 @@ inline typename Arc::Label LookUp(const std::string& str, SymbolTable* syms) {
 // Splits `str` with `delim` as the delimiter and stores the labels in
 // `output`.
 template <class Arc>
-void SplitAndPush(const std::string& str, const char delim, SymbolTable* syms,
+void SplitAndPush(absl::string_view str, char delim, SymbolTable* syms,
                   std::vector<typename Arc::Label>* output) {
-  if (str == absl::GetFlag(FLAGS_empty_symbol)) return;
-  std::istringstream strm(str);
-  std::string buf;
-  while (std::getline(strm, buf, delim)) {
+  if (str.empty() || str == absl::GetFlag(FLAGS_empty_symbol)) return;
+  for (absl::string_view buf : absl::StrSplit(str, delim)) {
     output->push_back(LookUp<Arc>(buf, syms));
   }
 }
@@ -198,17 +199,14 @@ void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
   std::getline(in, line);
   if (!in) LOG(FATAL) << "Empty file: " << model;  // Crash OK.
   size_t future_size;
-  {
-    std::istringstream strm(line);
-    strm >> future_size;
-    if (!strm) LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
+  if (!absl::SimpleAtoi(absl::StripAsciiWhitespace(line), &future_size)) {
+    LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
   }
   size_t num_line = 1, num_added = 0;
   const int group = builder->AddGroup(future_size);
   VLOG(1) << "Group " << group << ": from " << model << "; future size is "
           << future_size << ".";
   // Add the rest of lines as a single feature group
-  std::vector<std::string> fields;
   std::vector<typename Arc::Label> input_labels, output_labels;
   typename Arc::Weight weight;
   while (GetModelRecord<Arc>(model, in, fsyms, osyms, &input_labels,
@@ -253,10 +251,8 @@ void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
   std::getline(in, line);
   if (!in) LOG(FATAL) << "Empty file: " << model;  // Crash OK.
   size_t future_size;
-  {
-    std::istringstream strm(line);
-    strm >> future_size;
-    if (!strm) LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
+  if (!absl::SimpleAtoi(absl::StripAsciiWhitespace(line), &future_size)) {
+    LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
   }
   if (future_size != 0) {
     LOG(FATAL)  // Crash OK.
@@ -268,7 +264,6 @@ void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
   VLOG(1) << "Group " << group << ": from " << model << "; future size is "
           << future_size << ".";
   // Add the rest of lines as a single feature group
-  std::vector<std::string> fields;
   std::vector<typename Arc::Label> input_labels, output_labels;
   typename Arc::Weight weight;
   while (GetModelRecord<Arc>(model, in, fsyms, osyms, &input_labels,
@@ -298,7 +293,7 @@ void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
           << num_line << " lines.";
 }
 
-void SplitByWhitespace(const std::string& str, std::vector<std::string>* out);
+void SplitByWhitespace(absl::string_view str, std::vector<std::string>* out);
 int ScanNumClasses(char** models, int models_length);
 
 template <class Arc>

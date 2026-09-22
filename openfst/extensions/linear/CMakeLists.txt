@@ -28,6 +28,7 @@ target_link_libraries(
          fstscript
          absl::log
          absl::flags
+         absl::strings
 )
 
 add_library(fstlinear_tagger_fst linear-tagger-fst.cc)

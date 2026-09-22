@@ -21,12 +21,13 @@
 #include <cstddef>
 #include <functional>
 #include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "openfst/lib/file-util.h"
 #include "openfst/script/script-impl.h"
 
@@ -74,11 +75,8 @@ void LinearCompile(const std::string& arc_type,
 
 REGISTER_FST_OPERATION_3ARCS(LinearCompileTpl, LinearCompileArgs);
 
-void SplitByWhitespace(const std::string& str, std::vector<std::string>* out) {
-  out->clear();
-  std::istringstream strm(str);
-  std::string buf;
-  while (strm >> buf) out->push_back(buf);
+void SplitByWhitespace(absl::string_view str, std::vector<std::string>* out) {
+  *out = absl::StrSplit(str, absl::ByAsciiWhitespace(), absl::SkipEmpty());
 }
 
 int ScanNumClasses(char** models, int models_len) {
