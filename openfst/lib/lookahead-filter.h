@@ -305,12 +305,16 @@ class PushWeightsComposeFilter {
 
   PushWeightsComposeFilter(const FST1& fst1, const FST2& fst2, M1* matcher1,
                            M2* matcher2)
-      : filter_(fst1, fst2, matcher1, matcher2), fs_(FilterState::NoState()) {}
+      : filter_(fst1, fst2, matcher1, matcher2),
+        fs_(FilterState::NoState()),
+        push_weights_((filter_.LookAheadFlags() & kLookAheadWeight) != 0) {}
 
   PushWeightsComposeFilter(
       const PushWeightsComposeFilter<Filter, M1, M2, MT>& filter,
       bool safe = false)
-      : filter_(filter.filter_, safe), fs_(FilterState::NoState()) {}
+      : filter_(filter.filter_, safe),
+        fs_(FilterState::NoState()),
+        push_weights_(filter.push_weights_) {}
 
   FilterState Start() const {
     return FilterState(filter_.Start(), FilterState2(Weight::One()));
@@ -324,7 +328,7 @@ class PushWeightsComposeFilter {
   FilterState FilterArc(Arc* arc1, Arc* arc2) const {
     const auto& fs1 = filter_.FilterArc(arc1, arc2);
     if (fs1 == FilterState1::NoState()) return FilterState::NoState();
-    if (!(LookAheadFlags() & kLookAheadWeight)) {
+    if (!push_weights_) {
       return FilterState(fs1, FilterState2(Weight::One()));
     }
     const auto& lweight = LookAheadArc()
@@ -348,12 +352,14 @@ class PushWeightsComposeFilter {
 
   void FilterFinal(Weight* weight1, Weight* weight2) const {
     filter_.FilterFinal(weight1, weight2);
-    if (!(LookAheadFlags() & kLookAheadWeight) || *weight1 == Weight::Zero()) {
+    if (!push_weights_ || *weight1 == Weight::Zero()) {
       return;
     }
     const auto& fs2 = fs_.GetState2();
     const auto& fweight = fs2.GetWeight();
-    *weight1 = Divide(*weight1, fweight);
+    if (fweight != Weight::One()) {
+      *weight1 = Divide(*weight1, fweight);
+    }
   }
 
   // Returns matchers; ownership states with filter.
@@ -379,6 +385,7 @@ class PushWeightsComposeFilter {
  private:
   Filter filter_;   // Underlying filter.
   FilterState fs_;  // Current filter state.
+  const bool push_weights_;
 
   PushWeightsComposeFilter& operator=(const PushWeightsComposeFilter&) = delete;
 };
