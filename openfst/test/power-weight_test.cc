@@ -176,5 +176,21 @@ TYPED_TEST(DotProductPowerWeightTest, Overlapping) {
   EXPECT_FLOAT_EQ(5.0, result.Value());
 }
 
+TEST(SparsePowerWeightQuantizeTest, PreservesOneDefault) {
+  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  EXPECT_EQ(Weight::One(), Weight::One().Quantize());
+  EXPECT_EQ(Weight::Zero(), Weight::Zero().Quantize());
+}
+
+TEST(SparsePowerWeightQuantizeTest, PreservesDefaultWithComponents) {
+  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  auto w = Weight::One();
+  w.SetValue(1, TropicalWeight(1.23));
+  const Weight quantized = w.Quantize(0.5);
+  EXPECT_EQ(TropicalWeight::One(), quantized.DefaultValue());
+  EXPECT_EQ(TropicalWeight::One(), quantized.Value(2));
+  EXPECT_EQ(TropicalWeight(1.0), quantized.Value(1));
+}
+
 }  // namespace
 }  // namespace fst

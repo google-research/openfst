@@ -166,7 +166,7 @@ class SparseTupleWeight {
   }
 
   SparseTupleWeight Quantize(float delta = kDelta) const {
-    SparseTupleWeight weight;
+    SparseTupleWeight weight(DefaultValue().Quantize(delta));
     for (Iterator it(*this); !it.Done(); it.Next()) {
       weight.PushBack(it.Value().first, it.Value().second.Quantize(delta));
     }
