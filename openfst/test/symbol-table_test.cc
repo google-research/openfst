@@ -457,6 +457,26 @@ TEST_P(RemoveOneSymbolTest, RemoveKeyAndCheck) {
 INSTANTIATE_TEST_SUITE_P(RemoveEachKey, RemoveOneSymbolTest,
                          ::testing::Range(0, 20));
 
+TEST_F(RemoveSymbolTest, GetNthKey) {
+  auto check_keys = [this](absl::Span<const int64_t> expected) {
+    ASSERT_EQ(symbols_.NumSymbols(), expected.size());
+    for (size_t pos = 0; pos < expected.size(); ++pos) {
+      EXPECT_EQ(symbols_.GetNthKey(pos), expected[pos]) << "pos = " << pos;
+    }
+    EXPECT_EQ(symbols_.GetNthKey(-1), kNoSymbol);
+    EXPECT_EQ(symbols_.GetNthKey(expected.size()), kNoSymbol);
+  };
+  check_keys({0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  //
+              100, 110, 120, 130, 140, 150, 160, 170, 180, 190});
+  // Removing a dense key moves the following dense keys to the sparse range.
+  symbols_.RemoveSymbol(4);
+  check_keys({0, 1, 2, 3, 5, 6, 7, 8, 9,  //
+              100, 110, 120, 130, 140, 150, 160, 170, 180, 190});
+  symbols_.RemoveSymbol(150);
+  check_keys({0, 1, 2, 3, 5, 6, 7, 8, 9,  //
+              100, 110, 120, 130, 140, 160, 170, 180, 190});
+}
+
 TEST(SymbolTableReadTest, ReadNegativeSizeFails) {
   SymbolTable syms("test");
   std::ostringstream os;

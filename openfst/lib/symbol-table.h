@@ -246,7 +246,7 @@ class SymbolTableImpl final : public MutableSymbolTableImpl {
     } else if (pos < dense_key_limit_) {
       return pos;
     }
-    return Find(symbols_.GetSymbol(pos));
+    return idx_key_[pos - dense_key_limit_];
   }
 
   const std::string& Name() const override { return name_; }

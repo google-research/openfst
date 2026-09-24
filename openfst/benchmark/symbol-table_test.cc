@@ -163,6 +163,26 @@ void BM_SymbolTableLoadLookup(benchmark::State& state) {
 }
 BENCHMARK(BM_SymbolTableLoadLookup);
 
+// Iterates over a symbol table with sparse (non-contiguous) keys, which
+// exercises the `GetNthKey` path for indices beyond the dense key range.
+void BM_SymbolTableIterateSparse(benchmark::State& state) {
+  const int elements = state.range(0);
+  const std::vector<std::string> test_syms = MakeIntSyms(elements);
+
+  SymbolTable symbols;
+  for (int i = 0; i < elements; ++i) {
+    symbols.AddSymbol(test_syms[i], 2 * i + 1);
+  }
+
+  for (auto _ : state) {
+    for (const auto& item : symbols) {
+      benchmark::DoNotOptimize(item.Label());
+    }
+  }
+  state.SetItemsProcessed(state.iterations() * elements);
+}
+BENCHMARK(BM_SymbolTableIterateSparse)->Range(8, 1 << 17);
+
 // A somewhat (very?) artificial test that creates a bogus symbol table and then
 // measures access time for the various checksums.  Because calculation only
 // happens the first time, this test essentially measures the mutex/lock time
