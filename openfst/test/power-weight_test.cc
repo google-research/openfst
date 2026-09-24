@@ -153,5 +153,28 @@ TYPED_TEST(SetPowerWeightComponentTest, Remove) {
   EXPECT_THAT(ToVector(w), ElementsAre(Pair(1, 1.23), Pair(3, 3.45)));
 }
 
+template <typename PowerWeightT>
+class DotProductPowerWeightTest : public testing::Test {
+ public:
+  using Weight = PowerWeightT;
+};
+TYPED_TEST_SUITE(DotProductPowerWeightTest, PowerWeightTypes);
+
+TYPED_TEST(DotProductPowerWeightTest, Disjoint) {
+  using Weight = typename TestFixture::Weight;
+  const auto w1 = CreateWeight<Weight>({{1, 1.0}});
+  const auto w2 = CreateWeight<Weight>({{2, 2.0}});
+  EXPECT_EQ(TropicalWeight::Zero(), DotProduct(w1, w2));
+}
+
+TYPED_TEST(DotProductPowerWeightTest, Overlapping) {
+  using Weight = typename TestFixture::Weight;
+  const auto w1 = CreateWeight<Weight>({{1, 1.0}, {2, 5.0}, {4, 3.0}});
+  const auto w2 = CreateWeight<Weight>({{1, 4.0}, {2, 1.0}, {3, 0.5}});
+  // Tropical: min over shared components of (w1[i] + w2[i]) = min(5, 6) = 5.
+  const TropicalWeight result = DotProduct(w1, w2);
+  EXPECT_FLOAT_EQ(5.0, result.Value());
+}
+
 }  // namespace
 }  // namespace fst

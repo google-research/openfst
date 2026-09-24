@@ -154,8 +154,8 @@ inline SparsePowerWeight<W, K> Divide(const SparsePowerWeight<W, K>& w1,
 
 // Semimodule dot product operation.
 template <class W, class K>
-inline const W& DotProduct(const SparsePowerWeight<W, K>& w1,
-                           const SparsePowerWeight<W, K>& w2) {
+inline W DotProduct(const SparsePowerWeight<W, K>& w1,
+                    const SparsePowerWeight<W, K>& w2) {
   const SparsePowerWeight<W, K> product = Times(w1, w2);
   W result(W::Zero());
   for (SparseTupleWeightIterator<W, K> it(product); !it.Done(); it.Next()) {
