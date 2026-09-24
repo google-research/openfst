@@ -22,13 +22,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "openfst/extensions/far/far-reader.h"
@@ -50,16 +50,15 @@ inline void FarWriteFst(const Fst<Arc>* fst, absl::string_view key,
     *nrep = 0;
   }
   okey->assign(key.data(), key.size());
-  std::ostringstream source_path;
-  source_path << source_prefix;
+  std::string source_path(source_prefix);
   if (generate_sources) {
-    source_path << std::setw(generate_sources) << std::setfill('0') << i;
+    absl::StrAppendFormat(&source_path, "%0*d", generate_sources, i);
   } else {
-    source_path << key;
-    if (*nrep > 0) source_path << '.' << *nrep;
+    absl::StrAppend(&source_path, key);
+    if (*nrep > 0) absl::StrAppend(&source_path, ".", *nrep);
   }
-  source_path << source_suffix;
-  fst->Write(source_path.str());
+  absl::StrAppend(&source_path, source_suffix);
+  DCHECK(fst->Write(source_path));
 }
 
 template <class Arc>
