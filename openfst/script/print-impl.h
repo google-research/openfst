@@ -22,7 +22,6 @@
 #define OPENFST_SCRIPT_PRINT_IMPL_H_
 
 #include <ostream>
-#include <sstream>
 #include <string>
 
 #include "absl/strings/string_view.h"

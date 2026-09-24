@@ -22,7 +22,6 @@
 #include <cstdint>
 #include <istream>
 #include <ostream>
-#include <sstream>
 #include <string>
 
 #include "absl/base/nullability.h"
