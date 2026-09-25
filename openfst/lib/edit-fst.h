@@ -43,6 +43,7 @@
 #include <cstdint>
 #include <istream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -184,16 +185,19 @@ class EditFstData {
     }
   }
 
-  // Adds the specified arc to the specified state of this FST.
-  const Arc* AddArc(StateId s, const Arc& arc, const WrappedFstT* wrapped) {
+  // Adds the specified arc to the specified state of this FST. Returns a copy
+  // of the previous final arc of the state, if any. A copy is required since
+  // adding the arc may reallocate the state's arc storage.
+  std::optional<Arc> AddArc(StateId s, const Arc& arc,
+                            const WrappedFstT* wrapped) {
     const auto internal_id = GetEditableInternalId(s, wrapped);
     const auto num_arcs = edits_.NumArcs(internal_id);
-    ArcIterator<MutableFstT> arc_it(edits_, internal_id);
-    const Arc* prev_arc = nullptr;
+    std::optional<Arc> prev_arc;
     if (num_arcs > 0) {
       // Grabs the final arc associated with this state in edits_.
+      ArcIterator<MutableFstT> arc_it(edits_, internal_id);
       arc_it.Seek(num_arcs - 1);
-      prev_arc = &(arc_it.Value());
+      prev_arc = arc_it.Value();
     }
     edits_.AddArc(internal_id, arc);
     return prev_arc;
@@ -504,9 +508,9 @@ class EditFstImpl : public FstImpl<A> {
   // Adds the specified arc to the specified state of this FST.
   void AddArc(StateId s, const Arc& arc) {
     MutateCheck();
-    const auto* prev_arc = data_->AddArc(s, arc, wrapped_.get());
-    SetProperties(
-        AddArcProperties(FstImpl<Arc>::Properties(), s, arc, prev_arc));
+    const auto prev_arc = data_->AddArc(s, arc, wrapped_.get());
+    SetProperties(AddArcProperties(FstImpl<Arc>::Properties(), s, arc,
+                                   prev_arc ? &*prev_arc : nullptr));
   }
 
   void DeleteStates(absl::Span<const StateId> dstates) {

@@ -35,6 +35,7 @@
 #include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/mutable-fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -169,6 +170,29 @@ TEST_F(EditTest, Equiv) {
     VerifyAndTestEquality(*e1_edited_thread_safe_copy, *e2);
     e1_edited_thread_safe_copy->DeleteArcs(e1_new_state_id);
   }
+}
+
+// Adds many arcs to a single state so that the underlying arc storage is
+// reallocated, and checks the sortedness properties, which are computed from
+// the previously last arc of the state.
+TEST(EditFstTest, AddManyArcsKeepsProperties) {
+  VectorFst<Arc> wrapped;
+  wrapped.AddState();
+  wrapped.SetStart(0);
+  wrapped.SetFinal(0, Weight::One());
+  EditFst<Arc> edit_fst(wrapped);
+  constexpr int kNumArcs = 1000;
+  for (int i = 1; i <= kNumArcs; ++i) {
+    edit_fst.AddArc(0, Arc(i, i, Weight::One(), 0));
+  }
+  ASSERT_EQ(edit_fst.NumArcs(0), kNumArcs);
+  EXPECT_EQ(edit_fst.Properties(kILabelSorted | kOLabelSorted, false),
+            kILabelSorted | kOLabelSorted);
+  // An out-of-order arc must clear the sortedness properties.
+  edit_fst.AddArc(0, Arc(1, 1, Weight::One(), 0));
+  EXPECT_EQ(edit_fst.Properties(kNotILabelSorted | kNotOLabelSorted, false),
+            kNotILabelSorted | kNotOLabelSorted);
+  EXPECT_TRUE(Verify(edit_fst));
 }
 
 }  // namespace
