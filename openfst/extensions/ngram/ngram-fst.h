@@ -347,6 +347,7 @@ inline void NGramFstImpl<A>::GetStates(
     std::vector<typename A::StateId>* states) const {
   states->clear();
   states->push_back(0);
+  if (context.empty()) return;
   typename std::vector<Label>::const_reverse_iterator cit = context.rbegin();
   const Label* children = root_children_;
   size_t num_children = select_root_.second - 2;

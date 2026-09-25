@@ -79,6 +79,14 @@ TEST(NGramFstTest, TestNGramFst) {
   EXPECT_TRUE(Equal(*fst, loudsfst));
 }
 
+TEST(NGramFstTest, GetStatesEmptyContext) {
+  std::unique_ptr<const StdFst> fst(StdFst::Read(Testfile()));
+  NGramFst<StdArc> loudsfst(*fst);
+  std::vector<StdArc::StateId> states = {42, 43};
+  loudsfst.GetStates({}, &states);
+  EXPECT_EQ(states, std::vector<StdArc::StateId>{0});
+}
+
 struct CustomArc {
   typedef int16_t Label;
   typedef TropicalWeightTpl<double> Weight;
