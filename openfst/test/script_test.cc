@@ -323,5 +323,24 @@ TEST(CompileTest, FstCompilerBadWeightSetsError) {
   absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
 }
 
+TEST(CompileTest, FstCompilerBadIntegersSetError) {
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  for (const bool nkeep : {false, true}) {
+    for (const char* text :
+         {"0 1 x 2\n", "0 1 1 x\n", "x 1 1 2\n", "0 x 1 2\n", "-1 0 1 2\n"}) {
+      // Without nkeep, negative state IDs are renumbered densely.
+      if (!nkeep && text[0] == '-') continue;
+      std::istringstream istrm(text);
+      FstCompiler<StdArc> compiler(istrm, "test", nullptr, nullptr, nullptr,
+                                   /*accep=*/false, /*ikeep=*/false,
+                                   /*okeep=*/false, nkeep);
+      EXPECT_TRUE(compiler.Fst().Properties(kError, true))
+          << "text = " << text << ", nkeep = " << nkeep;
+    }
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
+}
+
 }  // namespace
 }  // namespace fst
