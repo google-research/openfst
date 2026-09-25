@@ -96,7 +96,7 @@ class LexicographicWeight : public PairWeight<W1, W2> {
   }
 
   LexicographicWeight Quantize(float delta = kDelta) const {
-    return LexicographicWeight(PairWeight<W1, W2>::Quantize());
+    return LexicographicWeight(PairWeight<W1, W2>::Quantize(delta));
   }
 
   ReverseWeight Reverse() const {

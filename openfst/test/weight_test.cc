@@ -774,6 +774,15 @@ TEST(WeightStringifyTest, AbslStringifyAndWeightToStr) {
   EXPECT_EQ(WeightToStr(sw), "10_20");
 }
 
+TEST(LexicographicWeightTest, QuantizeUsesDelta) {
+  using Weight = LexicographicWeight<TropicalWeight, TropicalWeight>;
+  const Weight w(TropicalWeight(1.23f), TropicalWeight(2.77f));
+  const Weight quantized = w.Quantize(0.5f);
+  EXPECT_EQ(quantized.Value1(), TropicalWeight(1.0f));
+  EXPECT_EQ(quantized.Value2(), TropicalWeight(3.0f));
+  EXPECT_EQ(w.Quantize(), Weight(w.Value1().Quantize(), w.Value2().Quantize()));
+}
+
 }  // namespace
 }  // namespace fst
 
