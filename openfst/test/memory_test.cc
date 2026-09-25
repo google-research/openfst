@@ -21,13 +21,18 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace fst {
 namespace {
+
+using ::testing::ElementsAre;
 
 class MemoryTest : public testing::Test {
  protected:
@@ -124,6 +129,59 @@ TEST_F(MemoryTest, PoolAllocatorSeqTest) {
 // Tests STL pool allocation with associative containers
 TEST_F(MemoryTest, PoolAllocatorAssocTest) {
   AllocatorAssocTest<PoolAllocator<int>>();
+}
+
+template <typename Allocator>
+class AllocatorEqualityTest : public testing::Test {};
+
+using AllocatorTypes = testing::Types<BlockAllocator<int>, PoolAllocator<int>>;
+TYPED_TEST_SUITE(AllocatorEqualityTest, AllocatorTypes);
+
+TYPED_TEST(AllocatorEqualityTest, CopiesCompareEqual) {
+  const TypeParam alloc;
+  const TypeParam copy(alloc);
+  EXPECT_TRUE(alloc == alloc);
+  EXPECT_TRUE(alloc == copy);
+  EXPECT_FALSE(alloc != copy);
+}
+
+TYPED_TEST(AllocatorEqualityTest, DistinctAllocatorsCompareUnequal) {
+  const TypeParam alloc1;
+  const TypeParam alloc2;
+  EXPECT_FALSE(alloc1 == alloc2);
+  EXPECT_TRUE(alloc1 != alloc2);
+}
+
+TYPED_TEST(AllocatorEqualityTest, ReboundCopiesCompareEqual) {
+  using ReboundAllocator =
+      typename std::allocator_traits<TypeParam>::template rebind_alloc<double>;
+  const TypeParam alloc;
+  const ReboundAllocator rebound(alloc);
+  EXPECT_TRUE(alloc == rebound);
+  EXPECT_TRUE(rebound == alloc);
+  EXPECT_TRUE(TypeParam(rebound) == alloc);
+}
+
+TYPED_TEST(AllocatorEqualityTest, MoveAssignmentStealsBufferWhenEqual) {
+  using Vector = std::vector<int, TypeParam>;
+  const TypeParam alloc;
+  Vector v1(alloc);
+  Vector v2(alloc);
+  for (int i = 0; i < 8; ++i) v1.push_back(i);
+  const int* const data = v1.data();
+  v2 = std::move(v1);
+  EXPECT_EQ(v2.data(), data);
+  EXPECT_THAT(v2, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7));
+}
+
+TYPED_TEST(AllocatorEqualityTest, SwapWithEqualAllocators) {
+  using Vector = std::vector<int, TypeParam>;
+  const TypeParam alloc;
+  Vector v1({1, 2, 3}, alloc);
+  Vector v2({4, 5}, alloc);
+  v1.swap(v2);
+  EXPECT_THAT(v1, ElementsAre(4, 5));
+  EXPECT_THAT(v2, ElementsAre(1, 2, 3));
 }
 
 }  // namespace

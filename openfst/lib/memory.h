@@ -257,16 +257,18 @@ class BlockAllocator {
   std::shared_ptr<MemoryArenaCollection> arenas_;
 };
 
+// Allocators compare equal iff they share the same arena collection, in which
+// case memory allocated by one can be deallocated by the other.
 template <typename T, typename U>
 bool operator==(const BlockAllocator<T>& alloc1,
                 const BlockAllocator<U>& alloc2) {
-  return false;
+  return alloc1.Arenas() == alloc2.Arenas();
 }
 
 template <typename T, typename U>
 bool operator!=(const BlockAllocator<T>& alloc1,
                 const BlockAllocator<U>& alloc2) {
-  return true;
+  return !(alloc1 == alloc2);
 }
 
 // STL allocator using memory pools. Memory is allocated from underlying
@@ -348,16 +350,18 @@ class PoolAllocator {
   std::shared_ptr<MemoryPoolCollection> pools_;
 };
 
+// Allocators compare equal iff they share the same pool collection, in which
+// case memory allocated by one can be deallocated by the other.
 template <typename T, typename U>
 bool operator==(const PoolAllocator<T>& alloc1,
                 const PoolAllocator<U>& alloc2) {
-  return false;
+  return alloc1.Pools() == alloc2.Pools();
 }
 
 template <typename T, typename U>
 bool operator!=(const PoolAllocator<T>& alloc1,
                 const PoolAllocator<U>& alloc2) {
-  return true;
+  return !(alloc1 == alloc2);
 }
 
 }  // namespace fst
