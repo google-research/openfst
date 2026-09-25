@@ -121,6 +121,19 @@ TEST_F(UnionFindTest, MakeAllSet) {
   }
 }
 
+// MakeAllSet may grow the forest beyond the constructor size; Union must then
+// remain in bounds, and a subsequent MakeAllSet resets to singletons.
+TEST_F(UnionFindTest, MakeAllSetThenUnion) {
+  UnionFind uf(0, -1);
+  uf.MakeAllSet(kNumElements);
+  for (int i = 1; i < kNumElements; ++i) uf.Union(i - 1, i);
+  const int root = uf.FindSet(0);
+  for (int i = 1; i < kNumElements; ++i) EXPECT_EQ(uf.FindSet(i), root);
+
+  uf.MakeAllSet(kNumElements);
+  for (int i = 0; i < kNumElements; ++i) EXPECT_EQ(uf.FindSet(i), i);
+}
+
 TEST(UnionFindPathTest, FindSetCorrectlyUpdatesRootForAllElementsInAPath) {
   fst::UnionFind<int> forest(0, -1);  // The union-find disjoint set
 

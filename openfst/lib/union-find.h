@@ -21,6 +21,7 @@
 #ifndef OPENFST_LIB_UNION_FIND_H_
 #define OPENFST_LIB_UNION_FIND_H_
 
+#include <numeric>
 #include <vector>
 
 namespace fst {
@@ -71,7 +72,8 @@ class UnionFind {
   // Initialization of all elements starting from 0 to max - 1 to distinct sets.
   void MakeAllSet(T max) {
     parent_.resize(max);
-    for (T item = 0; item < max; ++item) parent_[item] = item;
+    std::iota(parent_.begin(), parent_.end(), T{0});
+    rank_.assign(max, 0);
   }
 
   // For testing only.
