@@ -34,6 +34,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/util.h"
@@ -103,6 +104,12 @@ class FstCompiler {
         return;
       }
       StateId s = StrToStateId(col[0]);
+      if (s < 0) {
+        FSTERROR() << "FstCompiler: Bad state ID = \"" << col[0]
+                   << "\", source = " << source_ << ", line = " << nline_;
+        fst_.SetProperties(kError, kError);
+        return;
+      }
       while (s >= fst_.NumStates()) fst_.AddState();
       if (!start_state_populated) {
         fst_.SetStart(s);
@@ -173,11 +180,12 @@ class FstCompiler {
         fst_.SetProperties(kError, kError);
       }
     } else {
-      auto maybe_n = ParseInt64(s);
+      const auto maybe_n = ParseInt64(s);
       if (!maybe_n.has_value()) {
         FSTERROR() << "FstCompiler: Bad " << name << " integer = \"" << s
                    << "\", source = " << source_ << ", line = " << nline_;
         fst_.SetProperties(kError, kError);
+        return kNoStateId;
       }
       n = *maybe_n;
     }
