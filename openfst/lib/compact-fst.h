@@ -489,12 +489,28 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
     }
     data->states_ =
         static_cast<Unsigned*>(data->states_region_->mutable_data());
+    data->ncompacts_ = data->states_[data->nstates_];
+    if (data->states_[0] != 0) {
+      LOG(ERROR) << "CompactArcStore::Read: Invalid first state offset: "
+                 << data->states_[0] << " for " << opts.source;
+      return nullptr;
+    }
+    if (data->ncompacts_ > kMaxArcs) {
+      LOG(ERROR) << "CompactArcStore::Read: Invalid number of compacts: "
+                 << data->ncompacts_ << " > " << kMaxArcs << " for "
+                 << opts.source;
+      return nullptr;
+    }
+    if (data->ncompacts_ < data->narcs_) {
+      LOG(ERROR) << "CompactArcStore::Read: Number of compacts "
+                 << data->ncompacts_ << " < number of arcs " << data->narcs_
+                 << " for " << opts.source;
+      return nullptr;
+    }
   } else {
     data->states_ = nullptr;
+    data->ncompacts_ = data->nstates_ * arc_compactor.Size();
   }
-  data->ncompacts_ = arc_compactor.Size() == -1
-                         ? data->states_[data->nstates_]
-                         : data->nstates_ * arc_compactor.Size();
   if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
     LOG(ERROR) << "CompactArcStore::Read: Alignment failed: " << opts.source;
     return nullptr;
