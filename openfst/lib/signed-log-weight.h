@@ -289,13 +289,13 @@ inline SignedLogWeightTpl<T> Divide(const SignedLogWeightTpl<T>& w1,
 template <class T>
 inline bool ApproxEqual(const LogWeightTpl<T>& w1,
                         const SignedLogWeightTpl<T>& w2, float delta = kDelta) {
-  return ApproxEqual(LogWeightTpl<T>(w1), w2, delta);
+  return ApproxEqual(SignedLogWeightTpl<T>(w1), w2, delta);
 }
 
 template <class T>
 inline bool ApproxEqual(const SignedLogWeightTpl<T>& w1,
                         const LogWeightTpl<T>& w2, float delta = kDelta) {
-  return ApproxEqual(w1, LogWeightTpl<T>(w2), delta);
+  return ApproxEqual(w1, SignedLogWeightTpl<T>(w2), delta);
 }
 
 template <class T>

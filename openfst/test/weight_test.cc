@@ -783,6 +783,16 @@ TEST(LexicographicWeightTest, QuantizeUsesDelta) {
   EXPECT_EQ(w.Quantize(), Weight(w.Value1().Quantize(), w.Value2().Quantize()));
 }
 
+TEST(SignedLogWeightTest, MixedApproxEqual) {
+  const LogWeight lw(2.0f);
+  const SignedLogWeight slw(lw);
+  EXPECT_TRUE(ApproxEqual(lw, slw));
+  EXPECT_TRUE(ApproxEqual(slw, lw));
+  const LogWeight other(3.0f);
+  EXPECT_FALSE(ApproxEqual(other, slw));
+  EXPECT_FALSE(ApproxEqual(slw, other));
+}
+
 }  // namespace
 }  // namespace fst
 
