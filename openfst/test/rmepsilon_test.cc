@@ -28,6 +28,7 @@
 #include "openfst/lib/equal.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/queue.h"
+#include "openfst/lib/string-weight.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 #include "openfst/script/equal.h"
@@ -134,6 +135,36 @@ TEST_F(RmEpsilonTest, PrunedRmEpsilon) {
   RmEpsilon(&nfst1, false, Weight(1.0), 10);
   ASSERT_TRUE(Verify(nfst1));
   ASSERT_TRUE(Equal(nfst1, nfst2));
+}
+
+// Exercises RmEpsilon with heap-owning weights, so that arcs moved into the
+// output FST are checked for correctness (and under sanitizers).
+TEST(RmEpsilonStringTest, RmEpsilonStringWeight) {
+  using SArc = StringArc<STRING_RIGHT>;
+  using SWeight = SArc::Weight;
+
+  const SWeight w1 = Times(SWeight(1), SWeight(2));
+  const SWeight w2 = Times(SWeight(3), Times(SWeight(4), SWeight(5)));
+
+  // 0 --eps:eps/w1--> 1 --6:6/w2--> 2 (final).
+  VectorFst<SArc> fst;
+  fst.AddStates(3);
+  fst.SetStart(0);
+  fst.AddArc(0, SArc(0, 0, w1, 1));
+  fst.AddArc(1, SArc(6, 6, w2, 2));
+  fst.SetFinal(2, SWeight::One());
+
+  // 0 --6:6/(w1 w2)--> 2 (final).
+  VectorFst<SArc> expected;
+  expected.AddStates(2);
+  expected.SetStart(0);
+  expected.AddArc(0, SArc(6, 6, Times(w1, w2), 1));
+  expected.SetFinal(1, SWeight::One());
+
+  RmEpsilon(&fst);
+  ASSERT_TRUE(Verify(fst));
+  ASSERT_TRUE(fst.Properties(kNoEpsilons, true));
+  EXPECT_TRUE(Equal(expected, fst));
 }
 
 }  // namespace

@@ -276,7 +276,7 @@ void RmEpsilon(MutableFst<Arc>* fst,
     auto& arcs = rmeps_state.Arcs();
     fst->ReserveArcs(state, arcs.size());
     while (!arcs.empty()) {
-      fst->AddArc(state, arcs.back());
+      fst->AddArc(state, std::move(arcs.back()));
       arcs.pop_back();
     }
   }
