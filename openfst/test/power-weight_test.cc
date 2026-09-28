@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -25,6 +26,7 @@
 #include "absl/random/random.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/sparse-power-weight.h"
+#include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/weight.h"
 #include "openfst/test/power-weight-util.h"
 #include "openfst/test/weight-tester.h"
@@ -190,6 +192,31 @@ TEST(SparsePowerWeightQuantizeTest, PreservesDefaultWithComponents) {
   EXPECT_EQ(TropicalWeight::One(), quantized.DefaultValue());
   EXPECT_EQ(TropicalWeight::One(), quantized.Value(2));
   EXPECT_EQ(TropicalWeight(1.0), quantized.Value(1));
+}
+
+// The SparseTupleWeight move constructor empties its source, which lets these
+// tests distinguish a move from a silent fallback to the copy constructor.
+TEST(SparseTupleWeightMoveTest, CopyInitializationMoves) {
+  using Weight = SparseTupleWeight<TropicalWeight, int32_t>;
+  Weight w(TropicalWeight::Zero());
+  w.PushBack(1, TropicalWeight(1.0));
+  w.PushBack(2, TropicalWeight(2.0));
+  const Weight expected = w;
+  Weight moved = std::move(w);
+  EXPECT_EQ(expected, moved);
+  EXPECT_EQ(0, w.Size());
+}
+
+TEST(SparsePowerWeightMoveTest, ConstructFromBaseRvalueMoves) {
+  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  using Base = Weight::Base;
+  Base base(TropicalWeight::Zero());
+  base.PushBack(1, TropicalWeight(1.0));
+  base.PushBack(2, TropicalWeight(2.0));
+  const Weight expected(base);
+  const Weight moved(std::move(base));
+  EXPECT_EQ(expected, moved);
+  EXPECT_EQ(0, base.Size());
 }
 
 }  // namespace

@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 #include "absl/base/no_destructor.h"
 #include "absl/random/bit_gen_ref.h"
@@ -55,6 +56,8 @@ class SparsePowerWeight : public SparseTupleWeight<W, K> {
   SparsePowerWeight() = default;
 
   explicit SparsePowerWeight(const Base& weight) : Base(weight) {}
+
+  explicit SparsePowerWeight(Base&& weight) : Base(std::move(weight)) {}
 
   template <class Iterator>
   SparsePowerWeight(Iterator begin, Iterator end) : Base(begin, end) {}

@@ -86,7 +86,7 @@ class SparseTupleWeight {
     }
   }
 
-  explicit SparseTupleWeight(SparseTupleWeight&& weight) noexcept
+  SparseTupleWeight(SparseTupleWeight&& weight) noexcept
       // Don't move the default, so weight.default_ is still valid.
       : default_(weight.default_),
         first_(std::move(weight.first_)),
