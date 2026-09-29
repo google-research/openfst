@@ -38,7 +38,7 @@
 // select index block i indexes. That is, B 0 (or 1) bits occur over
 // span_i bits of the bit string.
 //
-// To turn this into the "standard"constant time select, there would need
+// To turn this into the "standard" constant time select, there would need
 // to be a span size threshold. Block spanning more than this would need
 // to have the position of each bit explicitly recorded. 8k is a typical
 // value for this threshold, but I saw no spans larger than ~6k.
