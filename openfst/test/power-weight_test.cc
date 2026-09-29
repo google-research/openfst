@@ -28,6 +28,7 @@
 #include "openfst/lib/sparse-power-weight.h"
 #include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/weight.h"
+#include "openfst/test/counting-weight.h"
 #include "openfst/test/power-weight-util.h"
 #include "openfst/test/weight-tester.h"
 
@@ -194,29 +195,45 @@ TEST(SparsePowerWeightQuantizeTest, PreservesDefaultWithComponents) {
   EXPECT_EQ(TropicalWeight(1.0), quantized.Value(1));
 }
 
-// The SparseTupleWeight move constructor empties its source, which lets these
-// tests distinguish a move from a silent fallback to the copy constructor.
+using CountingTropicalWeight = test::CountingWeight<TropicalWeight>;
+
+// Number of non-default components; copying a sparse weight copies each.
+constexpr int kNumComponents = 16;
+
+// Moving a sparse weight copies only the default value and the NoWeight()
+// placeholder left in the source; the components are moved, not copied.
+constexpr int kMaxCopiesPerMove = 2;
+
+template <class Weight>
+Weight MakeCountingSparseWeight() {
+  Weight weight{CountingTropicalWeight(TropicalWeight::Zero())};
+  for (int i = 0; i < kNumComponents; ++i) {
+    weight.PushBack(i, CountingTropicalWeight(TropicalWeight(i + 1)));
+  }
+  return weight;
+}
+
 TEST(SparseTupleWeightMoveTest, CopyInitializationMoves) {
-  using Weight = SparseTupleWeight<TropicalWeight, int32_t>;
-  Weight w(TropicalWeight::Zero());
-  w.PushBack(1, TropicalWeight(1.0));
-  w.PushBack(2, TropicalWeight(2.0));
+  using Weight = SparseTupleWeight<CountingTropicalWeight, int32_t>;
+  Weight w = MakeCountingSparseWeight<Weight>();
   const Weight expected = w;
-  Weight moved = std::move(w);
+  EXPECT_GT(CountingTropicalWeight::Counts().copies, kMaxCopiesPerMove);
+  CountingTropicalWeight::ResetCounts();
+  const Weight moved = std::move(w);
+  EXPECT_LE(CountingTropicalWeight::Counts().copies, kMaxCopiesPerMove);
   EXPECT_EQ(expected, moved);
-  EXPECT_EQ(0, w.Size());
 }
 
 TEST(SparsePowerWeightMoveTest, ConstructFromBaseRvalueMoves) {
-  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  using Weight = SparsePowerWeight<CountingTropicalWeight, int32_t>;
   using Base = Weight::Base;
-  Base base(TropicalWeight::Zero());
-  base.PushBack(1, TropicalWeight(1.0));
-  base.PushBack(2, TropicalWeight(2.0));
+  Base base = MakeCountingSparseWeight<Base>();
   const Weight expected(base);
+  EXPECT_GT(CountingTropicalWeight::Counts().copies, kMaxCopiesPerMove);
+  CountingTropicalWeight::ResetCounts();
   const Weight moved(std::move(base));
+  EXPECT_LE(CountingTropicalWeight::Counts().copies, kMaxCopiesPerMove);
   EXPECT_EQ(expected, moved);
-  EXPECT_EQ(0, base.Size());
 }
 
 }  // namespace
