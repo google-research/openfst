@@ -420,6 +420,15 @@ constexpr TropicalWeightTpl<double> Power<TropicalWeightTpl<double>>(
   return Power<double, size_t, true>(weight, n);
 }
 
+template <class T>
+struct NaturalLess<TropicalWeightTpl<T>> {
+  using Weight = TropicalWeightTpl<T>;
+
+  constexpr bool operator()(const Weight& w1, const Weight& w2) const {
+    return internal::IsGreaterThanNegInf(w1.Value()) && w1.Value() < w2.Value();
+  }
+};
+
 // Log semiring: (log(e^-x + e^-y), +, inf, 0).
 template <class T>
 class LogWeightTpl : public FloatWeightTpl<T> {
@@ -862,6 +871,15 @@ constexpr MinMaxWeightTpl<T> Divide(const MinMaxWeightTpl<T>& w1,
                                     DivideType typ = DIVIDE_ANY) {
   return w1.Value() >= w2.Value() ? w1 : MinMaxWeightTpl<T>::NoWeight();
 }
+
+template <class T>
+struct NaturalLess<MinMaxWeightTpl<T>> {
+  using Weight = MinMaxWeightTpl<T>;
+
+  constexpr bool operator()(const Weight& w1, const Weight& w2) const {
+    return w1.Value() < w2.Value();
+  }
+};
 
 // Converts to tropical.
 template <class T, class U>

@@ -793,6 +793,80 @@ TEST(SignedLogWeightTest, MixedApproxEqual) {
   EXPECT_FALSE(ApproxEqual(slw, other));
 }
 
+TEST(FloatWeightTest, NaturalLessSpecializations) {
+  NaturalLess<TropicalWeight> trop_less;
+  NaturalLess<MinMaxWeight> mm_less;
+
+  // Regular ordered values.
+  EXPECT_TRUE(trop_less(TropicalWeight(1.0f), TropicalWeight(2.0f)));
+  EXPECT_FALSE(trop_less(TropicalWeight(2.0f), TropicalWeight(1.0f)));
+  EXPECT_FALSE(trop_less(TropicalWeight(1.0f), TropicalWeight(1.0f)));
+
+  EXPECT_TRUE(mm_less(MinMaxWeight(1.0f), MinMaxWeight(2.0f)));
+  EXPECT_FALSE(mm_less(MinMaxWeight(2.0f), MinMaxWeight(1.0f)));
+  EXPECT_FALSE(mm_less(MinMaxWeight(1.0f), MinMaxWeight(1.0f)));
+
+  // Zero and One.
+  // For TropicalWeight: One() is 0, Zero() is +inf.
+  EXPECT_TRUE(trop_less(TropicalWeight::One(), TropicalWeight::Zero()));
+  EXPECT_FALSE(trop_less(TropicalWeight::Zero(), TropicalWeight::One()));
+
+  // For MinMaxWeight: One() is -inf, Zero() is +inf.
+  EXPECT_TRUE(mm_less(MinMaxWeight::One(), MinMaxWeight::Zero()));
+  EXPECT_FALSE(mm_less(MinMaxWeight::Zero(), MinMaxWeight::One()));
+  EXPECT_TRUE(mm_less(MinMaxWeight::One(), MinMaxWeight(0.0f)));
+  EXPECT_TRUE(mm_less(MinMaxWeight(0.0f), MinMaxWeight::Zero()));
+
+  // Negative infinity.
+  // In TropicalWeight, -inf is not a member (!Member()), so trop_less returns
+  // false.
+  const TropicalWeight trop_neg_inf(FloatLimits<float>::NegInfinity());
+  EXPECT_FALSE(trop_less(trop_neg_inf, TropicalWeight(0.0f)));
+  EXPECT_FALSE(trop_less(TropicalWeight(0.0f), trop_neg_inf));
+  EXPECT_FALSE(trop_less(trop_neg_inf, trop_neg_inf));
+
+  // In MinMaxWeight, -inf is a valid member (One()), so -inf < 0 is true.
+  const MinMaxWeight mm_neg_inf(FloatLimits<float>::NegInfinity());
+  EXPECT_TRUE(mm_less(mm_neg_inf, MinMaxWeight(0.0f)));
+  EXPECT_FALSE(mm_less(MinMaxWeight(0.0f), mm_neg_inf));
+
+  // NaNs (NoWeight).
+  EXPECT_FALSE(trop_less(TropicalWeight::NoWeight(), TropicalWeight(1.0f)));
+  EXPECT_FALSE(trop_less(TropicalWeight(1.0f), TropicalWeight::NoWeight()));
+  EXPECT_FALSE(
+      trop_less(TropicalWeight::NoWeight(), TropicalWeight::NoWeight()));
+
+  EXPECT_FALSE(mm_less(MinMaxWeight::NoWeight(), MinMaxWeight(1.0f)));
+  EXPECT_FALSE(mm_less(MinMaxWeight(1.0f), MinMaxWeight::NoWeight()));
+  EXPECT_FALSE(mm_less(MinMaxWeight::NoWeight(), MinMaxWeight::NoWeight()));
+
+  // Verify exact equivalence with generic: w1 != w2 && Plus(w1, w2) == w1.
+  auto GenericLess = [](const auto& w1, const auto& w2) {
+    return w1 != w2 && Plus(w1, w2) == w1;
+  };
+  const std::vector<float> values = {FloatLimits<float>::NegInfinity(),
+                                     -10.0f,
+                                     -0.5f,
+                                     0.0f,
+                                     0.5f,
+                                     10.0f,
+                                     FloatLimits<float>::PosInfinity(),
+                                     FloatLimits<float>::NumberBad()};
+  for (const float v1 : values) {
+    for (const float v2 : values) {
+      const TropicalWeight tw1(v1);
+      const TropicalWeight tw2(v2);
+      EXPECT_EQ(trop_less(tw1, tw2), GenericLess(tw1, tw2))
+          << "Mismatch for TropicalWeight(" << v1 << ", " << v2 << ")";
+
+      const MinMaxWeight mw1(v1);
+      const MinMaxWeight mw2(v2);
+      EXPECT_EQ(mm_less(mw1, mw2), GenericLess(mw1, mw2))
+          << "Mismatch for MinMaxWeight(" << v1 << ", " << v2 << ")";
+    }
+  }
+}
+
 }  // namespace
 }  // namespace fst
 
