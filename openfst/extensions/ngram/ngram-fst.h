@@ -245,7 +245,12 @@ class NGramFstImpl : public FstImpl<A> {
       inst->state_ = state;
       const std::pair<size_t, size_t> zeros = future_index_.Select0s(state);
       inst->num_futures_ = zeros.second - zeros.first - 1;
-      inst->offset_ = future_index_.Rank1(zeros.first + 1);
+      // The future bitmap is a leading zero followed, per state, by a run of
+      // ones (one per future) and a terminating zero. zeros.first is the
+      // state-th zero, so state + 1 zeros precede position zeros.first + 1:
+      // Rank1(zeros.first + 1) == zeros.first - state.
+      inst->offset_ = zeros.first - state;
+      DCHECK_EQ(inst->offset_, future_index_.Rank1(zeros.first + 1));
     }
   }
 
@@ -261,14 +266,31 @@ class NGramFstImpl : public FstImpl<A> {
     if (inst->context_state_ != inst->state_) {
       inst->context_state_ = inst->state_;
       inst->context_.clear();
+      // Walks up the context trie. Each node comes from Select1(rank1), so
+      // Rank1(node) == rank1 and does not need to be recomputed.
       size_t node = inst->node_;
+      size_t rank1 = inst->state_;
       while (node != 0) {
-        const size_t rank1 = context_index_.Rank1(node);
+        DCHECK_EQ(rank1, context_index_.Rank1(node));
         const size_t rank0 = node - rank1;
         inst->context_.push_back(context_words_[rank1]);
-        node = context_index_.Select1(rank0 - 1);
+        rank1 = rank0 - 1;
+        node = context_index_.Select1(rank1);
       }
     }
+  }
+
+  // Returns the backoff state of inst->state_, i.e., the parent of its node
+  // in the context trie. Requires SetInstNode(inst) and inst->state_ != 0.
+  StateId BackoffState(const NGramFstInst<A>& inst) const {
+    DCHECK_EQ(inst.node_state_, inst.state_);
+    DCHECK_NE(inst.state_, 0);
+    // Rank1(Select1(Rank0(node) - 1)) == Rank0(node) - 1, and
+    // Rank0(node) == node - Rank1(node) == node - state.
+    const StateId backoff = inst.node_ - inst.state_ - 1;
+    DCHECK_EQ(backoff, context_index_.Rank1(context_index_.Select1(
+                           context_index_.Rank0(inst.node_) - 1)));
+    return backoff;
   }
 
   // Access to the underlying representation
@@ -345,6 +367,9 @@ template <typename A>
 inline void NGramFstImpl<A>::GetStates(
     const std::vector<Label>& context,
     std::vector<typename A::StateId>* states) const {
+  // Uses the same LOUDS identities as Transition: for zeros = Select0s(r),
+  // every p in (zeros.first, zeros.second] has Rank1(p) == p - r - 1, and the
+  // node with rank r has children iff zeros.second > zeros.first + 1.
   states->clear();
   states->push_back(0);
   if (context.empty()) return;
@@ -354,32 +379,31 @@ inline void NGramFstImpl<A>::GetStates(
   const Label* loc = std::lower_bound(children, children + num_children, *cit);
   if (loc == children + num_children || *loc != *cit) return;
   size_t node = 2 + loc - children;
-  size_t node_rank = context_index_.Rank1(node);
+  // The root has rank 0.
+  size_t node_rank = node - 1;
+  DCHECK_EQ(node_rank, context_index_.Rank1(node));
   states->push_back(node_rank);
   if (context.size() == 1) return;
-  std::pair<size_t, size_t> zeros =
-      node_rank == 0 ? select_root_ : context_index_.Select0s(node_rank);
+  std::pair<size_t, size_t> zeros = context_index_.Select0s(node_rank);
   size_t first_child = zeros.first + 1;
+  DCHECK_EQ(first_child != zeros.second, context_index_.Get(first_child));
   ++cit;
-  if (context_index_.Get(first_child) != false) {
-    size_t last_child = zeros.second - 1;
-    while (cit != context.rend()) {
-      children = context_words_ + context_index_.Rank1(first_child);
-      loc = std::lower_bound(children, children + last_child - first_child + 1,
-                             *cit);
-      if (loc == children + last_child - first_child + 1 || *loc != *cit) {
-        break;
-      }
-      ++cit;
-      node = first_child + loc - children;
-      node_rank = context_index_.Rank1(node);
-      states->push_back(node_rank);
-      zeros =
-          node_rank == 0 ? select_root_ : context_index_.Select0s(node_rank);
-      first_child = zeros.first + 1;
-      if (context_index_.Get(first_child) == false) break;
-      last_child = zeros.second - 1;
-    }
+  if (first_child == zeros.second) return;
+  while (cit != context.rend()) {
+    const size_t num_node_children = zeros.second - first_child;
+    DCHECK_EQ(first_child - node_rank - 1, context_index_.Rank1(first_child));
+    children = context_words_ + (first_child - node_rank - 1);
+    loc = std::lower_bound(children, children + num_node_children, *cit);
+    if (loc == children + num_node_children || *loc != *cit) break;
+    ++cit;
+    node = first_child + (loc - children);
+    node_rank = node - node_rank - 1;
+    DCHECK_EQ(node_rank, context_index_.Rank1(node));
+    states->push_back(node_rank);
+    zeros = context_index_.Select0s(node_rank);
+    first_child = zeros.first + 1;
+    DCHECK_EQ(first_child != zeros.second, context_index_.Get(first_child));
+    if (first_child == zeros.second) break;
   }
 }
 
@@ -826,6 +850,11 @@ inline void NGramFstImpl<A>::Init(const char* data,
 template <typename A>
 inline typename A::StateId NGramFstImpl<A>::Transition(
     const std::vector<Label>& context, Label future) const {
+  // In the LOUDS context trie, the children of the node with rank r occupy
+  // the run of ones strictly between zeros = Select0s(r). Every position p in
+  // (zeros.first, zeros.second] is preceded by exactly r + 1 zeros, so
+  // Rank1(p) == p - r - 1, and the node has children iff
+  // zeros.second > zeros.first + 1.
   const Label* children = root_children_;
   size_t num_children = select_root_.second - 2;
   const Label* loc =
@@ -834,29 +863,29 @@ inline typename A::StateId NGramFstImpl<A>::Transition(
     return context_index_.Rank1(0);
   }
   size_t node = 2 + loc - children;
-  size_t node_rank = context_index_.Rank1(node);
-  std::pair<size_t, size_t> zeros =
-      (node_rank == 0) ? select_root_ : context_index_.Select0s(node_rank);
+  // The root has rank 0.
+  size_t node_rank = node - 1;
+  DCHECK_EQ(node_rank, context_index_.Rank1(node));
+  std::pair<size_t, size_t> zeros = context_index_.Select0s(node_rank);
   size_t first_child = zeros.first + 1;
-  if (context_index_.Get(first_child) == false) {
-    return node_rank;
-  }
-  size_t last_child = zeros.second - 1;
+  DCHECK_EQ(first_child != zeros.second, context_index_.Get(first_child));
+  if (first_child == zeros.second) return node_rank;
   for (int word = context.size() - 1; word >= 0; --word) {
-    children = context_words_ + context_index_.Rank1(first_child);
-    loc = std::lower_bound(children, children + last_child - first_child + 1,
-                           context[word]);
-    if (loc == children + last_child - first_child + 1 ||
-        *loc != context[word]) {
+    const size_t num_node_children = zeros.second - first_child;
+    DCHECK_EQ(first_child - node_rank - 1, context_index_.Rank1(first_child));
+    children = context_words_ + (first_child - node_rank - 1);
+    loc =
+        std::lower_bound(children, children + num_node_children, context[word]);
+    if (loc == children + num_node_children || *loc != context[word]) {
       break;
     }
-    node = first_child + loc - children;
-    node_rank = context_index_.Rank1(node);
-    zeros =
-        (node_rank == 0) ? select_root_ : context_index_.Select0s(node_rank);
+    node = first_child + (loc - children);
+    node_rank = node - node_rank - 1;
+    DCHECK_EQ(node_rank, context_index_.Rank1(node));
+    zeros = context_index_.Select0s(node_rank);
     first_child = zeros.first + 1;
-    if (context_index_.Get(first_child) == false) break;
-    last_child = zeros.second - 1;
+    DCHECK_EQ(first_child != zeros.second, context_index_.Get(first_child));
+    if (first_child == zeros.second) break;
   }
   return node_rank;
 }
@@ -937,9 +966,10 @@ class NGramFstMatcher : public MatcherBase<A> {
       if (inst_.state_ != 0) {
         arc_.ilabel = arc_.olabel = 0;
         fst_.GetImpl()->SetInstNode(&inst_);
-        arc_.nextstate = fst_.GetImpl()->context_index_.Rank1(
-            fst_.GetImpl()->context_index_.Select1(
-                fst_.GetImpl()->context_index_.Rank0(inst_.node_) - 1));
+        // The backoff state is the parent of this node in the context trie:
+        // Rank1(Select1(Rank0(node_) - 1)) == Rank0(node_) - 1, and since
+        // node_ == Select1(state_), Rank0(node_) == node_ - state_.
+        arc_.nextstate = fst_.GetImpl()->BackoffState(inst_);
         arc_.weight = fst_.GetImpl()->backoff_[inst_.state_];
         done_ = false;
       }
@@ -1044,9 +1074,7 @@ class ArcIterator<NGramFst<A>> : public ArcIteratorBase<A> {
     }
     if (flags_ & lazy_ & kArcNextStateValue) {
       if (eps) {
-        arc_.nextstate =
-            impl_->context_index_.Rank1(impl_->context_index_.Select1(
-                impl_->context_index_.Rank0(inst_.node_) - 1));
+        arc_.nextstate = impl_->BackoffState(inst_);
       } else {
         if (lazy_ & kArcNextStateValue) {
           impl_->SetInstContext(&inst_);  // first time only.
