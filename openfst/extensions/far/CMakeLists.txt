@@ -38,6 +38,7 @@ target_link_libraries(
          absl::status
          absl::statusor
          absl::status_macros
+         absl::str_format
          absl::strings
          absl::span
 )
@@ -66,6 +67,7 @@ target_link_libraries(
          absl::log
          absl::status
          absl::statusor
+         absl::str_format
          absl::strings
 )
 

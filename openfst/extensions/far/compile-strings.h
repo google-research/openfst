@@ -23,13 +23,13 @@
 #include <iostream>
 #include <istream>
 #include <memory>
-#include <sstream>
 #include <string>
 
 #include "openfst/compat/file_path.h"
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "openfst/extensions/far/far-type.h"
@@ -237,17 +237,13 @@ void CompileStrings(absl::Span<const std::string> sources,
                                                                : "unknown"));
         return;
       }
-      std::ostringstream keybuf;
-      keybuf.width(key_size);
-      keybuf.fill('0');
-      keybuf << n;
       std::string key;
       if (generate_keys > 0) {
-        key = keybuf.str();
+        key = absl::StrFormat("%0*d", key_size, n);
       } else {
         key = Basename(in_source);
         if (entry_type != FarEntryType::FILE) {
-          absl::StrAppend(&key, "-", keybuf.str());
+          absl::StrAppendFormat(&key, "-%0*d", key_size, n);
         }
       }
       writer.Add(absl::StrCat(key_prefix, key, key_suffix), *fst);
