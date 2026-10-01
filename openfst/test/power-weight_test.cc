@@ -195,6 +195,24 @@ TEST(SparsePowerWeightQuantizeTest, PreservesDefaultWithComponents) {
   EXPECT_EQ(TropicalWeight(1.0), quantized.Value(1));
 }
 
+TEST(SparsePowerWeightDivideTest, PreservesZeroDefaultAndQuantize) {
+  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  const auto w1 = CreateWeight<Weight>({{1, 3.0}, {2, 5.0}});
+  const auto w2 = CreateWeight<Weight>({{1, 1.0}, {2, 2.0}, {3, 4.0}});
+  const Weight quotient = Divide(w1, w2);
+  EXPECT_TRUE(quotient.Member());
+  EXPECT_EQ(TropicalWeight::Zero(), quotient.DefaultValue());
+  EXPECT_THAT(ToVector(quotient), ElementsAre(Pair(1, 2.0), Pair(2, 3.0)));
+  EXPECT_TRUE(quotient.Quantize().Member());
+}
+
+TEST(SparsePowerWeightDivideTest, DivisionByZeroComponentIsNotMember) {
+  using Weight = SparsePowerWeight<TropicalWeight, int32_t>;
+  const auto w1 = CreateWeight<Weight>({{1, 3.0}, {2, 5.0}});
+  const auto w2 = CreateWeight<Weight>({{1, 1.0}});
+  EXPECT_FALSE(Divide(w1, w2).Member());
+}
+
 using CountingTropicalWeight = test::CountingWeight<TropicalWeight>;
 
 // Number of non-default components; copying a sparse weight copies each.

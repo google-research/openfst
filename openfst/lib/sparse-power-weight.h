@@ -151,6 +151,9 @@ inline SparsePowerWeight<W, K> Divide(const SparsePowerWeight<W, K>& w1,
                                       DivideType type = DIVIDE_ANY) {
   return SparsePowerWeightMap(w1, w2,
                               [type](const K& k, const W& v1, const W& v2) {
+                                if (v1 == W::Zero() && v2 == W::Zero()) {
+                                  return W::Zero();
+                                }
                                 return Divide(v1, v2, type);
                               });
 }
