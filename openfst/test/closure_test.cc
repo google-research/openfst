@@ -27,6 +27,7 @@
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/rational.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -108,6 +109,22 @@ TEST_F(ClosureTest, MutableClosure) {
   Closure(&nfst2, CLOSURE_PLUS);
   ASSERT_TRUE(Verify(nfst2));
   ASSERT_TRUE(Equal(nfst2, nfst));
+
+  // FST with a final state but no start state.
+  VectorFst<Arc> no_start_star;
+  no_start_star.AddState();
+  no_start_star.SetFinal(0, Weight::One());
+  VectorFst<Arc> no_start_plus(no_start_star);
+
+  Closure(&no_start_star, CLOSURE_STAR);
+  ASSERT_TRUE(Verify(no_start_star));
+  EXPECT_EQ(no_start_star.Start(), 1);
+  EXPECT_EQ(no_start_star.NumArcs(0), 0);
+  EXPECT_EQ(no_start_star.NumArcs(1), 0);
+
+  Closure(&no_start_plus, CLOSURE_PLUS);
+  EXPECT_EQ(no_start_plus.Start(), kNoStateId);
+  EXPECT_EQ(no_start_plus.NumArcs(0), 0);
 }
 
 TEST_F(ClosureTest, FstClassClosure) {

@@ -46,11 +46,13 @@ void Closure(MutableFst<Arc>* fst, ClosureType closure_type) {
   using Weight = typename Arc::Weight;
   const auto props = fst->Properties(kFstProperties, false);
   const auto start = fst->Start();
-  for (StateIterator<MutableFst<Arc>> siter(*fst); !siter.Done();
-       siter.Next()) {
-    const auto s = siter.Value();
-    const auto weight = fst->Final(s);
-    if (weight != Weight::Zero()) fst->AddArc(s, Arc(0, 0, weight, start));
+  if (start != kNoStateId) {
+    for (StateIterator<MutableFst<Arc>> siter(*fst); !siter.Done();
+         siter.Next()) {
+      const auto s = siter.Value();
+      const auto weight = fst->Final(s);
+      if (weight != Weight::Zero()) fst->AddArc(s, Arc(0, 0, weight, start));
+    }
   }
   if (closure_type == CLOSURE_STAR) {
     fst->ReserveStates(fst->NumStates() + 1);
