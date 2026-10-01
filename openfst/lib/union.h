@@ -85,8 +85,12 @@ void Union(MutableFst<Arc>* fst1, const Fst<Arc>& fst2) {
   }
   const auto start1 = fst1->Start();
   if (start1 == kNoStateId) {
-    fst1->SetStart(start2);
-    fst1->SetProperties(props2, kCopyProperties);
+    fst1->SetStart(start2 + numstates1);
+    if (numstates1 == 0) {
+      fst1->SetProperties(props2 | (props1 & kError), kCopyProperties);
+    } else if (props2 & kError) {
+      fst1->SetProperties(kError, kError);
+    }
     return;
   }
   if (initial_acyclic1) {

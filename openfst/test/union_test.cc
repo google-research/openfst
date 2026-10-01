@@ -25,6 +25,7 @@
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
+#include "openfst/lib/connect.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/rational.h"
 #include "openfst/lib/vector-fst.h"
@@ -101,6 +102,26 @@ TEST_F(UnionTest, MutableUnion) {
     Union(&vfst2, nfst);
     ASSERT_TRUE(Verify(vfst2));
     ASSERT_TRUE(Equal(*ufst2_, vfst2));
+  }
+
+  // fst1 has pre-existing unreachable states (violating acceptor/acyclic/sorted
+  // properties) and no start state.
+  {
+    VectorFst<Arc> vfst1;
+    vfst1.AddStates(2);
+    vfst1.AddArc(0, Arc(2, 3, 1.5f, 0));
+    vfst1.AddArc(0, Arc(1, 1, 0.5f, 1));
+
+    VectorFst<Arc> rhs;
+    rhs.AddState();
+    rhs.SetStart(0);
+    rhs.SetFinal(0, Arc::Weight::One());
+
+    Union(&vfst1, rhs);
+    ASSERT_TRUE(Verify(vfst1));
+    EXPECT_EQ(vfst1.Start(), 2);
+    Connect(&vfst1);
+    EXPECT_TRUE(Equal(rhs, vfst1));
   }
 }
 
