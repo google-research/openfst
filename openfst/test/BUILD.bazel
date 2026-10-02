@@ -1780,6 +1780,7 @@ cc_test(
         "//openfst/compat:file_path",
         "//openfst/compat:seed_sequences",
         "//openfst/lib",
+        "//openfst/lib:weight",
         "@com_google_absl//absl/random",
         "@com_google_googletest//:gtest",
     ],

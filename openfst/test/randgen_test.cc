@@ -19,6 +19,7 @@
 
 #include "openfst/lib/randgen.h"
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -32,6 +33,8 @@
 #include "openfst/compat/seed_sequences.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/float-weight.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -151,6 +154,52 @@ TYPED_TEST(RandGenLogTest, HighWeights) {
   RandGen(create_fst(1000.0f), &path, opts, bit_gen);
   ASSERT_TRUE(Verify(path));
   ASSERT_TRUE(Equal(create_fst(0.0f), path));
+}
+
+// Sampling a linear acceptor N times sends every path through its only final
+// state, so the output final weight does not depend on the random draws: it is
+// -log(N / N) = 0 if the total weight is removed and -log(N) otherwise. Checks
+// that a safe copy of RandGenFst keeps `remove_total_weight`.
+TEST(RandGenFstTest, CopyPreservesRemoveTotalWeight) {
+  using Selector = UniformArcSelector<Arc>;
+  using Sampler = ArcSampler<Arc, Selector>;
+  using RandFst = RandGenFst<Arc, Arc, Sampler>;
+  constexpr int32_t kNumPaths = 10;
+
+  VectorFst<Arc> fst;
+  fst.AddStates(2);
+  fst.SetStart(0);
+  fst.SetFinal(1);
+  fst.AddArc(0, Arc(1, 1, 1));
+
+  for (const bool remove_total_weight : {false, true}) {
+    SCOPED_TRACE(::testing::Message()
+                 << "remove_total_weight=" << remove_total_weight);
+    const auto expected = remove_total_weight
+                              ? Arc::Weight::One()
+                              : Arc::Weight(-std::log(kNumPaths));
+    std::mt19937_64 bit_gen;
+    const RandGenFstOptions<Sampler> opts(
+        CacheOptions(), new Sampler(fst, Selector()), kNumPaths,
+        /*weighted=*/true, remove_total_weight);
+    const RandFst rfst(fst, opts, bit_gen);
+    // Copies before anything is expanded so the copy expands on its own.
+    const std::unique_ptr<const RandFst> copy(rfst.Copy(/*safe=*/true));
+    for (const Fst<Arc>* f : {static_cast<const Fst<Arc>*>(copy.get()),
+                              static_cast<const Fst<Arc>*>(&rfst)}) {
+      const VectorFst<Arc> expanded(*f);
+      int num_final = 0;
+      for (StateIterator<VectorFst<Arc>> siter(expanded); !siter.Done();
+           siter.Next()) {
+        const auto weight = expanded.Final(siter.Value());
+        if (weight == Arc::Weight::Zero()) continue;
+        ++num_final;
+        EXPECT_TRUE(ApproxEqual(weight, expected))
+            << "got " << weight << ", expected " << expected;
+      }
+      EXPECT_EQ(num_final, 1);
+    }
+  }
 }
 
 }  // namespace

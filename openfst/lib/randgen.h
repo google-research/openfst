@@ -438,6 +438,7 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
         sampler_(new Sampler(*impl.sampler_, fst_.get())),
         npath_(impl.npath_),
         weighted_(impl.weighted_),
+        remove_total_weight_(impl.remove_total_weight_),
         superfinal_(kNoLabel),
         bit_gen_(impl.bit_gen_) {
     SetType("randgen");
@@ -547,7 +548,7 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
   const int32_t npath_;
   std::vector<std::unique_ptr<RandState<FromArc>>> state_table_;
   const bool weighted_;
-  bool remove_total_weight_;
+  const bool remove_total_weight_;
   StateId superfinal_;
   mutable absl::BitGenRef bit_gen_;
   const WeightConvert<Log64Weight, ToWeight> to_weight_{};
