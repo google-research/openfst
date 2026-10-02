@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <ios>
 #include <istream>
 #include <list>
 #include <ostream>
@@ -415,12 +416,20 @@ inline std::istream& operator>>(std::istream& strm,
   reader.ReadBegin();
   W def;
   bool more = reader.ReadElement(&def);
+  if (strm.fail()) return strm;
   weight.Init(def);
   while (more) {
     K key;
-    reader.ReadElement(&key);
+    if (!reader.ReadElement(&key)) {
+      if (!strm.fail()) {
+        FSTERROR() << "SparseTupleWeight: Missing value for key: " << key;
+        strm.clear(std::ios::badbit);
+      }
+      return strm;
+    }
     W v;
     more = reader.ReadElement(&v);
+    if (strm.fail()) return strm;
     weight.PushBack(key, v);
   }
   reader.ReadEnd();

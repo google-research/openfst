@@ -43,7 +43,9 @@
 #include "openfst/lib/set-weight.h"
 #include "openfst/lib/signed-log-weight.h"
 #include "openfst/lib/sparse-power-weight.h"
+#include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/string-weight.h"
+#include "openfst/lib/tuple-weight.h"
 #include "openfst/lib/union-weight.h"
 #include "openfst/lib/util.h"
 #include "openfst/test/weight-tester.h"
@@ -677,6 +679,58 @@ TEST(CompositeWeightTest, UnionWeightStreamRead) {
   std::ostringstream os_bad;
   os_bad << bad_uw;
   EXPECT_EQ(os_bad.str(), "BadSet");
+}
+
+TEST(CompositeWeightTest, StreamReadInvalidInput) {
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  using PW = PairWeight<TropicalWeight, TropicalWeight>;
+  for (absl::string_view input : {"1.5,abc", "abc,1.5", "1.5"}) {
+    PW pw;
+    SpanInStream is(input);
+    is >> pw;
+    EXPECT_TRUE(is.fail()) << "input=" << input;
+    EXPECT_FALSE(StrToWeight<PW>(input).Member()) << "input=" << input;
+  }
+
+  using TW = TupleWeight<TropicalWeight, 3>;
+  for (absl::string_view input : {"1.0,abc,3.0", "1.0,2.0,abc", "1.0,2.0"}) {
+    TW tw;
+    SpanInStream is(input);
+    is >> tw;
+    EXPECT_TRUE(is.fail()) << "input=" << input;
+  }
+
+  using STW = SparseTupleWeight<TropicalWeight, int>;
+  for (absl::string_view input :
+       {"abc,1,2.0", "0.0,abc,2.0", "0.0,12abc,2.0", "0.0,1", "0.0,1,abc"}) {
+    STW stw;
+    SpanInStream is(input);
+    is >> stw;
+    EXPECT_TRUE(is.fail()) << "input=" << input;
+  }
+
+  struct Options {
+    using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+    using ReverseOptions [[maybe_unused]] = Options;
+    struct Merge {
+      TropicalWeight operator()(const TropicalWeight& w1,
+                                const TropicalWeight& w2) const {
+        return w1;
+      }
+    };
+  };
+  using UW = UnionWeight<TropicalWeight, Options>;
+  for (absl::string_view input : {"abc,2.0", "1.0,abc", ""}) {
+    UW uw;
+    SpanInStream is(input);
+    is >> uw;
+    EXPECT_TRUE(is.fail()) << "input=" << input;
+    EXPECT_FALSE(StrToWeight<UW>(input).Member()) << "input=" << input;
+  }
+
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
 TEST(SetWeightTest, MultiElementVectorOperations) {

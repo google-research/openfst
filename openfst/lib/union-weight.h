@@ -406,6 +406,7 @@ inline std::istream& operator>>(std::istream& istrm,
                                 UnionWeight<W, O>& weight) {
   std::string s;
   istrm >> s;
+  if (istrm.fail()) return istrm;
   if (s == "EmptySet") {
     weight = UnionWeight<W, O>::Zero();
   } else if (s == "BadSet") {
@@ -419,9 +420,16 @@ inline std::istream& operator>>(std::istream& istrm,
     while (more) {
       W v;
       more = reader.ReadElement(&v);
+      if (sstrm.fail()) {
+        istrm.clear(std::ios::badbit);
+        return istrm;
+      }
       weight.PushBack(v, true);
     }
     reader.ReadEnd();
+    if (sstrm.fail()) {
+      istrm.clear(std::ios::badbit);
+    }
   }
   return istrm;
 }

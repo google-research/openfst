@@ -134,9 +134,11 @@ inline std::istream& operator>>(std::istream& strm,
   reader.ReadBegin();
   W1 w1;
   reader.ReadElement(&w1);
+  if (strm.fail()) return strm;
   weight.SetValue1(w1);
   W2 w2;
   reader.ReadElement(&w2, true);
+  if (strm.fail()) return strm;
   weight.SetValue2(w2);
   reader.ReadEnd();
   return strm;
