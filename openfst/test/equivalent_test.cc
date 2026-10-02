@@ -35,8 +35,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/vector-fst.h"
+#include "openfst/lib/weight.h"
 
 namespace fst {
 namespace {
@@ -154,6 +156,34 @@ TEST_F(EquivTest, Nequiv) {
       }
     }
   }
+}
+
+TEST_F(EquivTest, WeightedErrorAndDeltaPropagation) {
+  // Error on a weighted FST is propagated to *error through the recursive call.
+  VectorFst<Arc> fst1;
+  fst1.SetStart(fst1.AddState());
+  fst1.SetFinal(0, Weight(2.0f));
+  VectorFst<Arc> fst2(fst1);
+  fst1.SetProperties(kError, kError);
+
+  bool error = false;
+  EXPECT_FALSE(Equivalent(fst1, fst2, kDelta, &error));
+  EXPECT_TRUE(error);
+
+  error = false;
+  EXPECT_FALSE(Equivalent(fst2, fst1, kDelta, &error));
+  EXPECT_TRUE(error);
+
+  // Custom delta forwarded through the weighted branch.
+  VectorFst<Arc> wfst1;
+  wfst1.SetStart(wfst1.AddState());
+  wfst1.SetFinal(0, Weight(1.0f));
+  VectorFst<Arc> wfst2;
+  wfst2.SetStart(wfst2.AddState());
+  wfst2.SetFinal(0, Weight(1.02f));
+  error = false;
+  EXPECT_TRUE(Equivalent(wfst1, wfst2, /*delta=*/0.1f, &error));
+  EXPECT_FALSE(error);
 }
 
 }  // namespace

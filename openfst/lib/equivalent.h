@@ -153,12 +153,16 @@ bool Equivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
     VectorFst<Arc> efst2(fst2);
     Push(&efst1, REWEIGHT_TO_INITIAL, delta);
     Push(&efst2, REWEIGHT_TO_INITIAL, delta);
+    if (efst1.Properties(kError, false) || efst2.Properties(kError, false)) {
+      if (error) *error = true;
+      return false;
+    }
     ArcMap(&efst1, QuantizeMapper<Arc>(delta));
     ArcMap(&efst2, QuantizeMapper<Arc>(delta));
     EncodeMapper<Arc> mapper(kEncodeWeights | kEncodeLabels, ENCODE);
     ArcMap(&efst1, &mapper);
     ArcMap(&efst2, &mapper);
-    return Equivalent(efst1, efst2);
+    return Equivalent(efst1, efst2, delta, error);
   }
   using Util = internal::EquivalenceUtil<Arc>;
   using MappedId = typename Util::MappedId;
