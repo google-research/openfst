@@ -65,5 +65,27 @@ TEST(IsomorphicTest, NondetIsomorphic) {
   EXPECT_TRUE(Isomorphic(*ifst5, *ifst6));
 }
 
+TEST(IsomorphicTest, ManyToOneStateMappingNotIsomorphic) {
+  // fst1: 0 -1-> 1(F), 0 -2-> 2(F) (3 states)
+  VectorFst<Arc> fst1;
+  fst1.AddStates(3);
+  fst1.SetStart(0);
+  fst1.AddArc(0, Arc(1, 1, Arc::Weight::One(), 1));
+  fst1.AddArc(0, Arc(2, 2, Arc::Weight::One(), 2));
+  fst1.SetFinal(1, Arc::Weight::One());
+  fst1.SetFinal(2, Arc::Weight::One());
+
+  // fst2: 0 -1-> 1(F), 0 -2-> 1(F) (2 states)
+  VectorFst<Arc> fst2;
+  fst2.AddStates(2);
+  fst2.SetStart(0);
+  fst2.AddArc(0, Arc(1, 1, Arc::Weight::One(), 1));
+  fst2.AddArc(0, Arc(2, 2, Arc::Weight::One(), 1));
+  fst2.SetFinal(1, Arc::Weight::One());
+
+  EXPECT_FALSE(Isomorphic(fst1, fst2));
+  EXPECT_FALSE(Isomorphic(fst2, fst1));
+}
+
 }  // namespace
 }  // namespace fst

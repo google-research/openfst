@@ -129,14 +129,23 @@ class Isomorphism {
 
   // Maintains state correspondences and queue.
   bool PairState(StateId s1, StateId s2) {
-    if (state_pairs_.size() <= s1) state_pairs_.resize(s1 + 1, kNoStateId);
-    if (state_pairs_[s1] == s2) {
+    if (forward_state_pairs_.size() <= s1) {
+      forward_state_pairs_.resize(s1 + 1, kNoStateId);
+    }
+    if (forward_state_pairs_[s1] == s2) {
       return true;  // Already seen this pair.
-    } else if (state_pairs_[s1] != kNoStateId) {
+    } else if (forward_state_pairs_[s1] != kNoStateId) {
       return false;  // s1 already paired with another s2.
     }
+    if (backward_state_pairs_.size() <= s2) {
+      backward_state_pairs_.resize(s2 + 1, kNoStateId);
+    }
+    if (backward_state_pairs_[s2] != kNoStateId) {
+      return false;  // s2 already paired with another s1.
+    }
     VLOG(3) << "Pairing states: (" << s1 << ", " << s2 << ")";
-    state_pairs_[s1] = s2;
+    forward_state_pairs_[s1] = s2;
+    backward_state_pairs_[s2] = s1;
     queue_.emplace(s1, s2);
     return true;
   }
@@ -149,7 +158,10 @@ class Isomorphism {
   float delta_;                       // Weight equality delta.
   std::vector<Arc> arcs1_;            // For sorting arcs on FST1.
   std::vector<Arc> arcs2_;            // For sorting arcs on FST2.
-  std::vector<StateId> state_pairs_;  // Maintains state correspondences.
+  std::vector<StateId>
+      forward_state_pairs_;  // Maintains s1 -> s2 correspondences.
+  std::vector<StateId>
+      backward_state_pairs_;  // Maintains s2 -> s1 correspondences.
   std::queue<std::pair<StateId, StateId>> queue_;  // Queue of state pairs.
   bool error_;                                     // Error flag.
   bool nondet_;                                    // Nondeterminism detected.
