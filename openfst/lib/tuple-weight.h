@@ -160,10 +160,12 @@ inline std::istream& operator>>(std::istream& strm, TupleWeight<W, n>& w) {
   static_assert(n > 0, "Size must be positive.");
   for (size_t i = 0; i < n - 1; ++i) {
     reader.ReadElement(&v);
+    if (strm.fail()) return strm;
     w.SetValue(i, v);
   }
   // Reads n-th element.
   reader.ReadElement(&v, true);
+  if (strm.fail()) return strm;
   w.SetValue(n - 1, v);
   reader.ReadEnd();
   return strm;

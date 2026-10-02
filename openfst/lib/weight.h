@@ -362,6 +362,7 @@ class CompositeWeightReader : public internal::CompositeWeightIO {
 
 template <class T>
 inline bool CompositeWeightReader::ReadElement(T* comp, bool last) {
+  if (istrm_.fail()) return false;
   std::string s;
   const bool has_parens = open_paren_ != 0;
   while ((c_ != std::istream::traits_type::eof()) && !std::isspace(c_) &&
@@ -391,6 +392,12 @@ inline bool CompositeWeightReader::ReadElement(T* comp, bool last) {
   }
   SpanInStream istrm(s);
   istrm >> *comp;
+  if (istrm.fail() ||
+      (!istrm.eof() && istrm.peek() != std::istream::traits_type::eof())) {
+    FSTERROR() << "CompositeWeightReader: Bad element: " << s;
+    istrm_.clear(std::ios::badbit);
+    return false;
+  }
   // Skips separator/close parenthesis.
   if (c_ != std::istream::traits_type::eof() && !std::isspace(c_)) {
     c_ = istrm_.get();
