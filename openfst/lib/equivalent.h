@@ -96,75 +96,13 @@ struct EquivalenceUtil {
   }
 };
 
-}  // namespace internal
-
-// Equivalence checking algorithm: determines if the two FSTs fst1 and fst2
-// are equivalent. The input FSTs must be deterministic input-side epsilon-free
-// acceptors, unweighted or with weights over a left semiring. Two acceptors are
-// considered equivalent if they accept exactly the same set of strings (with
-// the same weights).
-//
-// The algorithm (cf. Aho, Hopcroft and Ullman, "The Design and Analysis of
-// Computer Programs") successively constructs sets of states that can be
-// reached by the same prefixes, starting with a set containing the start states
-// of both acceptors. A disjoint tree forest (the union-find algorithm) is used
-// to represent the sets of states. The algorithm returns false if one of the
-// constructed sets contains both final and non-final states. Returns an
-// optional error value (useful when FLAGS_error_fatal = false).
-//
-// Complexity:
-//
-// Quasi-linear, i.e., O(n G(n)), where
-//
-//   n = |S1| + |S2| is the number of states in both acceptors
-//
-//   G(n) is a very slowly growing function that can be approximated
-//        by 4 by all practical purposes.
+// Equivalence checking algorithm for unweighted, deterministic, input-side
+// epsilon-free acceptors.
 template <class Arc>
-bool Equivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
-                float delta = kDelta, bool* error = nullptr) {
+bool UnweightedEquivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
+                          bool* error) {
   using Weight = typename Arc::Weight;
-  if (error) *error = false;
-  // Check that the symbol table are compatible.
-  if (!CompatSymbols(fst1.InputSymbols(), fst2.InputSymbols()) ||
-      !CompatSymbols(fst1.OutputSymbols(), fst2.OutputSymbols())) {
-    FSTERROR() << "Equivalent: Input/output symbol tables of 1st argument "
-               << "do not match input/output symbol tables of 2nd argument";
-    if (error) *error = true;
-    return false;
-  }
-  // Check properties first.
-  static constexpr auto props = kNoEpsilons | kIDeterministic | kAcceptor;
-  if (fst1.Properties(props, true) != props) {
-    FSTERROR() << "Equivalent: 1st argument not an"
-               << " epsilon-free deterministic acceptor";
-    if (error) *error = true;
-    return false;
-  }
-  if (fst2.Properties(props, true) != props) {
-    FSTERROR() << "Equivalent: 2nd argument not an"
-               << " epsilon-free deterministic acceptor";
-    if (error) *error = true;
-    return false;
-  }
-  if ((fst1.Properties(kUnweighted, true) != kUnweighted) ||
-      (fst2.Properties(kUnweighted, true) != kUnweighted)) {
-    VectorFst<Arc> efst1(fst1);
-    VectorFst<Arc> efst2(fst2);
-    Push(&efst1, REWEIGHT_TO_INITIAL, delta);
-    Push(&efst2, REWEIGHT_TO_INITIAL, delta);
-    if (efst1.Properties(kError, false) || efst2.Properties(kError, false)) {
-      if (error) *error = true;
-      return false;
-    }
-    ArcMap(&efst1, QuantizeMapper<Arc>(delta));
-    ArcMap(&efst2, QuantizeMapper<Arc>(delta));
-    EncodeMapper<Arc> mapper(kEncodeWeights | kEncodeLabels, ENCODE);
-    ArcMap(&efst1, &mapper);
-    ArcMap(&efst2, &mapper);
-    return Equivalent(efst1, efst2, delta, error);
-  }
-  using Util = internal::EquivalenceUtil<Arc>;
+  using Util = EquivalenceUtil<Arc>;
   using MappedId = typename Util::MappedId;
   enum { FST1 = 1, FST2 = 2 };  // Required by Util::MapState(...)
   auto s1 = Util::MapState(fst1.Start(), FST1);
@@ -237,6 +175,76 @@ bool Equivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
     return false;
   }
   return ret;
+}
+
+}  // namespace internal
+
+// Equivalence checking algorithm: determines if the two FSTs fst1 and fst2
+// are equivalent. The input FSTs must be deterministic input-side epsilon-free
+// acceptors, unweighted or with weights over a left semiring. Two acceptors are
+// considered equivalent if they accept exactly the same set of strings (with
+// the same weights).
+//
+// The algorithm (cf. Aho, Hopcroft and Ullman, "The Design and Analysis of
+// Computer Programs") successively constructs sets of states that can be
+// reached by the same prefixes, starting with a set containing the start states
+// of both acceptors. A disjoint tree forest (the union-find algorithm) is used
+// to represent the sets of states. The algorithm returns false if one of the
+// constructed sets contains both final and non-final states. Returns an
+// optional error value (useful when FLAGS_error_fatal = false).
+//
+// Complexity:
+//
+// Quasi-linear, i.e., O(n G(n)), where
+//
+//   n = |S1| + |S2| is the number of states in both acceptors
+//
+//   G(n) is a very slowly growing function that can be approximated
+//        by 4 by all practical purposes.
+template <class Arc>
+bool Equivalent(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
+                float delta = kDelta, bool* error = nullptr) {
+  if (error) *error = false;
+  // Check that the symbol table are compatible.
+  if (!CompatSymbols(fst1.InputSymbols(), fst2.InputSymbols()) ||
+      !CompatSymbols(fst1.OutputSymbols(), fst2.OutputSymbols())) {
+    FSTERROR() << "Equivalent: Input/output symbol tables of 1st argument "
+               << "do not match input/output symbol tables of 2nd argument";
+    if (error) *error = true;
+    return false;
+  }
+  // Check properties first.
+  static constexpr auto props = kNoEpsilons | kIDeterministic | kAcceptor;
+  if (fst1.Properties(props, true) != props) {
+    FSTERROR() << "Equivalent: 1st argument not an"
+               << " epsilon-free deterministic acceptor";
+    if (error) *error = true;
+    return false;
+  }
+  if (fst2.Properties(props, true) != props) {
+    FSTERROR() << "Equivalent: 2nd argument not an"
+               << " epsilon-free deterministic acceptor";
+    if (error) *error = true;
+    return false;
+  }
+  if ((fst1.Properties(kUnweighted, true) != kUnweighted) ||
+      (fst2.Properties(kUnweighted, true) != kUnweighted)) {
+    VectorFst<Arc> efst1(fst1);
+    VectorFst<Arc> efst2(fst2);
+    Push(&efst1, REWEIGHT_TO_INITIAL, delta);
+    Push(&efst2, REWEIGHT_TO_INITIAL, delta);
+    if (efst1.Properties(kError, false) || efst2.Properties(kError, false)) {
+      if (error) *error = true;
+      return false;
+    }
+    ArcMap(&efst1, QuantizeMapper<Arc>(delta));
+    ArcMap(&efst2, QuantizeMapper<Arc>(delta));
+    EncodeMapper<Arc> mapper(kEncodeWeights | kEncodeLabels, ENCODE);
+    ArcMap(&efst1, &mapper);
+    ArcMap(&efst2, &mapper);
+    return internal::UnweightedEquivalent(efst1, efst2, error);
+  }
+  return internal::UnweightedEquivalent(fst1, fst2, error);
 }
 
 }  // namespace fst
