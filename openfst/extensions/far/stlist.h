@@ -69,7 +69,7 @@ class STListWriter {
     if (source.empty()) SetBinaryMode(stdout);
     WriteType(*stream_, kSTListMagicNumber);
     WriteType(*stream_, kSTListFileVersion);
-    if (!stream_) {
+    if (!*stream_) {
       FSTERROR() << "STListWriter::STListWriter: Error writing to file: "
                  << source;
       error_ = true;
