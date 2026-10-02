@@ -269,6 +269,38 @@ TEST_F(CompressTest, DecodeProcessedFstFailsOnTruncatedFinalWeights) {
   EXPECT_TRUE(fst.Properties(kError, true) & kError);
 }
 
+TEST_F(CompressTest, LempelZivRejectsSelfReferentialAndInvalidIndices) {
+  LempelZiv<int, char, std::less<char>, std::equal_to<char>> lempel_char;
+  std::vector<char> output;
+
+  // Dictionary starts with size 1 (entry 0 is default_edge_). Index 1 equals
+  // the current dictionary size and would create a self-referential cycle if
+  // emplaced before the bounds check.
+  const std::vector<std::pair<int, char>> self_ref_code = {{1, 'a'}};
+  EXPECT_FALSE(lempel_char.BatchDecode(self_ref_code, &output));
+
+  const std::vector<std::pair<int, char>> neg_code = {{-1, 'a'}};
+  EXPECT_FALSE(lempel_char.BatchDecode(neg_code, &output));
+
+  char edge = 0;
+  EXPECT_FALSE(lempel_char.SingleDecode(-1, &edge));
+  EXPECT_FALSE(lempel_char.SingleDecode(1, &edge));
+
+  std::vector<std::vector<char>> expanded_code;
+  EXPECT_FALSE(ExpandLZCode(self_ref_code, &expanded_code));
+  EXPECT_FALSE(ExpandLZCode(neg_code, &expanded_code));
+}
+
+TEST_F(CompressTest, DecodeProcessedFstFailsOnSelfReferentialLZCode) {
+  Compressor<StdArc> compressor;
+  StdVectorFst fst;
+  // num_states=2, state 0 has 1 new element with dict index 1 (== dict size)
+  // and label 10.
+  std::vector<StateId> input = {2, 1, 1, 10};
+  compressor.DecodeProcessedFst(input, &fst, /*unweighted=*/true);
+  EXPECT_TRUE(fst.Properties(kError, true) & kError);
+}
+
 }  // namespace
 }  // namespace fst
 

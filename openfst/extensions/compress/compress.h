@@ -65,8 +65,8 @@ template <class Var, class Edge>
                                 std::vector<std::vector<Edge>>* expanded_code) {
   expanded_code->resize(code.size());
   for (int i = 0; i < code.size(); ++i) {
-    if (code[i].first > i) {
-      LOG(ERROR) << "ExpandLZCode: Not a valid code";
+    if (code[i].first < 0 || code[i].first > i) {
+      LOG(ERROR) << "ExpandLZCode: Not a valid code: " << code[i].first;
       return false;
     }
     auto& codeword = (*expanded_code)[i];
@@ -108,9 +108,9 @@ class LempelZiv {
   // Decodes a single dictionary element, returning false if the index exceeds
   // the size.
   [[nodiscard]] bool SingleDecode(const Var& index, Edge* output) {
-    if (index >= decode_vector_.size()) {
+    if (index < 0 || static_cast<size_t>(index) >= decode_vector_.size()) {
       LOG(ERROR) << "LempelZiv::SingleDecode: "
-                 << "Index exceeded the dictionary size";
+                 << "Index exceeded the dictionary size: " << index;
       return false;
     } else {
       *output = decode_vector_[index].second;
@@ -162,6 +162,11 @@ template <class Var, class Edge, class EdgeLessThan, class EdgeEquals>
 [[nodiscard]] bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
     absl::Span<const std::pair<Var, Edge>> input, std::vector<Edge>* output) {
   for (const auto& [var, edge] : input) {
+    if (var < 0 || static_cast<size_t>(var) >= decode_vector_.size()) {
+      LOG(ERROR) << "LempelZiv::BatchDecode: "
+                 << "Index exceeded the dictionary size: " << var;
+      return false;
+    }
     std::vector<Edge> temp_output;
     EdgeEquals InstEdgeEquals;
     if (InstEdgeEquals(edge, default_edge_) != 1) {
@@ -169,17 +174,11 @@ template <class Var, class Edge, class EdgeLessThan, class EdgeEquals>
       temp_output.push_back(edge);
     }
     auto temp_integer = var;
-    if (temp_integer >= decode_vector_.size()) {
-      LOG(ERROR) << "LempelZiv::BatchDecode: "
-                 << "Index exceeded the dictionary size";
-      return false;
-    } else {
-      while (temp_integer != 0) {
-        temp_output.push_back(decode_vector_[temp_integer].second);
-        temp_integer = decode_vector_[temp_integer].first;
-      }
-      output->insert(output->cend(), temp_output.rbegin(), temp_output.rend());
+    while (temp_integer != 0) {
+      temp_output.push_back(decode_vector_[temp_integer].second);
+      temp_integer = decode_vector_[temp_integer].first;
     }
+    output->insert(output->cend(), temp_output.rbegin(), temp_output.rend());
   }
   return true;
 }
