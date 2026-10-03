@@ -71,6 +71,36 @@ TEST_F(FarTest, FstFar) {
 
   reader->Next();
   ASSERT_TRUE(reader->Done());
+
+  // Exact match on non-zero index.
+  EXPECT_TRUE(reader->Find(sources[1]));
+  ASSERT_FALSE(reader->Done());
+  EXPECT_EQ(reader->GetKey(), sources[1]);
+  EXPECT_TRUE(Equal(*(reader->GetFst()), *fst2_));
+
+  // Missing key before first entry positions at sources[0].
+  EXPECT_FALSE(reader->Find(JoinPath(::testing::TempDir(), "test0.fst")));
+  ASSERT_FALSE(reader->Done());
+  EXPECT_EQ(reader->GetKey(), sources[0]);
+  EXPECT_TRUE(Equal(*(reader->GetFst()), *fst1_));
+
+  // Missing key between entries positions at sources[1].
+  EXPECT_FALSE(
+      reader->Find(JoinPath(::testing::TempDir(), "test1_5.fst")));
+  ASSERT_FALSE(reader->Done());
+  EXPECT_EQ(reader->GetKey(), sources[1]);
+  EXPECT_TRUE(Equal(*(reader->GetFst()), *fst2_));
+
+  // Missing key after last entry sets Done().
+  EXPECT_FALSE(reader->Find(JoinPath(::testing::TempDir(), "test3.fst")));
+  EXPECT_TRUE(reader->Done());
+
+  // Empty reader.
+  reader.reset(FstFarReader<LogArc>::Open(std::vector<std::string>{}));
+  EXPECT_FALSE(reader->Error());
+  EXPECT_TRUE(reader->Done());
+  EXPECT_FALSE(reader->Find("foo"));
+  EXPECT_TRUE(reader->Done());
 }
 
 }  // namespace
