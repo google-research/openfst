@@ -104,9 +104,10 @@ class FstFarReader final : public FarReader<A> {
       error_ = true;
       return false;
     }
-    pos_ = 0;  // TODO
+    if (error_) return false;
+    pos_ = std::lower_bound(keys_.begin(), keys_.end(), key) - keys_.begin();
     ReadFst();
-    return true;
+    return !Done() && keys_[pos_] == key;
   }
 
   bool Done() const final { return error_ || pos_ >= keys_.size(); }
