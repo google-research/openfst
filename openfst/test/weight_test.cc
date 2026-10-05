@@ -981,6 +981,96 @@ TEST(FloatWeightTest, NaturalLessSpecializations) {
   }
 }
 
+TEST(StringWeightTest, ZeroLabelIsIdentity) {
+  using LeftWeight = StringWeight<int, STRING_LEFT>;
+  using RightWeight = StringWeight<int, STRING_RIGHT>;
+
+  // Pushing 0 (epsilon) onto an empty weight yields One().
+  EXPECT_EQ(LeftWeight(0), LeftWeight::One());
+  LeftWeight empty_w;
+  empty_w.PushFront(0);
+  EXPECT_EQ(empty_w, LeftWeight::One());
+  EXPECT_EQ(empty_w.Size(), 0);
+  empty_w.PushBack(0);
+  EXPECT_EQ(empty_w, LeftWeight::One());
+  EXPECT_EQ(empty_w.Size(), 0);
+
+  // Pushing 0 (epsilon) onto a non-empty weight is a no-op and does not
+  // corrupt internal state.
+  LeftWeight w(1);
+  w.PushBack(0);
+  EXPECT_EQ(w, LeftWeight(1));
+  EXPECT_EQ(w.Size(), 1);
+  EXPECT_EQ(WeightToStr(w), "1");
+  EXPECT_EQ(w.Reverse().Reverse(), w);
+
+  w.PushFront(0);
+  EXPECT_EQ(w, LeftWeight(1));
+  EXPECT_EQ(w.Size(), 1);
+  EXPECT_EQ(WeightToStr(w), "1");
+  EXPECT_EQ(w.Reverse().Reverse(), w);
+
+  w.PushBack(2);
+  EXPECT_EQ(w.Size(), 2);
+  EXPECT_EQ(WeightToStr(w), "1_2");
+  EXPECT_EQ(w.Reverse().Reverse(), w);
+
+  // Range construction and stream parsing with 0s skip epsilon labels.
+  const std::vector<int> labels = {0, 1, 0, 2, 0};
+  const LeftWeight from_range(labels.begin(), labels.end());
+  EXPECT_EQ(from_range, w);
+  EXPECT_EQ(from_range.Reverse().Reverse(), from_range);
+
+  LeftWeight parsed;
+  {
+    SpanInStream is("1_0");
+    is >> parsed;
+    EXPECT_FALSE(is.fail());
+  }
+  EXPECT_EQ(parsed, LeftWeight(1));
+  EXPECT_EQ(parsed.Reverse().Reverse(), parsed);
+
+  // Right string semiring operations (which use ReverseIterator and PushFront)
+  // preserve invariants when 0 is pushed.
+  RightWeight rw(1);
+  rw.PushBack(0);
+  rw.PushFront(0);
+  rw.PushBack(2);
+  EXPECT_EQ(rw.Size(), 2);
+  EXPECT_EQ(Plus(rw, RightWeight(2)), RightWeight(2));
+  EXPECT_EQ(Divide(rw, RightWeight(2), DIVIDE_RIGHT), RightWeight(1));
+}
+
+TEST(StringWeightTest, ReverseIteratorReset) {
+  using Weight = StringWeight<int>;
+
+  // Reset() on an empty StringWeight (One()) must keep Done() true.
+  const Weight empty = Weight::One();
+  Weight::ReverseIterator empty_iter(empty);
+  EXPECT_TRUE(empty_iter.Done());
+  empty_iter.Reset();
+  EXPECT_TRUE(empty_iter.Done());
+
+  // Reset() on a non-empty StringWeight restarts backward traversal.
+  const std::vector<int> labels = {10, 20, 30};
+  const Weight w(labels.begin(), labels.end());
+  Weight::ReverseIterator iter(w);
+  std::vector<int> pass1;
+  for (; !iter.Done(); iter.Next()) {
+    pass1.push_back(iter.Value());
+  }
+  EXPECT_THAT(pass1, ::testing::ElementsAre(30, 20, 10));
+  EXPECT_TRUE(iter.Done());
+
+  iter.Reset();
+  EXPECT_FALSE(iter.Done());
+  std::vector<int> pass2;
+  for (; !iter.Done(); iter.Next()) {
+    pass2.push_back(iter.Value());
+  }
+  EXPECT_THAT(pass2, ::testing::ElementsAre(30, 20, 10));
+}
+
 }  // namespace
 }  // namespace fst
 

@@ -142,11 +142,15 @@ class StringWeight {
   size_t Size() const { return first_ ? rest_.size() + 1 : 0; }
 
   void PushFront(Label label) {
+    // Label 0 is epsilon (the empty string identity) and is also the internal
+    // sentinel for an empty StringWeight (`first_ == 0`).
+    if (label == 0) return;
     if (first_) rest_.push_front(first_);
     first_ = label;
   }
 
   void PushBack(Label label) {
+    if (label == 0) return;
     if (!first_) {
       first_ = label;
     } else {
@@ -225,7 +229,7 @@ class StringWeightReverseIterator {
   }
 
   void Reset() {
-    fin_ = false;
+    fin_ = (first_ == Label());
     iter_ = rest_.rbegin();
   }
 
