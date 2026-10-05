@@ -78,7 +78,7 @@ class PywrapFstTest(parameterized.TestCase):
     # Destructive operations can't be performed on const FSTs because they don't
     # have the necessary member functions.
     with self.assertRaises(AttributeError):
-      const.project("input")  # pytype: disable=attribute-error
+      const.project("input")  # pyrefly: ignore[missing-attribute]
     # Tests whether a Python Unicode string can be passed as an argument, a
     # necessary but not sufficient condition for Python 3 support.
     with self.assertRaises(fst.FstIOError):
@@ -139,7 +139,7 @@ class PywrapFstTest(parameterized.TestCase):
       self.assertEqual(f.arc_type(), arc_type)
     for arc_type in arc_types:
       with self.assertRaises(TypeError):
-        unused_f = fst.VectorFst(arc_type.encode())  # pytype: disable=wrong-arg-types
+        unused_f = fst.VectorFst(arc_type.encode())  # pyrefly: ignore[bad-argument-type]
     with self.assertRaises(fst.FstOpError):
       f = fst.VectorFst("nonexistent")
 
@@ -171,14 +171,14 @@ class PywrapFstTest(parameterized.TestCase):
       unused_fst = fst.difference(f, f)
     # All the following uses cheese names as values for string options.
     with self.assertRaises(fst.FstArgError):
-      unused_fst = f.rmepsilon(queue_type="Edam")  # pytype: disable=wrong-arg-types
+      unused_fst = f.rmepsilon(queue_type="Edam")  # pyrefly: ignore[bad-argument-type]
     with self.assertRaises(fst.FstArgError):
-      unused_fst = fst.compose(f, f, compose_filter="Stinking Bishop")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.compose(f, f, compose_filter="Stinking Bishop")  # pyrefly: ignore[bad-argument-type]
     with self.assertRaises(fst.FstArgError):
-      unused_fst = fst.randgen(f, select="Fynbo")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.randgen(f, select="Fynbo")  # pyrefly: ignore[bad-argument-type]
     with self.assertRaises(fst.FstArgError):
       pairs = enumerate((f, f, f), 1)
-      unused_fst = fst.replace(pairs, call_arc_labeling="Ilchester")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.replace(pairs, call_arc_labeling="Ilchester")  # pyrefly: ignore[bad-argument-type]
 
   def testFstConversionFailures(self):
     """Tests whether illogical conversions throw the correct exceptions."""
@@ -712,7 +712,7 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(fst.equal(m1, m1_res))
     # Mapping with a nonexisent mapper type.
     with self.assertRaises(fst.FstArgError):
-      unused_fst = fst.arcmap(m1, map_type="nonexistent")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.arcmap(m1, map_type="nonexistent")  # pyrefly: ignore[bad-argument-type]
 
   def testArcSort(self):
     """Cf. arcsort-main_test."""
@@ -757,7 +757,7 @@ class PywrapFstTest(parameterized.TestCase):
       self.assertTrue(fst.equal(c3, c3_res))
     # Composition with non-existent filter.
     with self.assertRaises(fst.FstArgError):
-      unused_fst = fst.compose(c1, c2, compose_filter="nonexistent")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.compose(c1, c2, compose_filter="nonexistent")  # pyrefly: ignore[bad-argument-type]
 
   def testConcat(self):
     """Cf. concat-main_test."""
@@ -807,7 +807,7 @@ class PywrapFstTest(parameterized.TestCase):
     self.assertTrue(fst.equal(d5, d5_res))
     # Determinization of non-existent type.
     with self.assertRaises(fst.FstArgError):
-      unused_fst = fst.determinize(d1, det_type="nonexistent")  # pytype: disable=wrong-arg-types
+      unused_fst = fst.determinize(d1, det_type="nonexistent")  # pyrefly: ignore[bad-argument-type]
 
   def testDifference(self):
     """Cf. difference-main_test."""
@@ -1243,13 +1243,13 @@ class PywrapFstTest(parameterized.TestCase):
 
   def testFstPropertiesDontInteropWithInt(self):
     with self.assertRaises(TypeError):
-      unused_result = fst.FST_PROPERTIES & 3  # pytype: disable=unsupported-operands
+      unused_result = fst.FST_PROPERTIES & 3  # pyrefly: ignore[unsupported-operation]
     with self.assertRaises(TypeError):
-      unused_result = fst.FST_PROPERTIES | 3  # pytype: disable=unsupported-operands
+      unused_result = fst.FST_PROPERTIES | 3  # pyrefly: ignore[unsupported-operation]
 
   def testFstPropertiesDontSupportMinus(self):
     with self.assertRaises(TypeError):
-      unused_result = fst.FST_PROPERTIES - fst.ACCEPTOR  # pytype: disable=unsupported-operands
+      unused_result = fst.FST_PROPERTIES - fst.ACCEPTOR  # pyrefly: ignore[unsupported-operation]
 
   def testWeightPropertiesTruthiness(self):
     self.assertTrue(fst.WeightProperties.SEMIRING)
@@ -1276,14 +1276,14 @@ class PywrapFstTest(parameterized.TestCase):
 
   def testWeightPropertiesDontInteropWithInt(self):
     with self.assertRaises(TypeError):
-      unused_result = fst.WeightProperties.SEMIRING & 3  # pytype: disable=unsupported-operands
+      unused_result = fst.WeightProperties.SEMIRING & 3
     with self.assertRaises(TypeError):
-      unused_result = fst.WeightProperties.SEMIRING | 3  # pytype: disable=unsupported-operands
+      unused_result = fst.WeightProperties.SEMIRING | 3
 
   def testWeightPropertiesDontSupportMinus(self):
     with self.assertRaises(TypeError):
       unused_result = (
-          fst.WeightProperties.SEMIRING - fst.WeightProperties.LEFT_SEMIRING  # pytype: disable=unsupported-operands
+          fst.WeightProperties.SEMIRING - fst.WeightProperties.LEFT_SEMIRING
       )
 
   def testArcIteratorFlagsTruthiness(self):
@@ -1315,14 +1315,14 @@ class PywrapFstTest(parameterized.TestCase):
 
   def testArcIteratorFlagsDontInteropWithInt(self):
     with self.assertRaises(TypeError):
-      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS & 3  # pytype: disable=unsupported-operands
+      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS & 3
     with self.assertRaises(TypeError):
-      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS | 3  # pytype: disable=unsupported-operands
+      unused_result = fst.ArcIteratorFlags.ARC_VALUE_FLAGS | 3
 
   def testArcIteratorFlagsDontSupportMinus(self):
     with self.assertRaises(TypeError):
       unused_result = (
-          fst.ArcIteratorFlags.ARC_VALUE_FLAGS  # pytype: disable=unsupported-operands
+          fst.ArcIteratorFlags.ARC_VALUE_FLAGS
           - fst.ArcIteratorFlags.ARC_I_LABEL_VALUE
       )
 
@@ -1358,14 +1358,14 @@ class PywrapFstTest(parameterized.TestCase):
 
   def testEncoderMapperFlagsDontInteropWithInt(self):
     with self.assertRaises(TypeError):
-      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS & 3  # pytype: disable=unsupported-operands
+      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS & 3
     with self.assertRaises(TypeError):
-      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS | 3  # pytype: disable=unsupported-operands
+      unused_result = fst.EncodeMapperFlags.ENCODE_WEIGHTS | 3
 
   def testEncoderMapperFlagsDontSupportMinus(self):
     with self.assertRaises(TypeError):
       unused_result = (
-          fst.EncodeMapperFlags.ENCODE_WEIGHTS  # pytype: disable=unsupported-operands
+          fst.EncodeMapperFlags.ENCODE_WEIGHTS
           - fst.EncodeMapperFlags.ENCODE_WEIGHTS
       )
 
