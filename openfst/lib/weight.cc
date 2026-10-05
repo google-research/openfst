@@ -132,6 +132,7 @@ void CompositeWeightReader::ReadBegin() {
 }
 
 void CompositeWeightReader::ReadEnd() {
+  if (istrm_.fail()) return;
   if (c_ != EOF && !std::isspace(c_)) {
     FSTERROR() << "CompositeWeightReader: excess character: '"
                << static_cast<char>(c_)

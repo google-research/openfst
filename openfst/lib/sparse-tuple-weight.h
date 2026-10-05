@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <ios>
 #include <istream>
 #include <list>
 #include <ostream>
@@ -415,12 +416,25 @@ inline std::istream& operator>>(std::istream& strm,
   reader.ReadBegin();
   W def;
   bool more = reader.ReadElement(&def);
+  // On a malformed element, `reader` sets badbit on `strm`; stop before
+  // storing the unparsed element.
+  if (strm.fail()) return strm;
   weight.Init(def);
   while (more) {
     K key;
-    reader.ReadElement(&key);
+    // `ReadElement` returns false either on a malformed key (the reader has
+    // already set badbit on `strm`) or when `key` was the last element, i.e.,
+    // a key with no paired value, which is rejected here.
+    const bool has_value = reader.ReadElement(&key);
+    if (strm.fail()) return strm;
+    if (!has_value) {
+      FSTERROR() << "SparseTupleWeight: Missing value for key: " << key;
+      strm.clear(std::ios::badbit);
+      return strm;
+    }
     W v;
     more = reader.ReadElement(&v);
+    if (strm.fail()) return strm;
     weight.PushBack(key, v);
   }
   reader.ReadEnd();

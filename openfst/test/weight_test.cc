@@ -43,7 +43,9 @@
 #include "openfst/lib/set-weight.h"
 #include "openfst/lib/signed-log-weight.h"
 #include "openfst/lib/sparse-power-weight.h"
+#include "openfst/lib/sparse-tuple-weight.h"
 #include "openfst/lib/string-weight.h"
+#include "openfst/lib/tuple-weight.h"
 #include "openfst/lib/union-weight.h"
 #include "openfst/lib/util.h"
 #include "openfst/test/weight-tester.h"
@@ -677,6 +679,118 @@ TEST(CompositeWeightTest, UnionWeightStreamRead) {
   std::ostringstream os_bad;
   os_bad << bad_uw;
   EXPECT_EQ(os_bad.str(), "BadSet");
+}
+
+// Malformed elements are rejected by `CompositeWeightReader::ReadElement`,
+// which sets badbit on the stream; each composite `operator>>` then stops
+// before storing the unparsed element.
+TEST(CompositeWeightTest, StreamReadInvalidInput) {
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  using PW = PairWeight<TropicalWeight, TropicalWeight>;
+  for (absl::string_view input : {
+           "1.5,abc",  // Malformed second element.
+           "abc,1.5",  // Malformed first element.
+           "1.5",      // Missing second element.
+       }) {
+    PW pw;
+    SpanInStream is(input);
+    is >> pw;
+    EXPECT_TRUE(is.bad()) << "input=" << input;
+    EXPECT_FALSE(StrToWeight<PW>(input).Member()) << "input=" << input;
+  }
+
+  using TW = TupleWeight<TropicalWeight, 3>;
+  for (absl::string_view input : {
+           "1.0,abc,3.0",  // Malformed middle element.
+           "1.0,2.0,abc",  // Malformed last element.
+           "1.0,2.0",      // Missing last element.
+       }) {
+    TW tw;
+    SpanInStream is(input);
+    is >> tw;
+    EXPECT_TRUE(is.bad()) << "input=" << input;
+  }
+
+  using STW = SparseTupleWeight<TropicalWeight, int>;
+  for (absl::string_view input : {
+           "abc,1,2.0",      // Malformed default value.
+           "0.0,abc,2.0",    // Malformed key.
+           "0.0,12abc,2.0",  // Key with trailing characters.
+           "0.0,1",          // Key without a value.
+           "0.0,1,abc",      // Malformed value.
+       }) {
+    STW stw;
+    SpanInStream is(input);
+    is >> stw;
+    EXPECT_TRUE(is.bad()) << "input=" << input;
+  }
+
+  struct Options {
+    using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+    using ReverseOptions [[maybe_unused]] = Options;
+    struct Merge {
+      TropicalWeight operator()(const TropicalWeight& w1,
+                                const TropicalWeight& w2) const {
+        return w1;
+      }
+    };
+  };
+  using UW = UnionWeight<TropicalWeight, Options>;
+  for (absl::string_view input : {
+           "abc,2.0",  // Malformed first element.
+           "1.0,abc",  // Malformed last element.
+       }) {
+    UW uw;
+    SpanInStream is(input);
+    is >> uw;
+    // Errors on the internal element stream are propagated as badbit.
+    EXPECT_TRUE(is.bad()) << "input=" << input;
+    EXPECT_FALSE(StrToWeight<UW>(input).Member()) << "input=" << input;
+  }
+  {
+    // Empty input: reading the token itself fails (failbit only).
+    UW uw;
+    SpanInStream is("");
+    is >> uw;
+    EXPECT_TRUE(is.fail());
+    EXPECT_FALSE(is.bad());
+    EXPECT_FALSE(StrToWeight<UW>("").Member());
+  }
+
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
+}
+
+// Exercises both early returns after reading a `SparseTupleWeight` key: a
+// malformed key (badbit already set by the reader) and a well-formed key with
+// no paired value (badbit set by `operator>>` itself).
+TEST(CompositeWeightTest, SparseTupleWeightStreamReadKeyWithoutValue) {
+  using STW = SparseTupleWeight<TropicalWeight, int>;
+
+  {
+    STW stw;
+    SpanInStream is("0.0,1,2.0");
+    is >> stw;
+    EXPECT_FALSE(is.fail());
+    EXPECT_EQ(stw.DefaultValue(), TropicalWeight(0.0));
+    EXPECT_EQ(stw.Value(1), TropicalWeight(2.0));
+  }
+
+  const bool old_fst_error_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  for (absl::string_view input : {
+           "0.0,1",          // Only key without a value.
+           "0.0,1,2.0,3",    // Key without a value after a valid pair.
+           "0.0,abc,2.0",    // Malformed key.
+           "0.0,1,2.0,abc",  // Malformed key after a valid pair.
+       }) {
+    STW stw;
+    SpanInStream is(input);
+    is >> stw;
+    EXPECT_TRUE(is.bad()) << "input=" << input;
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fst_error_fatal);
 }
 
 TEST(SetWeightTest, MultiElementVectorOperations) {

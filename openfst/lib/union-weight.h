@@ -406,12 +406,17 @@ inline std::istream& operator>>(std::istream& istrm,
                                 UnionWeight<W, O>& weight) {
   std::string s;
   istrm >> s;
+  if (istrm.fail()) return istrm;
   if (s == "EmptySet") {
     weight = UnionWeight<W, O>::Zero();
   } else if (s == "BadSet") {
     weight = UnionWeight<W, O>::NoWeight();
   } else {
     weight = UnionWeight<W, O>::Zero();
+    // Elements are parsed from the internal `sstrm`, so `reader` reports
+    // errors on `sstrm` rather than on `istrm`. Stop at the first malformed
+    // element (`v` is not valid) and propagate the failure to `istrm` as
+    // badbit, consistent with `CompositeWeightReader`.
     SpanInStream sstrm(s);
     CompositeWeightReader reader(sstrm);
     reader.ReadBegin();
@@ -419,9 +424,11 @@ inline std::istream& operator>>(std::istream& istrm,
     while (more) {
       W v;
       more = reader.ReadElement(&v);
+      if (sstrm.fail()) break;
       weight.PushBack(v, true);
     }
-    reader.ReadEnd();
+    reader.ReadEnd();  // No-op if `sstrm` has already failed.
+    if (sstrm.fail()) istrm.clear(std::ios::badbit);
   }
   return istrm;
 }
