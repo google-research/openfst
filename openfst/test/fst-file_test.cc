@@ -34,6 +34,8 @@
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/project.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
@@ -193,6 +195,14 @@ TEST_F(FstFileTest, StripSymbolsTest) {
 
 class noseekstreambuf : public std::basic_stringbuf<char> {
  protected:
+  pos_type seekoff(off_type off, std::ios_base::seekdir way,
+                   std::ios_base::openmode) override {
+    if (off != 0 || way != std::ios_base::cur) {
+      LOG(FATAL) << "Can't seek a no seek stream.";
+    }
+    return pos_type(off_type(-1));
+  }
+
   pos_type seekpos(pos_type pos, std::ios_base::openmode) override {
     LOG(FATAL) << "Can't seek a no seek stream.";
   }
@@ -205,12 +215,72 @@ class noseekostream : public std::ostream {
   noseekstreambuf noseekstreambuf_;
 };
 
+class SeekCountingStreambuf : public std::basic_stringbuf<char> {
+ public:
+  int seekpos_count() const { return seekpos_count_; }
+
+ protected:
+  pos_type seekpos(pos_type pos, std::ios_base::openmode which) override {
+    ++seekpos_count_;
+    return std::basic_stringbuf<char>::seekpos(pos, which);
+  }
+
+ private:
+  int seekpos_count_ = 0;
+};
+
 TEST_F(FstFileTest, NoSeek) {
   std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
-  noseekostream oss;
-  FstWriteOptions opts;
-  opts.stream_write = true;
-  ConstFst<Arc>::WriteFst(*fst, oss, opts);
+  {
+    noseekostream oss;
+    FstWriteOptions opts;
+    opts.stream_write = true;
+    EXPECT_TRUE(ConstFst<Arc>::WriteFst(*fst, oss, opts));
+  }
+  // Delayed (non-expanded) FST written with default options (stream_write =
+  // false) to a non-seekable stream (tellp() == -1) must precompute the state
+  // count rather than attempting to seek back and update the header.
+  const ProjectFst<Arc> pfst(*fst, ProjectType::INPUT);
+  ASSERT_EQ(pfst.Properties(kExpanded, false), 0u);
+  {
+    noseekostream oss;
+    ASSERT_TRUE(ConstFst<Arc>::WriteFst(pfst, oss, FstWriteOptions()));
+    std::istringstream iss(oss.noseekstreambuf_.str());
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    ASSERT_NE(fst2, nullptr);
+    EXPECT_TRUE(Verify(*fst2));
+    EXPECT_TRUE(Equal(pfst, *fst2));
+  }
+  {
+    noseekostream oss;
+    ASSERT_TRUE(VectorFst<Arc>::WriteFst(pfst, oss, FstWriteOptions()));
+    std::istringstream iss(oss.noseekstreambuf_.str());
+    std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+    ASSERT_NE(fst2, nullptr);
+    EXPECT_TRUE(Verify(*fst2));
+    EXPECT_TRUE(Equal(pfst, *fst2));
+  }
+}
+
+TEST_F(FstFileTest, VectorWriteUnexpandedSeekable) {
+  std::unique_ptr<const Fst<Arc>> fst(Fst<Arc>::Read(vector2_name_));
+  const ProjectFst<Arc> pfst(*fst, ProjectType::INPUT);
+  ASSERT_EQ(pfst.Properties(kExpanded, false), 0u);
+
+  SeekCountingStreambuf buf;
+  std::ostream oss(&buf);
+  constexpr absl::string_view kPrefix = "prefix";
+  oss.write(kPrefix.data(), kPrefix.size());
+  ASSERT_TRUE(VectorFst<Arc>::WriteFst(pfst, oss, FstWriteOptions()));
+  // On a seekable stream with an unexpanded FST and stream_write = false,
+  // WriteFst writes states in one pass and seeks back via UpdateFstHeader.
+  EXPECT_GT(buf.seekpos_count(), 0);
+
+  std::istringstream iss(buf.str().substr(kPrefix.size()));
+  std::unique_ptr<const Fst<Arc>> fst2(Fst<Arc>::Read(iss, FstReadOptions()));
+  ASSERT_NE(fst2, nullptr);
+  EXPECT_TRUE(Verify(*fst2));
+  EXPECT_TRUE(Equal(pfst, *fst2));
 }
 
 // Creates a ConstFst file with 1 state and 1 arc, but with arbitrary values for
