@@ -507,6 +507,14 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
                  << " for " << opts.source;
       return nullptr;
     }
+    for (size_t s = 0; s < data->nstates_; ++s) {
+      if (data->states_[s] > data->states_[s + 1]) {
+        LOG(ERROR) << "CompactArcStore::Read: Non-decreasing state offsets "
+                   << "violated at state " << s << ": " << data->states_[s]
+                   << " > " << data->states_[s + 1] << " for " << opts.source;
+        return nullptr;
+      }
+    }
   } else {
     data->states_ = nullptr;
     data->ncompacts_ = data->nstates_ * arc_compactor.Size();

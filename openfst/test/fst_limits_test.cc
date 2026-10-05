@@ -24,6 +24,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"
@@ -87,20 +88,27 @@ TEST(CompactLimitsTest, StartStateOutOfRangeTest) {
 using VarCompactor = UnweightedCompactor<StdArc>;
 using VarStore = CompactArcStore<VarCompactor::Element, uint64_t>;
 
-// Serializes a single-state FST with the given state offsets followed by
-// `ncompacts` zero-initialized elements.
-std::string SerializeVarStore(uint64_t offset0, uint64_t offset1,
+// Serializes an FST with the given state offsets followed by `ncompacts`
+// zero-initialized elements.
+std::string SerializeVarStore(absl::Span<const uint64_t> offsets,
                               size_t ncompacts) {
   std::string data;
-  data.append(reinterpret_cast<const char*>(&offset0), sizeof(offset0));
-  data.append(reinterpret_cast<const char*>(&offset1), sizeof(offset1));
+  for (uint64_t offset : offsets) {
+    data.append(reinterpret_cast<const char*>(&offset), sizeof(offset));
+  }
   data.append(ncompacts * sizeof(VarCompactor::Element), '\0');
   return data;
 }
 
-std::unique_ptr<VarStore> ReadVarStore(const std::string& data, int64_t narcs) {
+std::string SerializeVarStore(uint64_t offset0, uint64_t offset1,
+                              size_t ncompacts) {
+  return SerializeVarStore({offset0, offset1}, ncompacts);
+}
+
+std::unique_ptr<VarStore> ReadVarStore(const std::string& data, int64_t narcs,
+                                       int64_t nstates = 1) {
   FstHeader hdr;
-  hdr.SetNumStates(1);
+  hdr.SetNumStates(nstates);
   hdr.SetNumArcs(narcs);
   hdr.SetStart(0);
   std::istringstream iss(data);
@@ -111,6 +119,9 @@ std::unique_ptr<VarStore> ReadVarStore(const std::string& data, int64_t narcs) {
 
 TEST(CompactLimitsTest, VariableSizeWellFormedTest) {
   EXPECT_NE(ReadVarStore(SerializeVarStore(0, 1, 1), /*narcs=*/1), nullptr);
+  EXPECT_NE(
+      ReadVarStore(SerializeVarStore({0, 1, 2}, 2), /*narcs=*/2, /*nstates=*/2),
+      nullptr);
 }
 
 TEST(CompactLimitsTest, VariableSizeMaxCompactsTest) {
@@ -130,6 +141,18 @@ TEST(CompactLimitsTest, VariableSizeNonZeroFirstOffsetTest) {
 
 TEST(CompactLimitsTest, VariableSizeFewerCompactsThanArcsTest) {
   EXPECT_EQ(ReadVarStore(SerializeVarStore(0, 1, 1), /*narcs=*/2), nullptr);
+}
+
+TEST(CompactLimitsTest, VariableSizeNonMonotonicOffsetsTest) {
+  // states_[1] > states_[2] (2 > 1), which would underflow
+  // States(2) - States(1) when computing the arc range for state 1.
+  EXPECT_EQ(
+      ReadVarStore(SerializeVarStore({0, 2, 1}, 1), /*narcs=*/1, /*nstates=*/2),
+      nullptr);
+  // Interior offset exceeds ncompacts (states_[1] = 5 > states_[2] = 2).
+  EXPECT_EQ(
+      ReadVarStore(SerializeVarStore({0, 5, 2}, 2), /*narcs=*/2, /*nstates=*/2),
+      nullptr);
 }
 
 // ConstFst limits tests.
