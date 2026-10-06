@@ -142,6 +142,57 @@ TEST_F(ExpanderFstTest, NoGcKeepOneExpanderCache) {
   EXPECT_EQ(2, a_1.Value().nextstate);
 }
 
+TEST_F(ExpanderFstTest, NoGcKeepOneExpanderCacheUnpinnedLookups) {
+  using Cache = NoGcKeepOneExpanderCache<StdArc>;
+  auto expander = std::make_shared<CountingExpand>();
+  ExpanderFst<CountingExpand, Cache> fst(expander);
+  ExpanderFst<TestExpand> expect(std::make_shared<TestExpand>());
+  VectorFst<StdArc> vfst(expect);
+
+  {
+    // Pin state 0 so `cache_` becomes non-empty when moving to state 1.
+    ArcIterator<StdFst> a_0(fst, 0);
+    EXPECT_EQ(expander->expansions(), 1);
+
+    // Consecutive unpinned accesses while `cache_` is non-empty must each
+    // reset and expand the requested state rather than returning the prior
+    // unpinned state.
+    EXPECT_EQ(fst.NumArcs(1), 2);
+    EXPECT_EQ(fst.Final(1), StdArc::Weight::Zero());
+    EXPECT_EQ(expander->expansions(), 2);
+
+    EXPECT_EQ(fst.NumArcs(2), 2);
+    EXPECT_EQ(ArcIterator<StdFst>(fst, 2).Value().nextstate, 3);
+    EXPECT_EQ(expander->expansions(), 3);
+
+    EXPECT_EQ(fst.NumArcs(9), 1);
+    EXPECT_EQ(fst.Final(9), StdArc::Weight::Zero());
+    EXPECT_EQ(expander->expansions(), 4);
+
+    EXPECT_EQ(fst.NumArcs(10), 0);
+    EXPECT_EQ(fst.Final(10), StdArc::Weight(1.0f));
+    EXPECT_EQ(expander->expansions(), 5);
+
+    EXPECT_TRUE(Equal(fst, vfst));
+
+    // Revisit pinned state 0: should be served from `cache_` without
+    // re-expanding, and erased from `cache_` once moved back to `state_`.
+    const int expansions_before = expander->expansions();
+    EXPECT_EQ(fst.NumArcs(0), 2);
+    EXPECT_EQ(expander->expansions(), expansions_before);
+  }
+
+  // `a_0` is now destroyed while state 0 is the active `state_` (`ref_count_`
+  // drops to 0) and `cache_` is empty. Moving to state 1 and back to state 0
+  // must re-expand state 0 cleanly.
+  expander->reset_expansions();
+  EXPECT_EQ(fst.NumArcs(1), 2);
+  EXPECT_EQ(expander->expansions(), 1);
+  EXPECT_EQ(fst.NumArcs(0), 2);
+  EXPECT_EQ(ArcIterator<StdFst>(fst, 0).Value().nextstate, 1);
+  EXPECT_EQ(expander->expansions(), 2);
+}
+
 TEST_F(ExpanderFstTest, ArcIteratorSpecialization) {
   // TODO: Is there a way to check from the test that the correct
   // specializer got picked? Otherwise this test doesn't necessarily test the

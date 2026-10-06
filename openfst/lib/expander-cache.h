@@ -136,21 +136,35 @@ class NoGcKeepOneExpanderCache {
 
   template <class Expander>
   State* FindOrExpand(Expander& expander, StateId state_id) {
-    if (state_id == state_id_) return state_.get();
-    if (state_->ref_count_ > 0) cache_[state_id_] = std::move(state_);
-    state_id_ = state_id;
-    if (cache_.empty()) {
-      state_->Reset();
-      expander.Expand(state_id_, state_.get());
+    // 1. Fast path: requested state is already active.
+    if (state_id == state_id_ && state_ != nullptr) {
       return state_.get();
     }
-    if (auto i = cache_.find(state_id_); i != cache_.end()) {
-      state_ = std::move(i->second);
+
+    // 2. Cache the currently active state if it has active references.
+    if (state_ != nullptr && state_->ref_count_ > 0) {
+      cache_[state_id_] = std::move(state_);
     }
+
+    // 3. Transition to the new state ID.
+    state_id_ = state_id;
+
+    // 4. Try retrieving existing state from cache.
+    if (auto it = cache_.find(state_id); it != cache_.end()) {
+      state_ = std::move(it->second);
+      cache_.erase(it);
+      return state_.get();
+    }
+
+    // 5. Initialize a blank state: reuse existing buffer or allocate new one.
     if (state_ == nullptr) {
       state_ = std::make_unique<State>();
-      expander.Expand(state_id_, state_.get());
+    } else {
+      state_->Reset();
     }
+
+    // 6. Compute new state.
+    expander.Expand(state_id_, state_.get());
     return state_.get();
   }
 
