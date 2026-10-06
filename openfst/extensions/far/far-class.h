@@ -233,7 +233,7 @@ using CreateFarWriterClassArgs =
 // Untemplated user-facing class holding a templated pimpl.
 class FarWriterClass {
  public:
-  static std::unique_ptr<FarWriterClass> Create(
+  static absl_nullable std::unique_ptr<FarWriterClass> Create(
       const std::string& source, const std::string& arc_type,
       FarType type = FarType::DEFAULT);
 
@@ -280,9 +280,14 @@ class FarWriterClass {
 // static method FarWriterClass::Create instead.
 template <class Arc>
 void CreateFarWriterClass(CreateFarWriterClassArgs* args) {
-  args->retval = absl::WrapUnique(
-      new FarWriterClass(std::make_unique<FarWriterClassImpl<Arc>>(
-          std::get<0>(args->args), std::get<1>(args->args))));
+  auto impl = std::make_unique<FarWriterClassImpl<Arc>>(
+      std::get<0>(args->args), std::get<1>(args->args));
+  if (impl->GetFarWriter() == nullptr) {
+    // Underlying writer failed to create, so return failure here, too.
+    args->retval = nullptr;
+  } else {
+    args->retval = absl::WrapUnique(new FarWriterClass(std::move(impl)));
+  }
 }
 
 }  // namespace script

@@ -38,7 +38,7 @@ class STTableFarWriter : public FarWriter<A> {
 
   static STTableFarWriter* Create(absl::string_view source) {
     auto* writer = STTableWriter<Fst<Arc>, FstWriter<Arc>>::Create(source);
-    return new STTableFarWriter(writer);
+    return writer ? new STTableFarWriter(writer) : nullptr;
   }
 
   void Add(absl::string_view key, const Fst<Arc>& fst) final {

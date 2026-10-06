@@ -520,7 +520,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":far-test-base",
+        ":far-type",
         ":fst-reader",
+        ":script",
         ":sttable",
         ":sttable-far-reader",
         ":sttable-far-writer",

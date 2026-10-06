@@ -70,7 +70,7 @@ REGISTER_FST_OPERATION(OpenFarReaderClass, ErrorArc, OpenFarReaderClassArgs);
 
 // FarWriterClass.
 
-std::unique_ptr<FarWriterClass> FarWriterClass::Create(
+absl_nullable std::unique_ptr<FarWriterClass> FarWriterClass::Create(
     const std::string& source, const std::string& arc_type, FarType type) {
   CreateFarWriterClassInnerArgs iargs(source, type);
   CreateFarWriterClassArgs args(iargs);

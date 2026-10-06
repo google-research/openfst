@@ -28,7 +28,9 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
+#include "openfst/extensions/far/far-class.h"
 #include "openfst/extensions/far/far-test-base.h"
+#include "openfst/extensions/far/far-type.h"
 #include "openfst/extensions/far/sttable-far-reader.h"
 #include "openfst/extensions/far/sttable-far-writer.h"
 #include "openfst/extensions/far/sttable.h"
@@ -41,6 +43,16 @@ using ::testing::IsNull;
 
 namespace fst {
 namespace {
+
+TEST_F(FarTest, STTableStdoutUnsupported) {
+  std::unique_ptr<STTableFarWriter<LogArc>> writer(
+      STTableFarWriter<LogArc>::Create(""));
+  EXPECT_THAT(writer, IsNull());
+
+  auto writer_class =
+      script::FarWriterClass::Create("", "log", FarType::STTABLE);
+  EXPECT_THAT(writer_class, IsNull());
+}
 
 TEST_F(FarTest, STTableNoFar) {
   absl::SetFlag(&FLAGS_fst_error_fatal, false);
