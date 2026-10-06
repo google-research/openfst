@@ -98,6 +98,7 @@ int fstsymbols_main(int argc, char** argv) {
     isyms.reset(
         SymbolTable::ReadText(absl::GetFlag(FLAGS_isymbols),
                               absl::GetFlag(FLAGS_fst_field_separator)));
+    if (!isyms) return 1;
     fst->SetInputSymbols(isyms.get());
   } else if (absl::GetFlag(FLAGS_clear_isymbols)) {
     fst->SetInputSymbols(nullptr);
@@ -107,6 +108,7 @@ int fstsymbols_main(int argc, char** argv) {
     osyms.reset(
         SymbolTable::ReadText(absl::GetFlag(FLAGS_osymbols),
                               absl::GetFlag(FLAGS_fst_field_separator)));
+    if (!osyms) return 1;
     fst->SetOutputSymbols(osyms.get());
   } else if (absl::GetFlag(FLAGS_clear_osymbols)) {
     fst->SetOutputSymbols(nullptr);
@@ -114,17 +116,33 @@ int fstsymbols_main(int argc, char** argv) {
 
   using Label = int64_t;
   if (!absl::GetFlag(FLAGS_relabel_ipairs).empty()) {
+    const auto* old_isyms = fst->InputSymbols();
+    if (!old_isyms) {
+      LOG(ERROR) << argv[0]
+                 << ": Relabeling isymbols but there are no input symbols.";
+      return 1;
+    }
     std::vector<std::pair<Label, Label>> ipairs;
-    ReadLabelPairs(absl::GetFlag(FLAGS_relabel_ipairs), &ipairs);
+    if (!ReadLabelPairs(absl::GetFlag(FLAGS_relabel_ipairs), &ipairs)) {
+      return 1;
+    }
     std::unique_ptr<SymbolTable> isyms_relabel(
-        RelabelSymbolTable<Label>(fst->InputSymbols(), ipairs));
+        RelabelSymbolTable<Label>(old_isyms, ipairs));
     fst->SetInputSymbols(isyms_relabel.get());
   }
   if (!absl::GetFlag(FLAGS_relabel_opairs).empty()) {
+    const auto* old_osyms = fst->OutputSymbols();
+    if (!old_osyms) {
+      LOG(ERROR) << argv[0]
+                 << ": Relabeling osymbols but there are no output symbols.";
+      return 1;
+    }
     std::vector<std::pair<Label, Label>> opairs;
-    ReadLabelPairs(absl::GetFlag(FLAGS_relabel_opairs), &opairs);
+    if (!ReadLabelPairs(absl::GetFlag(FLAGS_relabel_opairs), &opairs)) {
+      return 1;
+    }
     std::unique_ptr<SymbolTable> osyms_relabel(
-        RelabelSymbolTable<Label>(fst->OutputSymbols(), opairs));
+        RelabelSymbolTable<Label>(old_osyms, opairs));
     fst->SetOutputSymbols(osyms_relabel.get());
   }
 

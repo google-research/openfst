@@ -49,16 +49,24 @@ diff -q "$DAT"/relabel.map "$TST"/relabel.map
 diff -q "$DAT"/relabel.map "$TST"/relabel.map
 
 # from stdin
-"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms \
+"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms.map \
   - "$TST"/s2.fst < "$DAT"/s1.fst
 "$BIN"/fstequal -v=1 "$DAT"/s2.fst "$TST"/s2.fst
 
 # to stdout
-"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms \
+"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms.map \
   "$DAT"/s1.fst > "$TST"/s2.fst
 "$BIN"/fstequal -v=1 "$DAT"/s2.fst "$TST"/s2.fst
 
 # pipe
-"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms \
+"$BIN"/fstsymbols --isymbols="$DAT"/syms.map --osymbols="$DAT"/syms.map \
   < "$DAT"/s1.fst > "$TST"/s2.fst
 "$BIN"/fstequal -v=1 "$DAT"/s2.fst "$TST"/s2.fst
+
+# error cases: missing symbol files, relabel without symbols, missing pairs
+! "$BIN"/fstsymbols --isymbols="$TST"/nonexistent.map "$DAT"/s2.fst "$TST"/out.fst
+! "$BIN"/fstsymbols --osymbols="$TST"/nonexistent.map "$DAT"/s2.fst "$TST"/out.fst
+! "$BIN"/fstsymbols --relabel_ipairs="$DAT"/relabel.pairs "$DAT"/s1.fst "$TST"/out.fst
+! "$BIN"/fstsymbols --relabel_opairs="$DAT"/relabel.pairs "$DAT"/s1.fst "$TST"/out.fst
+! "$BIN"/fstsymbols --relabel_ipairs="$TST"/nonexistent.pairs "$DAT"/s2.fst "$TST"/out.fst
+! "$BIN"/fstsymbols --relabel_opairs="$TST"/nonexistent.pairs "$DAT"/s2.fst "$TST"/out.fst
