@@ -122,7 +122,11 @@ WeightClass Power(const WeightClass& weight, size_t n) {
 }
 
 std::ostream& operator<<(std::ostream& ostrm, const WeightClass& weight) {
-  weight.impl_->Print(&ostrm);
+  if (weight.impl_) {
+    weight.impl_->Print(&ostrm);
+  } else {
+    ostrm << "none";
+  }
   return ostrm;
 }
 

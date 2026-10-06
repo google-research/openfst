@@ -258,6 +258,29 @@ TEST_F(ClassTest, WeightClassOperations) {
   ASSERT_TRUE(absl::SimpleAtof(Plus(w1, w2).ToString(), &one_sum));
   // Same logic as ApproxEqual.
   ASSERT_TRUE(one <= one_sum + kDelta && one_sum <= one + kDelta);
+
+  // Tests null-impl WeightClass behavior (default-constructed, unknown type, or
+  // type-mismatched arithmetic in non-fatal mode).
+  WeightClass empty;
+  EXPECT_EQ(empty.GetWeight<StdArc::Weight>(), nullptr);
+  {
+    std::ostringstream ostrm;
+    ostrm << empty;
+    EXPECT_EQ(ostrm.str(), "none");
+  }
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  for (const WeightClass& invalid :
+       {WeightClass(kDummyName, "1"),
+        Plus(WeightClass::One("tropical"), WeightClass::One("log")),
+        Times(WeightClass::One("tropical"), WeightClass::One("log")),
+        Divide(WeightClass::One("tropical"), WeightClass::One("log"))}) {
+    EXPECT_EQ(invalid.GetWeight<StdArc::Weight>(), nullptr);
+    std::ostringstream ostrm;
+    ostrm << invalid;
+    EXPECT_EQ(ostrm.str(), "none");
+  }
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
 }
 
 TEST_F(ClassTest, EncodeMapperClassOperations) {

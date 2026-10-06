@@ -149,7 +149,7 @@ class WeightClass {
 
   template <class W>
   const W* GetWeight() const {
-    if (W::Type() != impl_->Type()) {
+    if (!impl_ || W::Type() != impl_->Type()) {
       return nullptr;
     } else {
       auto* typed_impl = static_cast<WeightClassImpl<W>*>(impl_.get());
