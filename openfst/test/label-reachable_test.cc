@@ -24,6 +24,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "openfst/compat/file_path.h"
@@ -284,6 +285,29 @@ TEST_F(ReachableTest, ReachFinalTest) {
     LabelReachable<Arc> label_reachable(fst, false);
     TestReachableFinal(fst, i, &label_reachable);
   }
+}
+
+TEST(LabelReachableTest, RelabelPairsAvoidCollisionsWithOov) {
+  VectorFst<Arc> fst;
+  const StateId s0 = fst.AddState();
+  const StateId s1 = fst.AddState();
+  fst.SetStart(s0);
+  fst.SetFinal(s1, Weight::One());
+  fst.EmplaceArc(s0, 5, 5, Weight::One(), s1);
+
+  LabelReachable<Arc> label_reachable(fst, /*reach_input=*/true);
+  // Label 1 is in [1, label2index.size()] (size is 2: label 5 and kNoLabel),
+  // but is OOV for `fst`. Recording it via Relabel(1) populates
+  // oov_label2index_[1].
+  const Label oov_relabel = label_reachable.Relabel(1);
+  const Label in_vocab_relabel = label_reachable.Relabel(5);
+
+  std::vector<std::pair<Label, Label>> pairs;
+  label_reachable.RelabelPairs(&pairs, /*avoid_collisions=*/true);
+
+  EXPECT_THAT(pairs, ::testing::UnorderedElementsAre(
+                         std::make_pair(5, in_vocab_relabel),
+                         std::make_pair(1, oov_relabel), std::make_pair(2, 3)));
 }
 
 }  // namespace
