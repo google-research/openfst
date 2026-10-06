@@ -83,6 +83,7 @@ int fstreplace_main(int argc, char** argv) {
                               &call_label_type)) {
     LOG(ERROR) << argv[0] << ": Unknown or unsupported call arc replace "
                << "label type: " << absl::GetFlag(FLAGS_call_arc_labeling);
+    return 1;
   }
   ReplaceLabelType return_label_type;
   if (!s::GetReplaceLabelType(absl::GetFlag(FLAGS_return_arc_labeling),
@@ -90,6 +91,7 @@ int fstreplace_main(int argc, char** argv) {
                               &return_label_type)) {
     LOG(ERROR) << argv[0] << ": Unknown or unsupported return arc replace "
                << "label type: " << absl::GetFlag(FLAGS_return_arc_labeling);
+    return 1;
   }
   if (pairs.empty()) {
     LOG(ERROR) << argv[0] << ": At least one replace pair must be provided.";

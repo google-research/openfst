@@ -34,3 +34,7 @@ source "$BIN"/setup.sh
 "$BIN"/fstreplace --call_arc_labeling="neither" "$DAT"/g1.fst 1 "$DAT"/g2.fst 2 \
   "$DAT"/g3.fst 3 "$DAT"/g4.fst 4 > "$TST"/g_out.fst
 "$BIN"/fstequal -v=1 "$DAT"/g_out.fst "$TST"/g_out.fst
+
+# error cases: invalid call_arc_labeling or return_arc_labeling
+! "$BIN"/fstreplace --call_arc_labeling="bad" "$DAT"/g1.fst 1 "$TST"/g_out.fst
+! "$BIN"/fstreplace --return_arc_labeling="bad" "$DAT"/g1.fst 1 "$TST"/g_out.fst
