@@ -157,18 +157,27 @@ TEST_F(EditTest, Equiv) {
 
   VerifyAndTestEquality(*e1_edited, *e2);
 
-  // Test that a copy of e1_edited is still identical to e2.
+  // Test that a copy of e1_edited is still identical to e2, and that
+  // DeleteStates() on the copy does not wipe edits in e1_edited.
   {
     std::unique_ptr<EditFst<Arc>> e1_edited_copy(e1_edited->Copy());
     VerifyAndTestEquality(*e1_edited_copy, *e2);
+    e1_edited_copy->DeleteStates();
+    EXPECT_EQ(e1_edited_copy->NumStates(), 0);
+    VerifyAndTestEquality(*e1_edited, *e2);
   }
 
-  // Test that a thread-safe copy of e1_edited is still identical to e2.
+  // Test that a thread-safe copy of e1_edited is still identical to e2, and
+  // that mutating or clearing the copy does not affect e1_edited.
   {
     std::unique_ptr<EditFst<Arc>> e1_edited_thread_safe_copy(
         e1_edited->Copy(true));
     VerifyAndTestEquality(*e1_edited_thread_safe_copy, *e2);
     e1_edited_thread_safe_copy->DeleteArcs(e1_new_state_id);
+    VerifyAndTestEquality(*e1_edited, *e2);
+    e1_edited_thread_safe_copy->DeleteStates();
+    EXPECT_EQ(e1_edited_thread_safe_copy->NumStates(), 0);
+    VerifyAndTestEquality(*e1_edited, *e2);
   }
 }
 

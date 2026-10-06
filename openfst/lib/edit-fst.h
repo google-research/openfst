@@ -604,7 +604,7 @@ class EditFstImpl : public FstImpl<A> {
 
 template <typename Arc, typename WrappedFstT, typename MutableFstT>
 inline void EditFstImpl<Arc, WrappedFstT, MutableFstT>::DeleteStates() {
-  data_->DeleteStates();
+  data_ = std::make_shared<EditFstData<Arc, WrappedFstT, MutableFstT>>();
   // we are deleting all states, so just forget about pointer to wrapped_
   // and do what default constructor does: set wrapped_ to a new VectorFst
   wrapped_ = std::make_unique<MutableFstT>();
