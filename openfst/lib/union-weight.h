@@ -102,8 +102,11 @@ class UnionWeight {
   // rest_ containing NoWeight() to indicate the union weight NoWeight().
   UnionWeight() : first_(W::NoWeight()) {}
 
-  explicit UnionWeight(W weight) : first_(weight) {
-    if (!weight.Member()) rest_.push_back(W::NoWeight());
+  explicit UnionWeight(W weight) : first_(std::move(weight)) {
+    if (!first_.Member()) {
+      first_ = W::Zero();
+      rest_.push_back(W::NoWeight());
+    }
   }
 
   static const UnionWeight& Zero() {
@@ -186,25 +189,38 @@ class UnionWeight {
 
 template <class W, class O>
 void UnionWeight<W, O>::PushBack(W weight, bool srt) {
+  // Non-member weight: ensure `first_` is a member (matching `NoWeight()`) so
+  // `Size()` and `UnionWeightIterator` visit the `NoWeight` marker in `rest_`.
   if (!weight.Member()) {
+    if (!first_.Member()) {
+      first_ = W::Zero();
+    }
     rest_.push_back(std::move(weight));
-  } else if (!first_.Member()) {
+    return;
+  }
+
+  // Empty set: initialize `first_` with the first member element.
+  if (!first_.Member()) {
     first_ = std::move(weight);
-  } else if (srt) {
+    return;
+  }
+
+  // Sorted mode: append if strictly greater than `Back()`, otherwise merge.
+  if (srt) {
     auto& back = Back();
     if (comp_(back, weight)) {
       rest_.push_back(std::move(weight));
     } else {
       back = merge_(back, std::move(weight));
     }
-  } else {
-    if (comp_(first_, weight)) {
-      rest_.push_back(std::move(weight));
-    } else {
-      rest_.push_back(first_);
-      first_ = std::move(weight);
-    }
+    return;
   }
+
+  // Unsorted mode: ensure `first_` holds the least element.
+  if (!comp_(first_, weight)) {
+    std::swap(first_, weight);
+  }
+  rest_.push_back(std::move(weight));
 }
 
 // Traverses union weight in the forward direction.
@@ -313,9 +329,9 @@ inline std::ostream& UnionWeight<W, O>::Write(std::ostream& ostrm) const {
 
 template <class W, class O>
 inline bool UnionWeight<W, O>::Member() const {
-  if (Size() <= 1) return true;
-  for (UnionWeightIterator<W, O> it(*this); !it.Done(); it.Next()) {
-    if (!it.Value().Member()) return false;
+  if (!first_.Member()) return rest_.empty();
+  for (const auto& w : rest_) {
+    if (!w.Member()) return false;
   }
   return true;
 }

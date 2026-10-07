@@ -1071,6 +1071,56 @@ TEST(StringWeightTest, ReverseIteratorReset) {
   EXPECT_THAT(pass2, ::testing::ElementsAre(30, 20, 10));
 }
 
+TEST(UnionWeightTest, NonMemberConstructionAndOperations) {
+  using RestrictGallic = GallicWeight<int, TropicalWeight, GALLIC_RESTRICT>;
+  using GenGallic = GallicWeight<int, TropicalWeight, GALLIC>;
+  using StringW = StringWeight<int, GallicStringType(GALLIC_RESTRICT)>;
+
+  const GenGallic valid(StringW(1), TropicalWeight(2.0f));
+  ASSERT_TRUE(valid.Member());
+
+  // 1. Constructing a UnionWeight / GallicWeight from a non-member element
+  // (NoWeight or -inf) must produce a non-member weight distinct from Zero().
+  const RestrictGallic non_member_elem(
+      StringW(1), TropicalWeight(FloatLimits<float>::NegInfinity()));
+  ASSERT_FALSE(non_member_elem.Member());
+
+  const GenGallic from_no_weight(RestrictGallic::NoWeight());
+  const GenGallic from_neg_inf(
+      StringW(1), TropicalWeight(FloatLimits<float>::NegInfinity()));
+  GenGallic from_push_back;
+  from_push_back.PushBack(non_member_elem, true);
+
+  // 2. Dividing by a singleton {W::Zero()} pushes a non-member element onto an
+  // initially empty UnionWeight quotient.
+  const GenGallic singleton_zero(StringW::One(), TropicalWeight::Zero());
+  ASSERT_TRUE(singleton_zero.Member());
+  ASSERT_NE(singleton_zero, GenGallic::Zero());
+  const GenGallic div_by_singleton_zero =
+      Divide(GenGallic::One(), singleton_zero, DIVIDE_LEFT);
+
+  for (const GenGallic& bad :
+       {from_no_weight, from_neg_inf, from_push_back, div_by_singleton_zero}) {
+    EXPECT_FALSE(bad.Member());
+    EXPECT_NE(bad, GenGallic::Zero());
+    EXPECT_EQ(WeightToStr(bad), "BadSet");
+    EXPECT_FALSE(Plus(bad, valid).Member());
+    EXPECT_FALSE(Plus(valid, bad).Member());
+    EXPECT_FALSE(Times(bad, valid).Member());
+    EXPECT_FALSE(Times(valid, bad).Member());
+    EXPECT_FALSE(Divide(bad, valid, DIVIDE_LEFT).Member());
+    EXPECT_FALSE(Divide(valid, bad, DIVIDE_LEFT).Member());
+    EXPECT_FALSE(bad.Quantize().Member());
+    EXPECT_FALSE(bad.Reverse().Member());
+
+    std::stringstream strm;
+    bad.Write(strm);
+    GenGallic round_trip = valid;
+    round_trip.Read(strm);
+    EXPECT_FALSE(round_trip.Member());
+  }
+}
+
 }  // namespace
 }  // namespace fst
 
