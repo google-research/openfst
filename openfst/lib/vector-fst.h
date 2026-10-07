@@ -437,7 +437,8 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
   // Properties always true of this FST class
   static constexpr uint64_t kStaticProperties = kExpanded | kMutable;
   // Maximum number of states during read.
-  static constexpr int64_t kMaxStates = 0x10000000000000LL;
+  static constexpr int64_t kMaxStates = std::min<int64_t>(
+      0x10000000000000LL, std::numeric_limits<StateId>::max());
   // Maximum number of states reserved upfront during read.
   static constexpr int64_t kMaxReserveStates = 1 << 20;
 
@@ -485,7 +486,6 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
   auto impl = std::make_unique<VectorFstImpl>();
   FstHeader hdr;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
-  impl->BaseImpl::SetStart(hdr.Start());
   if (hdr.NumStates() != kNoStateId) {
     if (hdr.NumStates() < 0 || hdr.NumStates() > kMaxStates) {
       LOG(ERROR) << "VectorFst::Read: Invalid number of states: "
@@ -494,12 +494,25 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
     }
     impl->ReserveStates(std::min(hdr.NumStates(), kMaxReserveStates));
   }
+  if (hdr.Start() != kNoStateId &&
+      (hdr.Start() < 0 || hdr.Start() >= kMaxStates ||
+       (hdr.NumStates() != kNoStateId && hdr.Start() >= hdr.NumStates()))) {
+    LOG(ERROR) << "VectorFst::Read: Invalid start state " << hdr.Start()
+               << " for " << opts.source;
+    return nullptr;
+  }
+  impl->BaseImpl::SetStart(hdr.Start());
   StateId state = 0;
   StateId max_next_state = std::numeric_limits<StateId>::min();
   StateId min_next_state = std::numeric_limits<StateId>::max();
   for (; hdr.NumStates() == kNoStateId || state < hdr.NumStates(); ++state) {
     Weight weight;
     if (!weight.Read(strm)) break;
+    if (state == kMaxStates) {
+      LOG(ERROR) << "VectorFst::Read: Number of states exceeds maximum "
+                 << kMaxStates << " for " << opts.source;
+      return nullptr;
+    }
     impl->BaseImpl::AddState();
     auto* vstate = impl->GetState(state);
     vstate->SetFinal(weight);

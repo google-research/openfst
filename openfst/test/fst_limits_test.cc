@@ -232,13 +232,16 @@ FstHeader MakeVectorHeader(int64_t nstates, int64_t start) {
 }
 
 TEST(VectorLimitsTest, MaxStatesTest) {
-  FstHeader hdr = MakeVectorHeader(
-      /*nstates=*/StdVectorFstImpl::kMaxStates + 1, /*start=*/0);
-  std::istringstream iss;
-  FstReadOptions opts;
-  opts.header = &hdr;
+  for (const int64_t nstates :
+       {StdVectorFstImpl::kMaxStates + 1, (int64_t{1} << 32) + 1,
+        (int64_t{1} << 54) + 1}) {
+    FstHeader hdr = MakeVectorHeader(nstates, /*start=*/0);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
 
-  EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+  }
 }
 
 TEST(VectorLimitsTest, NegativeNumStatesTest) {
@@ -286,18 +289,23 @@ TEST(VectorLimitsTest, StartStateOutOfRangeTest) {
     EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
   }
   {
-    // Start state < kNoStateId (-1) on a 1-state FST.
+    // Out-of-range start states on a 1-state FST, including (1LL << 32) which
+    // truncates to 0 if narrowed to int32_t StateId before validation.
     std::ostringstream oss;
     StdArc::Weight::One().Write(oss);
     const int64_t narcs = 0;
     oss.write(reinterpret_cast<const char*>(&narcs), sizeof(narcs));
 
-    FstHeader hdr = MakeVectorHeader(/*nstates=*/1, /*start=*/-2);
-    std::istringstream iss(oss.str());
-    FstReadOptions opts;
-    opts.header = &hdr;
+    for (const int64_t nstates : {int64_t{1}, int64_t{kNoStateId}}) {
+      for (const int64_t start : {int64_t{1}, int64_t{-2}, int64_t{1} << 32}) {
+        FstHeader hdr = MakeVectorHeader(nstates, start);
+        std::istringstream iss(oss.str());
+        FstReadOptions opts;
+        opts.header = &hdr;
 
-    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+        EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+      }
+    }
   }
 }
 
