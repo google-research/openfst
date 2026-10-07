@@ -39,7 +39,7 @@ struct WithReturnValue {
   // Avoid reference-to-reference if ArgTuple is a reference.
   using Args = std::remove_reference_t<ArgTuple>;
 
-  Retval retval;
+  Retval retval{};
   const Args& args;
 
   explicit WithReturnValue(const Args& args) : args(args) {}

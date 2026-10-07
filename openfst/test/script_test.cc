@@ -39,6 +39,7 @@
 #include "openfst/lib/weight.h"
 #include "openfst/script/arc-class.h"
 #include "openfst/script/arciterator-class.h"
+#include "openfst/script/arg-packs.h"
 #include "openfst/script/compile-impl.h"
 #include "openfst/script/decode.h"
 #include "openfst/script/encode.h"
@@ -313,6 +314,22 @@ TEST_F(ClassTest, EncodeMapperClassOperations) {
   Encode(&vfstc, &encoder);
   Decode(&vfstc, encoder);
   ASSERT_TRUE(Equal(vfstc_copy, vfstc));
+}
+
+TEST_F(ClassTest, WithReturnValueDefaultInitializesScalarRetval) {
+  const int arg = 42;
+  const script::WithReturnValue<bool, int> bool_args(arg);
+  EXPECT_FALSE(bool_args.retval);
+
+  // When `Apply` fails to find an operation for an unregistered arc type in
+  // non-fatal mode, `Equal` must return `false` rather than an uninitialized
+  // `bool`.
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  const VectorFst<GallicArc<StdArc>> unregistered_fst;
+  const FstClass unregistered_fstc(unregistered_fst);
+  EXPECT_FALSE(Equal(unregistered_fstc, unregistered_fstc));
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
 }
 
 TEST(CompileTest, FstCompilerCompilesTextWithWeights) {
