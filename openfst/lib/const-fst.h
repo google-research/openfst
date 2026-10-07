@@ -110,6 +110,12 @@ class ConstFstImpl : public FstImpl<A> {
     data->ref_count = nullptr;
   }
 
+  // Maximum number of arcs during read.
+  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
+  // Maximum number of states.
+  static constexpr uint64_t kMaxStates = std::min<uint64_t>(
+      0x10000000000000ull, std::numeric_limits<StateId>::max());
+
  private:
   // Used to find narcs_ and nstates_ in Write.
   friend class ConstFst<Arc, Unsigned>;
@@ -134,10 +140,6 @@ class ConstFstImpl : public FstImpl<A> {
   static constexpr int kAlignedFileVersion = 1;
   // Minimum file format version supported.
   static constexpr int kMinFileVersion = 1;
-  // Maximum number of arcs during read.
-  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
-  // Maximum number of states during read.
-  static constexpr uint64_t kMaxStates = 0x10000000000000ull;
 
   std::unique_ptr<MappedFile> states_region_;  // Mapped file for states.
   std::unique_ptr<MappedFile> arcs_region_;    // Mapped file for arcs.
@@ -162,10 +164,21 @@ ConstFstImpl<Arc, Unsigned>::ConstFstImpl(const Fst<Arc>& fst) {
   SetOutputSymbols(fst.OutputSymbols());
   start_ = fst.Start();
   // Counts states and arcs.
+  uint64_t nstates = 0;
   for (StateIterator<Fst<Arc>> siter(fst); !siter.Done(); siter.Next()) {
-    ++nstates_;
+    ++nstates;
     narcs_ += fst.NumArcs(siter.Value());
   }
+  if (nstates > kMaxStates) {
+    FSTERROR() << "ConstFst: Number of states " << nstates
+               << " exceeds maximum " << kMaxStates << " for state ID type";
+    SetProperties(kError, kError);
+    start_ = kNoStateId;
+    nstates_ = 0;
+    narcs_ = 0;
+    return;
+  }
+  nstates_ = nstates;
   states_region_.reset(MappedFile::AllocateType<ConstState>(nstates_));
   arcs_region_.reset(MappedFile::AllocateType<Arc>(narcs_));
   states_ = static_cast<ConstState*>(states_region_->mutable_data());
@@ -201,19 +214,27 @@ ConstFstImpl<Arc, Unsigned>* ConstFstImpl<Arc, Unsigned>::Read(
   auto impl = std::make_unique<ConstFstImpl>();
   FstHeader hdr;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
-  impl->start_ = hdr.Start();
-  impl->nstates_ = hdr.NumStates();
-  if (impl->nstates_ < 0 || impl->nstates_ > kMaxStates) {
-    LOG(ERROR) << "ConstFst::Read: Invalid number of states: " << impl->nstates_
-               << " > " << kMaxStates << " for " << opts.source;
+  if (hdr.NumStates() < 0 || hdr.NumStates() > kMaxStates) {
+    LOG(ERROR) << "ConstFst::Read: Invalid number of states: "
+               << hdr.NumStates() << " > " << kMaxStates << " for "
+               << opts.source;
     return nullptr;
   }
-  impl->narcs_ = hdr.NumArcs();
-  if (impl->narcs_ < 0 || impl->narcs_ > kMaxArcs) {
-    LOG(ERROR) << "ConstFst::Read: Invalid number of arcs: " << impl->narcs_
+  impl->nstates_ = hdr.NumStates();
+  if (hdr.Start() != kNoStateId &&
+      (hdr.Start() < 0 || hdr.Start() >= impl->nstates_)) {
+    LOG(ERROR) << "ConstFst::Read: Invalid start state " << hdr.Start()
+               << " for FST with " << impl->nstates_
+               << " states: " << opts.source;
+    return nullptr;
+  }
+  impl->start_ = hdr.Start();
+  if (hdr.NumArcs() < 0 || hdr.NumArcs() > kMaxArcs) {
+    LOG(ERROR) << "ConstFst::Read: Invalid number of arcs: " << hdr.NumArcs()
                << " > " << kMaxArcs << " for " << opts.source;
     return nullptr;
   }
+  impl->narcs_ = hdr.NumArcs();
   // Ensures compatibility.
   if (hdr.Version() == kAlignedFileVersion) {
     hdr.SetFlags(hdr.GetFlags() | FstHeader::IS_ALIGNED);
@@ -245,13 +266,6 @@ ConstFstImpl<Arc, Unsigned>* ConstFstImpl<Arc, Unsigned>::Read(
   impl->arcs_ = static_cast<Arc*>(impl->arcs_region_->mutable_data());
 
   // Check states.
-  if (impl->start_ != kNoStateId &&
-      !(impl->start_ >= 0 && impl->start_ < impl->nstates_)) {
-    LOG(ERROR) << "ConstFst::Read: Invalid start state " << impl->start_
-               << " for FST with " << impl->nstates_
-               << " states: " << opts.source;
-    return nullptr;
-  }
   for (StateId s = 0; s < impl->nstates_; ++s) {
     if (impl->states_[s].pos > impl->narcs_ ||
         impl->states_[s].narcs > impl->narcs_ - impl->states_[s].pos) {

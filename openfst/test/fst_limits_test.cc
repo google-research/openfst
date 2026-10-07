@@ -158,57 +158,61 @@ TEST(CompactLimitsTest, VariableSizeNonMonotonicOffsetsTest) {
 
 // ConstFst limits tests.
 
-TEST(ConstLimitsTest, MaxStatesTest) {
+using StdConstFstImpl = internal::ConstFstImpl<StdArc, uint32_t>;
+
+FstHeader MakeConstHeader(int64_t nstates, int64_t narcs, int64_t start) {
   FstHeader hdr;
   hdr.SetFstType("const");
   hdr.SetArcType(StdArc::Type());
   hdr.SetVersion(2);
-  // kMaxStates for ConstFst is 1LL << 54.
-  hdr.SetNumStates((1LL << 54) + 1);
-  hdr.SetNumArcs(0);
-  hdr.SetStart(0);
+  hdr.SetNumStates(nstates);
+  hdr.SetNumArcs(narcs);
+  hdr.SetStart(start);
+  return hdr;
+}
 
-  std::istringstream iss;
-  FstReadOptions opts;
-  opts.header = &hdr;
+TEST(ConstLimitsTest, MaxStatesTest) {
+  // Include 1 valid ConstState (20 bytes) in the stream so that a 64-bit count
+  // like (1LL << 32) + 1 that truncates to 1 when narrowed to int32_t StateId
+  // would succeed if not validated before narrowing.
+  const std::string one_state_data(20, '\0');
+  for (const int64_t nstates :
+       {static_cast<int64_t>(StdConstFstImpl::kMaxStates + 1),
+        (int64_t{1} << 32) + 1, (int64_t{1} << 54) + 1, int64_t{-1}}) {
+    FstHeader hdr = MakeConstHeader(nstates, /*narcs=*/0, /*start=*/0);
+    std::istringstream iss(one_state_data);
+    FstReadOptions opts;
+    opts.header = &hdr;
 
-  auto* impl = internal::ConstFstImpl<StdArc, uint32_t>::Read(iss, opts);
-  EXPECT_EQ(impl, nullptr);
+    EXPECT_EQ(StdConstFstImpl::Read(iss, opts), nullptr);
+  }
 }
 
 TEST(ConstLimitsTest, MaxArcsTest) {
-  FstHeader hdr;
-  hdr.SetFstType("const");
-  hdr.SetArcType(StdArc::Type());
-  hdr.SetVersion(2);
-  hdr.SetNumStates(10);
-  // kMaxArcs for ConstFst is 1LL << 54.
-  hdr.SetNumArcs((1LL << 54) + 1);
-  hdr.SetStart(0);
+  for (const int64_t narcs :
+       {static_cast<int64_t>(StdConstFstImpl::kMaxArcs + 1), int64_t{-1}}) {
+    FstHeader hdr = MakeConstHeader(/*nstates=*/10, narcs, /*start=*/0);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
 
-  std::istringstream iss;
-  FstReadOptions opts;
-  opts.header = &hdr;
-
-  auto* impl = internal::ConstFstImpl<StdArc, uint32_t>::Read(iss, opts);
-  EXPECT_EQ(impl, nullptr);
+    EXPECT_EQ(StdConstFstImpl::Read(iss, opts), nullptr);
+  }
 }
 
 TEST(ConstLimitsTest, StartStateOutOfRangeTest) {
-  FstHeader hdr;
-  hdr.SetFstType("const");
-  hdr.SetArcType(StdArc::Type());
-  hdr.SetVersion(2);
-  hdr.SetNumStates(10);
-  hdr.SetNumArcs(0);
-  hdr.SetStart(10);
+  // Include 1 valid ConstState (20 bytes) in the stream so that a 64-bit start
+  // state like (1LL << 32) that truncates to 0 when narrowed to int32_t StateId
+  // would succeed on a 1-state FST if not validated before narrowing.
+  const std::string one_state_data(20, '\0');
+  for (const int64_t start : {int64_t{1}, int64_t{-2}, int64_t{1} << 32}) {
+    FstHeader hdr = MakeConstHeader(/*nstates=*/1, /*narcs=*/0, start);
+    std::istringstream iss(one_state_data);
+    FstReadOptions opts;
+    opts.header = &hdr;
 
-  std::istringstream iss;
-  FstReadOptions opts;
-  opts.header = &hdr;
-
-  auto* impl = internal::ConstFstImpl<StdArc, uint32_t>::Read(iss, opts);
-  EXPECT_EQ(impl, nullptr);
+    EXPECT_EQ(StdConstFstImpl::Read(iss, opts), nullptr);
+  }
 }
 
 // VectorFst limits tests.
