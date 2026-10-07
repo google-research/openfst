@@ -618,8 +618,8 @@ class LabelLookAheadMatcher
   const Fst<Arc>* lfst_;                        // Look-ahead FST.
   std::unique_ptr<Reachable> label_reachable_;  // Label reachability info.
   StateId state_;                               // Matcher state.
-  bool match_set_state_;                        // matcher_.SetState called?
-  mutable bool reach_set_state_;                // reachable_.SetState called?
+  bool match_set_state_ = false;                // matcher_.SetState called?
+  mutable bool reach_set_state_ = false;        // reachable_.SetState called?
   bool error_;                                  // Error encountered?
 };
 
