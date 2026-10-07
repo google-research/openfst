@@ -23,6 +23,7 @@
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -31,6 +32,7 @@
 #include <ctime>
 #include <istream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -285,12 +287,12 @@ class CompactArcStore {
   // Returns a string identifying the type of data storage container.
   static const std::string& Type();
 
- private:
   // Maximum number of arcs during read.
   static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
   // Maximum number of states during read.
   static constexpr uint64_t kMaxStates = 0x10000000000000ull;
 
+ private:
   std::shared_ptr<MappedFile> states_region_;
   std::shared_ptr<MappedFile> compacts_region_;
   // Unowned pointer into states_region_.
@@ -310,14 +312,25 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
     const Fst<Arc>& fst, const ArcCompactor& arc_compactor) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  constexpr uint64_t max_states =
+      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
   start_ = fst.Start();
   // Counts # of states and arcs.
-  StateId nfinals = 0;
+  size_t nfinals = 0;
   for (StateIterator<Fst<Arc>> siter(fst); !siter.Done(); siter.Next()) {
     ++nstates_;
     const auto s = siter.Value();
     narcs_ += fst.NumArcs(s);
     if (fst.Final(s) != Weight::Zero()) ++nfinals;
+  }
+  if (nstates_ > max_states) {
+    FSTERROR() << "CompactArcStore: Number of states " << nstates_
+               << " exceeds maximum " << max_states << " for state ID type";
+    error_ = true;
+    nstates_ = 0;
+    narcs_ = 0;
+    start_ = kNoStateId;
+    return;
   }
   if (arc_compactor.Size() == -1) {
     states_region_ = absl::WrapUnique(MappedFile::Allocate(
@@ -371,7 +384,10 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
     const Iterator begin, const Iterator end,
     const ArcCompactor& arc_compactor) {
   using Arc = typename ArcCompactor::Arc;
+  using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  constexpr uint64_t max_states =
+      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
   if (arc_compactor.Size() != -1) {
     ncompacts_ = std::distance(begin, end);
     if (arc_compactor.Size() == 1) {
@@ -392,8 +408,16 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
       return;
     }
     if (ncompacts_ == 0) return;
-    start_ = 0;
     nstates_ = ncompacts_ / arc_compactor.Size();
+    if (nstates_ > max_states) {
+      FSTERROR() << "CompactArcStore: Number of states " << nstates_
+                 << " exceeds maximum " << max_states << " for state ID type";
+      error_ = true;
+      nstates_ = 0;
+      ncompacts_ = 0;
+      return;
+    }
+    start_ = 0;
     compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
         sizeof(compacts_[0]) * ncompacts_, alignof(decltype(compacts_[0]))));
     compacts_ = static_cast<Element*>(compacts_region_->mutable_data());
@@ -420,6 +444,15 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
         ++nstates_;
         if (arc.weight != Weight::Zero()) ++ncompacts_;
       }
+    }
+    if (nstates_ > max_states) {
+      FSTERROR() << "CompactArcStore: Number of states " << nstates_
+                 << " exceeds maximum " << max_states << " for state ID type";
+      error_ = true;
+      nstates_ = 0;
+      ncompacts_ = 0;
+      narcs_ = 0;
+      return;
     }
     start_ = 0;
     compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
@@ -453,28 +486,31 @@ template <class ArcCompactor>
 CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
     std::istream& strm, const FstReadOptions& opts, const FstHeader& hdr,
     const ArcCompactor& arc_compactor) {
+  using StateId = typename ArcCompactor::StateId;
+  constexpr uint64_t max_states =
+      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
   auto data = std::make_unique<CompactArcStore>();
-  data->start_ = hdr.Start();
+  if (hdr.NumStates() < 0 || hdr.NumStates() > max_states) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid number of states: "
+               << hdr.NumStates() << " > " << max_states << " for "
+               << opts.source;
+    return nullptr;
+  }
   data->nstates_ = hdr.NumStates();
-  if (data->start_ != kNoStateId &&
-      !(data->start_ >= 0 && data->start_ < data->nstates_)) {
-    LOG(ERROR) << "CompactArcStore::Read: Invalid start state " << data->start_
+  if (hdr.Start() != kNoStateId &&
+      (hdr.Start() < 0 || hdr.Start() >= hdr.NumStates())) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid start state " << hdr.Start()
                << " for FST with " << data->nstates_
                << " states: " << opts.source;
     return nullptr;
   }
-  if (data->nstates_ < 0 || data->nstates_ > kMaxStates) {
-    LOG(ERROR) << "CompactArcStore::Read: Invalid number of states: "
-               << data->nstates_ << " > " << kMaxStates << " for "
-               << opts.source;
+  data->start_ = hdr.Start();
+  if (hdr.NumArcs() < 0 || hdr.NumArcs() > kMaxArcs) {
+    LOG(ERROR) << "CompactArcStore::Read: Invalid number of arcs: "
+               << hdr.NumArcs() << " > " << kMaxArcs << " for " << opts.source;
     return nullptr;
   }
   data->narcs_ = hdr.NumArcs();
-  if (data->narcs_ < 0 || data->narcs_ > kMaxArcs) {
-    LOG(ERROR) << "CompactArcStore::Read: Invalid number of arcs: "
-               << data->narcs_ << " > " << kMaxArcs << " for " << opts.source;
-    return nullptr;
-  }
   if (arc_compactor.Size() == -1) {
     if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
       LOG(ERROR) << "CompactArcStore::Read: Alignment failed: " << opts.source;

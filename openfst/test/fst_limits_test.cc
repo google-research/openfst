@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -36,51 +37,52 @@ namespace {
 
 // CompactFst limits tests.
 
+using StdStringStore = CompactArcStore<StdArc::Label, uint32_t>;
+
 TEST(CompactLimitsTest, MaxStatesTest) {
-  FstHeader hdr;
-  // kMaxStates for CompactArcStore is 1LL << 54.
-  hdr.SetNumStates((1LL << 54) + 1);
-  hdr.SetNumArcs(0);
-  hdr.SetStart(0);
-
-  std::istringstream iss;
-  FstReadOptions opts;
   StringCompactor<StdArc> compactor;
+  FstReadOptions opts;
+  for (const int64_t nstates :
+       {static_cast<int64_t>(StdStringStore::kMaxStates + 1),
+        static_cast<int64_t>(std::numeric_limits<StdArc::StateId>::max()) + 1,
+        (int64_t{1} << 32) + 1, int64_t{-1}}) {
+    FstHeader hdr;
+    hdr.SetNumStates(nstates);
+    hdr.SetNumArcs(0);
+    hdr.SetStart(0);
 
-  auto* store =
-      CompactArcStore<StdArc::Label, uint32_t>::Read(iss, opts, hdr, compactor);
-  EXPECT_EQ(store, nullptr);
+    std::istringstream iss;
+    EXPECT_EQ(StdStringStore::Read(iss, opts, hdr, compactor), nullptr);
+  }
 }
 
 TEST(CompactLimitsTest, MaxArcsTest) {
-  FstHeader hdr;
-  hdr.SetNumStates(10);
-  // kMaxArcs for CompactArcStore is 1LL << 54.
-  hdr.SetNumArcs((1LL << 54) + 1);
-  hdr.SetStart(0);
-
-  std::istringstream iss;
-  FstReadOptions opts;
   StringCompactor<StdArc> compactor;
+  FstReadOptions opts;
+  for (const int64_t narcs :
+       {static_cast<int64_t>(StdStringStore::kMaxArcs + 1), int64_t{-1}}) {
+    FstHeader hdr;
+    hdr.SetNumStates(10);
+    hdr.SetNumArcs(narcs);
+    hdr.SetStart(0);
 
-  auto* store =
-      CompactArcStore<StdArc::Label, uint32_t>::Read(iss, opts, hdr, compactor);
-  EXPECT_EQ(store, nullptr);
+    std::istringstream iss;
+    EXPECT_EQ(StdStringStore::Read(iss, opts, hdr, compactor), nullptr);
+  }
 }
 
 TEST(CompactLimitsTest, StartStateOutOfRangeTest) {
-  FstHeader hdr;
-  hdr.SetNumStates(10);
-  hdr.SetNumArcs(0);
-  hdr.SetStart(10);
-
-  std::istringstream iss;
-  FstReadOptions opts;
   StringCompactor<StdArc> compactor;
+  FstReadOptions opts;
+  for (const int64_t start : {int64_t{10}, int64_t{-2}}) {
+    FstHeader hdr;
+    hdr.SetNumStates(10);
+    hdr.SetNumArcs(0);
+    hdr.SetStart(start);
 
-  auto* store =
-      CompactArcStore<StdArc::Label, uint32_t>::Read(iss, opts, hdr, compactor);
-  EXPECT_EQ(store, nullptr);
+    std::istringstream iss;
+    EXPECT_EQ(StdStringStore::Read(iss, opts, hdr, compactor), nullptr);
+  }
 }
 
 // Variable-size compactor tests: the number of compacts is read from the
@@ -126,8 +128,7 @@ TEST(CompactLimitsTest, VariableSizeWellFormedTest) {
 }
 
 TEST(CompactLimitsTest, VariableSizeMaxCompactsTest) {
-  // kMaxArcs for CompactArcStore is 1LL << 54.
-  EXPECT_EQ(ReadVarStore(SerializeVarStore(0, (1ULL << 54) + 1, 0),
+  EXPECT_EQ(ReadVarStore(SerializeVarStore(0, VarStore::kMaxArcs + 1, 0),
                          /*narcs=*/0),
             nullptr);
   // Would wrap around `ncompacts * sizeof(Element)` without the bound check.
