@@ -15,7 +15,7 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Unit test for FST limits (CompactFst and ConstFst).
+// Unit test for FST limits (CompactFst, ConstFst, and VectorFst).
 
 #include <cstddef>
 #include <cstdint>
@@ -29,6 +29,7 @@
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/vector-fst.h"
 
 namespace fst {
 namespace {
@@ -208,6 +209,91 @@ TEST(ConstLimitsTest, StartStateOutOfRangeTest) {
 
   auto* impl = internal::ConstFstImpl<StdArc, uint32_t>::Read(iss, opts);
   EXPECT_EQ(impl, nullptr);
+}
+
+// VectorFst limits tests.
+
+using StdVectorFstImpl = internal::VectorFstImpl<VectorState<StdArc>>;
+
+FstHeader MakeVectorHeader(int64_t nstates, int64_t start) {
+  FstHeader hdr;
+  hdr.SetFstType("vector");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetNumStates(nstates);
+  hdr.SetNumArcs(0);
+  hdr.SetStart(start);
+  return hdr;
+}
+
+TEST(VectorLimitsTest, MaxStatesTest) {
+  FstHeader hdr = MakeVectorHeader(
+      /*nstates=*/StdVectorFstImpl::kMaxStates + 1, /*start=*/0);
+  std::istringstream iss;
+  FstReadOptions opts;
+  opts.header = &hdr;
+
+  EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+}
+
+TEST(VectorLimitsTest, NegativeNumStatesTest) {
+  // Negative NumStates other than kNoStateId (-1) must be rejected before
+  // ReserveStates converts it to size_t.
+  FstHeader hdr = MakeVectorHeader(/*nstates=*/-2, /*start=*/kNoStateId);
+  std::istringstream iss;
+  FstReadOptions opts;
+  opts.header = &hdr;
+
+  EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+}
+
+TEST(VectorLimitsTest, LargeNumStatesTruncatedStreamTest) {
+  // NumStates within [kMaxReserveStates + 1, kMaxStates] on a truncated stream
+  // must cap upfront ReserveStates and fail cleanly with unexpected EOF rather
+  // than OOMing.
+  for (const int64_t nstates : {StdVectorFstImpl::kMaxReserveStates + 1,
+                                StdVectorFstImpl::kMaxStates}) {
+    FstHeader hdr = MakeVectorHeader(nstates, /*start=*/0);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
+
+    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+  }
+}
+
+TEST(VectorLimitsTest, StartStateOutOfRangeTest) {
+  {
+    FstHeader hdr = MakeVectorHeader(/*nstates=*/0, /*start=*/0);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
+
+    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+  }
+  {
+    // Start state < kNoStateId (-1) on an empty FST.
+    FstHeader hdr = MakeVectorHeader(/*nstates=*/0, /*start=*/-2);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
+
+    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+  }
+  {
+    // Start state < kNoStateId (-1) on a 1-state FST.
+    std::ostringstream oss;
+    StdArc::Weight::One().Write(oss);
+    const int64_t narcs = 0;
+    oss.write(reinterpret_cast<const char*>(&narcs), sizeof(narcs));
+
+    FstHeader hdr = MakeVectorHeader(/*nstates=*/1, /*start=*/-2);
+    std::istringstream iss(oss.str());
+    FstReadOptions opts;
+    opts.header = &hdr;
+
+    EXPECT_EQ(StdVectorFstImpl::Read(iss, opts), nullptr);
+  }
 }
 
 }  // namespace

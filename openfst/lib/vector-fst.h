@@ -436,6 +436,10 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
 
   // Properties always true of this FST class
   static constexpr uint64_t kStaticProperties = kExpanded | kMutable;
+  // Maximum number of states during read.
+  static constexpr int64_t kMaxStates = 0x10000000000000LL;
+  // Maximum number of states reserved upfront during read.
+  static constexpr int64_t kMaxReserveStates = 1 << 20;
 
  private:
   void UpdatePropertiesAfterAddArc(StateId state) {
@@ -482,7 +486,14 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
   FstHeader hdr;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
   impl->BaseImpl::SetStart(hdr.Start());
-  if (hdr.NumStates() != kNoStateId) impl->ReserveStates(hdr.NumStates());
+  if (hdr.NumStates() != kNoStateId) {
+    if (hdr.NumStates() < 0 || hdr.NumStates() > kMaxStates) {
+      LOG(ERROR) << "VectorFst::Read: Invalid number of states: "
+                 << hdr.NumStates() << " for " << opts.source;
+      return nullptr;
+    }
+    impl->ReserveStates(std::min(hdr.NumStates(), kMaxReserveStates));
+  }
   StateId state = 0;
   StateId max_next_state = std::numeric_limits<StateId>::min();
   StateId min_next_state = std::numeric_limits<StateId>::max();
@@ -534,7 +545,8 @@ VectorFstImpl<S>* VectorFstImpl<S>::Read(std::istream& strm,
     return nullptr;
   }
   // Sanity check for the start state.
-  if (impl->Start() != kNoStateId && impl->Start() >= state) {
+  if (impl->Start() != kNoStateId &&
+      (impl->Start() < 0 || impl->Start() >= state)) {
     LOG(ERROR) << "VectorFst::Read: start state " << impl->Start()
                << " out of range [0, " << state << ")";
     return nullptr;
