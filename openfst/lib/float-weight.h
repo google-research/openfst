@@ -503,7 +503,7 @@ inline double LogNegExp(double x) {
 // independent of the number of addends. Assumes b >= a;
 // c is the compensation.
 inline double KahanLogSum(double a, double b, double* c) {
-  DCHECK_GE(b, a);
+  DCHECK(!(b < a));  // NB: NaN values are allowed.
   double y = -LogPosExp(b - a) - *c;
   double t = a + y;
   *c = (t - a) - y;
@@ -515,7 +515,7 @@ inline double KahanLogSum(double a, double b, double* c) {
 // independent of the number of addends. Assumes b > a;
 // c is the compensation.
 inline double KahanLogDiff(double a, double b, double* c) {
-  DCHECK_GT(b, a);
+  DCHECK(!(b <= a));  // NB: NaN values are allowed.
   double y = -LogNegExp(b - a) - *c;
   double t = a + y;
   *c = (t - a) - y;
