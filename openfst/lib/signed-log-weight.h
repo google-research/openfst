@@ -330,7 +330,9 @@ using SignedLog64Weight = SignedLogWeightTpl<double>;
 
 template <class W1, class W2>
 bool SignedLogConvertCheck(W1 weight) {
-  if (weight.Value1().Value() < 0.0) {
+  // A negatively signed zero, e.g. as produced by Minus(Zero(), Zero()), is
+  // equal to Zero() and is therefore convertible.
+  if (weight.Value1().Value() < 0.0 && weight.Value2() != W1::W2::Zero()) {
     FSTERROR() << "WeightConvert: Can't convert weight " << weight << " from "
                << W1::Type() << " to " << W2::Type();
     return false;

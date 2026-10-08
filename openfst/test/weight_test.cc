@@ -907,6 +907,17 @@ TEST(SignedLogWeightTest, MixedApproxEqual) {
   EXPECT_FALSE(ApproxEqual(slw, other));
 }
 
+TEST(SignedLogWeightTest, ConvertNegativelySignedZero) {
+  const SignedLogWeight negative_zero =
+      Minus(SignedLogWeight::Zero(), SignedLogWeight::Zero());
+  ASSERT_FALSE(negative_zero.IsPositive());
+  ASSERT_EQ(negative_zero, SignedLogWeight::Zero());
+  EXPECT_EQ((WeightConvert<SignedLogWeight, LogWeight>()(negative_zero)),
+            LogWeight::Zero());
+  EXPECT_EQ((WeightConvert<SignedLogWeight, TropicalWeight>()(negative_zero)),
+            TropicalWeight::Zero());
+}
+
 TEST(FloatWeightTest, NaturalLessSpecializations) {
   NaturalLess<TropicalWeight> trop_less;
   NaturalLess<MinMaxWeight> mm_less;
