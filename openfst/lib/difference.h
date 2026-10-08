@@ -112,7 +112,7 @@ class DifferenceFst : public ComposeFst<A> {
     using RM = RhoMatcher<Matcher<Fst<A>>>;
     ComplementFst<Arc> cfst(fst2);
     ComposeFstOptions<A, RM> copts(
-        CacheOptions(), new RM(fst1, MATCH_NONE),
+        opts, new RM(fst1, MATCH_NONE),
         new RM(cfst, MATCH_INPUT, ComplementFst<Arc>::kRhoLabel));
     return CreateBase1(fst1, cfst, copts);
   }
@@ -150,8 +150,6 @@ class ArcIterator<DifferenceFst<Arc>> : public ArcIterator<ComposeFst<Arc>> {
   ArcIterator(const DifferenceFst<Arc>& fst, StateId s)
       : ArcIterator<ComposeFst<Arc>>(fst, s) {}
 };
-
-using DifferenceOptions = ComposeOptions;
 
 // Useful alias when using StdArc.
 using StdDifferenceFst = DifferenceFst<StdArc>;

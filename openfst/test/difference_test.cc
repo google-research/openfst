@@ -19,12 +19,14 @@
 
 #include "openfst/lib/difference.h"
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
+#include "openfst/lib/cache.h"
 #include "openfst/lib/compose.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/vector-fst.h"
@@ -88,6 +90,32 @@ TEST_F(DifferenceTest, DifferenceFst) {
     ASSERT_TRUE(Verify(cfst));
     ASSERT_TRUE(Equal(*ifst3_, cfst));
   }
+}
+
+class TestableDifferenceFst : public DifferenceFst<Arc> {
+ public:
+  using DifferenceFst<Arc>::DifferenceFst;
+
+  bool GetCacheGc() const { return ComposeFst<Arc>::GetImpl()->GetCacheGc(); }
+  size_t GetCacheLimit() const {
+    return ComposeFst<Arc>::GetImpl()->GetCacheLimit();
+  }
+};
+
+TEST_F(DifferenceTest, DifferenceFstCacheOptions) {
+  TestableDifferenceFst dfst_gc(*ifst1_, *ifst2_,
+                                CacheOptions(/*gc=*/true, /*gc_limit=*/0));
+  EXPECT_TRUE(dfst_gc.GetCacheGc());
+  EXPECT_EQ(dfst_gc.GetCacheLimit(), 0);
+  ASSERT_TRUE(Verify(dfst_gc));
+  ASSERT_TRUE(Equal(*ifst3_, dfst_gc));
+
+  TestableDifferenceFst dfst_nogc(*ifst1_, *ifst2_,
+                                  CacheOptions(/*gc=*/false, /*gc_limit=*/123));
+  EXPECT_FALSE(dfst_nogc.GetCacheGc());
+  EXPECT_EQ(dfst_nogc.GetCacheLimit(), 123);
+  ASSERT_TRUE(Verify(dfst_nogc));
+  ASSERT_TRUE(Equal(*ifst3_, dfst_nogc));
 }
 
 TEST_F(DifferenceTest, FstClassDifference) {
