@@ -365,5 +365,21 @@ TEST_F(ShortestPathTest, FirstPath_Early) {
       << "State 4 should not have been visited";
 }
 
+TEST(SingleShortestPathTest, EmptyFstClearsDistance) {
+  using Arc = StdArc;
+  using StateId = Arc::StateId;
+  using Weight = Arc::Weight;
+  const StdVectorFst empty;
+  std::vector<Weight> distance = {Weight(1.0), Weight(2.0)};
+  AnyArcFilter<Arc> arc_filter;
+  AutoQueue<StateId> state_queue(empty, &distance, arc_filter);
+  const ShortestPathOptions<Arc, AutoQueue<StateId>, AnyArcFilter<Arc>> sopts(
+      &state_queue, arc_filter);
+  StdVectorFst ofst;
+  ShortestPath(empty, &ofst, &distance, sopts);
+  EXPECT_TRUE(distance.empty());
+  EXPECT_EQ(ofst.Start(), kNoStateId);
+}
+
 }  // namespace
 }  // namespace fst

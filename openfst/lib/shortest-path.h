@@ -193,6 +193,7 @@ bool SingleShortestPath(
   static_assert((Weight::Properties() & kRightSemiring) == kRightSemiring,
                 "Weight must be right distributive.");
   parent->clear();
+  distance->clear();
   *f_parent = kNoStateId;
   if (ifst.Start() == kNoStateId) return true;
   std::vector<bool> enqueued;
@@ -200,7 +201,6 @@ bool SingleShortestPath(
   const auto source = (opts.source == kNoStateId) ? ifst.Start() : opts.source;
   bool final_seen = false;
   auto f_distance = Weight::Zero();
-  distance->clear();
   state_queue->Clear();
   if (distance->size() < source) {
     distance->resize(source, Weight::Zero());
