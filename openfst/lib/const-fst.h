@@ -111,11 +111,9 @@ class ConstFstImpl : public FstImpl<A> {
   }
 
   // Maximum number of arcs.
-  static constexpr uint64_t kMaxArcs = std::min<uint64_t>(
-      0x10000000000000ull, std::numeric_limits<Unsigned>::max());
+  static constexpr uint64_t kMaxArcs = MaxFstCount<Unsigned>();
   // Maximum number of states during read.
-  static constexpr uint64_t kMaxStates = std::min<uint64_t>(
-      0x10000000000000ull, std::numeric_limits<StateId>::max());
+  static constexpr uint64_t kMaxStates = MaxFstCount<StateId>();
 
  private:
   // Used to find narcs_ and nstates_ in Write.

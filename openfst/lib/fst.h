@@ -23,6 +23,7 @@
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -30,6 +31,7 @@
 #include <ios>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -199,6 +201,21 @@ enum MatchType {
 
 inline constexpr int kNoLabel = -1;    // Not a valid label.
 inline constexpr int kNoStateId = -1;  // Not a valid state ID.
+
+namespace internal {
+
+// Upper bound on the number of states, arcs, or compacts accepted when
+// constructing or reading an FST.
+inline constexpr uint64_t kMaxFstCount = uint64_t{1} << 52;
+
+// Returns the maximum count representable in integer type T, capped at
+// kMaxFstCount.
+template <class T>
+constexpr uint64_t MaxFstCount() {
+  return std::min<uint64_t>(kMaxFstCount, std::numeric_limits<T>::max());
+}
+
+}  // namespace internal
 
 // A generic FST, templated on the arc definition, with common-demoninator
 // methods (use StateIterator and ArcIterator to iterate over its states and

@@ -288,10 +288,10 @@ class CompactArcStore {
   static const std::string& Type();
 
   // Maximum number of arcs during read.
-  static constexpr uint64_t kMaxArcs = std::min<uint64_t>(
-      0x10000000000000ull, std::numeric_limits<Unsigned>::max());
-  // Maximum number of states during read.
-  static constexpr uint64_t kMaxStates = 0x10000000000000ull;
+  static constexpr uint64_t kMaxArcs = internal::MaxFstCount<Unsigned>();
+  // Maximum number of states during read (further capped by the arc
+  // compactor's StateId).
+  static constexpr uint64_t kMaxStates = internal::kMaxFstCount;
 
  private:
   std::shared_ptr<MappedFile> states_region_;
@@ -313,8 +313,7 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
     const Fst<Arc>& fst, const ArcCompactor& arc_compactor) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
-  constexpr uint64_t max_states =
-      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
+  constexpr uint64_t max_states = internal::MaxFstCount<StateId>();
   start_ = fst.Start();
   // Counts # of states and arcs.
   size_t nfinals = 0;
@@ -397,8 +396,7 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
   using Arc = typename ArcCompactor::Arc;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
-  constexpr uint64_t max_states =
-      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
+  constexpr uint64_t max_states = internal::MaxFstCount<StateId>();
   if (arc_compactor.Size() != -1) {
     ncompacts_ = std::distance(begin, end);
     if (arc_compactor.Size() == 1) {
@@ -515,8 +513,7 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
     std::istream& strm, const FstReadOptions& opts, const FstHeader& hdr,
     const ArcCompactor& arc_compactor) {
   using StateId = typename ArcCompactor::StateId;
-  constexpr uint64_t max_states =
-      std::min<uint64_t>(kMaxStates, std::numeric_limits<StateId>::max());
+  constexpr uint64_t max_states = internal::MaxFstCount<StateId>();
   auto data = std::make_unique<CompactArcStore>();
   if (hdr.NumStates() < 0 || hdr.NumStates() > max_states) {
     LOG(ERROR) << "CompactArcStore::Read: Invalid number of states: "

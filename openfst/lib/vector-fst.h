@@ -437,8 +437,7 @@ class VectorFstImpl : public VectorFstBaseImpl<S> {
   // Properties always true of this FST class
   static constexpr uint64_t kStaticProperties = kExpanded | kMutable;
   // Maximum number of states during read.
-  static constexpr int64_t kMaxStates = std::min<int64_t>(
-      0x10000000000000LL, std::numeric_limits<StateId>::max());
+  static constexpr int64_t kMaxStates = MaxFstCount<StateId>();
   // Maximum number of states reserved upfront during read.
   static constexpr int64_t kMaxReserveStates = 1 << 20;
 
