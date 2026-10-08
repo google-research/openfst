@@ -93,6 +93,8 @@ void Concat(MutableFst<Arc>* fst1, const Fst<Arc>& fst2) {
   }
   if (start2 != kNoStateId) {
     fst1->SetProperties(ConcatProperties(props1, props2), kFstProperties);
+  } else if (props2 & kError) {
+    fst1->SetProperties(kError, kError);
   }
 }
 
@@ -156,6 +158,8 @@ void Concat(const Fst<Arc>& fst1, MutableFst<Arc>* fst2) {
   if (start1 != kNoStateId) {
     fst2->SetStart(start1 + numstates2);
     fst2->SetProperties(ConcatProperties(props1, props2), kFstProperties);
+  } else if (props1 & kError) {
+    fst2->SetProperties(kError, kError);
   } else {
     fst2->SetStart(fst2->AddState());
   }
