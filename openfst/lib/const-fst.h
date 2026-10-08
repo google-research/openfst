@@ -110,9 +110,10 @@ class ConstFstImpl : public FstImpl<A> {
     data->ref_count = nullptr;
   }
 
-  // Maximum number of arcs during read.
-  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
-  // Maximum number of states.
+  // Maximum number of arcs.
+  static constexpr uint64_t kMaxArcs = std::min<uint64_t>(
+      0x10000000000000ull, std::numeric_limits<Unsigned>::max());
+  // Maximum number of states during read.
   static constexpr uint64_t kMaxStates = std::min<uint64_t>(
       0x10000000000000ull, std::numeric_limits<StateId>::max());
 
@@ -172,6 +173,15 @@ ConstFstImpl<Arc, Unsigned>::ConstFstImpl(const Fst<Arc>& fst) {
   if (nstates > kMaxStates) {
     FSTERROR() << "ConstFst: Number of states " << nstates
                << " exceeds maximum " << kMaxStates << " for state ID type";
+    SetProperties(kError, kError);
+    start_ = kNoStateId;
+    nstates_ = 0;
+    narcs_ = 0;
+    return;
+  }
+  if (narcs_ > kMaxArcs) {
+    FSTERROR() << "ConstFst: Number of arcs " << narcs_ << " exceeds maximum "
+               << kMaxArcs << " for index type";
     SetProperties(kError, kError);
     start_ = kNoStateId;
     nstates_ = 0;

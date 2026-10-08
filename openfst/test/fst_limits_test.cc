@@ -23,13 +23,17 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
 #include "absl/types/span.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compact-fst.h"
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/properties.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 
 namespace fst {
@@ -38,6 +42,8 @@ namespace {
 // CompactFst limits tests.
 
 using StdStringStore = CompactArcStore<StdArc::Label, uint32_t>;
+using StdStringStore64 = CompactArcStore<StdArc::Label, uint64_t>;
+using StdStringStore8 = CompactArcStore<StdArc::Label, uint8_t>;
 
 TEST(CompactLimitsTest, MaxStatesTest) {
   StringCompactor<StdArc> compactor;
@@ -69,6 +75,15 @@ TEST(CompactLimitsTest, MaxArcsTest) {
     std::istringstream iss;
     EXPECT_EQ(StdStringStore::Read(iss, opts, hdr, compactor), nullptr);
   }
+  {
+    FstHeader hdr;
+    hdr.SetNumStates(10);
+    hdr.SetNumArcs(StdStringStore64::kMaxArcs + 1);
+    hdr.SetStart(0);
+
+    std::istringstream iss;
+    EXPECT_EQ(StdStringStore64::Read(iss, opts, hdr, compactor), nullptr);
+  }
 }
 
 TEST(CompactLimitsTest, StartStateOutOfRangeTest) {
@@ -90,6 +105,7 @@ TEST(CompactLimitsTest, StartStateOutOfRangeTest) {
 
 using VarCompactor = UnweightedCompactor<StdArc>;
 using VarStore = CompactArcStore<VarCompactor::Element, uint64_t>;
+using VarStore8 = CompactArcStore<VarCompactor::Element, uint8_t>;
 
 // Serializes an FST with the given state offsets followed by `ncompacts`
 // zero-initialized elements.
@@ -157,9 +173,70 @@ TEST(CompactLimitsTest, VariableSizeNonMonotonicOffsetsTest) {
       nullptr);
 }
 
+TEST(CompactLimitsTest, SmallUnsignedFixedSizeOverflowTest) {
+  // For Unsigned = uint8_t, kMaxArcs is 255. A StringCompactor has Size() == 1,
+  // so 256 states require 256 compacts (> kMaxArcs).
+  VectorFst<StdArc> vfst;
+  for (int i = 0; i < 256; ++i) vfst.AddState();
+  vfst.SetStart(0);
+  for (int i = 0; i < 255; ++i) {
+    vfst.AddArc(i, StdArc(1, 1, StdArc::Weight::One(), i + 1));
+  }
+  vfst.SetFinal(255, StdArc::Weight::One());
+
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  CompactStringFst<StdArc, uint8_t> cfst_from_fst(vfst);
+  EXPECT_EQ(cfst_from_fst.Properties(kError, false), kError);
+
+  std::vector<StdArc::Label> labels(StdStringStore8::kMaxArcs + 1, 1);
+  auto cfst_from_iters =
+      MakeCompactStringFst<StdArc, uint8_t>(labels.begin(), labels.end());
+  EXPECT_EQ(cfst_from_iters.Properties(kError, false), kError);
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
+
+  // Read with nstates = 256 (ncompacts = 256 > kMaxArcs = 255) must fail.
+  FstHeader hdr;
+  hdr.SetNumStates(StdStringStore8::kMaxArcs + 1);
+  hdr.SetNumArcs(StdStringStore8::kMaxArcs);
+  hdr.SetStart(0);
+  std::string data((StdStringStore8::kMaxArcs + 1) * sizeof(StdArc::Label),
+                   '\0');
+  std::istringstream iss(data);
+  FstReadOptions opts;
+  StringCompactor<StdArc> compactor;
+  EXPECT_EQ(StdStringStore8::Read(iss, opts, hdr, compactor), nullptr);
+}
+
+TEST(CompactLimitsTest, SmallUnsignedVariableSizeOverflowTest) {
+  // For Unsigned = uint8_t, kMaxArcs is 255. With UnweightedAcceptorCompactor
+  // (Size() == -1), 1 state with 255 arcs plus its final transition requires
+  // 256 compacts, overflowing uint8_t state offset states_[1].
+  VectorFst<StdArc> vfst;
+  vfst.AddState();
+  vfst.SetStart(0);
+  vfst.SetFinal(0, StdArc::Weight::One());
+  for (int i = 0; i < 255; ++i) {
+    vfst.AddArc(0, StdArc(i + 1, i + 1, StdArc::Weight::One(), 0));
+  }
+
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  CompactAcceptorFst<StdArc, uint8_t> cfst_from_fst(vfst);
+  EXPECT_EQ(cfst_from_fst.Properties(kError, false), kError);
+
+  std::vector<VarCompactor::Element> elements(
+      VarStore8::kMaxArcs + 1, {{kNoLabel, kNoLabel}, kNoStateId});
+  VarStore8 store_from_iters(elements.begin(), elements.end(), VarCompactor());
+  EXPECT_TRUE(store_from_iters.Error());
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
+}
+
 // ConstFst limits tests.
 
 using StdConstFstImpl = internal::ConstFstImpl<StdArc, uint32_t>;
+using StdConstFstImpl64 = internal::ConstFstImpl<StdArc, uint64_t>;
+using StdConstFstImpl8 = internal::ConstFstImpl<StdArc, uint8_t>;
 
 FstHeader MakeConstHeader(int64_t nstates, int64_t narcs, int64_t start) {
   FstHeader hdr;
@@ -199,6 +276,47 @@ TEST(ConstLimitsTest, MaxArcsTest) {
 
     EXPECT_EQ(StdConstFstImpl::Read(iss, opts), nullptr);
   }
+  {
+    FstHeader hdr = MakeConstHeader(
+        /*nstates=*/10, /*narcs=*/StdConstFstImpl64::kMaxArcs + 1, /*start=*/0);
+    std::istringstream iss;
+    FstReadOptions opts;
+    opts.header = &hdr;
+
+    EXPECT_EQ(StdConstFstImpl64::Read(iss, opts), nullptr);
+  }
+}
+
+TEST(ConstLimitsTest, SmallUnsignedOverflowTest) {
+  // For Unsigned = uint8_t, kMaxArcs is 255. Constructing or reading a
+  // ConstFst<StdArc, uint8_t> with 256 arcs must fail rather than wrapping
+  // ConstState::pos / ConstState::narcs.
+  VectorFst<StdArc> vfst;
+  vfst.AddState();
+  vfst.SetStart(0);
+  vfst.SetFinal(0, StdArc::Weight::One());
+  for (int i = 0; i < 256; ++i) {
+    vfst.AddArc(0, StdArc(i + 1, i + 1, StdArc::Weight::One(), 0));
+  }
+
+  const bool old_fatal = absl::GetFlag(FLAGS_fst_error_fatal);
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  ConstFst<StdArc, uint8_t> cfst(vfst);
+  EXPECT_EQ(cfst.Properties(kError, false), kError);
+  absl::SetFlag(&FLAGS_fst_error_fatal, old_fatal);
+
+  FstHeader hdr;
+  hdr.SetFstType("const8");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(2);
+  hdr.SetNumStates(1);
+  hdr.SetNumArcs(StdConstFstImpl8::kMaxArcs + 1);
+  hdr.SetStart(0);
+
+  std::istringstream iss;
+  FstReadOptions opts;
+  opts.header = &hdr;
+  EXPECT_EQ(StdConstFstImpl8::Read(iss, opts), nullptr);
 }
 
 TEST(ConstLimitsTest, StartStateOutOfRangeTest) {

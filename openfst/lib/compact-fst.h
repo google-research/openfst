@@ -288,7 +288,8 @@ class CompactArcStore {
   static const std::string& Type();
 
   // Maximum number of arcs during read.
-  static constexpr uint64_t kMaxArcs = 0x10000000000000ull;
+  static constexpr uint64_t kMaxArcs = std::min<uint64_t>(
+      0x10000000000000ull, std::numeric_limits<Unsigned>::max());
   // Maximum number of states during read.
   static constexpr uint64_t kMaxStates = 0x10000000000000ull;
 
@@ -333,26 +334,36 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
     return;
   }
   if (arc_compactor.Size() == -1) {
-    states_region_ = absl::WrapUnique(MappedFile::Allocate(
-        sizeof(states_[0]) * (nstates_ + 1), alignof(decltype(states_[0]))));
-    states_ = static_cast<Unsigned*>(states_region_->mutable_data());
     ncompacts_ = narcs_ + nfinals;
-    compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
-        sizeof(compacts_[0]) * ncompacts_, alignof(decltype(compacts_[0]))));
-    compacts_ = static_cast<Element*>(compacts_region_->mutable_data());
-    states_[nstates_] = ncompacts_;
   } else {
-    states_ = nullptr;
     ncompacts_ = nstates_ * arc_compactor.Size();
     if ((narcs_ + nfinals) != ncompacts_) {
       FSTERROR() << "CompactArcStore: ArcCompactor incompatible with FST";
       error_ = true;
       return;
     }
-    compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
-        sizeof(compacts_[0]) * ncompacts_, alignof(decltype(compacts_[0]))));
-    compacts_ = static_cast<Element*>(compacts_region_->mutable_data());
   }
+  if (ncompacts_ > kMaxArcs) {
+    FSTERROR() << "CompactArcStore: Number of compacts " << ncompacts_
+               << " exceeds maximum " << kMaxArcs << " for index type";
+    error_ = true;
+    nstates_ = 0;
+    ncompacts_ = 0;
+    narcs_ = 0;
+    start_ = kNoStateId;
+    return;
+  }
+  if (arc_compactor.Size() == -1) {
+    states_region_ = absl::WrapUnique(MappedFile::Allocate(
+        sizeof(states_[0]) * (nstates_ + 1), alignof(decltype(states_[0]))));
+    states_ = static_cast<Unsigned*>(states_region_->mutable_data());
+    states_[nstates_] = ncompacts_;
+  } else {
+    states_ = nullptr;
+  }
+  compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
+      sizeof(compacts_[0]) * ncompacts_, alignof(decltype(compacts_[0]))));
+  compacts_ = static_cast<Element*>(compacts_region_->mutable_data());
   size_t pos = 0;
   size_t fpos = 0;
   for (size_t s = 0; s < nstates_; ++s) {
@@ -417,6 +428,14 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
       ncompacts_ = 0;
       return;
     }
+    if (ncompacts_ > kMaxArcs) {
+      FSTERROR() << "CompactArcStore: Number of compacts " << ncompacts_
+                 << " exceeds maximum " << kMaxArcs << " for index type";
+      error_ = true;
+      nstates_ = 0;
+      ncompacts_ = 0;
+      return;
+    }
     start_ = 0;
     compacts_region_ = absl::WrapUnique(MappedFile::Allocate(
         sizeof(compacts_[0]) * ncompacts_, alignof(decltype(compacts_[0]))));
@@ -448,6 +467,15 @@ CompactArcStore<Element, Unsigned>::CompactArcStore(
     if (nstates_ > max_states) {
       FSTERROR() << "CompactArcStore: Number of states " << nstates_
                  << " exceeds maximum " << max_states << " for state ID type";
+      error_ = true;
+      nstates_ = 0;
+      ncompacts_ = 0;
+      narcs_ = 0;
+      return;
+    }
+    if (ncompacts_ > kMaxArcs) {
+      FSTERROR() << "CompactArcStore: Number of compacts " << ncompacts_
+                 << " exceeds maximum " << kMaxArcs << " for index type";
       error_ = true;
       nstates_ = 0;
       ncompacts_ = 0;
@@ -553,6 +581,13 @@ CompactArcStore<Element, Unsigned>* CompactArcStore<Element, Unsigned>::Read(
     }
   } else {
     data->states_ = nullptr;
+    if (arc_compactor.Size() > 0 &&
+        data->nstates_ > kMaxArcs / arc_compactor.Size()) {
+      LOG(ERROR) << "CompactArcStore::Read: Invalid number of compacts for "
+                 << data->nstates_ << " states > " << kMaxArcs << " for "
+                 << opts.source;
+      return nullptr;
+    }
     data->ncompacts_ = data->nstates_ * arc_compactor.Size();
   }
   if ((hdr.GetFlags() & FstHeader::IS_ALIGNED) && !AlignInput(strm)) {
@@ -975,7 +1010,10 @@ class CompactFstImpl
     SetType(Compactor::Type());
     SetInputSymbols(fst.InputSymbols());
     SetOutputSymbols(fst.OutputSymbols());
-    if (compactor_->Error()) SetProperties(kError, kError);
+    if (compactor_->Error()) {
+      SetProperties(kError, kError);
+      return;
+    }
     uint64_t copy_properties =
         fst.Properties(kMutable, false)
             ? fst.Properties(kCopyProperties, true)
