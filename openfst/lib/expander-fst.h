@@ -193,11 +193,10 @@ struct ExpanderFst
   explicit ExpanderFst(std::shared_ptr<Expander> expander, const Cache& cache)
       : Base(std::make_shared<Impl>(expander, cache)) {}
 
-  ExpanderFst(const ExpanderFst& fst, bool unused_safe = false)
-      : Base(fst.GetSharedImpl()) {}
+  ExpanderFst(const ExpanderFst& fst, bool safe = false) : Base(fst, safe) {}
 
   ExpanderFst* Copy(bool safe = false) const override {
-    return new ExpanderFst(*this);
+    return new ExpanderFst(*this, safe);
   }
 
   void InitStateIterator(StateIteratorData<Arc>* data) const override {
