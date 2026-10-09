@@ -18,8 +18,9 @@
 // ExpanderFst provides a simple way to create on-the-fly fsts by wrapping a
 // state Expander with a caching strategy.
 //
-// Thread-safety properties are determined by the choice of caching store, but
-// the default is an fst that is safe to access from multiple threads.
+// Thread-safety properties are determined by the choice of caching store. The
+// default (VectorExpanderCache) is for single-threaded access; safe=true copies
+// create independent caches for concurrent use across threads.
 //
 // Performance from a single thread is somewhat better than using a delayed fst
 // based on CacheFst when using recency caching, and only slightly slower when
@@ -62,9 +63,11 @@
 //   The cache used is a template parameter to the ExpanderFst, this determines
 //   memory use and cache safety. For example:
 //
-//   ConcurrentExpanderCache (default):
-//     - Every state is cached, no way to shrink the cache.
-//     - Concurrent access to the fst/cache is completely safe.
+//   VectorExpanderCache (default), HashExpanderCache:
+//     - Every expanded state is cached, no way to shrink the cache.
+//     - Single thread only. Safe copies (safe=true) copy the cache so multiple
+//       threads may use their own fst views while sharing the same Expander if
+//       the expander itself is thread-safe.
 //   NoGcKeepOneExpanderCache:
 //     - The last state is cached, reference counted states in use by
 //       ArcIterators may also be cached, can be deleted if possible, but
@@ -193,11 +196,10 @@ struct ExpanderFst
   explicit ExpanderFst(std::shared_ptr<Expander> expander, const Cache& cache)
       : Base(std::make_shared<Impl>(expander, cache)) {}
 
-  ExpanderFst(const ExpanderFst& fst, bool unused_safe = false)
-      : Base(fst.GetSharedImpl()) {}
+  ExpanderFst(const ExpanderFst& fst, bool safe = false) : Base(fst, safe) {}
 
   ExpanderFst* Copy(bool safe = false) const override {
-    return new ExpanderFst(*this);
+    return new ExpanderFst(*this, safe);
   }
 
   void InitStateIterator(StateIteratorData<Arc>* data) const override {
