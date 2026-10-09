@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/rational.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -167,6 +168,25 @@ TEST_F(ConcatTest, RationalConcat) {
   Concat(*cfst1_, &dfst4);
   ASSERT_TRUE(Verify(dfst4));
   ASSERT_TRUE(Equal(*cfst8_, dfst4));
+}
+
+TEST(ConcatErrorTest, ErrorPropagatesWhenOtherOperandHasNoStart) {
+  // The error FST has no start state.
+  VectorFst<Arc> error_fst;
+  error_fst.SetProperties(kError, kError);
+  VectorFst<Arc> one;
+  one.SetStart(one.AddState());
+  one.SetFinal(0);
+
+  // Error in the right operand, left operand modified in place.
+  VectorFst<Arc> fst1 = one;
+  Concat(&fst1, error_fst);
+  EXPECT_TRUE(fst1.Properties(kError, false));
+
+  // Error in the left operand, right operand modified in place.
+  VectorFst<Arc> fst2 = one;
+  Concat(error_fst, &fst2);
+  EXPECT_TRUE(fst2.Properties(kError, false));
 }
 
 }  // namespace
