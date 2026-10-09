@@ -122,31 +122,48 @@ class TestExpand {
 };
 
 TEST(ArcArenaStateStoreTest, Copy) {
-  ArcArenaStateStore<StdArc> arena;
+  auto arena = std::make_unique<ArcArenaStateStore<StdArc>>();
   TestExpand expander;
-  EXPECT_EQ(arena.FindOrExpand(expander, 0)->NumArcs(), 2);
+  EXPECT_EQ(arena->FindOrExpand(expander, 0)->NumArcs(), 2);
 
-  ArcArenaStateStore<StdArc> copy(arena);
-  EXPECT_EQ(copy.FindOrExpand(expander, 0)->NumArcs(), 2);   // cached
-  EXPECT_EQ(copy.FindOrExpand(expander, 1)->NumArcs(), 2);   // uncached
-  EXPECT_EQ(arena.FindOrExpand(expander, 1)->NumArcs(), 1);  // uncached
+  ArcArenaStateStore<StdArc> copy(*arena);
+  EXPECT_EQ(copy.FindOrExpand(expander, 0)->NumArcs(), 2);    // cached
+  EXPECT_EQ(copy.FindOrExpand(expander, 1)->NumArcs(), 2);    // uncached
+  EXPECT_EQ(arena->FindOrExpand(expander, 1)->NumArcs(), 1);  // uncached
 
   // Make sure they didn't use the same arc memory.
-  const StdArc* arcs = arena.Find(1)->Arcs();
+  const StdArc* arcs = arena->Find(1)->Arcs();
   EXPECT_EQ(arcs[0].nextstate, 5);
+
+  // Destroy the original store and verify that cached states in the copy
+  // (and in a copy-assigned store) remain valid and do not point into the
+  // destroyed store's states_ deque.
+  ArcArenaStateStore<StdArc> assigned;
+  assigned = copy;
+  arena.reset();
+
+  ASSERT_NE(copy.Find(0), nullptr);
+  EXPECT_EQ(copy.Find(0)->NumArcs(), 2);
+  EXPECT_EQ(copy.Find(0)->Arcs()[0].nextstate, 1);
+  EXPECT_EQ(copy.Find(0)->Arcs()[1].nextstate, 2);
 
   const StdArc* copy_arcs = copy.Find(1)->Arcs();
   EXPECT_EQ(copy_arcs[0].nextstate, 3);
   EXPECT_EQ(copy_arcs[1].nextstate, 4);
+
+  ASSERT_NE(assigned.Find(0), nullptr);
+  EXPECT_EQ(assigned.Find(0)->NumArcs(), 2);
+  EXPECT_EQ(assigned.Find(1)->NumArcs(), 2);
 }
 
 TEST(ArcArenaStateStoreTest, UseInExpanderFst) {
   auto expander = std::make_shared<TestExpand>();
   using Cache = ArcArenaStateStore<StdArc>;
-  Cache cache;
-  EXPECT_EQ(cache.FindOrExpand(*expander, 0)->NumArcs(), 2);
+  auto cache = std::make_unique<Cache>();
+  EXPECT_EQ(cache->FindOrExpand(*expander, 0)->NumArcs(), 2);
   ExpanderFst<TestExpand, Cache> uncached(expander);
-  ExpanderFst<TestExpand, Cache> cached(expander, cache);
+  ExpanderFst<TestExpand, Cache> cached(expander, *cache);
+  cache.reset();
   EXPECT_EQ(uncached.NumArcs(0), 1);
   EXPECT_EQ(cached.NumArcs(0), 2);
 }

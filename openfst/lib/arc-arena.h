@@ -81,6 +81,16 @@ class ArcArena {
     NewBlock(block_size_);
   }
 
+  ArcArena& operator=(const ArcArena& copy) {
+    if (this != &copy) {
+      *this = ArcArena(copy);
+    }
+    return *this;
+  }
+
+  ArcArena(ArcArena&&) = default;
+  ArcArena& operator=(ArcArena&&) = default;
+
   void ReserveArcs(size_t n) {
     if (next_ + n < end_) return;
     NewBlock(n);
@@ -138,7 +148,7 @@ class ArcArena {
   Arc* arcs_;
   Arc* next_;
   const Arc* end_;
-  const size_t block_size_;
+  size_t block_size_;
   size_t first_block_size_;
   size_t total_size_;
   size_t max_retained_size_;
@@ -158,6 +168,21 @@ class ArcArenaStateStore {
   using StateId = typename Arc::StateId;
 
   ArcArenaStateStore() : arena_(64 * 1024) {}
+
+  ArcArenaStateStore(const ArcArenaStateStore& copy) : arena_(copy.arena_) {
+    CopyStates(copy);
+  }
+
+  ArcArenaStateStore& operator=(const ArcArenaStateStore& copy) {
+    if (this != &copy) {
+      arena_ = copy.arena_;
+      CopyStates(copy);
+    }
+    return *this;
+  }
+
+  ArcArenaStateStore(ArcArenaStateStore&&) = default;
+  ArcArenaStateStore& operator=(ArcArenaStateStore&&) = default;
 
   class State {
    public:
@@ -184,10 +209,10 @@ class ArcArenaStateStore {
           narcs_(narcs),
           arcs_(arcs) {}
 
-    const Weight final_weight_;
-    const size_t niepsilons_;
-    const size_t noepsilons_;
-    const size_t narcs_;
+    Weight final_weight_;
+    size_t niepsilons_;
+    size_t noepsilons_;
+    size_t narcs_;
     const Arc* arcs_;
 
     friend class ArcArenaStateStore<Arc>;
@@ -243,6 +268,16 @@ class ArcArenaStateStore {
     Weight final_weight_;
     size_t narcs_;
   };
+
+  void CopyStates(const ArcArenaStateStore& copy) {
+    states_.clear();
+    cache_.clear();
+    cache_.reserve(copy.cache_.size());
+    for (const auto& [state_id, state] : copy.cache_) {
+      states_.push_back(*state);
+      cache_.emplace(state_id, &states_.back());
+    }
+  }
 
   absl::flat_hash_map<StateId, State*> cache_;
   std::deque<State> states_;
