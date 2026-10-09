@@ -17,6 +17,8 @@
 
 #include "openfst/extensions/ngram/ngram-fst.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <ios>
 #include <limits>
@@ -84,6 +86,37 @@ TEST(NGramFstTest, GetStatesEmptyContext) {
   NGramFst<StdArc> loudsfst(*fst);
   std::vector<StdArc::StateId> states = {42, 43};
   loudsfst.GetStates({}, &states);
+  EXPECT_EQ(states, std::vector<StdArc::StateId>{0});
+}
+
+// For every state s with context c = GetContext(s) (oldest word first),
+// GetStates(c) consumes c from newest to oldest word, returning the states for
+// each increasingly long suffix of c and ending at s. The i-th returned state
+// must be the state whose context is the last i words of c.
+TEST(NGramFstTest, GetStatesRoundTrip) {
+  std::unique_ptr<const StdFst> fst(StdFst::Read(Testfile()));
+  ASSERT_NE(fst, nullptr);
+  const NGramFst<StdArc> loudsfst(*fst);
+  const StdArc::Label unknown_label = std::numeric_limits<int>::max();
+  std::vector<StdArc::StateId> states;
+  for (StdArc::StateId s = 0; s < loudsfst.NumStates(); ++s) {
+    SCOPED_TRACE(::testing::Message() << "state=" << s);
+    const std::vector<StdArc::Label> context = loudsfst.GetContext(s);
+    loudsfst.GetStates(context, &states);
+    ASSERT_EQ(states.size(), context.size() + 1);
+    EXPECT_EQ(states.back(), s);
+    for (size_t i = 0; i < states.size(); ++i) {
+      const std::vector<StdArc::Label> suffix(context.end() - i, context.end());
+      EXPECT_EQ(loudsfst.GetContext(states[i]), suffix) << "i=" << i;
+    }
+    // An unknown older word stops the walk at s.
+    std::vector<StdArc::Label> longer = context;
+    longer.insert(longer.begin(), unknown_label);
+    loudsfst.GetStates(longer, &states);
+    EXPECT_EQ(states.back(), s);
+  }
+  // An unknown newest word yields only the unigram state.
+  loudsfst.GetStates({1, unknown_label}, &states);
   EXPECT_EQ(states, std::vector<StdArc::StateId>{0});
 }
 
@@ -223,6 +256,61 @@ TEST(NGramFstTest, NGramMatcherBackoff) {
       EXPECT_EQ(base_matcher.Done(), matcher.Done());
     }
   }
+}
+
+// Checks that the NGramFstMatcher agrees with a SortedMatcher on the source
+// FST for every state, for all labels on the state's arcs (exercising
+// Transition and SetInstContext), for epsilon and kNoLabel (the implicit loop
+// and the backoff arc), and for a sample of other labels, including labels
+// outside the vocabulary.
+TEST(NGramFstTest, NGramMatcherMatchesSortedMatcher) {
+  std::unique_ptr<StdMutableFst> fst(StdMutableFst::Read(Testfile()));
+  ASSERT_NE(fst, nullptr);
+  std::vector<StdArc::StateId> order;
+  NGramFst<StdArc> loudsfst(*fst, &order);
+  StateSort(fst.get(), order);
+  ArcSort(fst.get(), StdILabelCompare());
+  SortedMatcher<StdFst> expected(*fst, MATCH_INPUT);
+  NGramFstMatcher<StdArc> actual(loudsfst, MATCH_INPUT);
+
+  StdArc::Label max_label = 0;
+  for (StateIterator<StdFst> siter(*fst); !siter.Done(); siter.Next()) {
+    for (ArcIterator<StdFst> aiter(*fst, siter.Value()); !aiter.Done();
+         aiter.Next()) {
+      max_label = std::max(max_label, aiter.Value().ilabel);
+    }
+  }
+  ASSERT_GT(max_label, 0);
+
+  int64_t num_matches = 0;
+  for (StateIterator<StdFst> siter(*fst); !siter.Done(); siter.Next()) {
+    const StdArc::StateId s = siter.Value();
+    std::vector<StdArc::Label> labels = {kNoLabel, 0, max_label + 1,
+                                         max_label + 2,
+                                         std::numeric_limits<int>::max()};
+    for (ArcIterator<StdFst> aiter(*fst, s); !aiter.Done(); aiter.Next()) {
+      labels.push_back(aiter.Value().ilabel);
+    }
+    for (StdArc::Label label = 1; label <= max_label; label += 101) {
+      labels.push_back(label);
+    }
+    expected.SetState(s);
+    actual.SetState(s);
+    for (const StdArc::Label label : labels) {
+      SCOPED_TRACE(::testing::Message() << "state=" << s << " label=" << label);
+      ASSERT_EQ(expected.Find(label), actual.Find(label));
+      for (; !expected.Done(); expected.Next(), actual.Next()) {
+        ASSERT_FALSE(actual.Done());
+        EXPECT_EQ(expected.Value().ilabel, actual.Value().ilabel);
+        EXPECT_EQ(expected.Value().olabel, actual.Value().olabel);
+        EXPECT_EQ(expected.Value().weight, actual.Value().weight);
+        EXPECT_EQ(expected.Value().nextstate, actual.Value().nextstate);
+        ++num_matches;
+      }
+      ASSERT_TRUE(actual.Done());
+    }
+  }
+  EXPECT_GT(num_matches, fst->NumStates());
 }
 
 TEST(NGramFstTest, ReadFailsOnLargeSize) {
