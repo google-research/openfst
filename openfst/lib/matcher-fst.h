@@ -174,11 +174,13 @@ class MatcherFst : public ImplToExpandedFst<internal::AddOnImpl<F, Data>> {
 
   const MatcherData* GetData(MatchType match_type) const {
     const auto* data = GetAddOn();
+    if (!data) return nullptr;
     return match_type == MATCH_INPUT ? data->First() : data->Second();
   }
 
   std::shared_ptr<MatcherData> GetSharedData(MatchType match_type) const {
     const auto* data = GetAddOn();
+    if (!data) return nullptr;
     return match_type == MATCH_INPUT ? data->SharedFirst()
                                      : data->SharedSecond();
   }

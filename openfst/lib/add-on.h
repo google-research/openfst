@@ -73,14 +73,31 @@ class AddOnPair {
 
   static AddOnPair* Read(std::istream& istrm, const FstReadOptions& opts) {
     bool have_addon1 = false;
-    ReadType(istrm, &have_addon1);
+    if (!ReadType(istrm, &have_addon1)) {
+      LOG(ERROR) << "AddOnPair::Read: Read failed: " << opts.source;
+      return nullptr;
+    }
     std::unique_ptr<A1> a1;
-    if (have_addon1) a1 = absl::WrapUnique(A1::Read(istrm, opts));
+    if (have_addon1) {
+      a1 = absl::WrapUnique(A1::Read(istrm, opts));
+      if (!a1) return nullptr;
+    }
 
     bool have_addon2 = false;
-    ReadType(istrm, &have_addon2);
+    if (!ReadType(istrm, &have_addon2)) {
+      LOG(ERROR) << "AddOnPair::Read: Read failed: " << opts.source;
+      return nullptr;
+    }
     std::unique_ptr<A2> a2;
-    if (have_addon2) a2 = absl::WrapUnique(A2::Read(istrm, opts));
+    if (have_addon2) {
+      a2 = absl::WrapUnique(A2::Read(istrm, opts));
+      if (!a2) return nullptr;
+    }
+    // Add-on `Read` methods may not check the stream themselves.
+    if (!istrm) {
+      LOG(ERROR) << "AddOnPair::Read: Read failed: " << opts.source;
+      return nullptr;
+    }
 
     return new AddOnPair(std::move(a1), std::move(a2));
   }
@@ -88,10 +105,14 @@ class AddOnPair {
   bool Write(std::ostream& ostrm, const FstWriteOptions& opts) const {
     bool have_addon1 = a1_ != nullptr;
     WriteType(ostrm, have_addon1);
-    if (have_addon1) a1_->Write(ostrm, opts);
+    if (have_addon1 && !a1_->Write(ostrm, opts)) return false;
     bool have_addon2 = a2_ != nullptr;
     WriteType(ostrm, have_addon2);
-    if (have_addon2) a2_->Write(ostrm, opts);
+    if (have_addon2 && !a2_->Write(ostrm, opts)) return false;
+    if (!ostrm) {
+      LOG(ERROR) << "AddOnPair::Write: Write failed: " << opts.source;
+      return false;
+    }
     return true;
   }
 
@@ -172,7 +193,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
     FstReadOptions nopts(opts);
     FstHeader hdr;
     if (!nopts.header) {
-      hdr.Read(strm, nopts.source);
+      if (!hdr.Read(strm, nopts.source)) return nullptr;
       nopts.header = &hdr;
     }
     // Using `new` to access private constructor for `AddOnImpl`.
@@ -180,8 +201,8 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
     if (!impl->ReadHeader(strm, nopts, kMinFileVersion, &hdr)) return nullptr;
     impl.reset();
     int32_t magic_number = 0;
-    ReadType(strm, &magic_number);  // Ensures this is an add-on FST.
-    if (magic_number != kAddOnMagicNumber) {
+    // Ensures this is an add-on FST.
+    if (!ReadType(strm, &magic_number) || magic_number != kAddOnMagicNumber) {
       LOG(ERROR) << "AddOnImpl::Read: Bad add-on header: " << nopts.source;
       return nullptr;
     }
@@ -191,10 +212,18 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
     if (!fst) return nullptr;
     std::shared_ptr<T> t;
     bool have_addon = false;
-    ReadType(strm, &have_addon);
+    if (!ReadType(strm, &have_addon)) {
+      LOG(ERROR) << "AddOnImpl::Read: Read failed: " << nopts.source;
+      return nullptr;
+    }
     if (have_addon) {  // Reads add-on object if present.
       t = std::shared_ptr<T>(T::Read(strm, fopts));
       if (!t) return nullptr;
+      // Add-on `Read` methods may not check the stream themselves.
+      if (!strm) {
+        LOG(ERROR) << "AddOnImpl::Read: Read failed: " << nopts.source;
+        return nullptr;
+      }
     }
     return new AddOnImpl(*fst, nopts.header->FstType(), t);
   }
@@ -212,7 +241,12 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
     bool have_addon = !!t_;
     WriteType(strm, have_addon);
     // Writes add-on object if present.
-    if (have_addon) t_->Write(strm, opts);
+    if (have_addon && !t_->Write(strm, opts)) return false;
+    strm.flush();
+    if (!strm) {
+      LOG(ERROR) << "AddOnImpl::Write: Write failed: " << opts.source;
+      return false;
+    }
     return true;
   }
 
