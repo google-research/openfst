@@ -19,11 +19,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/strings/string_view.h"
+#include "third_party/gloop/util/task/status_matchers.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/vector-fst.h"
-#include "openfst/compat/status_matchers.h"
 
 namespace fst {
 namespace {

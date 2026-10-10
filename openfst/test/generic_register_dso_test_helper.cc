@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "openfst/compat/init.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/test/my_register.h"
 
 int main(int argc, char** argv) {

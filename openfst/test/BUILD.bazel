@@ -2634,9 +2634,9 @@ cc_test(
     linkstatic = True,
     deps = [
         ":fst_from_tuples",
-        "//openfst/compat:status_matchers",
         "//openfst/lib:lib_lite",
         "//openfst/lib:symbol-table",
+        "//third_party/gloop/util/task:status_matchers",
         "@com_google_absl//absl/strings:string_view",
         "@com_google_googletest//:gtest_main",
     ],
@@ -2651,7 +2651,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":my_register",
-        "//openfst/compat:init",
+        "//third_party/gloop/base:init_google",
     ],
 )
 
