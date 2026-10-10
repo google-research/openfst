@@ -21,11 +21,11 @@
 #include <memory>
 #include <string>
 
-#include "absl/flags/usage.h"
-#include "openfst/compat/init.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/extensions/compress/compressscript.h"
 #include "openfst/lib/util.h"
 #include "openfst/script/fst-class.h"

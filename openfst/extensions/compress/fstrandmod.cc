@@ -24,12 +24,12 @@
 #include <memory>
 #include <string>
 
-#include "absl/flags/usage.h"
-#include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/extensions/compress/randmod.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/float-weight.h"

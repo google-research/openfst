@@ -20,11 +20,11 @@
 #include <string>
 #include <vector>
 
-#include "absl/flags/usage.h"
-#include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/extensions/compress/quantize_weights.h"
 #include "openfst/lib/mutable-fst.h"
 
