@@ -24,7 +24,7 @@ cc_library(
     name = "benchmark_main",
     srcs = ["benchmain_main.cc"],
     deps = [
-        "//openfst/compat:init",
+        "//third_party/gloop/base:init_google",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log:flags",
         "@com_google_benchmark//:benchmark",

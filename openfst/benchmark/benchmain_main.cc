@@ -14,10 +14,10 @@
 
 // Main file for running OpenFst benchmarks.
 
-#include "openfst/compat/init.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "benchmark/benchmark.h"
+#include "third_party/gloop/base/init_google.h"
 
 int main(int argc, char* argv[]) {
   // `MaybeReenterWithoutASLR` calls `execve`, so do it right away.
