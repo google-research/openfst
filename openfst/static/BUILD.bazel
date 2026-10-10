@@ -22,10 +22,10 @@ cc_library(
     hdrs = ["command_dispatcher.h"],
     deps = [
         "//openfst/compat:file_path",
-        "//openfst/compat:init",
+        "//third_party/gloop/base:commandlineflags",
+        "//third_party/gloop/base:init_google",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/flags:reflection",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",

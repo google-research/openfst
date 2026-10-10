@@ -21,9 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/usage.h"
 #include "absl/flags/reflection.h"
-#include "openfst/compat/init.h"
 #include "openfst/compat/file_path.h"
 #include "absl/base/nullability.h"
 #include "absl/log/check.h"
@@ -32,6 +30,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 
 #if defined(_MSC_VER)  // Windows MSVC compiler.
 #include <stdlib.h>    // ::malloc and friends.
