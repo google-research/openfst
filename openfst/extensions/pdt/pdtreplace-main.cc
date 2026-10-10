@@ -23,13 +23,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/usage.h"
-#include "openfst/compat/init.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
 #include "absl/strings/numbers.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/extensions/pdt/getters.h"
 #include "openfst/extensions/pdt/pdtscript.h"
 #include "openfst/extensions/pdt/replace.h"
