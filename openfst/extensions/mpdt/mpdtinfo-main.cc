@@ -25,12 +25,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/usage.h"
-#include "openfst/compat/init.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "absl/log/log.h"
+#include "third_party/gloop/base/commandlineflags.h"
+#include "third_party/gloop/base/init_google.h"
 #include "openfst/extensions/mpdt/mpdtscript.h"
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/script/fst-class.h"
