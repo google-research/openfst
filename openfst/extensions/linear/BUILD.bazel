@@ -148,9 +148,9 @@ cc_library(
     deps = [
         ":linear-fst",
         ":script",
-        "//openfst/compat:init",
+        "//third_party/gloop/base:commandlineflags",
+        "//third_party/gloop/base:init_google",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log:flags",
     ],
 )
@@ -161,10 +161,10 @@ cc_library(
     deps = [
         ":linear-fst",
         ":loglinear-apply",
-        "//openfst/compat:init",
         "//openfst/lib",
+        "//third_party/gloop/base:commandlineflags",
+        "//third_party/gloop/base:init_google",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:flags",
     ],
