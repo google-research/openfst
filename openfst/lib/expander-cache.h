@@ -131,8 +131,21 @@ class NoGcKeepOneExpanderCache {
 
   NoGcKeepOneExpanderCache() : state_(new State) {}
 
-  NoGcKeepOneExpanderCache(const NoGcKeepOneExpanderCache& copy)
-      : state_(new State(*copy.state_)) {}
+  NoGcKeepOneExpanderCache(const NoGcKeepOneExpanderCache& copy) {
+    *this = copy;
+  }
+
+  NoGcKeepOneExpanderCache& operator=(const NoGcKeepOneExpanderCache& copy) {
+    if (this != &copy) {
+      state_id_ = copy.state_id_;
+      state_ = std::make_unique<State>(*copy.state_);
+      // Active ArcIterators on `copy` point to `copy.state_->ref_count_`, not
+      // to this copy's `state_`.
+      state_->ref_count_ = 0;
+      cache_.clear();
+    }
+    return *this;
+  }
 
   template <class Expander>
   State* FindOrExpand(Expander& expander, StateId state_id) {

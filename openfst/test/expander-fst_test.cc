@@ -193,6 +193,43 @@ TEST_F(ExpanderFstTest, NoGcKeepOneExpanderCacheUnpinnedLookups) {
   EXPECT_EQ(expander->expansions(), 2);
 }
 
+TEST_F(ExpanderFstTest, NoGcKeepOneExpanderCacheCopyAndAssign) {
+  using Cache = NoGcKeepOneExpanderCache<StdArc>;
+  auto expander = std::make_shared<CountingExpand>();
+  ExpanderFst<CountingExpand, Cache> fst(expander);
+
+  // Hold an active ArcIterator on state 0 so `fst`'s active state has
+  // `ref_count_ > 0` at the time the cache is copied.
+  ArcIterator<StdFst> a_0(fst, 0);
+  EXPECT_EQ(expander->expansions(), 1);
+  ASSERT_EQ(*fst.GetCache()->state_->MutableRefCount(), 1);
+
+  expander->reset_expansions();
+  Cache cache_copy(*fst.GetCache());
+  EXPECT_EQ(cache_copy.state_id_, 0);
+  EXPECT_EQ(*cache_copy.state_->MutableRefCount(), 0);
+  EXPECT_TRUE(cache_copy.cache_.empty());
+
+  // Querying state 0 on the copy hits the active cached state without
+  // re-expanding, and advancing to state 1 does not stash an orphan entry
+  // under `kNoStateId` or `0` in `cache_copy.cache_`.
+  EXPECT_EQ(cache_copy.FindOrExpand(*expander, 0)->NumArcs(), 2);
+  EXPECT_EQ(expander->expansions(), 0);
+  EXPECT_EQ(cache_copy.FindOrExpand(*expander, 1)->NumArcs(), 2);
+  EXPECT_EQ(expander->expansions(), 1);
+  EXPECT_TRUE(cache_copy.cache_.empty());
+
+  // Copy assignment also preserves `state_id_`, resets `ref_count_`, and
+  // clears any previously cached entries.
+  expander->reset_expansions();
+  cache_copy = *fst.GetCache();
+  EXPECT_EQ(cache_copy.state_id_, 0);
+  EXPECT_EQ(*cache_copy.state_->MutableRefCount(), 0);
+  EXPECT_TRUE(cache_copy.cache_.empty());
+  EXPECT_EQ(cache_copy.FindOrExpand(*expander, 0)->NumArcs(), 2);
+  EXPECT_EQ(expander->expansions(), 0);
+}
+
 TEST_F(ExpanderFstTest, ArcIteratorSpecialization) {
   // TODO: Is there a way to check from the test that the correct
   // specializer got picked? Otherwise this test doesn't necessarily test the
