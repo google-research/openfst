@@ -37,8 +37,8 @@
 // Cache implementations must be copyable and assignable. It is up to the
 // implementation whether this means it will discard the contents of the cache,
 // copy all of the cache, share some of the cache etc. It is *REQUIRED* that the
-// copy be "safe", the copy and the original must be usable from concurrent
-// threads without accessing any internally shared state.
+// copy and the original be safe to use concurrently; sharing is allowed if the
+// cache itself is thread-safe.
 
 #ifndef OPENFST_LIB_EXPANDER_CACHE_H_
 #define OPENFST_LIB_EXPANDER_CACHE_H_

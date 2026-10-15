@@ -109,14 +109,42 @@ TEST_F(ExpanderFstTest, SimpleExpander) {
   EXPECT_TRUE(Equal(fst, vfst));
 }
 
-TEST_F(ExpanderFstTest, CopyExpanderFst) {
-  using TestFst = ExpanderFst<TestExpand>;
-  TestFst fst(std::make_shared<TestExpand>());
-  std::unique_ptr<TestFst> copy(fst.Copy());
+template <class Cache>
+void TestCopyExpanderFst() {
+  auto expander = std::make_shared<CountingExpand>();
+  using TestFst = ExpanderFst<CountingExpand, Cache>;
+  TestFst fst(expander);
+  EXPECT_EQ(fst.NumArcs(0), 2);
+  EXPECT_EQ(expander->expansions(), 1);
+
+  // Shallow copy (safe = false) shares the cache.
+  std::unique_ptr<TestFst> copy(fst.Copy(/*safe=*/false));
+  EXPECT_EQ(copy->GetCache(), fst.GetCache());
+  EXPECT_EQ(copy->GetExpander(), fst.GetExpander());
   EXPECT_EQ(CountStates(fst), CountStates(*copy));
 
-  ExpanderFst<TestExpand> other_copy = fst;
+  // Safe copy (safe = true) gets an independent cache initialized from the
+  // existing cache, so already-cached states are not re-expanded.
+  expander->reset_expansions();
+  std::unique_ptr<TestFst> safe_copy(fst.Copy(/*safe=*/true));
+  EXPECT_NE(safe_copy->GetCache(), fst.GetCache());
+  EXPECT_EQ(safe_copy->GetExpander(), fst.GetExpander());
+  EXPECT_EQ(safe_copy->NumArcs(0), 2);
+  EXPECT_EQ(expander->expansions(), 0);
+  EXPECT_EQ(CountStates(fst), CountStates(*safe_copy));
+
+  TestFst safe_ctor_copy(fst, /*safe=*/true);
+  EXPECT_NE(safe_ctor_copy.GetCache(), fst.GetCache());
+  EXPECT_EQ(CountStates(fst), CountStates(safe_ctor_copy));
+
+  TestFst other_copy = fst;
+  EXPECT_EQ(other_copy.GetCache(), fst.GetCache());
   EXPECT_EQ(CountStates(fst), CountStates(other_copy));
+}
+
+TEST_F(ExpanderFstTest, CopyExpanderFst) {
+  TestCopyExpanderFst<DefaultExpanderCache<CountingExpand>>();
+  TestCopyExpanderFst<HashExpanderCache<StdArc>>();
 }
 
 // Check difficult order of ArcIterator references.
