@@ -39,6 +39,7 @@ def fst_cc_library(
     ]
     cc_library(
         deps = select({
+            "//buildenv/platforms/settings:chrome_linux": portable_deps,
             "@platforms//os:linux": deps,
             "//conditions:default": portable_deps,
         }),
