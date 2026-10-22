@@ -613,8 +613,9 @@ enum MatcherRewriteMode {
 // underlying matching. By default, the underlying matcher is
 // constructed by PhiMatcher. The user can instead pass in this
 // object; in that case, PhiMatcher takes its ownership.
-// Phi non-determinism not supported. No non-consuming symbols other
-// than epsilon supported with the underlying template argument matcher.
+// Phi non-determinism and non-trivial phi cycles are not supported. No
+// non-consuming symbols other than epsilon supported with the underlying
+// template argument matcher.
 template <class M>
 class PhiMatcher : public MatcherBase<typename M::Arc> {
  public:
@@ -720,13 +721,31 @@ class PhiMatcher : public MatcherBase<typename M::Arc> {
     }
     weight = Weight::One();
     matcher_->SetState(s);
+    // For cycle detection uses Brent's O(1)-space algorithm. See:
+    //
+    // Brent, R. P. 1980. An improved Monte Carlo factorization algorithm.
+    // BIT Numerical Mathematics 20(2): 176-184.
+    StateId checkpoint = s;
+    size_t power = 1;
+    size_t length = 0;
     while (matcher_->Final(s) == Weight::Zero()) {
       if (!matcher_->Find(phi_label_ == 0 ? -1 : phi_label_)) break;
       weight = Times(weight, matcher_->Value().weight);
-      if (s == matcher_->Value().nextstate) {
-        return Weight::Zero();  // Does not follow phi self-loops.
+      const auto nextstate = matcher_->Value().nextstate;
+      // Does not follow phi self-loops.
+      if (s == nextstate) return Weight::Zero();
+      if (nextstate == checkpoint) {
+        FSTERROR() << "PhiMatcher: Phi cycle detected";
+        error_ = true;
+        return Weight::Zero();
       }
-      s = matcher_->Value().nextstate;
+      ++length;
+      if (length == power) {
+        checkpoint = nextstate;
+        power *= 2;
+        length = 0;
+      }
+      s = nextstate;
       matcher_->SetState(s);
     }
     weight = Times(weight, matcher_->Final(s));
@@ -768,7 +787,7 @@ class PhiMatcher : public MatcherBase<typename M::Arc> {
   Weight phi_weight_;     // Product of the weights of phi transitions taken.
   bool phi_loop_;         // When true, phi self-loop are allowed and treated
                           // as rho (required for Aho-Corasick).
-  bool error_;            // Error encountered?
+  mutable bool error_;    // Error encountered?
 
   PhiMatcher& operator=(const PhiMatcher&) = delete;
 };
@@ -801,21 +820,43 @@ inline bool PhiMatcher<M>::Find(Label label) {
     return matcher_->Find(label);
   }
   auto s = state_;
+  // For cycle detection uses Brent's O(1)-space algorithm. See:
+  //
+  // Brent, R. P. 1980. An improved Monte Carlo factorization algorithm.
+  // BIT Numerical Mathematics 20(2): 176-184.
+  StateId checkpoint = s;
+  size_t power = 1;
+  size_t length = 0;
   while (!matcher_->Find(label)) {
     // Look for phi transition (if phi_label_ == 0, we need to look
     // for -1 to avoid getting the virtual self-loop)
     if (!matcher_->Find(phi_label_ == 0 ? -1 : phi_label_)) return false;
-    if (phi_loop_ && matcher_->Value().nextstate == s) {
-      phi_match_ = label;
-      return true;
+    const auto nextstate = matcher_->Value().nextstate;
+    if (nextstate == s) {
+      if (phi_loop_) {
+        phi_match_ = label;
+        return true;
+      }
+      return false;  // Does not follow phi self-loops.
     }
     phi_weight_ = Times(phi_weight_, matcher_->Value().weight);
-    s = matcher_->Value().nextstate;
     matcher_->Next();
     if (!matcher_->Done()) {
       FSTERROR() << "PhiMatcher: Phi non-determinism not supported";
       error_ = true;
     }
+    if (nextstate == checkpoint) {
+      FSTERROR() << "PhiMatcher: Phi cycle detected";
+      error_ = true;
+      return false;
+    }
+    ++length;
+    if (length == power) {
+      checkpoint = nextstate;
+      power *= 2;
+      length = 0;
+    }
+    s = nextstate;
     matcher_->SetState(s);
   }
   return true;
