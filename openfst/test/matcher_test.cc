@@ -26,6 +26,8 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcsort.h"
 #include "openfst/lib/cache.h"
@@ -33,7 +35,9 @@
 #include "openfst/lib/compose.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/relabel.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -183,6 +187,9 @@ class MatcherTest : public testing::Test {
   std::unique_ptr<const VectorFst<Arc>> lm_a_fst_;
   std::unique_ptr<const VectorFst<Arc>> lm_bb_fst_;
   std::unique_ptr<const VectorFst<Arc>> lm_a_bb_fst_;
+
+ private:
+  const absl::FlagSaver fs_;
 };
 
 TEST_F(MatcherTest, ComposeWithRhoMatcher) {
@@ -406,6 +413,83 @@ TEST_F(MatcherTest, PhiMatcherFinal) {
   TestPhiMatcher matcher3(fst, MATCH_INPUT, 0);
   for (auto s = 0; s < lm_fst_->NumStates(); ++s) {
     EXPECT_EQ(matcher3.Final(s), lm_fst_->Final(s));
+  }
+}
+
+TEST_F(MatcherTest, PhiMatcherCycle) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  // States 0 and 1 form a 2-state phi cycle (0 -phi-> 1 -phi-> 0); state 1
+  // also has a matching transition on label 1 to final state 2.
+  StdVectorFst cyclic_fst;
+  const auto s0 = cyclic_fst.AddState();
+  const auto s1 = cyclic_fst.AddState();
+  const auto s2 = cyclic_fst.AddState();
+  cyclic_fst.SetStart(s0);
+  cyclic_fst.AddArc(s0, Arc(kSpecialLabel, kSpecialLabel, Weight(0.5), s1));
+  cyclic_fst.AddArc(s1, Arc(kSpecialLabel, kSpecialLabel, Weight(0.25), s0));
+  cyclic_fst.AddArc(s1, Arc(1, 1, Weight(1.0), s2));
+  cyclic_fst.SetFinal(s2, Weight::One());
+  ArcSort(&cyclic_fst, StdILabelCompare());
+
+  // Matching label 1 from state 0 succeeds after one phi step without hitting
+  // the cycle.
+  {
+    TestPhiMatcher matcher(cyclic_fst, MATCH_INPUT, kSpecialLabel);
+    matcher.SetState(s0);
+    ASSERT_TRUE(matcher.Find(1));
+    EXPECT_EQ(matcher.Value().nextstate, s2);
+    EXPECT_EQ(matcher.Value().weight, Weight(1.5));
+    EXPECT_EQ(matcher.Properties(0) & kError, 0);
+  }
+
+  // Searching for an unmatched label (2) detects the 0 -> 1 -> 0 phi cycle,
+  // returns false, and sets kError.
+  {
+    TestPhiMatcher matcher(cyclic_fst, MATCH_INPUT, kSpecialLabel);
+    matcher.SetState(s0);
+    EXPECT_FALSE(matcher.Find(2));
+    EXPECT_EQ(matcher.Properties(0) & kError, kError);
+  }
+
+  // Final(s0) when neither s0 nor s1 is final detects the 0 -> 1 -> 0 phi
+  // cycle, returns Zero(), and sets kError.
+  {
+    TestPhiMatcher matcher(cyclic_fst, MATCH_INPUT, kSpecialLabel);
+    EXPECT_EQ(matcher.Final(s0), Weight::Zero());
+    EXPECT_EQ(matcher.Properties(0) & kError, kError);
+  }
+
+  // Composing with an FST that triggers the phi cycle terminates and sets
+  // kError on the result.
+  {
+    StdVectorFst query;
+    const auto q0 = query.AddState();
+    const auto q1 = query.AddState();
+    query.SetStart(q0);
+    query.AddArc(q0, Arc(2, 2, Weight::One(), q1));
+    query.SetFinal(q1, Weight::One());
+
+    ComposeFst<Arc> cfst(
+        query, cyclic_fst,
+        ComposeFstOptions<Arc, TestPhiMatcher>(
+            CacheOptions(), new TestPhiMatcher(query, MATCH_NONE, kNoLabel),
+            new TestPhiMatcher(cyclic_fst, MATCH_INPUT, kSpecialLabel)));
+    StdVectorFst composed(cfst);
+    EXPECT_TRUE(composed.Properties(kError, false));
+  }
+
+  // A phi self-loop with phi_loop=false does not loop forever in Find().
+  {
+    StdVectorFst self_loop_fst;
+    const auto s = self_loop_fst.AddState();
+    self_loop_fst.SetStart(s);
+    self_loop_fst.AddArc(s, Arc(kSpecialLabel, kSpecialLabel, Weight(0.5), s));
+    TestPhiMatcher matcher(self_loop_fst, MATCH_INPUT, kSpecialLabel,
+                           /*phi_loop=*/false);
+    matcher.SetState(s);
+    EXPECT_FALSE(matcher.Find(2));
+    EXPECT_EQ(matcher.Properties(0) & kError, 0);
   }
 }
 
