@@ -30,10 +30,11 @@
 #include "openfst/lib/vector-fst.h"
 
 // This file was created using:
-// bazel-bin/third_party/opengrm/ngram/ngramshrink
-//   --theta=0.0001
-//   third_party/opengrm/ngram/testdata/earnest.mod
-//   openfst/benchmark/testdata/compose.fst
+// bazel-bin/third_party/opengrm/sfst/sfstshrink \
+//   --phi_label=0 \
+//   --theta=0.0001 \
+//   third_party/opengrm/sfst/testdata/earnest.mod \
+//   openfst/benchmark/testdata/serialize.fst
 ABSL_FLAG(std::string, input_fst,
           "openfst/benchmark/testdata/serialize.fst",
           "fst to compose with self for testing");
