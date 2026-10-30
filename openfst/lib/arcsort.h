@@ -91,12 +91,13 @@ class ArcSortMapper {
 };
 
 // Sorts the arcs in an FST according to function object 'comp' of type Compare.
-// This version modifies its input. Comparison function objects ILabelCompare
-// and OLabelCompare are provided by the library. In general, Compare must meet
-// the requirements for a  comparison function object (e.g., similar to those
-// used by std::sort). It must also have a member Properties(uint64_t) that
-// specifies the known properties of the sorted FST; it takes as argument the
-// input FST's known properties before the sort.
+// The sort is stable: arcs that compare equal keep their relative order. This
+// version modifies its input. Comparison function objects ILabelCompare and
+// OLabelCompare are provided by the library. In general, Compare must meet the
+// requirements for a comparison function object (e.g., similar to those used by
+// std::sort). It must also have a member Properties(uint64_t) that specifies
+// the known properties of the sorted FST; it takes as argument the input FST's
+// known properties before the sort.
 //
 // Complexity:
 //
@@ -113,12 +114,13 @@ void ArcSort(MutableFst<Arc>* fst, Compare comp) {
 using ArcSortFstOptions = CacheOptions;
 
 // Sorts the arcs in an FST according to function object 'comp' of type Compare.
-// This version is a delayed FST. Comparsion function objects ILabelCompare and
+// The sort is stable: arcs that compare equal keep their relative order. This
+// version is a delayed FST. Comparison function objects ILabelCompare and
 // OLabelCompare are provided by the library. In general, Compare must meet the
-// requirements for a comparision function object (e.g., similar to those
-// used by std::sort). It must also have a member Properties(uint64_t) that
-// specifies the known properties of the sorted FST; it takes as argument the
-// input FST's known properties.
+// requirements for a comparison function object (e.g., similar to those used by
+// std::sort). It must also have a member Properties(uint64_t) that specifies
+// the known properties of the sorted FST; it takes as argument the input FST's
+// known properties.
 //
 // Complexity:
 //
@@ -186,7 +188,9 @@ class ArcIterator<ArcSortFst<Arc, Compare>>
                                                                         s) {}
 };
 
-// Compare class for comparing input labels of arcs.
+// Compare class for comparing input labels of arcs, breaking ties by output
+// label. Under ArcSort, arcs with equal (ilabel, olabel) keep their relative
+// order.
 template <class Arc>
 class ILabelCompare {
  public:
@@ -203,7 +207,9 @@ class ILabelCompare {
   }
 };
 
-// Compare class for comparing output labels of arcs.
+// Compare class for comparing output labels of arcs, breaking ties by input
+// label. Under ArcSort, arcs with equal (olabel, ilabel) keep their relative
+// order.
 template <class Arc>
 class OLabelCompare {
  public:

@@ -5,8 +5,11 @@
 This operation sorts the arcs in an FST per state.
 
 At the C++ level, the sort order is determined by a function object `compare` of
-type `Compare`. Comparsion function objects `ILabelCompare` and `OLabelCompare`
-are provided by the library. In general, `Compare` must meet the
+type `Compare`. The sort is stable: arcs that compare equal keep their relative
+order. Comparison function objects `ILabelCompare` (which compares input labels,
+breaking ties by output label) and `OLabelCompare` (which compares output
+labels, breaking ties by input label) are provided by the library. In general,
+`Compare` must meet the
 [requirements](https://en.cppreference.com/w/cpp/named_req/Compare.html) for a
 [`std::sort`](https://en.cppreference.com/w/cpp/algorithm/sort.html) comparison
 functor. It must also have a member `Properties(uint64)` that specifies the
