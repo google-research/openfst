@@ -238,6 +238,10 @@ class FstClassImpl : public FstClassImplBase {
 
   // Warning: calling this method casts the FST to a mutable FST.
   void ReserveStates(int64_t n) final {
+    if (n < 0) {
+      FSTERROR() << "ReserveStates: Negative state count: " << n;
+      return;
+    }
     absl::down_cast<MutableFst<Arc>*>(impl_.get())->ReserveStates(n);
   }
 

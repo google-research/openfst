@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <fstream>
 #include <istream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -209,6 +210,12 @@ TEST_F(ClassTest, ArcAndStateAccessAndMutation) {
   aiter2.SetValue(arc);
   ASSERT_EQ(ch, aiter2.Value().ilabel);
   // Tests simple state deletion.
+  {
+    const absl::FlagSaver fs;
+    absl::SetFlag(&FLAGS_fst_error_fatal, false);
+    f.ReserveStates(-1);
+    f.ReserveStates(std::numeric_limits<int64_t>::min());
+  }
   f.ReserveStates(4);
   ASSERT_EQ(1, f.NumStates());
   f.DeleteStates();
