@@ -35,6 +35,8 @@
 #include "openfst/lib/equal.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/properties.h"
+#include "openfst/lib/test-properties.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -200,6 +202,50 @@ TEST(RandGenFstTest, CopyPreservesRemoveTotalWeight) {
       EXPECT_EQ(num_final, 1);
     }
   }
+}
+
+// When `weighted` is false, RandGenFst redirects sampled final weights to a
+// super-final state via (0, 0) epsilon arcs (at sample position `narcs`). Those
+// (0, 0) arcs must be emitted before sampled regular arcs (0 <= pos < narcs) so
+// that kILabelSorted and kOLabelSorted are preserved from a label-sorted input.
+TEST(RandGenFstTest, UnweightedPropertiesConsistentWithComputed) {
+  using Selector = UniformArcSelector<Arc>;
+  using Sampler = ArcSampler<Arc, Selector>;
+  using RandFst = RandGenFst<Arc, Arc, Sampler>;
+
+  VectorFst<Arc> fst;
+  fst.AddStates(2);
+  fst.SetStart(0);
+  fst.SetFinal(0);
+  fst.SetFinal(1);
+  fst.AddArc(0, Arc(1, 1, 1));
+  ASSERT_EQ(fst.Properties(kILabelSorted | kOLabelSorted, /*test=*/true),
+            kILabelSorted | kOLabelSorted);
+
+  std::mt19937_64 bit_gen(1);
+  const RandGenFstOptions<Sampler> opts(
+      CacheOptions(), new Sampler(fst, Selector()), /*npath=*/20,
+      /*weighted=*/false);
+  const RandFst rfst(fst, opts, bit_gen);
+
+  const uint64_t stored = rfst.Properties(kFstProperties, /*test=*/false);
+  EXPECT_EQ(stored & (kILabelSorted | kOLabelSorted),
+            kILabelSorted | kOLabelSorted);
+
+  // State 0 samples both the super-final (0, 0) transition and the (1, 1) arc;
+  // the (0, 0) transitions must precede (1, 1).
+  ArcIterator<RandFst> aiter(rfst, rfst.Start());
+  ASSERT_FALSE(aiter.Done());
+  EXPECT_EQ(aiter.Value().ilabel, 0);
+  EXPECT_EQ(aiter.Value().olabel, 0);
+
+  uint64_t known = 0;
+  const uint64_t computed =
+      internal::ComputeProperties(rfst, kFstProperties, &known);
+  EXPECT_EQ(computed & (kILabelSorted | kOLabelSorted),
+            kILabelSorted | kOLabelSorted);
+  EXPECT_TRUE(internal::CompatProperties(stored, computed));
+  EXPECT_TRUE(Verify(rfst));
 }
 
 }  // namespace

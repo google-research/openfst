@@ -507,6 +507,20 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
     sampler_->Sample(bit_gen_, rstate);
     ArcIterator<Fst<FromArc>> aiter(*fst_, rstate.state_id);
     const auto narcs = fst_->NumArcs(rstate.state_id);
+    if (!weighted_) {
+      for (; !sampler_->Done(); sampler_->Next()) {
+        const auto [pos, count] = sampler_->Value();
+        if (pos >= narcs) {  // Super-final transition.
+          if (superfinal_ == kNoLabel) {
+            superfinal_ = state_table_.size();
+            state_table_.emplace_back(
+                new RandState<FromArc>(kNoStateId, 0, 0, 0, nullptr));
+          }
+          for (size_t n = 0; n < count; ++n) EmplaceArc(s, 0, 0, superfinal_);
+        }
+      }
+      sampler_->Reset();
+    }
     for (; !sampler_->Done(); sampler_->Next()) {
       const auto& sample_pair = sampler_->Value();
       const auto pos = sample_pair.first;
@@ -522,21 +536,11 @@ class RandGenFstImpl : public CacheImpl<ToArc> {
         auto nrstate = std::make_unique<RandState<FromArc>>(
             aarc.nextstate, count, rstate.length + 1, pos, &rstate);
         state_table_.push_back(std::move(nrstate));
-      } else {  // Super-final transition.
-        if (weighted_) {
-          const auto weight =
-              remove_total_weight_
-                  ? to_weight_(Log64Weight(-log(prob)))
-                  : to_weight_(Log64Weight(-log(prob * npath_)));
-          SetFinal(s, weight);
-        } else {
-          if (superfinal_ == kNoLabel) {
-            superfinal_ = state_table_.size();
-            state_table_.emplace_back(
-                new RandState<FromArc>(kNoStateId, 0, 0, 0, nullptr));
-          }
-          for (size_t n = 0; n < count; ++n) EmplaceArc(s, 0, 0, superfinal_);
-        }
+      } else if (weighted_) {  // Super-final transition.
+        const auto weight = remove_total_weight_
+                                ? to_weight_(Log64Weight(-log(prob)))
+                                : to_weight_(Log64Weight(-log(prob * npath_)));
+        SetFinal(s, weight);
       }
     }
     SetArcs(s);
