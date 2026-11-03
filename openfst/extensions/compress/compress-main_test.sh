@@ -42,3 +42,12 @@ source "$FBIN/setup.sh"
 "$XBIN/fstcompress" < "$DAT/unweight.fst" > "$TST/compress.fst"
 "$XBIN/fstcompress" -decode  <"$TST/compress.fst" > "$TST/unweight.fst"
 "$FBIN/fstisomorphic" -v=1 "$DAT/unweight.fst" "$TST/unweight.fst"
+
+# Error cases: missing input, unwritable output, unknown arc_type.
+! "$XBIN/fstcompress" "$TST/nonexistent.fst" "$TST/compress.fst"
+! "$XBIN/fstcompress" "$DAT/unweight.fst" "$TST/nonexistent_dir/compress.fst"
+! "$XBIN/fstcompress" -decode "$TST/nonexistent.fstz" "$TST/unweight.fst"
+! "$XBIN/fstcompress" -decode "$TST/compress.fst" \
+  "$TST/nonexistent_dir/unweight.fst"
+! "$XBIN/fstcompress" -decode --arc_type=nonexistent --fst_error_fatal=false \
+  "$TST/compress.fst" "$TST/unweight.fst"

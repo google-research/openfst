@@ -67,6 +67,7 @@ cc_library(
     deps = [
         ":script",
         "//openfst/compat:init",
+        "//openfst/lib",
         "//openfst/lib:util",
         "//openfst/script",
         "@com_google_absl//absl/flags:flag",

@@ -18,6 +18,7 @@
 // Tests of the scripting interface.
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <istream>
@@ -41,6 +42,7 @@
 #include "openfst/lib/determinize.h"
 #include "openfst/lib/encode.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/symbol-table.h"
 #include "openfst/lib/util.h"
@@ -58,6 +60,7 @@
 #include "openfst/script/fst-class.h"
 #include "openfst/script/stateiterator-class.h"
 #include "openfst/script/text-io.h"
+#include "openfst/script/verify.h"
 #include "openfst/script/weight-class.h"
 
 namespace fst {
@@ -270,6 +273,96 @@ TEST_F(ClassTest, VectorFstClassConstructAndCopy) {
   }
   // Construct from a nonexistent arc type.
   ASSERT_DEATH(VectorFstClass vfc(kDummyName), kArcError);
+}
+
+TEST_F(ClassTest, NullImplFstClassOperations) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+  const std::string out_path =
+      absl::StrCat(::testing::TempDir(), "/null_fst.fst");
+  StdVectorFst valid_vfst;
+  valid_vfst.AddState();
+
+  FstClass assigned_fst(valid_vfst);
+  assigned_fst = FstClass();
+  for (const FstClass& invalid :
+       {FstClass(), FstClass(std::unique_ptr<StdFst>()), FstClass(FstClass()),
+        assigned_fst}) {
+    EXPECT_EQ(invalid.ArcType(), "none");
+    EXPECT_EQ(invalid.FstType(), "none");
+    EXPECT_EQ(invalid.WeightType(), "none");
+    EXPECT_EQ(invalid.Final(0).Type(), "none");
+    EXPECT_EQ(invalid.Start(), kNoStateId);
+    EXPECT_FALSE(invalid.ValidStateId(0));
+    EXPECT_EQ(invalid.NumStatesIfKnown(), std::nullopt);
+    EXPECT_EQ(invalid.NumArcs(0), std::numeric_limits<size_t>::max());
+    EXPECT_EQ(invalid.NumInputEpsilons(0), std::numeric_limits<size_t>::max());
+    EXPECT_EQ(invalid.NumOutputEpsilons(0), std::numeric_limits<size_t>::max());
+    EXPECT_EQ(invalid.InputSymbols(), nullptr);
+    EXPECT_EQ(invalid.OutputSymbols(), nullptr);
+    EXPECT_EQ(invalid.Properties(kError, false), kError);
+    EXPECT_EQ(invalid.Properties(kError, true), kError);
+    EXPECT_EQ(invalid.Properties(kAcceptor, false), 0);
+    EXPECT_FALSE(
+        invalid.WeightTypesMatch(WeightClass::One("tropical"), "Test"));
+    EXPECT_EQ(invalid.GetFst<StdArc>(), nullptr);
+    EXPECT_FALSE(invalid.Write(out_path));
+    std::ostringstream ostrm;
+    EXPECT_FALSE(invalid.Write(ostrm, "mem"));
+  }
+
+  VectorFstClass assigned_mfst(valid_vfst);
+  assigned_mfst = VectorFstClass(kDummyName);
+  for (MutableFstClass invalid :
+       {MutableFstClass(std::unique_ptr<StdMutableFst>()),
+        MutableFstClass(VectorFstClass(kDummyName)),
+        MutableFstClass(VectorFstClass(std::unique_ptr<StdVectorFst>())),
+        MutableFstClass(VectorFstClass(FstClass())),
+        MutableFstClass(assigned_mfst)}) {
+    EXPECT_EQ(invalid.ArcType(), "none");
+    EXPECT_EQ(invalid.FstType(), "none");
+    EXPECT_EQ(invalid.WeightType(), "none");
+    EXPECT_EQ(invalid.Properties(kError, true), kError);
+    EXPECT_FALSE(
+        invalid.AddArc(0, ArcClass(1, 1, WeightClass::One("tropical"), 0)));
+    EXPECT_FALSE(invalid.AddArc(0, ArcClass(1, 1, WeightClass(), 0)));
+    EXPECT_EQ(invalid.AddState(), kNoStateId);
+    invalid.AddStates(3);
+    EXPECT_EQ(invalid.NumStates(), 0);
+    EXPECT_FALSE(invalid.DeleteArcs(0, 1));
+    EXPECT_FALSE(invalid.DeleteArcs(0));
+    EXPECT_FALSE(invalid.DeleteStates({0}));
+    invalid.DeleteStates();
+    EXPECT_EQ(invalid.MutableInputSymbols(), nullptr);
+    EXPECT_EQ(invalid.MutableOutputSymbols(), nullptr);
+    EXPECT_FALSE(invalid.ReserveArcs(0, 2));
+    invalid.ReserveStates(4);
+    SymbolTable syms;
+    invalid.SetInputSymbols(&syms);
+    invalid.SetOutputSymbols(&syms);
+    EXPECT_EQ(invalid.InputSymbols(), nullptr);
+    EXPECT_EQ(invalid.OutputSymbols(), nullptr);
+    EXPECT_FALSE(invalid.SetFinal(0, WeightClass::One("tropical")));
+    EXPECT_FALSE(invalid.SetFinal(0, WeightClass()));
+    invalid.SetProperties(kAcceptor, kAcceptor);
+    EXPECT_EQ(invalid.Properties(kAcceptor, false), 0);
+    EXPECT_FALSE(invalid.SetStart(0));
+    EXPECT_EQ(invalid.GetMutableFst<StdArc>(), nullptr);
+  }
+
+  EXPECT_EQ(VectorFstClass::Convert<StdArc>(FstClass()), nullptr);
+  EXPECT_EQ(VectorFstClass::Convert<StdArc>(FstClass(VectorFst<LogArc>())),
+            nullptr);
+
+  EXPECT_FALSE(script::Verify(FstClass()));
+  EXPECT_FALSE(Equal(FstClass(), FstClass()));
+  EXPECT_FALSE(Equal(FstClass(), FstClass(valid_vfst)));
+  EncodeMapperClass valid_encoder("standard", kEncodeLabels, ENCODE);
+  EncodeMapperClass null_encoder;
+  VectorFstClass null_vfst(kDummyName);
+  Encode(&null_vfst, &valid_encoder);
+  Encode(&null_vfst, &null_encoder);
+  Decode(&null_vfst, valid_encoder);
+  Decode(&null_vfst, null_encoder);
 }
 
 // Tests WeightClass construction and comparison operations.

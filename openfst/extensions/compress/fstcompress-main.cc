@@ -27,6 +27,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/flags.h"
 #include "openfst/extensions/compress/compressscript.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/util.h"
 #include "openfst/script/fst-class.h"
 
@@ -56,6 +57,8 @@ int fstcompress_main(int argc, char** argv) {
 
   if (absl::GetFlag(FLAGS_decode)) {
     VectorFstClass fst(absl::GetFlag(FLAGS_arc_type));
+    // VectorFstClass already logged an error via FSTERROR() if kError is set.
+    if (fst.Properties(fst::kError, true) == fst::kError) return 1;
     if (!s::Decompress(in_name, &fst)) {
       FSTERROR() << "Decompression failed";
       return 1;

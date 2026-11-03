@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "absl/base/casts.h"
+#include "absl/base/no_destructor.h"
 #include "absl/base/nullability.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
@@ -324,7 +325,8 @@ class FstClass : public FstClassBase {
 
   template <class Arc>
   explicit FstClass(std::unique_ptr<Fst<Arc>> fst)
-      : impl_(std::make_unique<FstClassImpl<Arc>>(std::move(fst))) {}
+      : impl_(fst ? std::make_unique<FstClassImpl<Arc>>(std::move(fst))
+                  : nullptr) {}
 
   template <class Arc>
   explicit FstClass(const Fst<Arc>& fst)
@@ -338,32 +340,46 @@ class FstClass : public FstClassBase {
     return *this;
   }
 
-  WeightClass Final(int64_t s) const final { return impl_->Final(s); }
-
-  const std::string& ArcType() const final { return impl_->ArcType(); }
-
-  const std::string& FstType() const final { return impl_->FstType(); }
-
-  const SymbolTable* InputSymbols() const final {
-    return impl_->InputSymbols();
+  WeightClass Final(int64_t s) const final {
+    return impl_ ? impl_->Final(s) : WeightClass();
   }
 
-  size_t NumArcs(int64_t s) const final { return impl_->NumArcs(s); }
+  const std::string& ArcType() const final {
+    if (impl_) return impl_->ArcType();
+    static const absl::NoDestructor<std::string> no_type("none");
+    return *no_type;
+  }
+
+  const std::string& FstType() const final {
+    if (impl_) return impl_->FstType();
+    static const absl::NoDestructor<std::string> no_type("none");
+    return *no_type;
+  }
+
+  const SymbolTable* InputSymbols() const final {
+    return impl_ ? impl_->InputSymbols() : nullptr;
+  }
+
+  size_t NumArcs(int64_t s) const final {
+    return impl_ ? impl_->NumArcs(s) : std::numeric_limits<size_t>::max();
+  }
 
   size_t NumInputEpsilons(int64_t s) const final {
-    return impl_->NumInputEpsilons(s);
+    return impl_ ? impl_->NumInputEpsilons(s)
+                 : std::numeric_limits<size_t>::max();
   }
 
   size_t NumOutputEpsilons(int64_t s) const final {
-    return impl_->NumOutputEpsilons(s);
+    return impl_ ? impl_->NumOutputEpsilons(s)
+                 : std::numeric_limits<size_t>::max();
   }
 
   std::optional<int64_t> NumStatesIfKnown() const final {
-    return impl_->NumStatesIfKnown();
+    return impl_ ? impl_->NumStatesIfKnown() : std::nullopt;
   }
 
   const SymbolTable* OutputSymbols() const final {
-    return impl_->OutputSymbols();
+    return impl_ ? impl_->OutputSymbols() : nullptr;
   }
 
   uint64_t Properties(uint64_t mask, bool test) const final {
@@ -378,11 +394,17 @@ class FstClass : public FstClassBase {
   static absl_nullable std::unique_ptr<FstClass> Read(
       std::istream& istrm, const std::string& source);
 
-  int64_t Start() const final { return impl_->Start(); }
+  int64_t Start() const final { return impl_ ? impl_->Start() : kNoStateId; }
 
-  bool ValidStateId(int64_t s) const final { return impl_->ValidStateId(s); }
+  bool ValidStateId(int64_t s) const final {
+    return impl_ && impl_->ValidStateId(s);
+  }
 
-  const std::string& WeightType() const final { return impl_->WeightType(); }
+  const std::string& WeightType() const final {
+    if (impl_) return impl_->WeightType();
+    static const absl::NoDestructor<std::string> no_type("none");
+    return *no_type;
+  }
 
   // Helper that logs an ERROR if the weight type of an FST and a WeightClass
   // don't match.
@@ -391,11 +413,11 @@ class FstClass : public FstClassBase {
                         absl::string_view op_name) const;
 
   bool Write(const std::string& source) const final {
-    return impl_->Write(source);
+    return impl_ && impl_->Write(source);
   }
 
   bool Write(std::ostream& ostr, const std::string& source) const final {
-    return impl_->Write(ostr, source);
+    return impl_ && impl_->Write(ostr, source);
   }
 
   ~FstClass() override = default;
@@ -417,7 +439,7 @@ class FstClass : public FstClassBase {
 
   template <class Arc>
   const Fst<Arc>* GetFst() const {
-    if (Arc::Type() != ArcType()) {
+    if (!impl_ || Arc::Type() != ArcType()) {
       return nullptr;
     } else {
       FstClassImpl<Arc>* typed_impl =
@@ -468,59 +490,69 @@ class FstClass : public FstClassBase {
 class MutableFstClass : public FstClass {
  public:
   bool AddArc(int64_t s, const ArcClass& ac) {
-    if (!WeightTypesMatch(ac.weight, "AddArc")) return false;
+    if (!GetImpl() || !WeightTypesMatch(ac.weight, "AddArc")) return false;
     return GetImpl()->AddArc(s, ac);
   }
 
-  int64_t AddState() { return GetImpl()->AddState(); }
+  int64_t AddState() { return GetImpl() ? GetImpl()->AddState() : kNoStateId; }
 
-  void AddStates(size_t n) { return GetImpl()->AddStates(n); }
-
-  bool DeleteArcs(int64_t s, size_t n) { return GetImpl()->DeleteArcs(s, n); }
-
-  bool DeleteArcs(int64_t s) { return GetImpl()->DeleteArcs(s); }
-
-  bool DeleteStates(const std::vector<int64_t>& dstates) {
-    return GetImpl()->DeleteStates(dstates);
+  void AddStates(size_t n) {
+    if (GetImpl()) GetImpl()->AddStates(n);
   }
 
-  void DeleteStates() { GetImpl()->DeleteStates(); }
+  bool DeleteArcs(int64_t s, size_t n) {
+    return GetImpl() && GetImpl()->DeleteArcs(s, n);
+  }
+
+  bool DeleteArcs(int64_t s) { return GetImpl() && GetImpl()->DeleteArcs(s); }
+
+  bool DeleteStates(const std::vector<int64_t>& dstates) {
+    return GetImpl() && GetImpl()->DeleteStates(dstates);
+  }
+
+  void DeleteStates() {
+    if (GetImpl()) GetImpl()->DeleteStates();
+  }
 
   SymbolTable* MutableInputSymbols() {
-    return GetImpl()->MutableInputSymbols();
+    return GetImpl() ? GetImpl()->MutableInputSymbols() : nullptr;
   }
 
   SymbolTable* MutableOutputSymbols() {
-    return GetImpl()->MutableOutputSymbols();
+    return GetImpl() ? GetImpl()->MutableOutputSymbols() : nullptr;
   }
 
-  int64_t NumStates() const { return GetImpl()->NumStates(); }
+  int64_t NumStates() const { return GetImpl() ? GetImpl()->NumStates() : 0; }
 
-  bool ReserveArcs(int64_t s, size_t n) { return GetImpl()->ReserveArcs(s, n); }
+  bool ReserveArcs(int64_t s, size_t n) {
+    return GetImpl() && GetImpl()->ReserveArcs(s, n);
+  }
 
-  void ReserveStates(int64_t n) { GetImpl()->ReserveStates(n); }
+  void ReserveStates(int64_t n) {
+    if (GetImpl()) GetImpl()->ReserveStates(n);
+  }
 
   static absl_nullable std::unique_ptr<MutableFstClass> Read(
       const std::string& source, bool convert = false);
 
   void SetInputSymbols(const SymbolTable* isyms) {
-    GetImpl()->SetInputSymbols(isyms);
+    if (GetImpl()) GetImpl()->SetInputSymbols(isyms);
   }
 
   bool SetFinal(int64_t s, const WeightClass& weight) {
-    if (!WeightTypesMatch(weight, "SetFinal")) return false;
+    if (!GetImpl() || !WeightTypesMatch(weight, "SetFinal")) return false;
     return GetImpl()->SetFinal(s, weight);
   }
 
   void SetOutputSymbols(const SymbolTable* osyms) {
-    GetImpl()->SetOutputSymbols(osyms);
+    if (GetImpl()) GetImpl()->SetOutputSymbols(osyms);
   }
 
   void SetProperties(uint64_t props, uint64_t mask) {
-    GetImpl()->SetProperties(props, mask);
+    if (GetImpl()) GetImpl()->SetProperties(props, mask);
   }
 
-  bool SetStart(int64_t s) { return GetImpl()->SetStart(s); }
+  bool SetStart(int64_t s) { return GetImpl() && GetImpl()->SetStart(s); }
 
   template <class Arc>
   explicit MutableFstClass(std::unique_ptr<MutableFst<Arc>> fst)
@@ -598,8 +630,10 @@ class VectorFstClass : public MutableFstClass {
 
   template <class Arc>
   static std::unique_ptr<FstClassImplBase> Convert(const FstClass& other) {
+    const Fst<Arc>* fst = other.GetFst<Arc>();
+    if (!fst) return nullptr;
     return std::make_unique<FstClassImpl<Arc>>(
-        std::make_unique<VectorFst<Arc>>(*other.GetFst<Arc>()));
+        std::make_unique<VectorFst<Arc>>(*fst));
   }
 
   template <class Arc>
