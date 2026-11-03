@@ -26,6 +26,8 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/util.h"
@@ -65,6 +67,7 @@ class ParenTest : public testing::Test {
     return false;
   }
 
+  absl::FlagSaver flag_saver_;
   std::unique_ptr<VectorFst<Arc>> pfst1_;
   std::vector<std::pair<Label, Label>> parens_;
 };
@@ -97,6 +100,20 @@ TEST_F(ParenTest, ParenReachTest) {
   ASSERT_FALSE(ParenReach(reachable, 9, 1));
   ASSERT_FALSE(ParenReach(reachable, 10, 0));
   ASSERT_FALSE(ParenReach(reachable, 10, 1));
+}
+
+TEST_F(ParenTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  for (const auto& bad_parens :
+       std::vector<std::vector<std::pair<Label, Label>>>{
+           {{10, 10}},
+           {{10, 11}, {10, 12}},
+           {{10, 11}, {12, 11}},
+           {{10, 11}, {11, 12}}}) {
+    PdtParenReachable<Arc> reachable(*pfst1_, bad_parens, true);
+    EXPECT_TRUE(reachable.Error());
+  }
 }
 
 }  // namespace

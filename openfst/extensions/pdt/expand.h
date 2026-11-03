@@ -105,6 +105,10 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
         own_state_table_(opts.state_table == nullptr),
         keep_parentheses_(opts.keep_parentheses) {
     SetType("expand");
+    if (stack_->Error()) {
+      SetProperties(kError, kError);
+      return;
+    }
     const auto props = fst.Properties(kFstProperties, false);
     SetProperties(PdtExpandProperties(props), kCopyProperties);
     SetInputSymbols(fst.InputSymbols());
@@ -120,6 +124,10 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
         own_state_table_(true),
         keep_parentheses_(impl.keep_parentheses_) {
     SetType("expand");
+    if (stack_->Error()) {
+      SetProperties(kError, kError);
+      return;
+    }
     SetProperties(impl.Properties(), kCopyProperties);
     SetInputSymbols(impl.InputSymbols());
     SetOutputSymbols(impl.OutputSymbols());
@@ -131,6 +139,7 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
   }
 
   StateId Start() {
+    if (Properties() & kError) return kNoStateId;
     if (!HasStart()) {
       const auto s = fst_->Start();
       if (s == kNoStateId) return kNoStateId;
@@ -356,6 +365,10 @@ class PdtPrunedExpand {
               PdtExpandFstOptions<Arc>(opts, true, &stack_, &state_table_)),
         queue_(state_table_, stack_, stack_length_, distance_, fdistance_),
         error_(false) {
+    if (stack_.Error()) {
+      error_ = true;
+      return;
+    }
     Reverse(*ifst_, parens, &rfst_);
     VectorFst<Arc> path;
     reverse_shortest_path_.reset(new PdtShortestPath<Arc, FifoQueue<StateId>>(

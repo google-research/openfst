@@ -26,10 +26,13 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/prune.h"
 #include "openfst/lib/topsort.h"
 #include "openfst/lib/util.h"
@@ -73,6 +76,7 @@ class ExpandTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
+  absl::FlagSaver flag_saver_;
   std::unique_ptr<const VectorFst<Arc>> efst1_;
   std::unique_ptr<const VectorFst<Arc>> efst2_;
   std::unique_ptr<const VectorFst<Arc>> efst3_;
@@ -162,6 +166,35 @@ TEST_F(ExpandTest, PdtExpandAndPruneEmptyPdt) {
     ASSERT_TRUE(Verify(ofst));
     EXPECT_EQ(ofst.NumStates(), 0);
     EXPECT_EQ(ofst.Start(), kNoStateId);
+  }
+}
+
+TEST_F(ExpandTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  VectorFst<Arc> fst;
+  fst.AddState();
+  fst.SetStart(0);
+  fst.SetFinal(0, Weight::One());
+
+  for (const auto& bad_parens :
+       std::vector<std::vector<std::pair<Label, Label>>>{
+           {{10, 10}},
+           {{10, 11}, {10, 12}},
+           {{10, 11}, {12, 11}},
+           {{10, 11}, {11, 12}}}) {
+    PdtExpandFst<Arc> xfst(fst, bad_parens);
+    EXPECT_TRUE(xfst.Properties(kError, true));
+    EXPECT_EQ(xfst.Start(), kNoStateId);
+
+    VectorFst<Arc> ofst;
+    Expand(fst, bad_parens, &ofst);
+    EXPECT_TRUE(ofst.Properties(kError, true));
+
+    VectorFst<Arc> pruned_ofst;
+    Expand(fst, bad_parens, &pruned_ofst,
+           PdtExpandOptions<Arc>(true, false, Weight::One()));
+    EXPECT_TRUE(pruned_ofst.Properties(kError, true));
   }
 }
 

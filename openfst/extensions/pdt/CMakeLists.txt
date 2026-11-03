@@ -117,6 +117,7 @@ if(OPENFST_BUILD_TESTS)
               GTest::gtest
               GTest::gmock
               absl::flags
+              absl::flags_reflection
               absl::log
     )
     gtest_discover_tests(

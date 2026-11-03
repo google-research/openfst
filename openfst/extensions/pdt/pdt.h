@@ -30,6 +30,7 @@
 #include "absl/hash/hash.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/state-table.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 
@@ -53,11 +54,19 @@ class PdtStack {
   };
 
   explicit PdtStack(const std::vector<std::pair<Label, Label>>& parens)
-      : parens_(parens), min_paren_(kNoLabel), max_paren_(kNoLabel) {
+      : parens_(parens),
+        min_paren_(kNoLabel),
+        max_paren_(kNoLabel),
+        error_(false) {
     for (size_t i = 0; i < parens.size(); ++i) {
       const auto& pair = parens[i];
-      paren_map_[pair.first] = i;
-      paren_map_[pair.second] = i;
+      if (!paren_map_.emplace(pair.first, i).second ||
+          !paren_map_.emplace(pair.second, i).second) {
+        FSTERROR() << "PdtStack: Duplicate parenthesis label in pair ("
+                   << pair.first << ", " << pair.second << ")";
+        error_ = true;
+        return;
+      }
       if (min_paren_ == kNoLabel || pair.first < min_paren_) {
         min_paren_ = pair.first;
       }
@@ -70,6 +79,8 @@ class PdtStack {
     nodes_.push_back(StackNode(-1, -1));  // Tree root.
   }
 
+  bool Error() const { return error_; }
+
   // Returns stack ID given the current stack ID (0 if empty) and label read.
   // Pushes onto the stack if the label is an open parenthesis, returning the
   // new stack ID. Pops the stack if the label is a close parenthesis that
@@ -77,6 +88,7 @@ class PdtStack {
   // label is an unmatched close parenthesis. Otherwise, returns the current
   // stack ID.
   StackId Find(StackId stack_id, Label label) {
+    if (error_) return -1;
     if (min_paren_ == kNoLabel || label < min_paren_ || label > max_paren_) {
       return stack_id;  // Non-paren.
     }
@@ -102,12 +114,19 @@ class PdtStack {
 
   // Returns the stack ID obtained by popping the label at the top of the
   // current stack ID.
-  StackId Pop(StackId stack_id) const { return nodes_[stack_id].parent_id; }
+  StackId Pop(StackId stack_id) const {
+    if (error_) return -1;
+    return nodes_[stack_id].parent_id;
+  }
 
   // Returns the paren ID at the top of the stack.
-  ssize_t Top(StackId stack_id) const { return nodes_[stack_id].paren_id; }
+  ssize_t Top(StackId stack_id) const {
+    if (error_) return -1;
+    return nodes_[stack_id].paren_id;
+  }
 
   ssize_t ParenId(Label label) const {
+    if (error_) return -1;
     const auto it = paren_map_.find(label);
     if (it == paren_map_.end()) return -1;  // Non-paren.
     return it->second;
@@ -127,6 +146,7 @@ class PdtStack {
   absl::flat_hash_map<std::pair<StackId, Label>, StackId, ChildHash> child_map_;
   Label min_paren_;
   Label max_paren_;
+  bool error_;
 };
 
 // State tuple for PDT expansion.

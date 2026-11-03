@@ -350,6 +350,7 @@ class PdtShortestPath {
         keep_parens_(opts.keep_parentheses),
         start_(ifst.Start()),
         sp_data_(opts.path_gc),
+        nenqueued_(0),
         error_(false) {
     // TODO: Make this a compile-time static_assert once:
     // 1) All weight properties are made constexpr for all weight types.
@@ -362,10 +363,15 @@ class PdtShortestPath {
                  << " property and be right distributive: " << Weight::Type();
       error_ = true;
     }
-    for (Label i = 0; i < parens.size(); ++i) {
+    for (size_t i = 0; i < parens.size(); ++i) {
       const auto& pair = parens[i];
-      paren_map_[pair.first] = i;
-      paren_map_[pair.second] = i;
+      if (!paren_map_.emplace(pair.first, static_cast<Label>(i)).second ||
+          !paren_map_.emplace(pair.second, static_cast<Label>(i)).second) {
+        FSTERROR() << "PdtShortestPath: Duplicate parenthesis label in pair ("
+                   << pair.first << ", " << pair.second << ")";
+        error_ = true;
+        return;
+      }
     }
   }
 
@@ -376,6 +382,10 @@ class PdtShortestPath {
   }
 
   void ShortestPath(MutableFst<Arc>* ofst) {
+    if (error_) {
+      ofst->SetProperties(kError, kError);
+      return;
+    }
     Init(ofst);
     GetDistance(start_);
     GetPath();

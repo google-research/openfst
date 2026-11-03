@@ -26,9 +26,12 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -67,6 +70,7 @@ class ShortestPathTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
+  absl::FlagSaver flag_saver_;
   std::unique_ptr<const VectorFst<Arc>> spfst1_;
   std::unique_ptr<const VectorFst<Arc>> spfst2_;
   std::unique_ptr<const VectorFst<Arc>> spfst3_;
@@ -116,6 +120,18 @@ TEST_F(ShortestPathTest, FinishedParenSearchDataCache) {
   EXPECT_EQ(sp_data.Distance(p1), Weight(2.5F));
   EXPECT_EQ(sp_data.Parent(p1), SearchState(3, 0));
   EXPECT_EQ(sp_data.Distance(s), Weight(1.5F));
+}
+
+TEST_F(ShortestPathTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  for (const auto& bad_parens :
+       std::vector<std::vector<std::pair<Label, Label>>>{
+           {{10, 10}}, {{10, 11}, {10, 12}}}) {
+    VectorFst<Arc> path;
+    ShortestPath(*spfst1_, bad_parens, &path);
+    EXPECT_TRUE(path.Properties(kError, true));
+  }
 }
 
 }  // namespace

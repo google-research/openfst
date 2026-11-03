@@ -132,8 +132,13 @@ class PdtParenReachable {
     paren_map_.reserve(2 * parens.size());
     for (size_t i = 0; i < parens.size(); ++i) {
       const auto& pair = parens[i];
-      paren_map_[pair.first] = i;
-      paren_map_[pair.second] = i;
+      if (!paren_map_.emplace(pair.first, static_cast<Label>(i)).second ||
+          !paren_map_.emplace(pair.second, static_cast<Label>(i)).second) {
+        FSTERROR() << "PdtParenReachable: Duplicate parenthesis label in pair ("
+                   << pair.first << ", " << pair.second << ")";
+        error_ = true;
+        return;
+      }
     }
     if (close_) {
       const auto start = fst.Start();

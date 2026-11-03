@@ -26,6 +26,8 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/string_view.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/compose.h"
@@ -69,6 +71,7 @@ class ComposeTest : public testing::Test {
     ASSERT_TRUE(ReadLabelPairs(parens_name, &parens_));
   }
 
+  absl::FlagSaver flag_saver_;
   std::unique_ptr<const VectorFst<Arc>> cfst1_;
   std::unique_ptr<const VectorFst<Arc>> cfst2_;
   std::unique_ptr<const VectorFst<Arc>> cfst3_;
@@ -132,6 +135,27 @@ TEST_F(ComposeTest, FilteredPdtComposeFstSafeCopy) {
   Connect(&vfst2);
   ASSERT_TRUE(Verify(vfst2));
   ASSERT_TRUE(Equal(*cfst3_, vfst2));
+}
+
+TEST_F(ComposeTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  for (const auto& bad_parens :
+       std::vector<std::vector<std::pair<Label, Label>>>{
+           {{10, 10}}, {{10, 11}, {10, 12}}}) {
+    for (PdtComposeFilter filter :
+         {PdtComposeFilter::PAREN, PdtComposeFilter::EXPAND,
+          PdtComposeFilter::EXPAND_PAREN}) {
+      const PdtComposeOptions opts(true, filter);
+      VectorFst<Arc> ofst1;
+      Compose(*cfst1_, bad_parens, *cfst2_, &ofst1, opts);
+      EXPECT_TRUE(ofst1.Properties(kError, true));
+
+      VectorFst<Arc> ofst2;
+      Compose(*cfst2_, *cfst1_, bad_parens, &ofst2, opts);
+      EXPECT_TRUE(ofst2.Properties(kError, true));
+    }
+  }
 }
 
 }  // namespace
