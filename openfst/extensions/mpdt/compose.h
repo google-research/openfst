@@ -70,7 +70,7 @@ class MPdtParenFilter {
         fs_(FilterState::NoState()),
         stack_(parens_, assignments_),
         paren_id_(-1) {
-    if (parens) {
+    if (parens && !stack_.Error()) {
       for (const auto& pair : *parens) {
         GetMatcher1()->AddOpenParen(pair.first);
         GetMatcher2()->AddOpenParen(pair.first);
@@ -99,7 +99,8 @@ class MPdtParenFilter {
   void SetState(StateId s1, StateId s2, const FilterState& fs) {
     fs_ = fs;
     filter_.SetState(s1, s2, fs_.GetState1());
-    if (!expand_) return;
+    // ComposeFst still visits the start state when Properties() sets kError.
+    if (!expand_ || stack_.Error()) return;
     const auto paren_id = stack_.Top(fs.GetState2().GetState());
     if (paren_id != paren_id_) {
       if (paren_id_ != -1) {
@@ -115,6 +116,7 @@ class MPdtParenFilter {
   }
 
   FilterState FilterArc(Arc* arc1, Arc* arc2) const {
+    if (stack_.Error()) return FilterState::NoState();
     const auto fs1 = filter_.FilterArc(arc1, arc2);
     const auto& fs2 = fs_.GetState2();
     if (fs1 == FilterState1::NoState()) return FilterState::NoState();
@@ -138,7 +140,7 @@ class MPdtParenFilter {
   }
 
   void FilterFinal(Weight* w1, Weight* w2) const {
-    if (fs_.GetState2().GetState() != 0) *w1 = Weight::Zero();
+    if (stack_.Error() || fs_.GetState2().GetState() != 0) *w1 = Weight::Zero();
     filter_.FilterFinal(w1, w2);
   }
 
@@ -149,8 +151,10 @@ class MPdtParenFilter {
   Matcher2* GetMatcher2() { return filter_.GetMatcher2(); }
 
   uint64_t Properties(uint64_t iprops) const {
-    const auto oprops = filter_.Properties(iprops);
-    return oprops & kILabelInvariantProperties & kOLabelInvariantProperties;
+    auto props = filter_.Properties(iprops) & kILabelInvariantProperties &
+                 kOLabelInvariantProperties;
+    if (stack_.Error()) props |= kError;
+    return props;
   }
 
  private:

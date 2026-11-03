@@ -33,6 +33,8 @@
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/fst.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -129,6 +131,25 @@ TEST_F(ExpandTest, ReadLabelTriplesClearsOutputsAndRejectsMalformedLines) {
         << "bad_contents = " << bad_contents;
     EXPECT_TRUE(parens_.empty()) << "bad_contents = " << bad_contents;
     EXPECT_TRUE(assignments_.empty()) << "bad_contents = " << bad_contents;
+  }
+}
+
+TEST_F(ExpandTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  struct BadCase {
+    std::vector<std::pair<Label, Label>> parens;
+    std::vector<Level> assignments;
+  };
+  for (const auto& tc : std::vector<BadCase>{{{{10, 10}}, {1}},
+                                             {{{10, 11}, {10, 12}}, {1, 2}}}) {
+    MPdtExpandFst<Arc> xfst(*efst1_, tc.parens, tc.assignments);
+    EXPECT_TRUE(xfst.Properties(kError, true));
+    EXPECT_EQ(xfst.Start(), kNoStateId);
+
+    VectorFst<Arc> ofst;
+    Expand(*efst1_, tc.parens, tc.assignments, &ofst);
+    EXPECT_TRUE(ofst.Properties(kError, true));
   }
 }
 

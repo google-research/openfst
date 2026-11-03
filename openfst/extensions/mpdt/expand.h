@@ -97,6 +97,10 @@ class MPdtExpandFstImpl : public CacheImpl<Arc> {
         own_state_table_(!opts.state_table),
         keep_parentheses_(opts.keep_parentheses) {
     SetType("expand");
+    if (stack_->Error()) {
+      SetProperties(kError, kError);
+      return;
+    }
     const auto props = fst.Properties(kFstProperties, false);
     SetProperties(MPdtExpandProperties(props), kCopyProperties);
     SetInputSymbols(fst.InputSymbols());
@@ -112,6 +116,10 @@ class MPdtExpandFstImpl : public CacheImpl<Arc> {
         own_state_table_(true),
         keep_parentheses_(impl.keep_parentheses_) {
     SetType("expand");
+    if (stack_->Error()) {
+      SetProperties(kError, kError);
+      return;
+    }
     SetProperties(impl.Properties(), kCopyProperties);
     SetInputSymbols(impl.InputSymbols());
     SetOutputSymbols(impl.OutputSymbols());
@@ -123,6 +131,7 @@ class MPdtExpandFstImpl : public CacheImpl<Arc> {
   }
 
   StateId Start() {
+    if (Properties() & kError) return kNoStateId;
     if (!HasStart()) {
       const auto s = fst_->Start();
       if (s == kNoStateId) return kNoStateId;

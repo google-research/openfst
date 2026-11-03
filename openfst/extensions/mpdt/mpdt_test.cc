@@ -23,7 +23,10 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "openfst/lib/arc.h"
+#include "openfst/lib/util.h"
 
 namespace fst {
 namespace internal {
@@ -44,6 +47,7 @@ class MPdtTest : public testing::Test {
 
   std::vector<std::pair<int, int>> paren_set_;
   std::vector<int> assignments_;
+  absl::FlagSaver flag_saver_;
 };
 
 TEST_F(MPdtTest, Test0) {
@@ -92,6 +96,26 @@ TEST_F(MPdtTest, Test3) {
   int s3 = stack.Find(s2, 105);
   ASSERT_NE(s3, -1);                   // Reads from second stack: legal.
   ASSERT_NE(stack.Find(s3, 104), -1);  // Reads from first stack: legal.
+}
+
+TEST_F(MPdtTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  struct BadCase {
+    std::vector<std::pair<int, int>> parens;
+    std::vector<int> assignments;
+  };
+  for (const auto& tc :
+       std::vector<BadCase>{{{{100, 100}}, {1}},
+                            {{{100, 101}, {100, 102}}, {1, 2}},
+                            {{{100, 101}, {102, 101}}, {1, 2}},
+                            {{{100, 101}, {101, 102}}, {1, 2}}}) {
+    MPdtStack<StdArc::StateId, StdArc::Label, 2, MPdtType::READ_RESTRICT> stack(
+        tc.parens, tc.assignments);
+    EXPECT_TRUE(stack.Error());
+    EXPECT_EQ(stack.Find(0, 100), -1);
+    EXPECT_EQ(stack.Top(0), -1);
+  }
 }
 
 }  // namespace

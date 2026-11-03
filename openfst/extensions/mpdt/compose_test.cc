@@ -26,6 +26,8 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/string_view.h"
 #include "openfst/extensions/mpdt/read_write_utils.h"
 #include "openfst/extensions/pdt/compose.h"
@@ -35,6 +37,7 @@
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
+#include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 
@@ -70,6 +73,7 @@ class ComposeTest : public testing::Test {
     ASSERT_TRUE(ReadLabelTriples(parens_name, &parens_, &assignments_));
   }
 
+  absl::FlagSaver flag_saver_;
   std::unique_ptr<const VectorFst<Arc>> cfst1_;
   std::unique_ptr<const VectorFst<Arc>> cfst2_;
   std::unique_ptr<const VectorFst<Arc>> cfst3_;
@@ -134,6 +138,30 @@ TEST_F(ComposeTest, FilteredMpdtComposeFstSafeCopy) {
   Connect(&vfst2);
   ASSERT_TRUE(Verify(vfst2));
   ASSERT_TRUE(Equal(*cfst3_, vfst2));
+}
+
+TEST_F(ComposeTest, DuplicateParenthesesSetsError) {
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  struct BadCase {
+    std::vector<std::pair<Label, Label>> parens;
+    std::vector<Level> assignments;
+  };
+  for (const auto& tc : std::vector<BadCase>{{{{10, 10}}, {1}},
+                                             {{{10, 11}, {10, 12}}, {1, 2}}}) {
+    for (PdtComposeFilter filter :
+         {PdtComposeFilter::PAREN, PdtComposeFilter::EXPAND,
+          PdtComposeFilter::EXPAND_PAREN}) {
+      const MPdtComposeOptions opts(true, filter);
+      VectorFst<Arc> ofst1;
+      Compose(*cfst1_, tc.parens, tc.assignments, *cfst2_, &ofst1, opts);
+      EXPECT_TRUE(ofst1.Properties(kError, true));
+
+      VectorFst<Arc> ofst2;
+      Compose(*cfst2_, *cfst1_, tc.parens, tc.assignments, &ofst2, opts);
+      EXPECT_TRUE(ofst2.Properties(kError, true));
+    }
+  }
 }
 
 }  // namespace

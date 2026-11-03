@@ -124,7 +124,7 @@ class MPdtStack {
   // For Top we find the first non-empty config, and find the paren ID of that
   // (or -1) if there is none, then map that to the external stack_id to return.
   ssize_t Top(StackId stack_id) const {
-    if (stack_id == -1) return -1;
+    if (error_ || stack_id == -1) return -1;
     const auto config = InternalStackIds(stack_id);
     Level level = 0;
     StackId underlying_id = -1;
@@ -141,11 +141,12 @@ class MPdtStack {
   }
 
   ssize_t ParenId(Label label) const {
+    if (error_) return -1;
     const auto it = paren_map_.find(label);
     return it != paren_map_.end() ? it->second : -1;
   }
 
-  bool Error() { return error_; }
+  bool Error() const { return error_; }
 
   // Each component stack has an internal stack ID for a given configuration and
   // label.
@@ -170,6 +171,11 @@ class MPdtStack {
     auto it = stack_id_to_config_map_.find(stack_id);
     if (it == stack_id_to_config_map_.end()) {
       it = stack_id_to_config_map_.find(-1);
+      if (it == stack_id_to_config_map_.end()) {
+        Config neg_one;
+        neg_one.fill(-1);
+        return neg_one;
+      }
     }
     return it->second;
   }
@@ -230,11 +236,16 @@ MPdtStack<StackId, Level, nlevels, restrict>::MPdtStack(
       return;
     }
     const auto& pair = parens[i];
+    if (!paren_map_.emplace(pair.first, static_cast<size_t>(i)).second ||
+        !paren_map_.emplace(pair.second, static_cast<size_t>(i)).second) {
+      FSTERROR() << "MPdtStack: Duplicate parenthesis label in pair ("
+                 << pair.first << ", " << pair.second << ")";
+      error_ = true;
+      return;
+    }
     vectors[level].push_back(pair);
     paren_levels_[pair.first] = level;
     paren_levels_[pair.second] = level;
-    paren_map_[pair.first] = i;
-    paren_map_[pair.second] = i;
     const KeyPair<Level> key(level, vectors[level].size() - 1);
     paren_id_map_[key] = i;
     if (min_paren_ == kNoLabel || pair.first < min_paren_) {
@@ -263,6 +274,7 @@ MPdtStack<StackId, Level, nlevels, restrict>::MPdtStack(
 template <typename StackId, typename Level, Level nlevels, MPdtType restrict>
 StackId MPdtStack<StackId, Level, nlevels, restrict>::Find(StackId stack_id,
                                                            Level label) {
+  if (error_) return -1;
   // Non-paren.
   if (min_paren_ == kNoLabel || label < min_paren_ || label > max_paren_) {
     return stack_id;
