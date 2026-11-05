@@ -81,9 +81,13 @@ class ExpandedFst : public Fst<A> {
                  << "\" (arc type = \"" << A::Type() << "\"): " << ropts.source;
       return nullptr;
     }
-    auto* fst = reader(strm, ropts);
+    std::unique_ptr<Fst<Arc>> fst(reader(strm, ropts));
     if (!fst) return nullptr;
-    return absl::down_cast<ExpandedFst*>(fst);
+    if (!fst->Properties(kExpanded, false)) {
+      LOG(ERROR) << "ExpandedFst::Read: Not an ExpandedFst: " << ropts.source;
+      return nullptr;
+    }
+    return absl::down_cast<ExpandedFst*>(fst.release());
   }
 
   // Read an ExpandedFst from a file; return NULL on error.

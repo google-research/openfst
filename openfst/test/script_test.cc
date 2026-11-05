@@ -185,6 +185,48 @@ TEST_F(ClassTest, MutableFstClassReadConvert) {
   EXPECT_TRUE(Equal(*converted, FstClass(vfst)));
 }
 
+// Tests reading a non-mutable ConstFst whose header has kMutable set.
+TEST_F(ClassTest, ReadConstWithMutablePropertyBit) {
+  StdVectorFst vfst;
+  const auto s0 = vfst.AddState();
+  const auto s1 = vfst.AddState();
+  vfst.SetStart(s0);
+  vfst.AddArc(s0, StdArc(1, 2, StdArc::Weight(0.5f), s1));
+  vfst.SetFinal(s1, StdArc::Weight(1.5f));
+
+  std::ostringstream raw;
+  const StdConstFst cfst(vfst);
+  ASSERT_TRUE(cfst.Write(raw, FstWriteOptions("const_raw")));
+  std::istringstream in(raw.str());
+  FstHeader hdr;
+  ASSERT_TRUE(hdr.Read(in, "const_raw"));
+  hdr.SetProperties(hdr.Properties() | kMutable);
+
+  const std::string const_path =
+      absl::StrCat(::testing::TempDir(), "/const_forged_mutable.fst");
+  {
+    std::ofstream out(const_path, std::ios::binary);
+    ASSERT_TRUE(hdr.Write(out, const_path));
+    out << in.rdbuf();
+    ASSERT_TRUE(out.good());
+  }
+
+  EXPECT_EQ(MutableFstClass::Read(const_path, /*convert=*/false), nullptr);
+
+  std::unique_ptr<FstClass> fst = FstClass::Read(const_path);
+  ASSERT_NE(fst, nullptr);
+  EXPECT_EQ(fst->Properties(kMutable, false), 0u);
+  EXPECT_TRUE(Equal(*fst, FstClass(vfst)));
+
+  std::unique_ptr<MutableFstClass> converted =
+      MutableFstClass::Read(const_path, /*convert=*/true);
+  ASSERT_NE(converted, nullptr);
+  EXPECT_EQ(converted->FstType(), "vector");
+  EXPECT_EQ(converted->Properties(kMutable, false), kMutable);
+  EXPECT_TRUE(Equal(*converted, FstClass(vfst)));
+  EXPECT_EQ(converted->AddState(), 2);
+}
+
 // Tests arc and state access and mutation of MutableFstClass.
 TEST_F(ClassTest, ArcAndStateAccessAndMutation) {
   StdVectorFst vfst;

@@ -34,6 +34,8 @@
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/matcher-fst.h"
+#include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/project.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/symbol-table.h"
@@ -284,13 +286,14 @@ TEST_F(FstFileTest, VectorWriteUnexpandedSeekable) {
 }
 
 // Creates a ConstFst file with 1 state and 1 arc, but with arbitrary values for
-// start, states[0].pos, and states[0].narcs.
+// start, states[0].pos, states[0].narcs, and header properties.
 bool WriteBadConstFst(const std::string& path, int start, size_t pos,
-                      size_t narcs) {
+                      size_t narcs, uint64_t props = 0) {
   FstHeader hdr;
   hdr.SetFstType("const");
   hdr.SetArcType("standard");
   hdr.SetVersion(2);  // Unaligned, == ConstFstImpl::kFileVersion.
+  hdr.SetProperties(props);
   hdr.SetStart(start);
   hdr.SetNumStates(1);
   hdr.SetNumArcs(1);
@@ -411,6 +414,46 @@ TEST(FstFileFailureTest, VectorBadStates) {
   ASSERT_TRUE(WriteBadVectorFst(path, /*start=*/0, /*next_state=*/3));
   fst.reset(Fst<Arc>::Read(path));
   EXPECT_EQ(fst.get(), nullptr);
+}
+
+TEST_F(FstFileTest, MutableReadBadConvertTypeReturnsNull) {
+  std::unique_ptr<MutableFst<Arc>> fst(
+      MutableFst<Arc>::Read(const1_name_, /*convert=*/true, "const"));
+  EXPECT_EQ(fst, nullptr);
+}
+
+TEST(FstFileFailureTest, ConstWithMutablePropertyBit) {
+  const std::string path =
+      JoinPath(::testing::TempDir(), "const_with_mutable_bit.fst");
+  ASSERT_TRUE(WriteBadConstFst(path, /*start=*/0, /*pos=*/0, /*narcs=*/1,
+                               /*props=*/kExpanded | kMutable));
+
+  std::unique_ptr<Fst<Arc>> fst(Fst<Arc>::Read(path));
+  ASSERT_NE(fst, nullptr);
+  EXPECT_EQ(fst->Properties(kMutable, false), 0u);
+  EXPECT_EQ(fst->Properties(kExpanded, false), kExpanded);
+
+  std::ifstream strm(path, std::ios::binary);
+  ASSERT_TRUE(strm.is_open());
+  std::unique_ptr<MutableFst<Arc>> mfst_stream(
+      MutableFst<Arc>::Read(strm, FstReadOptions(path)));
+  EXPECT_EQ(mfst_stream, nullptr);
+
+  std::unique_ptr<MutableFst<Arc>> mfst_file(
+      MutableFst<Arc>::Read(path, /*convert=*/false));
+  EXPECT_EQ(mfst_file, nullptr);
+
+  std::unique_ptr<MutableFst<Arc>> converted(
+      MutableFst<Arc>::Read(path, /*convert=*/true));
+  ASSERT_NE(converted, nullptr);
+  EXPECT_EQ(converted->Type(), "vector");
+  EXPECT_EQ(converted->Properties(kMutable, false), kMutable);
+  EXPECT_EQ(converted->AddState(), 1);
+
+  // LabelLookAheadRelabeler inspects fst.Properties(kMutable, false) to decide
+  // whether to down_cast to MutableFst or relabel a copy.
+  StdILabelLookAheadFst lfst(*fst);
+  EXPECT_TRUE(Verify(lfst));
 }
 
 }  // namespace

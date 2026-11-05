@@ -973,7 +973,13 @@ bool FstImpl<Arc>::ReadHeader(std::istream& strm, const FstReadOptions& opts,
                << opts.source;
     return false;
   }
-  properties_.store(hdr->Properties(), std::memory_order_relaxed);
+  // Preserves the concrete implementation's static kExpanded and kMutable
+  // property bits rather than trusting the serialized header.
+  constexpr uint64_t kStaticProps = kExpanded | kMutable;
+  properties_.store(
+      (hdr->Properties() & ~kStaticProps) |
+          (properties_.load(std::memory_order_relaxed) & kStaticProps),
+      std::memory_order_relaxed);
   if (hdr->GetFlags() & FstHeader::HAS_ISYMBOLS) {
     isymbols_.reset(SymbolTable::Read(strm, opts.source));
     if (!isymbols_) {

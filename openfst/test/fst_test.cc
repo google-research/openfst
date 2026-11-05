@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <istream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -35,11 +36,15 @@
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/edit-fst.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/expanded-fst.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/impl-to-fst.h"
 #include "openfst/lib/matcher-fst.h"
+#include "openfst/lib/mutable-fst.h"
 #include "openfst/lib/product-weight.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/register.h"
 #include "openfst/lib/test-properties.h"
 #include "openfst/lib/vector-fst.h"
@@ -379,6 +384,104 @@ TEST(FstStringTest, InvalidStringReturnsNullptr) {
 
   // Arbitrary invalid binary payload.
   EXPECT_EQ(StringToFst<StdArc>("invalid_binary_fst_data"), nullptr);
+}
+
+template <class A>
+class NonExpandedTestFstImpl : public internal::FstImpl<A> {
+ public:
+  using Arc = A;
+  using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
+
+  NonExpandedTestFstImpl() { this->SetType("non_expanded_test"); }
+
+  StateId Start() const { return kNoStateId; }
+  Weight Final(StateId) const { return Weight::Zero(); }
+  size_t NumArcs(StateId) const { return 0; }
+  size_t NumInputEpsilons(StateId) const { return 0; }
+  size_t NumOutputEpsilons(StateId) const { return 0; }
+
+  static NonExpandedTestFstImpl* Read(std::istream& strm,
+                                      const FstReadOptions& opts) {
+    auto impl = std::make_unique<NonExpandedTestFstImpl>();
+    FstHeader hdr;
+    if (!impl->ReadHeader(strm, opts, /*min_version=*/1, &hdr)) {
+      return nullptr;
+    }
+    return impl.release();
+  }
+};
+
+template <class A>
+class NonExpandedTestFst : public ImplToFst<NonExpandedTestFstImpl<A>> {
+  using Base = ImplToFst<NonExpandedTestFstImpl<A>>;
+
+ public:
+  using Arc = A;
+  using StateId = typename Arc::StateId;
+  using typename Base::Impl;
+
+  NonExpandedTestFst() : Base(std::make_shared<Impl>()) {}
+  NonExpandedTestFst(const NonExpandedTestFst& fst, bool safe = false)
+      : Base(fst, safe) {}
+
+  NonExpandedTestFst* Copy(bool safe = false) const override {
+    return new NonExpandedTestFst(*this, safe);
+  }
+
+  void InitStateIterator(StateIteratorData<Arc>* data) const override {
+    data->base = nullptr;
+  }
+
+  void InitArcIterator(StateId, ArcIteratorData<Arc>* data) const override {
+    data->base = nullptr;
+  }
+
+  static NonExpandedTestFst* Read(std::istream& strm,
+                                  const FstReadOptions& opts) {
+    Impl* impl = Impl::Read(strm, opts);
+    return impl ? new NonExpandedTestFst(std::shared_ptr<Impl>(impl)) : nullptr;
+  }
+
+ private:
+  explicit NonExpandedTestFst(std::shared_ptr<Impl> impl)
+      : Base(std::move(impl)) {}
+};
+
+REGISTER_FST(NonExpandedTestFst, StdArc);
+
+TEST(FstTest, NonExpandedWithExpandedAndMutablePropertyBits) {
+  std::stringstream strm;
+  FstHeader hdr;
+  hdr.SetFstType("non_expanded_test");
+  hdr.SetArcType(StdArc::Type());
+  hdr.SetVersion(1);
+  hdr.SetProperties(kExpanded | kMutable);
+  hdr.SetStart(kNoStateId);
+  hdr.SetNumStates(0);
+  ASSERT_TRUE(hdr.Write(strm, "test"));
+  const std::string data = strm.str();
+
+  {
+    std::istringstream iss(data);
+    std::unique_ptr<Fst<StdArc>> fst(
+        Fst<StdArc>::Read(iss, FstReadOptions("test")));
+    ASSERT_NE(fst, nullptr);
+    EXPECT_EQ(fst->Properties(kExpanded, false), 0u);
+    EXPECT_EQ(fst->Properties(kMutable, false), 0u);
+  }
+  {
+    std::istringstream iss(data);
+    std::unique_ptr<ExpandedFst<StdArc>> efst(
+        ExpandedFst<StdArc>::Read(iss, FstReadOptions("test")));
+    EXPECT_EQ(efst, nullptr);
+  }
+  {
+    std::istringstream iss(data);
+    std::unique_ptr<MutableFst<StdArc>> mfst(
+        MutableFst<StdArc>::Read(iss, FstReadOptions("test")));
+    EXPECT_EQ(mfst, nullptr);
+  }
 }
 
 }  // namespace

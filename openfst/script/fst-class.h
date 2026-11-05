@@ -450,18 +450,7 @@ class FstClass : public FstClassBase {
 
   template <class Arc>
   static std::unique_ptr<FstClass> Read(std::istream& stream,
-                                        const FstReadOptions& opts) {
-    if (!opts.header) {
-      LOG(ERROR) << "FstClass::Read: Options header not specified";
-      return nullptr;
-    }
-    const FstHeader& hdr = *opts.header;
-    if (hdr.Properties() & kMutable) {
-      return ReadTypedFst<MutableFstClass, MutableFst<Arc>>(stream, opts);
-    } else {
-      return ReadTypedFst<FstClass, Fst<Arc>>(stream, opts);
-    }
-  }
+                                        const FstReadOptions& opts);
 
  protected:
   explicit FstClass(std::unique_ptr<FstClassImplBase> impl)
@@ -598,6 +587,23 @@ class MutableFstClass : public FstClass {
   explicit MutableFstClass(std::unique_ptr<FstClassImplBase> impl)
       : FstClass(std::move(impl)) {}
 };
+
+template <class Arc>
+inline std::unique_ptr<FstClass> FstClass::Read(std::istream& stream,
+                                                const FstReadOptions& opts) {
+  if (!opts.header) {
+    LOG(ERROR) << "FstClass::Read: Options header not specified";
+    return nullptr;
+  }
+  std::unique_ptr<Fst<Arc>> u(Fst<Arc>::Read(stream, opts));
+  if (!u) return nullptr;
+  if (u->Properties(kMutable, false)) {
+    return std::make_unique<MutableFstClass>(std::unique_ptr<MutableFst<Arc>>(
+        absl::down_cast<MutableFst<Arc>*>(u.release())));
+  } else {
+    return std::make_unique<FstClass>(std::move(u));
+  }
+}
 
 class VectorFstClass : public MutableFstClass {
  public:

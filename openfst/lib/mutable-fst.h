@@ -148,9 +148,13 @@ class MutableFst : public ExpandedFst<A> {
                  << "\" (arc type = \"" << A::Type() << "\"): " << ropts.source;
       return nullptr;
     }
-    auto* fst = reader(strm, ropts);
+    std::unique_ptr<Fst<Arc>> fst(reader(strm, ropts));
     if (!fst) return nullptr;
-    return absl::down_cast<MutableFst*>(fst);
+    if (!fst->Properties(kMutable, false)) {
+      LOG(ERROR) << "MutableFst::Read: Not a MutableFst: " << ropts.source;
+      return nullptr;
+    }
+    return absl::down_cast<MutableFst*>(fst.release());
   }
 
   // Reads a MutableFst from a file; returns nullptr on error. An empty
@@ -183,6 +187,7 @@ class MutableFst : public ExpandedFst<A> {
         if (!ofst) return nullptr;
         if (!ofst->Properties(kMutable, false)) {
           LOG(ERROR) << "MutableFst: Bad convert type: " << convert_type;
+          return nullptr;
         }
         return absl::down_cast<MutableFst*>(ofst.release());
       }
