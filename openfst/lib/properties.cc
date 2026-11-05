@@ -89,6 +89,13 @@ uint64_t ComposeProperties(uint64_t inprops1, uint64_t inprops2) {
       outprops |= kIDeterministic & inprops1 & inprops2;
     }
   }
+  outprops |= kUnweighted & inprops1 & inprops2;
+  // Every cycle in a composed FST projects to closed walks in both inputs, and
+  // kUnweighted implies unweighted cycles even if kUnweightedCycles is unset.
+  if ((inprops1 & (kUnweighted | kUnweightedCycles)) &&
+      (inprops2 & (kUnweighted | kUnweightedCycles))) {
+    outprops |= kUnweightedCycles;
+  }
   return outprops;
 }
 

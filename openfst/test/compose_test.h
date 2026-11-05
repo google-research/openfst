@@ -25,12 +25,15 @@
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
+#include "openfst/lib/accumulator.h"
 #include "openfst/lib/cache.h"
 #include "openfst/lib/compose-filter.h"
 #include "openfst/lib/compose.h"
 #include "openfst/lib/const-fst.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/lookahead-matcher.h"
+#include "openfst/lib/matcher-fst.h"
 #include "openfst/lib/matcher.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/vector-fst.h"
@@ -240,10 +243,95 @@ TYPED_TEST_P(ComposeTest, CopyTest) {
   EXPECT_TRUE(Equal(*dfst2, *dfst3));
 }
 
+TYPED_TEST_P(ComposeTest, UnweightedProperties) {
+  using Arc = typename TestFixture::Arc;
+  using Weight = typename Arc::Weight;
+  using TestFst = typename TestFixture::TestFst;
+  using OLabelLookAheadFst = MatcherFst<
+      ConstFst<Arc>,
+      LabelLookAheadMatcher<SortedMatcher<ConstFst<Arc>>,
+                            olabel_lookahead_flags, FastLogAccumulator<Arc>>,
+      olabel_lookahead_fst_type, LabelLookAheadRelabeler<Arc>>;
+
+  VectorFst<Arc> vfst1;
+  vfst1.AddStates(2);
+  vfst1.SetStart(0);
+  vfst1.SetFinal(1, Weight::One());
+  vfst1.AddArc(0, Arc(1, 0, Weight::One(), 0));
+  vfst1.AddArc(0, Arc(2, 1, Weight::One(), 1));
+  vfst1.AddArc(0, Arc(4, 1, Weight::One(), 1));
+  vfst1.AddArc(1, Arc(3, 2, Weight::One(), 1));
+
+  VectorFst<Arc> vfst2;
+  vfst2.AddStates(2);
+  vfst2.SetStart(0);
+  vfst2.SetFinal(1, Weight::One());
+  vfst2.AddArc(0, Arc(0, 4, Weight::One(), 0));
+  vfst2.AddArc(0, Arc(1, 5, Weight::One(), 1));
+  vfst2.AddArc(1, Arc(2, 6, Weight::One(), 1));
+
+  const TestFst tfst1(vfst1);
+  const TestFst tfst2(vfst2);
+
+  // Stored properties preserve kUnweighted | kUnweightedCycles without
+  // triggering an eager graph traversal.
+  const ComposeFst<Arc> dfst(tfst1, tfst2);
+  EXPECT_EQ(dfst.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweighted | kUnweightedCycles);
+  EXPECT_TRUE(Verify(dfst));
+
+  VectorFst<Arc> ofst;
+  Compose(tfst1, tfst2, &ofst);
+  EXPECT_EQ(ofst.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweighted | kUnweightedCycles);
+  EXPECT_TRUE(Verify(ofst));
+
+  // Weighted acyclic transition + unweighted self-loop preserves
+  // kUnweightedCycles without setting kUnweighted.
+  VectorFst<Arc> vfst1_wc;
+  vfst1_wc.AddStates(2);
+  vfst1_wc.SetStart(0);
+  vfst1_wc.SetFinal(1, Weight::One());
+  vfst1_wc.AddArc(0, Arc(2, 1, Weight(2.5), 1));
+  vfst1_wc.AddArc(1, Arc(3, 2, Weight::One(), 1));
+  ASSERT_EQ(vfst1_wc.Properties(kWeighted | kUnweightedCycles, true),
+            kWeighted | kUnweightedCycles);
+  const TestFst tfst1_wc(vfst1_wc);
+  const ComposeFst<Arc> dfst_wc(tfst1_wc, tfst2);
+  EXPECT_EQ(dfst_wc.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweightedCycles);
+  EXPECT_TRUE(Verify(dfst_wc));
+
+  // Weighted cyclic inputs propagate neither bit.
+  VectorFst<Arc> vfst1_wcyc;
+  vfst1_wcyc.AddStates(2);
+  vfst1_wcyc.SetStart(0);
+  vfst1_wcyc.SetFinal(1, Weight::One());
+  vfst1_wcyc.AddArc(0, Arc(2, 1, Weight::One(), 1));
+  vfst1_wcyc.AddArc(1, Arc(3, 2, Weight(2.5), 1));
+  ASSERT_EQ(vfst1_wcyc.Properties(kWeighted | kWeightedCycles, true),
+            kWeighted | kWeightedCycles);
+  const TestFst wfst1(vfst1_wcyc);
+  const ComposeFst<Arc> wdfst(wfst1, tfst2);
+  EXPECT_EQ(wdfst.Properties(kUnweighted | kUnweightedCycles, false), 0);
+  EXPECT_EQ(wdfst.Properties(kWeighted | kWeightedCycles, true),
+            kWeighted | kWeightedCycles);
+  EXPECT_TRUE(Verify(wdfst));
+
+  // Weight-pushing lookahead composition strips kUnweighted and
+  // kUnweightedCycles via kWeightInvariantProperties.
+  const OLabelLookAheadFst lafst1(vfst1);
+  VectorFst<Arc> vfst2_la(vfst2);
+  LabelLookAheadRelabeler<Arc>::Relabel(&vfst2_la, lafst1, true);
+  const ComposeFst<Arc> ladfst(lafst1, vfst2_la);
+  EXPECT_EQ(ladfst.Properties(kUnweighted | kUnweightedCycles, false), 0);
+  EXPECT_TRUE(Verify(ladfst));
+}
+
 REGISTER_TYPED_TEST_SUITE_P(ComposeTest, ComposeFstWithoutEpsilons,
                             FstClassCompose, ComposeFstWithEpsilons,
                             ComposeFstWithOptions, ComposeFstMatcherTest,
-                            CopyTest);
+                            CopyTest, UnweightedProperties);
 
 }  // namespace fst
 

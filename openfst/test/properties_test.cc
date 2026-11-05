@@ -92,6 +92,42 @@ TEST(PropertiesTest, DeleteArcsProperties) {
   EXPECT_TRUE(deleted_props & kILabelSorted);
 }
 
+TEST(PropertiesTest, ComposeProperties) {
+  // Unweighted acceptors and transducers propagate both kUnweighted and
+  // kUnweightedCycles even when kUnweightedCycles is not set on the inputs
+  // (e.g., after VectorFst::AddArc).
+  const uint64_t acceptor_out =
+      ComposeProperties(kAcceptor | kUnweighted, kAcceptor | kUnweighted);
+  EXPECT_EQ(acceptor_out & (kUnweighted | kUnweightedCycles),
+            kUnweighted | kUnweightedCycles);
+  EXPECT_EQ(acceptor_out & (kWeighted | kWeightedCycles), 0);
+
+  const uint64_t transducer_out =
+      ComposeProperties(kNotAcceptor | kUnweighted, kNotAcceptor | kUnweighted);
+  EXPECT_EQ(transducer_out & (kUnweighted | kUnweightedCycles),
+            kUnweighted | kUnweightedCycles);
+  EXPECT_EQ(transducer_out & (kWeighted | kWeightedCycles), 0);
+
+  // Weighted inputs with unweighted cycles propagate kUnweightedCycles (and
+  // not kUnweighted), including when paired with a kUnweighted input.
+  const uint64_t both_unweighted_cycles = ComposeProperties(
+      kWeighted | kUnweightedCycles, kWeighted | kUnweightedCycles);
+  EXPECT_EQ(both_unweighted_cycles & (kUnweighted | kUnweightedCycles),
+            kUnweightedCycles);
+  const uint64_t mixed =
+      ComposeProperties(kUnweighted, kWeighted | kUnweightedCycles);
+  EXPECT_EQ(mixed & (kUnweighted | kUnweightedCycles), kUnweightedCycles);
+
+  // If either input may have weighted cycles, neither bit is propagated.
+  EXPECT_EQ(ComposeProperties(kUnweighted, kWeighted) &
+                (kUnweighted | kUnweightedCycles),
+            0);
+  EXPECT_EQ(ComposeProperties(kWeighted | kWeightedCycles,
+                              kUnweighted | kUnweightedCycles) &
+                (kUnweighted | kUnweightedCycles),
+            0);
+}
+
 TEST(PropertiesTest, ComputePropertiesAcyclic) {
   VectorFst<Arc> fst;
   const auto s0 = fst.AddState();
