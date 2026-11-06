@@ -22,6 +22,7 @@
 #define OPENFST_LIB_PUSH_H_
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
@@ -45,9 +46,10 @@ template <class Arc>
 typename Arc::Weight ComputeTotalWeight(
     const Fst<Arc>& fst, const std::vector<typename Arc::Weight>& distance,
     bool reverse) {
+  const auto start = fst.Start();
+  if (start < 0) return Arc::Weight::Zero();  // kNoStateId is -1.
   if (reverse) {
-    return fst.Start() < distance.size() ? distance[fst.Start()]
-                                         : Arc::Weight::Zero();
+    return start < distance.size() ? distance[start] : Arc::Weight::Zero();
   }
   auto sum = Arc::Weight::Zero();
   for (typename Arc::StateId s = 0; s < distance.size(); ++s) {
@@ -64,6 +66,8 @@ void RemoveWeight(MutableFst<Arc>* fst, const typename Arc::Weight& weight,
                   bool at_final) {
   using Weight = typename Arc::Weight;
   if ((weight == Weight::One()) || (weight == Weight::Zero())) return;
+  const auto start = fst->Start();
+  if (start < 0) return;  // kNoStateId is -1.
   if (at_final) {
     for (StateIterator<MutableFst<Arc>> siter(*fst); !siter.Done();
          siter.Next()) {
@@ -71,7 +75,6 @@ void RemoveWeight(MutableFst<Arc>* fst, const typename Arc::Weight& weight,
                     Divide(fst->Final(siter.Value()), weight, DIVIDE_RIGHT));
     }
   } else {
-    const auto start = fst->Start();
     for (MutableArcIterator<MutableFst<Arc>> aiter(fst, start); !aiter.Done();
          aiter.Next()) {
       auto arc = aiter.Value();
@@ -128,6 +131,7 @@ void Push(const Fst<Arc>& ifst, MutableFst<Arc>* ofst, uint8_t ptype,
   } else if (ptype & kPushLabels) {
     const auto gtype =
         rtype == REWEIGHT_TO_INITIAL ? GALLIC_LEFT : GALLIC_RIGHT;
+    using StringWeightType = StringWeight<Label, GallicStringType(gtype)>;
     using GallicWeight = typename GallicArc<Arc, gtype>::Weight;
     std::vector<GallicWeight> gdistance;
     VectorFst<GallicArc<Arc, gtype>> gfst;
@@ -140,18 +144,26 @@ void Push(const Fst<Arc>& ifst, MutableFst<Arc>* ofst, uint8_t ptype,
       ShortestDistance(guwfst, &gdistance, rtype == REWEIGHT_TO_INITIAL, delta);
     }
     auto total_weight = GallicWeight::One();
-    if (ptype & (kPushRemoveTotalWeight | kPushRemoveCommonAffix)) {
-      total_weight =
+    const bool remove_total_weight = ptype & kPushRemoveTotalWeight;
+    const bool remove_common_affix = ptype & kPushRemoveCommonAffix;
+    if (remove_total_weight || remove_common_affix) {
+      const auto sum =
           ComputeTotalWeight(gfst, gdistance, rtype == REWEIGHT_TO_INITIAL);
-      total_weight = GallicWeight(
-          ptype & kPushRemoveCommonAffix
-              ? total_weight.Value1()
-              : StringWeight<Label, GallicStringType(gtype)>::One(),
-          ptype & kPushRemoveTotalWeight ? total_weight.Value2()
-                                         : Weight::One());
+      // Leave a Zero() component as One() so RemoveWeight does not divide by
+      // Zero() when there is no accepting path or when path weights cancel.
+      auto common_affix = StringWeightType::One();
+      if (remove_common_affix && sum.Value1() != StringWeightType::Zero()) {
+        common_affix = sum.Value1();
+      }
+      auto weight_sum = Weight::One();
+      if (remove_total_weight && sum.Value2() != Weight::Zero()) {
+        weight_sum = sum.Value2();
+      }
+      total_weight =
+          GallicWeight(std::move(common_affix), std::move(weight_sum));
     }
     Reweight(&gfst, gdistance, rtype);
-    if (ptype & (kPushRemoveTotalWeight | kPushRemoveCommonAffix)) {
+    if (remove_total_weight || remove_common_affix) {
       RemoveWeight(&gfst, total_weight, rtype == REWEIGHT_TO_FINAL);
     }
     FactorWeightFst<GallicArc<Arc, gtype>, GallicFactor<Label, Weight, gtype>>
