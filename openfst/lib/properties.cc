@@ -363,7 +363,7 @@ uint64_t ReweightProperties(uint64_t inprops, bool added_start_epsilon) {
 }
 
 // Properties for an epsilon-removed FST.
-uint64_t RmEpsilonProperties(uint64_t inprops, bool delayed) {
+uint64_t RmEpsilonProperties(uint64_t inprops, bool delayed, bool idempotent) {
   auto outprops = kNoEpsilons;
   outprops |= (kError | kAcceptor | kAcyclic | kInitialAcyclic) & inprops;
   if (inprops & kAcceptor) outprops |= kNoIEpsilons | kNoOEpsilons;
@@ -372,6 +372,10 @@ uint64_t RmEpsilonProperties(uint64_t inprops, bool delayed) {
     outprops |= kTopSorted & inprops;
   }
   if (!delayed || inprops & kAccessible) outprops |= kNotAcceptor & inprops;
+  if (idempotent) {
+    outprops |= (kUnweighted | kUnweightedCycles) & inprops;
+    if (inprops & kUnweighted) outprops |= kUnweightedCycles;
+  }
   return outprops;
 }
 

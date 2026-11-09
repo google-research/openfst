@@ -128,6 +128,46 @@ TEST(PropertiesTest, ComposeProperties) {
             0);
 }
 
+TEST(PropertiesTest, RmEpsilonProperties) {
+  // Default (idempotent = false) does not propagate kUnweighted or
+  // kUnweightedCycles, since non-idempotent semirings such as LogArc sum
+  // parallel One() epsilon paths to a non-One() weight.
+  EXPECT_EQ(RmEpsilonProperties(kAcceptor | kUnweighted | kUnweightedCycles) &
+                (kUnweighted | kUnweightedCycles),
+            0);
+  EXPECT_EQ(RmEpsilonProperties(kAcceptor | kUnweighted | kUnweightedCycles,
+                                /*delayed=*/true) &
+                (kUnweighted | kUnweightedCycles),
+            0);
+
+  // Over an idempotent semiring, kUnweighted propagates both kUnweighted and
+  // kUnweightedCycles even when kUnweightedCycles is unset on the input
+  // (e.g., after VectorFst::AddArc).
+  for (const bool delayed : {false, true}) {
+    const uint64_t unweighted_out = RmEpsilonProperties(
+        kAcceptor | kUnweighted, delayed, /*idempotent=*/true);
+    EXPECT_EQ(unweighted_out & (kUnweighted | kUnweightedCycles),
+              kUnweighted | kUnweightedCycles);
+    EXPECT_EQ(unweighted_out & (kWeighted | kWeightedCycles), 0);
+
+    // Weighted inputs with unweighted cycles preserve kUnweightedCycles
+    // without setting kUnweighted.
+    const uint64_t unweighted_cycles_out = RmEpsilonProperties(
+        kWeighted | kUnweightedCycles, delayed, /*idempotent=*/true);
+    EXPECT_EQ(unweighted_cycles_out & (kUnweighted | kUnweightedCycles),
+              kUnweightedCycles);
+
+    // Inputs that may have weighted cycles propagate neither bit.
+    EXPECT_EQ(RmEpsilonProperties(kWeighted, delayed, /*idempotent=*/true) &
+                  (kUnweighted | kUnweightedCycles),
+              0);
+    EXPECT_EQ(RmEpsilonProperties(kWeighted | kWeightedCycles, delayed,
+                                  /*idempotent=*/true) &
+                  (kUnweighted | kUnweightedCycles),
+              0);
+  }
+}
+
 TEST(PropertiesTest, ComputePropertiesAcyclic) {
   VectorFst<Arc> fst;
   const auto s0 = fst.AddState();

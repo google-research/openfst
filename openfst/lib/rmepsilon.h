@@ -213,6 +213,7 @@ void RmEpsilon(MutableFst<Arc>* fst,
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   if (fst->Start() == kNoStateId) return;
+  const auto inprops = fst->Properties(kFstProperties, false);
   // noneps_in[s] will be set to true iff s admits a non-epsilon incoming
   // transition or is the start state.
   std::vector<bool> noneps_in(fst->NumStates(), false);
@@ -287,8 +288,11 @@ void RmEpsilon(MutableFst<Arc>* fst,
     }
   }
   if (rmeps_state.Error()) fst->SetProperties(kError, kError);
+  // AddArc clears kUnweightedCycles while rewriting states.
   fst->SetProperties(
-      RmEpsilonProperties(fst->Properties(kFstProperties, false)),
+      RmEpsilonProperties(fst->Properties(kFstProperties, false) |
+                              (inprops & kUnweightedCycles),
+                          /*delayed=*/false, IsIdempotent<Weight>::value),
       kFstProperties);
   if (opts.weight_threshold != Weight::Zero() ||
       opts.state_threshold != kNoStateId) {
@@ -390,7 +394,8 @@ class RmEpsilonFstImpl : public CacheImpl<Arc> {
             RmEpsilonOptions<Arc, FifoQueue<StateId>>(&queue_, delta_, false)) {
     SetType("rmepsilon");
     SetProperties(
-        RmEpsilonProperties(fst.Properties(kFstProperties, false), true),
+        RmEpsilonProperties(fst.Properties(kFstProperties, false),
+                            /*delayed=*/true, IsIdempotent<Weight>::value),
         kCopyProperties);
     SetInputSymbols(fst.InputSymbols());
     SetOutputSymbols(fst.OutputSymbols());

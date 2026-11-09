@@ -19,6 +19,7 @@
 
 #include "openfst/lib/rmepsilon.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -26,9 +27,11 @@
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/queue.h"
 #include "openfst/lib/string-weight.h"
+#include "openfst/lib/test-properties.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 #include "openfst/script/equal.h"
@@ -165,6 +168,112 @@ TEST(RmEpsilonStringTest, RmEpsilonStringWeight) {
   ASSERT_TRUE(Verify(fst));
   ASSERT_TRUE(fst.Properties(kNoEpsilons, true));
   EXPECT_TRUE(Equal(expected, fst));
+}
+
+// Verifies that all stored FST properties on `fst` are compatible with the
+// properties computed directly from its states and arcs.
+template <class Arc>
+void ExpectStoredPropertiesCompatible(const Fst<Arc>& fst) {
+  uint64_t known = 0;
+  const uint64_t stored = fst.Properties(kFstProperties, false);
+  const uint64_t computed =
+      internal::ComputeProperties(fst, kFstProperties, &known);
+  EXPECT_TRUE(internal::CompatProperties(stored, computed));
+}
+
+TEST(RmEpsilonPropertiesIntegrationTest,
+     IdempotentUnweightedPreservesProperties) {
+  // Parallel One()-weight epsilon paths in a cyclic StdArc acceptor:
+  // 0 --eps--> 1, 0 --eps--> 2 --eps--> 1, 1 --1:1--> 0 (final: 0).
+  VectorFst<Arc> input;
+  input.AddStates(3);
+  input.SetStart(0);
+  input.SetFinal(0, Weight::One());
+  input.AddArc(0, Arc(0, 0, Weight::One(), 1));
+  input.AddArc(0, Arc(0, 0, Weight::One(), 2));
+  input.AddArc(2, Arc(0, 0, Weight::One(), 1));
+  input.AddArc(1, Arc(1, 1, Weight::One(), 0));
+  // AddArc preserves kUnweighted while clearing kUnweightedCycles.
+  ASSERT_EQ(input.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweighted);
+
+  RmEpsilonFst<Arc> dfst(input);
+  ASSERT_TRUE(Verify(dfst));
+  EXPECT_EQ(dfst.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweighted | kUnweightedCycles);
+  ExpectStoredPropertiesCompatible(dfst);
+
+  for (const bool connect : {true, false}) {
+    VectorFst<Arc> vfst(input);
+    RmEpsilon(&vfst, connect);
+    ASSERT_TRUE(Verify(vfst));
+    EXPECT_EQ(vfst.Properties(kUnweighted | kUnweightedCycles, false),
+              kUnweighted | kUnweightedCycles);
+    ExpectStoredPropertiesCompatible(vfst);
+  }
+}
+
+TEST(RmEpsilonPropertiesIntegrationTest,
+     IdempotentUnweightedCyclesPreservesCycleProperty) {
+  // Weighted initial epsilon transition into an unweighted cycle:
+  // 0 --eps/2.0--> 1 --eps/One()--> 2 --1:1/One()--> 1 (final: 1).
+  VectorFst<Arc> input;
+  input.AddStates(3);
+  input.SetStart(0);
+  input.SetFinal(1, Weight::One());
+  input.AddArc(0, Arc(0, 0, Weight(2.0), 1));
+  input.AddArc(1, Arc(0, 0, Weight::One(), 2));
+  input.AddArc(2, Arc(1, 1, Weight::One(), 1));
+  const uint64_t computed_in = input.Properties(kFstProperties, true);
+  input.SetProperties(computed_in, kFstProperties);
+  ASSERT_EQ(
+      input.Properties(kWeighted | kUnweighted | kUnweightedCycles, false),
+      kWeighted | kUnweightedCycles);
+
+  RmEpsilonFst<Arc> dfst(input);
+  ASSERT_TRUE(Verify(dfst));
+  EXPECT_EQ(dfst.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweightedCycles);
+  ExpectStoredPropertiesCompatible(dfst);
+
+  VectorFst<Arc> vfst(input);
+  RmEpsilon(&vfst);
+  ASSERT_TRUE(Verify(vfst));
+  EXPECT_EQ(vfst.Properties(kUnweighted | kUnweightedCycles, false),
+            kUnweightedCycles);
+  ExpectStoredPropertiesCompatible(vfst);
+}
+
+TEST(RmEpsilonPropertiesIntegrationTest,
+     NonIdempotentUnweightedDoesNotSetUnweighted) {
+  // Over LogArc (non-idempotent), two parallel One()-weight epsilon paths sum
+  // to Plus(One(), One()) = -log(2) != One(), yielding a weighted cycle.
+  using LArc = LogArc;
+  using LWeight = LArc::Weight;
+  VectorFst<LArc> input;
+  input.AddStates(3);
+  input.SetStart(0);
+  input.SetFinal(0, LWeight::One());
+  input.AddArc(0, LArc(0, 0, LWeight::One(), 1));
+  input.AddArc(0, LArc(0, 0, LWeight::One(), 2));
+  input.AddArc(2, LArc(0, 0, LWeight::One(), 1));
+  input.AddArc(1, LArc(1, 1, LWeight::One(), 0));
+  ASSERT_EQ(input.Properties(kUnweighted, false), kUnweighted);
+
+  RmEpsilonFst<LArc> dfst(input);
+  ASSERT_TRUE(Verify(dfst));
+  EXPECT_EQ(dfst.Properties(kUnweighted | kUnweightedCycles, false), 0);
+  ExpectStoredPropertiesCompatible(dfst);
+  EXPECT_EQ(dfst.Properties(kWeighted | kWeightedCycles, true),
+            kWeighted | kWeightedCycles);
+
+  VectorFst<LArc> lfst(input);
+  RmEpsilon(&lfst);
+  ASSERT_TRUE(Verify(lfst));
+  EXPECT_EQ(lfst.Properties(kUnweighted | kUnweightedCycles, false), 0);
+  ExpectStoredPropertiesCompatible(lfst);
+  EXPECT_EQ(lfst.Properties(kWeighted | kWeightedCycles, true),
+            kWeighted | kWeightedCycles);
 }
 
 }  // namespace

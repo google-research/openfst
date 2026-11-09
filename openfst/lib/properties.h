@@ -382,7 +382,8 @@ uint64_t ReverseProperties(uint64_t inprops, bool has_superinitial);
 
 uint64_t ReweightProperties(uint64_t inprops, bool added_start_epsilon);
 
-uint64_t RmEpsilonProperties(uint64_t inprops, bool delayed = false);
+uint64_t RmEpsilonProperties(uint64_t inprops, bool delayed = false,
+                             bool idempotent = false);
 
 uint64_t ShortestPathProperties(uint64_t props, bool tree = false);
 
