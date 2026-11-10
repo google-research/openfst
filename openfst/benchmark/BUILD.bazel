@@ -328,3 +328,24 @@ cc_binary(
         "@com_google_googletest//:gtest",
     ],
 )
+
+cc_binary(
+    name = "rmepsilon_test",
+    testonly = True,
+    srcs = ["rmepsilon_test.cc"],
+    data = [
+        "testdata/lexicon.fst",
+        "testdata/string.fst",
+    ],
+    linkstatic = True,
+    deps = [
+        ":benchmark_main",
+        "//openfst/compat:file_path",
+        "//openfst/lib",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+    ],
+)

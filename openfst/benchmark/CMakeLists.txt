@@ -28,6 +28,7 @@ set(BENCHMARKS
     minimize_test
     prune_test
     replace_test
+    rmepsilon_test
     serialize_test
     shortest_path_test
     symbol-table_test
