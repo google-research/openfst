@@ -360,9 +360,9 @@ void SymbolTableImpl::ShrinkToFit() { symbols_.ShrinkToFit(); }
 
 }  // namespace internal
 
-SymbolTable* absl_nullable SymbolTable::ReadText(const std::string& source,
+SymbolTable* absl_nullable SymbolTable::ReadText(absl::string_view source,
                                                  absl::string_view sep) {
-  file::FileInStream strm(source, std::ios_base::in);
+  file::FileInStream strm(std::string(source), std::ios_base::in);
   if (!strm.good()) {
     LOG(ERROR) << "SymbolTable::ReadText: Can't open file: " << source;
     return nullptr;

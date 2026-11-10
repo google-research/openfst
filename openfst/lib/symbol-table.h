@@ -391,7 +391,7 @@ class SymbolTable {
   }
 
   // Reads a text representation of the symbol table.
-  static SymbolTable* absl_nullable ReadText(const std::string& source,
+  static SymbolTable* absl_nullable ReadText(absl::string_view source,
                                              absl::string_view sep = "");
 
   // Reads a binary dump of the symbol table from a stream.
