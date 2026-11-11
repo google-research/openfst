@@ -205,7 +205,7 @@ if(OPENFST_BUILD_TESTS)
     set(BENCHMARK_ENABLE_TESTING OFF)
     FetchContent_Declare(
       google_benchmark
-      URL https://github.com/google/benchmark/archive/refs/tags/v1.9.4.zip
+      URL https://github.com/google/benchmark/archive/refs/tags/v1.10.0.zip
       DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(google_benchmark)
