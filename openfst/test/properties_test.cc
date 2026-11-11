@@ -32,6 +32,15 @@ namespace {
 using Arc = StdArc;
 using Weight = Arc::Weight;
 
+// Masks covering both bits of each trinary property they name; a trinary
+// property is unknown iff neither of its bits is set.
+constexpr uint64_t kAcceptorMask = kAcceptor | kNotAcceptor;
+constexpr uint64_t kIDeterministicMask = kIDeterministic | kNonIDeterministic;
+constexpr uint64_t kCyclicMask = kCyclic | kAcyclic;
+constexpr uint64_t kStringMask = kString | kNotString;
+constexpr uint64_t kTrimMask =
+    kAccessible | kNotAccessible | kCoAccessible | kNotCoAccessible;
+
 TEST(PropertiesTest, KnownProperties) {
   // Binary properties are always returned set by KnownProperties.
   EXPECT_TRUE(internal::KnownProperties(0) & kExpanded);
@@ -197,6 +206,73 @@ TEST(PropertiesTest, ComputePropertiesCyclic) {
       internal::ComputeProperties(fst, kFstProperties, &known);
   EXPECT_TRUE(props & kCyclic);
   EXPECT_FALSE(props & kAcyclic);
+}
+
+TEST(PropertiesTest,
+     ComputeOrUseStoredPropertiesSkipsArcScanWhenOnlyDfsUnknown) {
+  // Cyclic FST with kIDeterministic already stored and kAcyclic | kCyclic (and
+  // kString | kNotString) unknown: querying kAcyclic | kIDeterministic should
+  // run only the DFS pass and skip the state/arc scan.
+  VectorFst<Arc> cyclic;
+  cyclic.AddState();
+  cyclic.SetStart(0);
+  cyclic.SetFinal(0, Weight::One());
+  cyclic.AddArc(0, Arc(1, 1, Weight::One(), 0));
+  cyclic.SetProperties(kIDeterministic, kIDeterministic);
+  ASSERT_EQ(cyclic.Properties(kCyclicMask | kStringMask, false), 0);
+
+  uint64_t known = 0;
+  const uint64_t cyclic_props = internal::ComputeOrUseStoredProperties(
+      cyclic, kAcyclic | kIDeterministic, &known);
+  EXPECT_EQ(cyclic_props & (kCyclic | kIDeterministic),
+            kCyclic | kIDeterministic);
+  EXPECT_EQ(known & (kCyclicMask | kIDeterministicMask),
+            kCyclicMask | kIDeterministicMask);
+  EXPECT_EQ(known & kStringMask, 0);
+}
+
+TEST(PropertiesTest,
+     ComputeOrUseStoredPropertiesSkipsDfsWhenOnlyArcScanUnknown) {
+  // Acyclic top-sorted FST with kAcyclic already stored and kIDeterministic
+  // (and kAccessible | kCoAccessible) unknown: querying
+  // kAcyclic | kIDeterministic should run only the state/arc scan and skip the
+  // DFS pass.
+  VectorFst<Arc> acyclic;
+  acyclic.AddStates(2);
+  acyclic.SetStart(0);
+  acyclic.SetFinal(1, Weight::One());
+  acyclic.AddArc(0, Arc(1, 1, Weight::One(), 1));
+  ASSERT_EQ(acyclic.Properties(kAcyclic, false), kAcyclic);
+  ASSERT_EQ(acyclic.Properties(kIDeterministicMask | kTrimMask, false), 0);
+
+  uint64_t known = 0;
+  const uint64_t acyclic_props = internal::ComputeOrUseStoredProperties(
+      acyclic, kAcyclic | kIDeterministic, &known);
+  EXPECT_EQ(acyclic_props & (kAcyclic | kIDeterministic),
+            kAcyclic | kIDeterministic);
+  EXPECT_EQ(known & (kCyclicMask | kIDeterministicMask),
+            kCyclicMask | kIDeterministicMask);
+  EXPECT_EQ(known & kTrimMask, 0);
+}
+
+TEST(PropertiesTest,
+     ComputeOrUseStoredPropertiesPrefersComputedOverStoredProperties) {
+  // Transducer with a deliberately incorrect stored kAcceptor bit and
+  // kIDeterministic unknown: the state/arc scan needed for kIDeterministic
+  // also determines kNotAcceptor, which must be returned in place of the
+  // stored bit so that callers can detect incorrectly stored properties.
+  VectorFst<Arc> transducer;
+  transducer.AddStates(2);
+  transducer.SetStart(0);
+  transducer.SetFinal(1, Weight::One());
+  transducer.AddArc(0, Arc(1, 2, Weight::One(), 1));
+  transducer.SetProperties(kAcceptor, kAcceptorMask);
+  ASSERT_EQ(transducer.Properties(kIDeterministicMask, false), 0);
+
+  const uint64_t props = internal::ComputeOrUseStoredProperties(
+      transducer, kAcceptor | kIDeterministic, /*known=*/nullptr);
+  EXPECT_EQ(props & (kAcceptorMask | kIDeterministic),
+            kNotAcceptor | kIDeterministic);
 }
 
 }  // namespace

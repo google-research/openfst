@@ -196,8 +196,14 @@ uint64_t ComputeOrUseStoredProperties(const Fst<Arc>& fst, uint64_t mask,
     if (known) *known = known_props;
     return fst_props;
   }
-
-  return ComputeProperties(fst, mask, known);
+  // Otherwise, compute only the requested properties that are not yet known
+  // and merge them with the stored properties. Computed properties take
+  // precedence so that callers can detect incorrectly stored properties.
+  uint64_t comp_known = 0;
+  const uint64_t comp_props =
+      ComputeProperties(fst, mask & ~known_props, &comp_known);
+  if (known) *known = known_props | comp_known;
+  return (fst_props & ~comp_known) | comp_props;
 }
 
 // This is a wrapper around ComputeProperties that will cause a fatal error if
