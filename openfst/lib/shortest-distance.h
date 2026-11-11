@@ -20,7 +20,9 @@
 #ifndef OPENFST_LIB_SHORTEST_DISTANCE_H_
 #define OPENFST_LIB_SHORTEST_DISTANCE_H_
 
+#include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -87,7 +89,8 @@ class ShortestDistanceState {
 
   ShortestDistanceState(
       const Fst<Arc>& fst, std::vector<Weight>* distance,
-      const ShortestDistanceOptions<Arc, Queue, ArcFilter>& opts, bool retain)
+      const ShortestDistanceOptions<Arc, Queue, ArcFilter>& opts, bool retain,
+      std::size_t generation = 0)
       : fst_(fst),
         distance_(distance),
         state_queue_(opts.state_queue),
@@ -95,7 +98,7 @@ class ShortestDistanceState {
         weight_equal_(opts.delta),
         first_path_(opts.first_path),
         retain_(retain),
-        source_id_(0),
+        generation_(generation),
         error_(false) {
     distance_->clear();
     if (std::optional<StateId> num_states = fst.NumStatesIfKnown()) {
@@ -103,6 +106,7 @@ class ShortestDistanceState {
       adder_.reserve(*num_states);
       radder_.reserve(*num_states);
       enqueued_.reserve(*num_states);
+      if (retain_) generations_.reserve(*num_states);
     }
   }
 
@@ -121,11 +125,11 @@ class ShortestDistanceState {
     DCHECK_LT(index, distance_->size());
   }
 
-  void EnsureSourcesIndexIsValid(std::size_t index) {
-    while (sources_.size() <= index) {
-      sources_.push_back(kNoStateId);
+  void EnsureGenerationsIndexIsValid(std::size_t index) {
+    if (generations_.size() <= index) {
+      generations_.resize(index + 1, 0);
     }
-    DCHECK_LT(index, sources_.size());
+    DCHECK_LT(index, generations_.size());
   }
 
   const Fst<Arc>& fst_;
@@ -136,12 +140,13 @@ class ShortestDistanceState {
   const bool first_path_;
   const bool retain_;  // Retain and reuse information across calls.
 
-  std::vector<Adder<Weight>> adder_;   // Sums distance_ accurately.
-  std::vector<Adder<Weight>> radder_;  // Relaxation distance.
-  std::vector<bool> enqueued_;         // Is state enqueued?
-  std::vector<StateId> sources_;       // Source ID for ith state in distance_,
-                                       // (r)adder_, and enqueued_ if retained.
-  StateId source_id_;                  // Unique ID characterizing each call.
+  std::vector<Adder<Weight>> adder_;      // Sums distance_ accurately.
+  std::vector<Adder<Weight>> radder_;     // Relaxation distance.
+  std::vector<bool> enqueued_;            // Is state enqueued?
+  std::vector<std::size_t> generations_;  // Generation ID for ith state in
+                                          // distance_, (r)adder_, and
+                                          // enqueued_ if retained.
+  std::size_t generation_;                // Unique ID characterizing each call.
   bool error_;
 };
 
@@ -176,8 +181,16 @@ void ShortestDistanceState<Arc, Queue, ArcFilter,
   if (source == kNoStateId) source = fst_.Start();
   EnsureDistanceIndexIsValid(source);
   if (retain_) {
-    EnsureSourcesIndexIsValid(source);
-    sources_[source] = source_id_;
+    // Advance before relaxation so 0 remains the unvisited sentinel in
+    // generations_ and an early error return never leaves partial state at the
+    // next call's ID.
+    if (generation_ == std::numeric_limits<std::size_t>::max()) {
+      std::fill(generations_.begin(), generations_.end(), 0);
+      generation_ = 0;
+    }
+    ++generation_;
+    EnsureGenerationsIndexIsValid(source);
+    generations_[source] = generation_;
   }
   (*distance_)[source] = Weight::One();
   adder_[source].Reset(Weight::One());
@@ -199,13 +212,13 @@ void ShortestDistanceState<Arc, Queue, ArcFilter,
       if (!arc_filter_(arc)) continue;
       EnsureDistanceIndexIsValid(nextstate);
       if (retain_) {
-        EnsureSourcesIndexIsValid(nextstate);
-        if (sources_[nextstate] != source_id_) {
+        EnsureGenerationsIndexIsValid(nextstate);
+        if (generations_[nextstate] != generation_) {
           (*distance_)[nextstate] = Weight::Zero();
           adder_[nextstate].Reset();
           radder_[nextstate].Reset();
           enqueued_[nextstate] = false;
-          sources_[nextstate] = source_id_;
+          generations_[nextstate] = generation_;
         }
       }
       auto& nd = (*distance_)[nextstate];
@@ -228,7 +241,6 @@ void ShortestDistanceState<Arc, Queue, ArcFilter,
       }
     }
   }
-  ++source_id_;
   if (fst_.Properties(kError, false)) error_ = true;
 }
 
