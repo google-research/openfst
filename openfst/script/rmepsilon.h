@@ -75,8 +75,15 @@ void RmEpsilon(MutableFst<Arc>* fst, const RmEpsilonOptions& opts) {
   std::vector<Weight> distance;
   switch (opts.queue_type) {
     case AUTO_QUEUE: {
-      AutoQueue<StateId> queue(*fst, &distance, EpsilonArcFilter<Arc>());
-      RmEpsilon(fst, &distance, opts, &queue);
+      if constexpr (fst::internal::kIdempotentRightSemiring<Weight>) {
+        if (fst->Properties(kUnweighted, false) != 0) {
+          LifoQueue<StateId> lifo_queue;
+          RmEpsilon(fst, &distance, opts, &lifo_queue);
+          return;
+        }
+      }
+      AutoQueue<StateId> auto_queue(*fst, &distance, EpsilonArcFilter<Arc>());
+      RmEpsilon(fst, &distance, opts, &auto_queue);
       return;
     }
     case FIFO_QUEUE: {

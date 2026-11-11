@@ -15,7 +15,7 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Functions and classes that implemement epsilon-removal.
+// Functions and classes that implement epsilon-removal.
 
 #ifndef OPENFST_LIB_RMEPSILON_H_
 #define OPENFST_LIB_RMEPSILON_H_
@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <stack>
 #include <tuple>
 #include <utility>
@@ -72,6 +73,14 @@ struct RmEpsilonOptions
 
 namespace internal {
 
+// True if the weight semiring is idempotent and right distributive, so that an
+// unweighted epsilon-closure can be computed in a single pass without
+// ShortestDistance.
+template <class Weight>
+inline constexpr bool kIdempotentRightSemiring =
+    (Weight::Properties() & (kIdempotent | kRightSemiring)) ==
+    (kIdempotent | kRightSemiring);
+
 // Computation state of the epsilon-removal algorithm.
 template <class Arc, class Queue>
 class RmEpsilonState {
@@ -84,8 +93,20 @@ class RmEpsilonState {
                  const RmEpsilonOptions<Arc, Queue>& opts)
       : fst_(fst),
         distance_(distance),
-        sd_state_(fst_, distance, opts, true),
-        expand_id_(0) {}
+        unweighted_idempotent_(!opts.first_path &&
+                               kIdempotentRightSemiring<Weight> &&
+                               (fst_.Properties(kUnweighted, false) != 0)),
+        expand_id_(0),
+        error_(false) {
+    if (unweighted_idempotent_) {
+      distance_->clear();
+      if (std::optional<StateId> num_states = fst_.NumStatesIfKnown()) {
+        visited_.resize(*num_states, false);
+      }
+    } else {
+      sd_state_.emplace(fst_, distance_, opts, /*retain=*/true);
+    }
+  }
 
   void Expand(StateId s);
 
@@ -93,7 +114,9 @@ class RmEpsilonState {
 
   const Weight& Final() const { return final_weight_; }
 
-  bool Error() const { return sd_state_.Error(); }
+  bool Error() const {
+    return error_ || (sd_state_.has_value() && sd_state_->Error());
+  }
 
  private:
   struct Element {
@@ -122,17 +145,59 @@ class RmEpsilonState {
     }
   };
 
-  using ElementMap = absl::flat_hash_map<Element, std::pair<StateId, size_t>,
+  using ElementMap = absl::flat_hash_map<Element, std::pair<size_t, size_t>,
                                          ElementHash, ElementEqual>;
+
+  template <bool kUnweighted>
+  void ExpandImpl(StateId source);
+
+  void AddNonEpsilonArc(Arc&& arc) {
+    const auto [insert_it, success] =
+        element_map_.emplace(Element(arc.ilabel, arc.olabel, arc.nextstate),
+                             std::make_pair(expand_id_, arcs_.size()));
+    if (success) {
+      arcs_.push_back(std::move(arc));
+    } else {
+      auto& [xid, arc_idx] = insert_it->second;
+      if (xid == expand_id_) {
+        auto& weight = arcs_[arc_idx].weight;
+        weight = Plus(weight, arc.weight);
+      } else {
+        xid = expand_id_;
+        arc_idx = arcs_.size();
+        arcs_.push_back(std::move(arc));
+      }
+    }
+  }
+
+  void EnsureVisitedIndexIsValid(size_t s) {
+    if (s >= visited_.size()) {
+      visited_.resize(s + 1, false);
+    }
+  }
+
+  void ClearVisited() {
+    while (!eps_queue_.empty()) {
+      eps_queue_.pop();
+    }
+    for (const auto state_id : visited_states_) {
+      visited_[state_id] = false;
+    }
+    visited_states_.clear();
+  }
 
   const Fst<Arc>& fst_;
   // Distance from state being expanded in epsilon-closure.
   std::vector<Weight>* distance_;
-  // Shortest distance algorithm computation state.
-  internal::ShortestDistanceState<Arc, Queue, EpsilonArcFilter<Arc>> sd_state_;
+  // Shortest distance algorithm computation state (used when not taking the
+  // unweighted idempotent right-semiring fast path).
+  std::optional<
+      internal::ShortestDistanceState<Arc, Queue, EpsilonArcFilter<Arc>>>
+      sd_state_;
+  const bool unweighted_idempotent_;
   // Maps an element to a pair corresponding to a position in the arcs vector
   // of the state being expanded. The element corresponds to the position in
-  // the arcs_ vector if p.first is equal to the state being expanded.
+  // the arcs_ vector if p.first is equal to expand_id_.
   ElementMap element_map_;
   EpsilonArcFilter<Arc> eps_filter_;
   std::stack<StateId, std::vector<StateId>>
@@ -141,7 +206,8 @@ class RmEpsilonState {
   std::vector<StateId> visited_states_;  // List of visited states.
   std::vector<Arc> arcs_;                // Arcs of state being expanded.
   Weight final_weight_;  // Final weight of state being expanded.
-  StateId expand_id_;    // Unique ID for each call to Expand
+  size_t expand_id_;     // Unique ID for each call to Expand.
+  bool error_;
 
   RmEpsilonState(const RmEpsilonState&) = delete;
   RmEpsilonState& operator=(const RmEpsilonState&) = delete;
@@ -151,49 +217,71 @@ template <class Arc, class Queue>
 void RmEpsilonState<Arc, Queue>::Expand(typename Arc::StateId source) {
   final_weight_ = Weight::Zero();
   arcs_.clear();
-  sd_state_.ShortestDistance(source);
-  if (sd_state_.Error()) return;
+  // Fresh ID even if this expansion aborts on error, so that element_map_
+  // entries from the aborted expansion never alias into the next arcs_.
+  ++expand_id_;
+  if constexpr (kIdempotentRightSemiring<Weight>) {
+    if (unweighted_idempotent_) {
+      ExpandImpl<true>(source);
+      return;
+    }
+  }
+  ExpandImpl<false>(source);
+}
+
+template <class Arc, class Queue>
+template <bool kUnweighted>
+void RmEpsilonState<Arc, Queue>::ExpandImpl(typename Arc::StateId source) {
+  if constexpr (kUnweighted) {
+    if (error_) return;
+  } else {
+    sd_state_->ShortestDistance(source);
+    if (sd_state_->Error()) return;
+  }
   eps_queue_.push(source);
   while (!eps_queue_.empty()) {
     const auto state = eps_queue_.top();
     eps_queue_.pop();
-    if (static_cast<decltype(state)>(visited_.size()) <= state) {
-      visited_.resize(state + 1, false);
-    }
+    EnsureVisitedIndexIsValid(state);
     if (visited_[state]) continue;
     visited_[state] = true;
     visited_states_.push_back(state);
     for (ArcIterator<Fst<Arc>> aiter(fst_, state); !aiter.Done();
          aiter.Next()) {
       auto arc = aiter.Value();
-      arc.weight = Times((*distance_)[state], arc.weight);
-      if (eps_filter_(arc)) {
-        if (static_cast<decltype(arc.nextstate)>(visited_.size()) <=
-            arc.nextstate) {
-          visited_.resize(arc.nextstate + 1, false);
+      if constexpr (kUnweighted) {
+        if (!arc.weight.Member()) {
+          error_ = true;
+          ClearVisited();
+          return;
         }
-        if (!visited_[arc.nextstate]) eps_queue_.push(arc.nextstate);
-      } else if (auto [insert_it, success] = element_map_.emplace(
-                     Element(arc.ilabel, arc.olabel, arc.nextstate),
-                     std::make_pair(expand_id_, arcs_.size()));
-                 success) {
-        arcs_.push_back(std::move(arc));
-      } else if (auto& [xid, arc_idx] = insert_it->second; xid == expand_id_) {
-        auto& weight = arcs_[arc_idx].weight;
-        weight = Plus(weight, arc.weight);
       } else {
-        xid = expand_id_;
-        arc_idx = arcs_.size();
-        arcs_.push_back(std::move(arc));
+        arc.weight = Times((*distance_)[state], arc.weight);
+      }
+      if (eps_filter_(arc)) {
+        if (arc.weight != Weight::Zero()) {
+          EnsureVisitedIndexIsValid(arc.nextstate);
+          if (!visited_[arc.nextstate]) eps_queue_.push(arc.nextstate);
+        }
+      } else {
+        AddNonEpsilonArc(std::move(arc));
       }
     }
-    final_weight_ =
-        Plus(final_weight_, Times((*distance_)[state], fst_.Final(state)));
+    if constexpr (kUnweighted) {
+      final_weight_ = Plus(final_weight_, fst_.Final(state));
+    } else {
+      final_weight_ =
+          Plus(final_weight_, Times((*distance_)[state], fst_.Final(state)));
+    }
   }
 
-  for (const auto state_id : visited_states_) visited_[state_id] = false;
-  visited_states_.clear();
-  ++expand_id_;
+  ClearVisited();
+  if constexpr (kUnweighted) {
+    if (!final_weight_.Member() || fst_.Properties(kError, false)) {
+      error_ = true;
+      return;
+    }
+  }
 }
 
 }  // namespace internal
@@ -204,8 +292,9 @@ void RmEpsilonState<Arc, Queue>::Expand(typename Arc::StateId source) {
 // control via the options argument; see below for a simpler interface.
 //
 // The distance vector will be used to hold the shortest distances during the
-// epsilon-closure computation. The state queue discipline and convergence delta
-// are taken in the options argument.
+// epsilon-closure computation (it is left empty when the unweighted idempotent
+// right-semiring fast path is taken). The state queue discipline and
+// convergence delta are taken in the options argument.
 template <class Arc, class Queue>
 void RmEpsilon(MutableFst<Arc>* fst,
                std::vector<typename Arc::Weight>* distance,
@@ -343,9 +432,20 @@ void RmEpsilon(MutableFst<Arc>* fst, bool connect = true,
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   std::vector<Weight> distance;
+  if constexpr (internal::kIdempotentRightSemiring<Weight>) {
+    if (fst->Properties(kUnweighted, false) != 0) {
+      LifoQueue<StateId> state_queue;
+      RmEpsilonOptions<Arc, LifoQueue<StateId>> opts(
+          &state_queue, delta, connect, std::move(weight_threshold),
+          state_threshold);
+      RmEpsilon(fst, &distance, opts);
+      return;
+    }
+  }
   AutoQueue<StateId> state_queue(*fst, &distance, EpsilonArcFilter<Arc>());
-  RmEpsilonOptions<Arc, AutoQueue<StateId>> opts(
-      &state_queue, delta, connect, weight_threshold, state_threshold);
+  RmEpsilonOptions<Arc, AutoQueue<StateId>> opts(&state_queue, delta, connect,
+                                                 std::move(weight_threshold),
+                                                 state_threshold);
   RmEpsilon(fst, &distance, opts);
 }
 

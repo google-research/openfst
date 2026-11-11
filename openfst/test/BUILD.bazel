@@ -1983,7 +1983,11 @@ cc_test(
         ":test_main",
         "//openfst/compat:file_path",
         "//openfst/lib",
+        "//openfst/lib:util",
         "//openfst/script",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:reflection",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_googletest//:gtest",
     ],
 )
