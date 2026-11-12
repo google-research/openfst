@@ -27,6 +27,7 @@
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst-decl.h"
+#include "openfst/lib/properties.h"
 #include "openfst/lib/vector-fst.h"
 
 namespace fst {
@@ -336,6 +337,68 @@ TEST(QueueTester, StateOrderTest) {
 
   ASSERT_EQ(queue.Head(), 3);
   queue.Dequeue();
+}
+
+TEST(QueueTester, AutoQueueUnweightedAcyclicTest) {
+  StdVectorFst fst;
+  fst.AddState();
+  fst.AddState();
+  fst.AddState();
+  fst.SetStart(2);
+  fst.SetFinal(0, StdArc::Weight::One());
+  fst.AddArc(1, StdArc(1, 1, StdArc::Weight::One(), 0));
+  fst.AddArc(2, StdArc(1, 1, StdArc::Weight::One(), 1));
+  fst.AddArc(2, StdArc(1, 1, StdArc::Weight::One(), 0));
+
+  constexpr uint64_t kExpectedProps = kAcyclic | kUnweighted | kNotTopSorted;
+  ASSERT_EQ(fst.Properties(kExpectedProps, true), kExpectedProps);
+
+  // Enqueuing (0, 2, 1) distinguishes LIFO (1, 2, 0), topological (2, 1, 0),
+  // state-order (0, 1, 2), and FIFO (0, 2, 1).
+  AutoQueue<int> queue(fst, /*distance=*/nullptr, AnyArcFilter<StdArc>());
+  queue.Enqueue(0);
+  queue.Enqueue(2);
+  queue.Enqueue(1);
+
+  // Unweighted acyclic FST over an idempotent semiring uses LifoQueue.
+  EXPECT_EQ(queue.Head(), 1);
+  queue.Dequeue();
+  EXPECT_EQ(queue.Head(), 2);
+  queue.Dequeue();
+  EXPECT_EQ(queue.Head(), 0);
+  queue.Dequeue();
+  EXPECT_TRUE(queue.Empty());
+}
+
+TEST(QueueTester, AutoQueueWeightedAcyclicTest) {
+  StdVectorFst fst;
+  fst.AddState();
+  fst.AddState();
+  fst.AddState();
+  fst.SetStart(2);
+  fst.SetFinal(0, StdArc::Weight::One());
+  fst.AddArc(1, StdArc(1, 1, StdArc::Weight::One(), 0));
+  fst.AddArc(2, StdArc(1, 1, StdArc::Weight(2.0), 1));
+  fst.AddArc(2, StdArc(1, 1, StdArc::Weight::One(), 0));
+
+  constexpr uint64_t kExpectedProps = kAcyclic | kWeighted | kNotTopSorted;
+  ASSERT_EQ(fst.Properties(kExpectedProps, true), kExpectedProps);
+
+  // Enqueuing (0, 2, 1) distinguishes LIFO (1, 2, 0), topological (2, 1, 0),
+  // state-order (0, 1, 2), and FIFO (0, 2, 1).
+  AutoQueue<int> queue(fst, /*distance=*/nullptr, AnyArcFilter<StdArc>());
+  queue.Enqueue(0);
+  queue.Enqueue(2);
+  queue.Enqueue(1);
+
+  // Weighted acyclic FST uses TopOrderQueue.
+  EXPECT_EQ(queue.Head(), 2);
+  queue.Dequeue();
+  EXPECT_EQ(queue.Head(), 1);
+  queue.Dequeue();
+  EXPECT_EQ(queue.Head(), 0);
+  queue.Dequeue();
+  EXPECT_TRUE(queue.Empty());
 }
 
 }  // namespace

@@ -662,12 +662,12 @@ class AutoQueue : public QueueBase<S> {
     if ((props & kTopSorted) || fst.Start() == kNoStateId) {
       queue_ = std::make_unique<StateOrderQueue<StateId>>();
       VLOG(2) << "AutoQueue: using state-order discipline";
-    } else if (props & kAcyclic) {
-      queue_ = std::make_unique<TopOrderQueue<StateId>>(fst, filter);
-      VLOG(2) << "AutoQueue: using top-order discipline";
     } else if ((props & kUnweighted) && IsIdempotent<Weight>::value) {
       queue_ = std::make_unique<LifoQueue<StateId>>();
       VLOG(2) << "AutoQueue: using LIFO discipline";
+    } else if (props & kAcyclic) {
+      queue_ = std::make_unique<TopOrderQueue<StateId>>(fst, filter);
+      VLOG(2) << "AutoQueue: using top-order discipline";
     } else {
       uint64_t properties;
       // Decomposes into strongly-connected components.
