@@ -19,6 +19,7 @@
 
 #include "openfst/lib/connect.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -121,6 +122,63 @@ TEST_F(ConnectTest, Condense) {
   ASSERT_TRUE(cfst4.Properties(kInitialAcyclic, false));
   ASSERT_TRUE(Verify(cfst4));
   ASSERT_EQ(cfst4.NumStates(), 0);
+}
+
+TEST_F(ConnectTest, ConnectPreservesPropertiesWhenAlreadyTrim) {
+  // Already-trim cyclic FST without cached kAccessible | kCoAccessible:
+  // Connect should cache SccVisitor's computed cyclicity properties while
+  // keeping existing properties such as kWeighted intact.
+  VectorFst<Arc> cyclic;
+  cyclic.AddState();
+  cyclic.SetStart(0);
+  cyclic.SetFinal(0, Arc::Weight::One());
+  cyclic.AddArc(0, Arc(1, 1, Arc::Weight(2.0), 0));
+  ASSERT_EQ(cyclic.Properties(kAccessible | kCoAccessible | kCyclic, false), 0);
+  Connect(&cyclic);
+  constexpr uint64_t kExpectedCyclicProps =
+      kAccessible | kCoAccessible | kCyclic | kInitialCyclic | kWeighted;
+  EXPECT_EQ(cyclic.Properties(kExpectedCyclicProps, false),
+            kExpectedCyclicProps);
+  EXPECT_EQ(cyclic.Properties(kFstProperties, true) & kExpectedCyclicProps,
+            kExpectedCyclicProps);
+}
+
+TEST_F(ConnectTest, ConnectPreservesAcyclicPropertiesWhenPruning) {
+  // Disconnected acyclic FST with a non-top-sorted arc (1 -> 0) so kAcyclic is
+  // initially unknown: Connect should delete state 2 and record
+  // kAcyclic | kInitialAcyclic from SccVisitor.
+  VectorFst<Arc> acyclic;
+  acyclic.AddStates(3);
+  acyclic.SetStart(1);
+  acyclic.SetFinal(0, Arc::Weight::One());
+  acyclic.AddArc(1, Arc(1, 1, Arc::Weight::One(), 0));
+  ASSERT_EQ(acyclic.Properties(kAcyclic | kInitialAcyclic, false), 0);
+  Connect(&acyclic);
+  ASSERT_EQ(acyclic.NumStates(), 2);
+  constexpr uint64_t kExpectedAcyclicProps =
+      kAccessible | kCoAccessible | kAcyclic | kInitialAcyclic;
+  EXPECT_EQ(acyclic.Properties(kExpectedAcyclicProps, false),
+            kExpectedAcyclicProps);
+  EXPECT_EQ(acyclic.Properties(kFstProperties, true) & kExpectedAcyclicProps,
+            kExpectedAcyclicProps);
+}
+
+TEST_F(ConnectTest, ConnectDoesNotPreserveDeadCycle) {
+  // Disconnected FST whose only cycle is in an unreachable state: deleting the
+  // dead cycle must not stamp kCyclic on the trimmed acyclic FST, while still
+  // preserving kInitialAcyclic.
+  VectorFst<Arc> dead_cycle;
+  dead_cycle.AddStates(2);
+  dead_cycle.SetStart(0);
+  dead_cycle.SetFinal(0, Arc::Weight::One());
+  dead_cycle.AddArc(1, Arc(1, 1, Arc::Weight::One(), 1));
+  Connect(&dead_cycle);
+  ASSERT_EQ(dead_cycle.NumStates(), 1);
+  EXPECT_EQ(dead_cycle.Properties(kCyclic, false), 0);
+  EXPECT_EQ(dead_cycle.Properties(kInitialAcyclic, false), kInitialAcyclic);
+  Connect(&dead_cycle);
+  EXPECT_EQ(dead_cycle.Properties(kAcyclic, false), 0);
+  EXPECT_EQ(dead_cycle.Properties(kAcyclic, true), kAcyclic);
 }
 
 }  // namespace
