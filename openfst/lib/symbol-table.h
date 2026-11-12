@@ -401,8 +401,9 @@ class SymbolTable {
   }
 
   // Reads a binary dump of the symbol table.
-  static SymbolTable* Read(const std::string& source) {
-    file::FileInStream strm(source, std::ios_base::in | std::ios_base::binary);
+  static SymbolTable* Read(absl::string_view source) {
+    file::FileInStream strm(std::string(source),
+                            std::ios_base::in | std::ios_base::binary);
     if (!strm.good()) {
       LOG(ERROR) << "SymbolTable::Read: Can't open file: " << source;
       return nullptr;
