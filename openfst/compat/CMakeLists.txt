@@ -19,7 +19,6 @@ set(COMPAT_HEADERS
     file_path.h
     init.h
     seed_sequences.h
-    status_matchers.h
     unaligned.h
 )
 openfst_install(FILES ${COMPAT_HEADERS}
@@ -30,10 +29,6 @@ if(OPENFST_BUILD_TESTS)
   include(GoogleTest)
 
   fst_add_library(fststatus_matchers STATIC status_matchers.cc)
-  target_include_directories(
-    fststatus_matchers PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-                              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
   target_link_libraries(
     fststatus_matchers
     PUBLIC fst
@@ -41,13 +36,6 @@ if(OPENFST_BUILD_TESTS)
            absl::strings
            GTest::gtest
            GTest::gmock
-  )
-  openfst_install(
-    TARGETS fststatus_matchers
-    EXPORT OpenFstTargets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 
   set(COMPAT_TESTS
