@@ -140,7 +140,15 @@ foreach(BIN ${FAR_BINS})
 
   add_executable(${BIN} ${BIN}.cc)
 
-  target_link_libraries(${BIN} PRIVATE ${BIN}-main absl::status absl::statusor)
+  target_link_libraries(
+    ${BIN}
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            ${BIN}-main
+            absl::status
+            absl::statusor
+  )
 
   openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

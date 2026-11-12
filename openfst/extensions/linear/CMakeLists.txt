@@ -51,14 +51,28 @@ target_link_libraries(fstlinear-main PUBLIC fstlinearscript absl::flags
 )
 
 add_executable(fstlinear fstlinear.cc)
-target_link_libraries(fstlinear PRIVATE fstlinear-main)
+target_link_libraries(
+  fstlinear
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
+          fstlinear-main
+)
 
 add_library(fstloglinearapply-main fstloglinearapply-main.cc)
 target_link_libraries(fstloglinearapply-main PUBLIC fst absl::flags absl::log)
 
 add_executable(fstloglinearapply fstloglinearapply.cc)
 
-target_link_libraries(fstloglinearapply PRIVATE fstloglinearapply-main)
+target_link_libraries(
+  fstloglinearapply
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fstlinear_tagger_fst
+          fstlinear_classifier_fst
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
+          fstloglinearapply-main
+)
 
 openfst_install(
   TARGETS fstlinearscript fstlinear_tagger_fst fstlinear_classifier_fst
