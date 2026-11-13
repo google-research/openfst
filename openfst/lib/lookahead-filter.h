@@ -27,6 +27,7 @@
 #include <memory>
 
 #include "openfst/lib/arc.h"
+#include "openfst/lib/compose-filter.h"
 #include "openfst/lib/filter-state.h"
 #include "openfst/lib/fst-decl.h"
 #include "openfst/lib/fst.h"
