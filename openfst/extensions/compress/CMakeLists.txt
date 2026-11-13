@@ -50,12 +50,20 @@ target_link_libraries(fstcompress-main PUBLIC fstcompressscript absl::flags
 )
 
 add_executable(fstcompress fstcompress.cc)
-target_link_libraries(fstcompress PRIVATE fstcompress-main)
+target_link_libraries(
+  fstcompress
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
+          fstcompress-main
+)
 
 add_executable(fstrandmod fstrandmod.cc)
 target_link_libraries(
   fstrandmod
-  PRIVATE fst
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
           absl::flags
           absl::flags_parse
           absl::flags_usage
@@ -78,8 +86,10 @@ target_link_libraries(fstquantize_weights PUBLIC fst absl::log absl::span)
 add_executable(fstquantize fstquantize.cc)
 target_link_libraries(
   fstquantize
-  PRIVATE fstquantize_weights
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
           fst
+          ${OPENFST_ALWAYS_LINK_END}
+          fstquantize_weights
           absl::flags
           absl::log
 )

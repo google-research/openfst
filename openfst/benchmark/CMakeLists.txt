@@ -55,7 +55,9 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
 
   target_link_libraries(
     ${BENCHMARK_TARGET}
-    PRIVATE fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
             benchmark::benchmark
             GTest::gtest
             absl::flags

@@ -69,9 +69,12 @@ add_executable(fstspecial fstspecial.cc)
 
 target_link_libraries(
   fstspecial
-  PRIVATE fstphi-fst
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fstphi-fst
           fstrho-fst
           fstsigma-fst
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
           fstconvert-main
           absl::flags
           absl::log
