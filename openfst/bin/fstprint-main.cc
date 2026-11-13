@@ -62,8 +62,6 @@ int fstprint_main(int argc, char** argv) {
 
   const std::string in_name =
       (argc > 1 && strcmp(argv[1], "-") != 0) ? argv[1] : "";
-  const std::string out_name =
-      (argc > 2 && strcmp(argv[2], "-") != 0) ? argv[2] : "";
 
   std::unique_ptr<FstClass> fst(FstClass::Read(in_name));
   if (!fst) return 1;
