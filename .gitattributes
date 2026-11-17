@@ -1,0 +1,16 @@
+# Set default behavior to automatically normalize line endings to LF
+* text=auto eol=lf
+
+# Explicit binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.fst binary
+*.far binary
+*.compiled binary
+*.pyd binary
+*.so binary
+*.dll binary
+*.lib binary
+*.a binary
+*.exe binary

@@ -189,6 +189,19 @@ cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 ctest --test-dir build -R pywrapfst_test --output-on-failure
 ```
 
+### Python Package with Pip
+
+You can also install or build the OpenFst Python package directly using standard Python packaging tools:
+
+```bash
+# Install directly from the repository
+pip install .
+
+# Or build wheels
+python -m pip install build
+python -m build --wheel
+```
+
 ## Citing OpenFst
 
 If you would like to reference OpenFst in a publication, please use:
