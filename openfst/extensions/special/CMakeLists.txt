@@ -65,13 +65,16 @@ target_link_libraries(
 
 add_executable(fstspecial fstspecial.cc)
 
-# It depends on fstconvert-main which is in openfst/bin
-
+# It depends on fstconvert-main which is in openfst/bin. Force-link the special
+# FST libraries and fst so their FST type registrations are retained.
 target_link_libraries(
   fstspecial
-  PRIVATE fstphi-fst
+  PRIVATE ${OPENFST_ALWAYS_LINK_START}
+          fstphi-fst
           fstrho-fst
           fstsigma-fst
+          fst
+          ${OPENFST_ALWAYS_LINK_END}
           fstconvert-main
           absl::flags
           absl::log

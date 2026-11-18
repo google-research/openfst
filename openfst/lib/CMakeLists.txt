@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: Split fst-types.cc into a separate registration library so
+# executables only need to force-link the registration target rather than all of
+# fst.
 fst_add_library(
   fst
   ../compat/fastmath.cc

@@ -66,12 +66,33 @@ foreach(TOOL_NAME ${BINARIES})
            absl::log
   )
 
-  # Create the executable (e.g., fstarcsort)
+  # Create the executable (e.g., fstarcsort). Force-link fst so static builds
+  # retain the FST type registrations in fst-types.cc needed by Fst::Read.
+  #
+  # TODO: Split fst-types.cc out of fst so only the registration
+  # library needs to be force-linked.
   add_executable(${TOOL_NAME} ${TOOL_NAME}.cc)
-  target_link_libraries(${TOOL_NAME} PRIVATE ${TOOL_NAME}-main absl::flags)
+  target_link_libraries(
+    ${TOOL_NAME}
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            ${TOOL_NAME}-main
+            absl::flags
+  )
 
   openfst_install(TARGETS ${TOOL_NAME} RUNTIME DESTINATION
                                                ${CMAKE_INSTALL_BINDIR}
   )
 
 endforeach()
+
+if(OPENFST_BUILD_TESTS)
+  # The tools must be able to read FSTs. In a static build this fails unless the
+  # FST type registrations in fst are force-linked.
+  add_test(
+    NAME fstinfo_smoke_test
+    COMMAND fstinfo
+            ${CMAKE_CURRENT_SOURCE_DIR}/../test/testdata/compile/fst.compiled
+  )
+endif()

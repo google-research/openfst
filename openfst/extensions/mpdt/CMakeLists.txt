@@ -39,7 +39,15 @@ foreach(BIN ${MPDT_BINS})
 
   add_executable(${BIN} ${BIN}.cc)
 
-  target_link_libraries(${BIN} PRIVATE ${BIN}-main)
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc.
+  target_link_libraries(
+    ${BIN}
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            ${BIN}-main
+  )
 
   openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

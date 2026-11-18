@@ -53,9 +53,16 @@ foreach(BENCHMARK_SRC ${BENCHMARKS})
                              PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   )
 
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc needed by Fst::Read.
+  #
+  # TODO: Split fst-types.cc out of fst so only the registration
+  # library needs to be force-linked.
   target_link_libraries(
     ${BENCHMARK_TARGET}
-    PRIVATE fst
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
             benchmark::benchmark
             GTest::gtest
             absl::flags
