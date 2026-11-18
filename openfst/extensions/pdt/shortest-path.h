@@ -416,29 +416,29 @@ class PdtShortestPath {
 
   void ProcFinal(SearchState s);
 
-  void ProcArcs(SearchState s);
+  void ProcArcs(SearchState s, Queue& state_queue);
 
-  void ProcOpenParen(Label paren_id, SearchState s, StateId nexstate,
-                     const Weight& weight);
+  void ProcOpenParen(Label paren_id, SearchState s, StateId nextstate,
+                     const Weight& weight, Queue& state_queue);
 
   void ProcCloseParen(Label paren_id, SearchState s, const Weight& weight);
 
-  void ProcNonParen(SearchState s, StateId nextstate, const Weight& weight);
+  void ProcNonParen(SearchState s, StateId nextstate, const Weight& weight,
+                    Queue& state_queue);
 
   void Relax(SearchState s, SearchState t, StateId nextstate,
-             const Weight& weight, Label paren_id);
+             const Weight& weight, Label paren_id, Queue& state_queue);
 
-  void Enqueue(SearchState d);
+  void Enqueue(SearchState s, Queue& state_queue);
 
   void GetPath();
 
-  Arc GetPathArc(SearchState s, SearchState p, Label paren_id, bool open);
+  Arc GetPathArc(SearchState s, SearchState d, Label paren_id, bool open);
 
   std::unique_ptr<Fst<Arc>> ifst_;
   MutableFst<Arc>* ofst_;
   const std::vector<std::pair<Label, Label>>& parens_;
   bool keep_parens_;
-  Queue* state_queue_;
   StateId start_;
   Weight fdistance_;
   SearchState f_parent_;
@@ -494,17 +494,16 @@ template <class Arc, class Queue>
 void PdtShortestPath<Arc, Queue>::GetDistance(StateId start) {
   if (start == kNoStateId) return;
   Queue state_queue;
-  state_queue_ = &state_queue;
   const SearchState q(start, start);
-  Enqueue(q);
+  Enqueue(q, state_queue);
   sp_data_.SetDistance(q, Weight::One());
-  while (!state_queue_->Empty()) {
-    const auto state = state_queue_->Head();
-    state_queue_->Dequeue();
+  while (!state_queue.Empty()) {
+    const auto state = state_queue.Head();
+    state_queue.Dequeue();
     const SearchState s(state, start);
     sp_data_.SetFlags(s, 0, kEnqueued);
     ProcFinal(s);
-    ProcArcs(s);
+    ProcArcs(s, state_queue);
     sp_data_.SetFlags(s, kExpanded, kExpanded);
   }
   sp_data_.SetFlags(q, kFinished, kFinished);
@@ -530,7 +529,7 @@ void PdtShortestPath<Arc, Queue>::ProcFinal(SearchState s) {
 
 // Processes all arcs leaving the state s.
 template <class Arc, class Queue>
-void PdtShortestPath<Arc, Queue>::ProcArcs(SearchState s) {
+void PdtShortestPath<Arc, Queue>::ProcArcs(SearchState s, Queue& state_queue) {
   for (ArcIterator<Fst<Arc>> aiter(*ifst_, s.state); !aiter.Done();
        aiter.Next()) {
     const auto& arc = aiter.Value();
@@ -539,12 +538,12 @@ void PdtShortestPath<Arc, Queue>::ProcArcs(SearchState s) {
     if (it != paren_map_.end()) {  // Is a paren?
       const auto paren_id = it->second;
       if (arc.ilabel == parens_[paren_id].first) {
-        ProcOpenParen(paren_id, s, arc.nextstate, weight);
+        ProcOpenParen(paren_id, s, arc.nextstate, weight, state_queue);
       } else {
         ProcCloseParen(paren_id, s, weight);
       }
     } else {
-      ProcNonParen(s, arc.nextstate, weight);
+      ProcNonParen(s, arc.nextstate, weight, state_queue);
     }
   }
 }
@@ -557,7 +556,8 @@ template <class Arc, class Queue>
 inline void PdtShortestPath<Arc, Queue>::ProcOpenParen(Label paren_id,
                                                        SearchState s,
                                                        StateId nextstate,
-                                                       const Weight& weight) {
+                                                       const Weight& weight,
+                                                       Queue& state_queue) {
   const SearchState d(nextstate, nextstate);
   const ParenSpec paren(paren_id, s.start, d.start);
   const auto pdist = sp_data_.Distance(paren);
@@ -566,9 +566,7 @@ inline void PdtShortestPath<Arc, Queue>::ProcOpenParen(Label paren_id,
     sp_data_.SetParent(paren, s);
     const auto dist = sp_data_.Distance(d);
     if (dist == Weight::Zero()) {
-      auto* state_queue = state_queue_;
       GetDistance(d.start);
-      state_queue_ = state_queue;
     } else if (!(sp_data_.Flags(d) & kFinished)) {
       FSTERROR()
           << "PdtShortestPath: open parenthesis recursion: not bounded stack";
@@ -584,7 +582,7 @@ inline void PdtShortestPath<Arc, Queue>::ProcOpenParen(Label paren_id,
         const auto& cparc = cp_it->second;
         const auto cpw =
             Times(weight, Times(sp_data_.Distance(cpstate), cparc.weight));
-        Relax(cpstate, s, cparc.nextstate, cpw, paren_id);
+        Relax(cpstate, s, cparc.nextstate, cpw, paren_id, state_queue);
       }
     }
   }
@@ -608,8 +606,9 @@ inline void PdtShortestPath<Arc, Queue>::ProcCloseParen(Label paren_id,
 template <class Arc, class Queue>
 inline void PdtShortestPath<Arc, Queue>::ProcNonParen(SearchState s,
                                                       StateId nextstate,
-                                                      const Weight& weight) {
-  Relax(s, s, nextstate, weight, kNoLabel);
+                                                      const Weight& weight,
+                                                      Queue& state_queue) {
+  Relax(s, s, nextstate, weight, kNoLabel, state_queue);
 }
 
 // Classical relaxation on the search graph for an arc with destination state
@@ -619,25 +618,27 @@ template <class Arc, class Queue>
 inline void PdtShortestPath<Arc, Queue>::Relax(SearchState s, SearchState t,
                                                StateId nextstate,
                                                const Weight& weight,
-                                               Label paren_id) {
+                                               Label paren_id,
+                                               Queue& state_queue) {
   const SearchState d(nextstate, t.start);
   Weight dist = sp_data_.Distance(d);
   if (dist != Plus(dist, weight)) {
     sp_data_.SetParent(d, s);
     sp_data_.SetParenId(d, paren_id);
     sp_data_.SetDistance(d, Plus(dist, weight));
-    Enqueue(d);
+    Enqueue(d, state_queue);
   }
 }
 
 template <class Arc, class Queue>
-inline void PdtShortestPath<Arc, Queue>::Enqueue(SearchState s) {
+inline void PdtShortestPath<Arc, Queue>::Enqueue(SearchState s,
+                                                 Queue& state_queue) {
   if (!(sp_data_.Flags(s) & kEnqueued)) {
-    state_queue_->Enqueue(s.state);
+    state_queue.Enqueue(s.state);
     sp_data_.SetFlags(s, kEnqueued, kEnqueued);
     ++nenqueued_;
   } else {
-    state_queue_->Update(s.state);
+    state_queue.Update(s.state);
   }
 }
 
