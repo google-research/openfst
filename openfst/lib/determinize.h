@@ -798,11 +798,8 @@ class DeterminizeFstImpl : public DeterminizeFstImplBase<Arc> {
       : DeterminizeFstImplBase<Arc>(impl),
         delta_(impl.delta_),
         subsequential_label_(impl.subsequential_label_),
-        increment_subsequential_label_(impl.increment_subsequential_label_) {
-    if (impl.from_fst_) {
-      Init(GetFst(), nullptr);
-    }
-  }
+        increment_subsequential_label_(impl.increment_subsequential_label_),
+        from_fst_(impl.from_fst_ ? impl.from_fst_->Copy(true) : nullptr) {}
 
   DeterminizeFstImpl* Copy() const override {
     return new DeterminizeFstImpl(*this);

@@ -19,8 +19,10 @@
 
 #include "openfst/lib/determinize.h"
 
+#include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
@@ -44,6 +46,51 @@ namespace fst {
 namespace {
 
 using Arc = StdArc;
+
+// Determinization filter that drops transitions with input label > max_label,
+// and raises FSTERROR if constructed from an FST without max_label (mirroring
+// Disambiguator's RelationDeterminizeFilter<Arc, CommonFuture>).
+template <class A>
+class MaxLabelDeterminizeFilter : public DefaultDeterminizeFilter<A> {
+ public:
+  using Base = DefaultDeterminizeFilter<A>;
+  using typename Base::Element;
+  using typename Base::Label;
+  using typename Base::LabelMap;
+
+  template <class B>
+  struct rebind {
+    using Other = MaxLabelDeterminizeFilter<B>;
+  };
+
+  explicit MaxLabelDeterminizeFilter(const Fst<A>& fst)
+      : Base(fst), max_label_(std::numeric_limits<Label>::max()) {
+    FSTERROR() << "MaxLabelDeterminizeFilter: max_label not provided";
+  }
+
+  MaxLabelDeterminizeFilter(const Fst<A>& fst, Label max_label)
+      : Base(fst), max_label_(max_label) {}
+
+  template <class Filter>
+  MaxLabelDeterminizeFilter(const Fst<A>& fst, std::unique_ptr<Filter> filter)
+      : Base(fst), max_label_(filter->MaxLabel()) {}
+
+  MaxLabelDeterminizeFilter(const MaxLabelDeterminizeFilter& filter,
+                            const Fst<A>* fst = nullptr)
+      : Base(filter, fst), max_label_(filter.max_label_) {}
+
+  bool FilterArc(const A& arc, const Element& src_element,
+                 Element&& dest_element, LabelMap* label_map) const {
+    if (arc.ilabel > max_label_) return false;
+    return Base::FilterArc(arc, src_element, std::move(dest_element),
+                           label_map);
+  }
+
+  Label MaxLabel() const { return max_label_; }
+
+ private:
+  Label max_label_;
+};
 
 class DeterminizeTest : public testing::Test {
  protected:
@@ -111,6 +158,14 @@ TEST_F(DeterminizeTest, TransducerDeterminize) {
   ASSERT_TRUE(ofst.Properties(kIDeterministic, true));
   ASSERT_TRUE(Equal(*dfst4_, ofst));
 
+  for (const bool safe : {false, true}) {
+    SCOPED_TRACE(safe);
+    DeterminizeFst<Arc> cfst(ofst, safe);
+    ASSERT_TRUE(Verify(cfst));
+    ASSERT_TRUE(cfst.Properties(kIDeterministic, true));
+    ASSERT_TRUE(Equal(*dfst4_, cfst));
+  }
+
   // Non-functional transducer.
   DeterminizeFstOptions<Arc> opts;
   opts.type = DETERMINIZE_NONFUNCTIONAL;
@@ -127,6 +182,62 @@ TEST_F(DeterminizeTest, TransducerDeterminize) {
   ASSERT_TRUE(ofst3.Properties(kIDeterministic, true));
   ASSERT_TRUE(ofst3.Properties(kNoIEpsilons, true));
   ASSERT_TRUE(Equal(*dfst9_, ofst3));
+
+  for (const bool safe : {false, true}) {
+    SCOPED_TRACE(safe);
+    DeterminizeFst<Arc> cfst3(ofst3, safe);
+    ASSERT_TRUE(Verify(cfst3));
+    ASSERT_TRUE(cfst3.Properties(kIDeterministic, true));
+    ASSERT_TRUE(cfst3.Properties(kNoIEpsilons, true));
+    ASSERT_TRUE(Equal(*dfst9_, cfst3));
+  }
+}
+
+TEST_F(DeterminizeTest, TransducerDeterminizeCopyPreservesFilter) {
+  // Nondeterministic functional transducer with two parallel 1:10 transitions
+  // (tropical weights 1.0 and 2.0 -> min 1.0) and a 2:20 transition that
+  // MaxLabelDeterminizeFilter(..., /*max_label=*/1) filters out.
+  VectorFst<Arc> ifst;
+  ifst.AddStates(3);
+  ifst.SetStart(0);
+  ifst.SetFinal(1, Arc::Weight::One());
+  ifst.SetFinal(2, Arc::Weight::One());
+  ifst.AddArc(0, Arc(1, 10, Arc::Weight(1.0), 1));
+  ifst.AddArc(0, Arc(1, 10, Arc::Weight(2.0), 1));
+  ifst.AddArc(0, Arc(2, 20, Arc::Weight(0.5), 2));
+
+  VectorFst<Arc> expected;
+  expected.AddStates(2);
+  expected.SetStart(0);
+  expected.SetFinal(1, Arc::Weight::One());
+  expected.AddArc(0, Arc(1, 10, Arc::Weight(1.0), 1));
+
+  using Divisor = DefaultCommonDivisor<Arc::Weight>;
+  using Filter = MaxLabelDeterminizeFilter<Arc>;
+  DeterminizeFstOptions<Arc, Divisor, Filter> opts;
+  opts.filter = new Filter(ifst, /*max_label=*/1);
+
+  DeterminizeFst<Arc> ofst(ifst, opts);
+  std::unique_ptr<DeterminizeFst<Arc>> unaccessed_copy(ofst.Copy(true));
+
+  ASSERT_TRUE(Verify(ofst));
+  EXPECT_EQ(ofst.Properties(kError, true), 0);
+  EXPECT_TRUE(ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected, ofst));
+
+  ASSERT_TRUE(Verify(*unaccessed_copy));
+  EXPECT_EQ(unaccessed_copy->Properties(kError, true), 0);
+  EXPECT_TRUE(unaccessed_copy->Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected, *unaccessed_copy));
+
+  for (const bool safe : {false, true}) {
+    SCOPED_TRACE(safe);
+    DeterminizeFst<Arc> accessed_copy(ofst, safe);
+    ASSERT_TRUE(Verify(accessed_copy));
+    EXPECT_EQ(accessed_copy.Properties(kError, true), 0);
+    EXPECT_TRUE(accessed_copy.Properties(kIDeterministic, true));
+    EXPECT_TRUE(Equal(expected, accessed_copy));
+  }
 }
 
 TEST_F(DeterminizeTest, TransducerDeterminizeWithStateTableError) {
