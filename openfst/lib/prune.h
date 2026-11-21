@@ -62,6 +62,17 @@ class PruneCompare {
   NaturalLess<Weight> less_;
 };
 
+// Returns true iff `weight` strictly exceeds `limit` beyond `delta` tolerance.
+// Comparing within `delta` prevents pruning optimal paths when inexact weights
+// accumulate rounding error from floating-point non-associativity, iterative
+// `ShortestDistance` convergence, or subset residual quantization in
+// `Determinize`.
+template <class Weight>
+bool ExceedsPruneLimit(const Weight& limit, const Weight& weight, float delta) {
+  const NaturalLess<Weight> less;
+  return less(limit, weight) && !ApproxEqual(limit, weight, delta);
+}
+
 }  // namespace internal
 
 template <class Arc, class ArcFilter>
@@ -90,7 +101,7 @@ struct PruneOptions {
   // If non-zero, passes in pre-computed shortest distance to final states.
   const std::vector<Weight>* distance;
   // Determines the degree of convergence required when computing shortest
-  // distances.
+  // distances and comparing weights against the pruning threshold.
   float delta;
   // Determines if the shortest path weight is left (true) or right
   // (false) multiplied by the threshold to get the limit for
@@ -117,6 +128,13 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
   using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
   auto ns = fst->NumStates();
   if (ns < 1) return;
+  NaturalLess<Weight> less;
+  if ((fst->Start() == kNoStateId) ||
+      less(opts.weight_threshold, Weight::One()) ||
+      (opts.state_threshold == 0)) {
+    fst->DeleteStates();
+    return;
+  }
   std::vector<Weight> idistance(ns, Weight::Zero());
   std::vector<Weight> tmp;
   if (!opts.distance) {
@@ -124,7 +142,7 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
     ShortestDistance(*fst, &tmp, true, opts.delta);
   }
   const auto* fdistance = opts.distance ? opts.distance : &tmp;
-  if ((opts.state_threshold == 0) || (fdistance->size() <= fst->Start()) ||
+  if ((fdistance->size() <= fst->Start()) ||
       ((*fdistance)[fst->Start()] == Weight::Zero())) {
     fst->DeleteStates();
     return;
@@ -135,14 +153,13 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
   std::vector<size_t> enqueued(ns, StateHeap::kNoKey);
   std::vector<StateId> dead;
   dead.push_back(fst->AddState());
-  NaturalLess<Weight> less;
   auto s = fst->Start();
   const auto limit = opts.threshold_initial
                          ? Times(opts.weight_threshold, (*fdistance)[s])
                          : Times((*fdistance)[s], opts.weight_threshold);
   StateId num_visited = 0;
 
-  if (!less(limit, (*fdistance)[s])) {
+  if (!internal::ExceedsPruneLimit(limit, (*fdistance)[s], opts.delta)) {
     idistance[s] = Weight::One();
     enqueued[s] = heap.Insert(s);
     ++num_visited;
@@ -152,7 +169,8 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
     heap.Pop();
     enqueued[s] = StateHeap::kNoKey;
     visited[s] = true;
-    if (less(limit, Times(idistance[s], fst->Final(s)))) {
+    if (internal::ExceedsPruneLimit(limit, Times(idistance[s], fst->Final(s)),
+                                    opts.delta)) {
       fst->SetFinal(s, Weight::Zero());
     }
     for (MutableArcIterator<MutableFst<Arc>> aiter(fst, s); !aiter.Done();
@@ -163,7 +181,7 @@ void Prune(MutableFst<Arc>* fst, const PruneOptions<Arc, ArcFilter>& opts =
           Times(Times(idistance[s], arc.weight),
                 arc.nextstate < fdistance->size() ? (*fdistance)[arc.nextstate]
                                                   : Weight::Zero());
-      if (less(limit, weight)) {
+      if (internal::ExceedsPruneLimit(limit, weight, opts.delta)) {
         arc.nextstate = dead[0];
         aiter.SetValue(arc);
         continue;
@@ -278,7 +296,8 @@ void Prune(
     heap.Pop();
     enqueued[s] = StateHeap::kNoKey;
     visited[s] = true;
-    if (!less(limit, Times(idistance[s], ifst.Final(s)))) {
+    if (!internal::ExceedsPruneLimit(limit, Times(idistance[s], ifst.Final(s)),
+                                     opts.delta)) {
       ofst->SetFinal(copy[s], ifst.Final(s));
     }
     for (ArcIterator<Fst<Arc>> aiter(ifst, s); !aiter.Done(); aiter.Next()) {
@@ -288,7 +307,7 @@ void Prune(
           Times(Times(idistance[s], arc.weight),
                 arc.nextstate < fdistance->size() ? (*fdistance)[arc.nextstate]
                                                   : Weight::Zero());
-      if (less(limit, weight)) continue;
+      if (internal::ExceedsPruneLimit(limit, weight, opts.delta)) continue;
       if ((opts.state_threshold != kNoStateId) &&
           (ofst->NumStates() >= opts.state_threshold)) {
         continue;

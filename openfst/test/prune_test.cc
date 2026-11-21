@@ -26,6 +26,8 @@
 #include "gtest/gtest.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/fst.h"
+#include "openfst/lib/shortest-distance.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
 #include "openfst/script/equal.h"
@@ -146,6 +148,77 @@ TEST_F(PruneTest, FstClassPrune) {
   const s::WeightClass threshold(s::WeightClass::One(vfst.WeightType()));
   Prune(pfst1, &vfst, threshold);
   ASSERT_TRUE(Equal(pfst2, vfst));
+}
+
+// Builds a single-path FST where backward ShortestDistance computes
+// -1.0f + (4e-8f + 4e-8f) = -0.99999994f, while forward accumulation in Prune
+// computes (-1.0f + 4e-8f) + 4e-8f = -0.99999988f (1 ULP larger) on both arc
+// 1 -> 2 and state 2's final weight.
+VectorFst<Arc> MakeFloatNonAssociativePathFst() {
+  VectorFst<Arc> fst;
+  fst.AddStates(3);
+  fst.SetStart(0);
+  fst.AddArc(0, Arc(1, 1, Weight(-1.0f), 1));
+  fst.AddArc(1, Arc(2, 2, Weight(4e-8f), 2));
+  fst.SetFinal(2, Weight(4e-8f));
+  return fst;
+}
+
+// Verifies that destructive and constructive Prune keep an optimal path whose
+// forward weight rounds up within delta, while delta = 0.0f enforces exact
+// comparison.
+TEST(PruneToleranceTest, KeepsShortestPathWithinDelta) {
+  const VectorFst<Arc> ifst = MakeFloatNonAssociativePathFst();
+
+  VectorFst<Arc> destructive_fst(ifst);
+  Prune(&destructive_fst, Weight::One());
+  ASSERT_TRUE(Verify(destructive_fst));
+  EXPECT_TRUE(Equal(ifst, destructive_fst));
+
+  VectorFst<Arc> constructive_fst;
+  Prune(ifst, &constructive_fst, Weight::One());
+  ASSERT_TRUE(Verify(constructive_fst));
+  EXPECT_TRUE(Equal(ifst, constructive_fst));
+
+  VectorFst<Arc> expected_zero_delta;
+  expected_zero_delta.AddStates(2);
+  expected_zero_delta.SetStart(0);
+  expected_zero_delta.AddArc(0, Arc(1, 1, Weight(-1.0f), 1));
+
+  VectorFst<Arc> destructive_zero_delta(ifst);
+  Prune(&destructive_zero_delta, Weight::One(), kNoStateId, /*delta=*/0.0f);
+  ASSERT_TRUE(Verify(destructive_zero_delta));
+  EXPECT_TRUE(Equal(expected_zero_delta, destructive_zero_delta));
+  EXPECT_EQ(ShortestDistance(destructive_zero_delta), Weight::Zero());
+
+  VectorFst<Arc> constructive_zero_delta;
+  Prune(ifst, &constructive_zero_delta, Weight::One(), kNoStateId,
+        /*delta=*/0.0f);
+  ASSERT_TRUE(Verify(constructive_zero_delta));
+  EXPECT_TRUE(Equal(expected_zero_delta, constructive_zero_delta));
+  EXPECT_EQ(ShortestDistance(constructive_zero_delta), Weight::Zero());
+}
+
+// Verifies that a negative weight_threshold (even smaller in magnitude than
+// kDelta) or an FST with no start state produces an empty FST.
+TEST(PruneToleranceTest, NegativeThresholdOrUnsetStartClearsFst) {
+  const VectorFst<Arc> ifst = MakeFloatNonAssociativePathFst();
+
+  VectorFst<Arc> destructive_fst(ifst);
+  Prune(&destructive_fst, Weight(-1e-5f));
+  ASSERT_TRUE(Verify(destructive_fst));
+  EXPECT_EQ(destructive_fst.NumStates(), 0);
+
+  VectorFst<Arc> constructive_fst;
+  Prune(ifst, &constructive_fst, Weight(-1e-5f));
+  ASSERT_TRUE(Verify(constructive_fst));
+  EXPECT_EQ(constructive_fst.NumStates(), 0);
+
+  VectorFst<Arc> no_start_fst;
+  no_start_fst.AddStates(2);
+  Prune(&no_start_fst, Weight::One());
+  ASSERT_TRUE(Verify(no_start_fst));
+  EXPECT_EQ(no_start_fst.NumStates(), 0);
 }
 
 }  // namespace

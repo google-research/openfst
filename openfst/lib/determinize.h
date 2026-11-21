@@ -1056,7 +1056,8 @@ struct DeterminizeOptions {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  float delta;                // Quantization delta for subset weights.
+  float delta;                // Quantization delta for subset weights; also
+                              // bounds pruning weight comparison tolerance.
   Weight weight_threshold;    // Pruning weight threshold.
   StateId state_threshold;    // Pruning state threshold.
   Label subsequential_label;  // Label used for residual final output.
@@ -1111,15 +1112,21 @@ void Determinize(
       if (ifst.Properties(kAcceptor, false)) {
         std::vector<Weight> idistance;
         std::vector<Weight> odistance;
-        ShortestDistance(ifst, &idistance, true);
+        // Cap relaxation delta at kShortestDelta so coarse subset-quantization
+        // opts.delta does not accumulate multi-hop error in idistance.
+        ShortestDistance(ifst, &idistance, true,
+                         std::min(opts.delta, kShortestDelta));
         DeterminizeFst<Arc> dfst(ifst, &idistance, &odistance, nopts);
         PruneOptions<Arc, AnyArcFilter<Arc>> popts(
             opts.weight_threshold, opts.state_threshold, AnyArcFilter<Arc>(),
-            &odistance);
+            &odistance, opts.delta);
         Prune(dfst, ofst, popts);
       } else {
         *ofst = DeterminizeFst<Arc>(ifst, nopts);
-        Prune(ofst, opts.weight_threshold, opts.state_threshold);
+        // *ofst already has quantized weights; cap at kDelta so coarse
+        // opts.delta does not widen the beam or coarsen ShortestDistance.
+        Prune(ofst, opts.weight_threshold, opts.state_threshold,
+              std::min(opts.delta, kDelta));
       }
     } else {
       FSTERROR() << "Determinize: Weight needs to have the path "

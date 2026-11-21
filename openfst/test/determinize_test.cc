@@ -32,6 +32,7 @@
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
+#include "openfst/lib/shortest-distance.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -279,6 +280,179 @@ TEST_F(DeterminizeTest, PrunedDeterminize) {
   ASSERT_TRUE(Verify(ofst));
   ASSERT_TRUE(ofst.Properties(kIDeterministic, true));
   ASSERT_TRUE(Equal(*dfst5_, ofst));
+}
+
+// Builds a nondeterministic acceptor with two paths sharing prefix label 1:
+// - suboptimal path 1 -> 2 with weight 0.1 + 0.4 = 0.5, and
+// - optimal path 1 -> 3 with weight 1.0 + (-1.0) = 0.0.
+// On label 1, DeterminizeFsaImpl factors out min(0.1, 1.0) = 0.1 and quantizes
+// the optimal branch's residual 0.9 upward (e.g., to 922/1024 = 0.900390625 at
+// kDelta, or 1.0 at delta = 0.25), shifting its DFA path estimate slightly
+// above the exact NFA shortest distance 0.0.
+VectorFst<Arc> MakeQuantizedResidualAcceptor() {
+  VectorFst<Arc> ifst;
+  ifst.AddStates(5);
+  ifst.SetStart(0);
+  ifst.AddArc(0, Arc(1, 1, Arc::Weight(0.1f), 1));
+  ifst.AddArc(1, Arc(2, 2, Arc::Weight(0.4f), 2));
+  ifst.SetFinal(2, Arc::Weight::One());
+  ifst.AddArc(0, Arc(1, 1, Arc::Weight(1.0f), 3));
+  ifst.AddArc(3, Arc(3, 3, Arc::Weight(-1.0f), 4));
+  ifst.SetFinal(4, Arc::Weight::One());
+  return ifst;
+}
+
+// Verifies that pruned acceptor Determinize with weight_threshold = One()
+// preserves the optimal path when subset residual quantization rounds its DFA
+// distance estimate upward within kDelta.
+TEST_F(DeterminizeTest, PrunedAcceptorDeterminizeKeepsQuantizedShortestPath) {
+  const VectorFst<Arc> ifst = MakeQuantizedResidualAcceptor();
+  VectorFst<Arc> ofst;
+  const DeterminizeOptions<Arc> opts(kDelta, Arc::Weight::One());
+
+  Determinize(ifst, &ofst, opts);
+
+  VectorFst<Arc> expected;
+  expected.AddStates(3);
+  expected.SetStart(0);
+  expected.AddArc(0, Arc(1, 1, Arc::Weight(0.1f), 1));
+  expected.AddArc(1, Arc(3, 3, Arc::Weight(-0.099609375f), 2));
+  expected.SetFinal(2, Arc::Weight::One());
+  ASSERT_TRUE(Verify(ofst));
+  EXPECT_TRUE(ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected, ofst));
+}
+
+// Builds a 4-state acyclic acceptor with two zero-weight optimal paths
+// (0 --3/0--> 2 and 0 --2/0--> 1 --2/0--> 3 --2/0--> 2) alongside parallel
+// step_weight arcs on 1 -> 3 and 3 -> 2. When Reverse(ifst) is relaxed with
+// delta >= step_weight, both 2/0 relaxations are suppressed and idistance[1]
+// accumulates 2 * step_weight.
+VectorFst<Arc> MakeMultiHopRelaxationAcceptor(float step_weight) {
+  VectorFst<Arc> ifst;
+  ifst.AddStates(4);
+  ifst.SetStart(0);
+  ifst.AddArc(0, Arc(2, 2, Arc::Weight::One(), 1));
+  ifst.AddArc(0, Arc(3, 3, Arc::Weight::One(), 2));
+  ifst.SetFinal(2, Arc::Weight::One());
+  ifst.AddArc(1, Arc(1, 1, Arc::Weight(step_weight), 3));
+  ifst.AddArc(1, Arc(2, 2, Arc::Weight::One(), 3));
+  ifst.AddArc(3, Arc(1, 1, Arc::Weight(step_weight), 2));
+  ifst.AddArc(3, Arc(2, 2, Arc::Weight::One(), 2));
+  return ifst;
+}
+
+// Verifies that pruned acceptor Determinize caps ShortestDistance relaxation
+// delta at kShortestDelta when opts.delta > kShortestDelta, while forwarding
+// tighter caller deltas when 0 < opts.delta < kShortestDelta.
+TEST_F(DeterminizeTest, PrunedAcceptorDeterminizeCapsShortestDistanceDelta) {
+  // At step_weight = 7/8192 < kDelta, passing kDelta directly to
+  // ShortestDistance would leave idistance[1] = 14/8192 > kDelta and prune the
+  // zero-weight path 2 -> 2 -> 2.
+  const VectorFst<Arc> coarse_ifst =
+      MakeMultiHopRelaxationAcceptor(7.0f / 8192.0f);
+  VectorFst<Arc> coarse_ofst;
+  Determinize(coarse_ifst, &coarse_ofst,
+              DeterminizeOptions<Arc>(kDelta, Arc::Weight::One()));
+  ASSERT_TRUE(Verify(coarse_ofst));
+  EXPECT_TRUE(coarse_ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(coarse_ifst, coarse_ofst));
+
+  // At step_weight = 7e-7 < kShortestDelta and opts.delta = 1e-7, leaving
+  // ShortestDistance at default kShortestDelta would leave
+  // idistance[1] = 1.4e-6 > 1e-7 and prune 2 -> 2 -> 2.
+  const VectorFst<Arc> tight_ifst = MakeMultiHopRelaxationAcceptor(7e-7f);
+  VectorFst<Arc> tight_ofst;
+  Determinize(tight_ifst, &tight_ofst,
+              DeterminizeOptions<Arc>(/*delta=*/1e-7f, Arc::Weight::One()));
+
+  VectorFst<Arc> expected_tight;
+  expected_tight.AddStates(4);
+  expected_tight.SetStart(0);
+  expected_tight.AddArc(0, Arc(2, 2, Arc::Weight::One(), 1));
+  expected_tight.AddArc(0, Arc(3, 3, Arc::Weight::One(), 2));
+  expected_tight.SetFinal(2, Arc::Weight::One());
+  expected_tight.AddArc(1, Arc(2, 2, Arc::Weight::One(), 3));
+  expected_tight.AddArc(3, Arc(2, 2, Arc::Weight::One(), 2));
+  ASSERT_TRUE(Verify(tight_ofst));
+  EXPECT_TRUE(tight_ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected_tight, tight_ofst));
+}
+
+// Verifies that pruned Determinize forwards custom opts.delta appropriately on
+// both the acceptor and transducer paths.
+TEST_F(DeterminizeTest, PrunedDeterminizeForwardsCustomDelta) {
+  const VectorFst<Arc> acceptor = MakeQuantizedResidualAcceptor();
+  VectorFst<Arc> acceptor_ofst;
+  // At delta = 0.25, residual 0.9 quantizes to 1.0 (+0.1 > kDelta), which
+  // exceeds weight_threshold = One() unless opts.delta is forwarded to Prune.
+  const DeterminizeOptions<Arc> coarse_opts(/*delta=*/0.25f,
+                                            Arc::Weight::One());
+
+  Determinize(acceptor, &acceptor_ofst, coarse_opts);
+
+  VectorFst<Arc> expected_acceptor;
+  expected_acceptor.AddStates(3);
+  expected_acceptor.SetStart(0);
+  expected_acceptor.AddArc(0, Arc(1, 1, Arc::Weight(0.1f), 1));
+  expected_acceptor.AddArc(1, Arc(3, 3, Arc::Weight::One(), 2));
+  expected_acceptor.SetFinal(2, Arc::Weight::One());
+  ASSERT_TRUE(Verify(acceptor_ofst));
+  EXPECT_TRUE(acceptor_ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected_acceptor, acceptor_ofst));
+
+  // On the transducer path, tight 0 < opts.delta < kDelta (1e-9f, smaller than
+  // the 1-ULP gap 2^-24 ≈ 5.96e-8f) is forwarded to Prune, pruning a
+  // single-path transducer whose forward weight rounds up by 1 ULP
+  // (-0.99999988f > -0.99999994f), whereas default kDelta keeps it.
+  VectorFst<Arc> float_transducer;
+  float_transducer.AddStates(3);
+  float_transducer.SetStart(0);
+  float_transducer.AddArc(0, Arc(1, 10, Arc::Weight(-1.0f), 1));
+  float_transducer.AddArc(1, Arc(2, 20, Arc::Weight(4e-8f), 2));
+  float_transducer.SetFinal(2, Arc::Weight(4e-8f));
+
+  VectorFst<Arc> default_transducer_ofst;
+  Determinize(float_transducer, &default_transducer_ofst,
+              DeterminizeOptions<Arc>(kDelta, Arc::Weight::One()));
+  ASSERT_TRUE(Verify(default_transducer_ofst));
+  EXPECT_TRUE(Equal(float_transducer, default_transducer_ofst));
+
+  VectorFst<Arc> tight_transducer_ofst;
+  Determinize(float_transducer, &tight_transducer_ofst,
+              DeterminizeOptions<Arc>(/*delta=*/1e-9f, Arc::Weight::One()));
+  VectorFst<Arc> expected_tight_transducer;
+  expected_tight_transducer.AddStates(2);
+  expected_tight_transducer.SetStart(0);
+  expected_tight_transducer.AddArc(0, Arc(1, 10, Arc::Weight(-1.0f), 1));
+  ASSERT_TRUE(Verify(tight_transducer_ofst));
+  EXPECT_TRUE(Equal(expected_tight_transducer, tight_transducer_ofst));
+  EXPECT_EQ(ShortestDistance(tight_transducer_ofst), Arc::Weight::Zero());
+
+  // Coarse subset-quantization opts.delta (0.25) on the transducer path is
+  // capped at kDelta for Prune, so suboptimal path 1:10 -> 2:20 (weight 0.1)
+  // is pruned when optimal path 3:30 -> 4:40 has weight 0.0.
+  VectorFst<Arc> transducer;
+  transducer.AddStates(5);
+  transducer.SetStart(0);
+  transducer.AddArc(0, Arc(1, 10, Arc::Weight(0.1f), 1));
+  transducer.AddArc(1, Arc(2, 20, Arc::Weight::One(), 2));
+  transducer.SetFinal(2, Arc::Weight::One());
+  transducer.AddArc(0, Arc(3, 30, Arc::Weight::One(), 3));
+  transducer.AddArc(3, Arc(4, 40, Arc::Weight::One(), 4));
+  transducer.SetFinal(4, Arc::Weight::One());
+
+  VectorFst<Arc> transducer_ofst;
+  Determinize(transducer, &transducer_ofst, coarse_opts);
+  VectorFst<Arc> expected_transducer;
+  expected_transducer.AddStates(3);
+  expected_transducer.SetStart(0);
+  expected_transducer.AddArc(0, Arc(3, 30, Arc::Weight::One(), 1));
+  expected_transducer.AddArc(1, Arc(4, 40, Arc::Weight::One(), 2));
+  expected_transducer.SetFinal(2, Arc::Weight::One());
+  ASSERT_TRUE(Verify(transducer_ofst));
+  EXPECT_TRUE(transducer_ofst.Properties(kIDeterministic, true));
+  EXPECT_TRUE(Equal(expected_transducer, transducer_ofst));
 }
 
 TEST_F(DeterminizeTest, MinDeterminize) {
