@@ -63,6 +63,7 @@ if(OPENFST_ENABLE_GRM)
 endif()
 
 option(OPENFST_ENABLE_BIN "Enable fst::script and executables" ON)
+option(OPENFST_ENABLE_CATEGORIAL "Enable categorial semiring extension" OFF)
 option(OPENFST_ENABLE_COMPACT_FSTS "Enable CompactFst extensions" ${_def_fsts})
 option(OPENFST_ENABLE_COMPRESS "Enable compression extension" ${_def_fsts})
 option(OPENFST_ENABLE_CONST_FSTS "Enable ConstFst extensions" ${_def_fsts})
@@ -83,8 +84,8 @@ option(OPENFST_ENABLE_SPECIAL "Enable special-matcher extensions" ${_def_fsts})
 if(OPENFST_ENABLE_INSTALL AND NOT OPENFST_USE_SYSTEM_ABSEIL)
   message(
     FATAL_ERROR
-      "OPENFST_ENABLE_INSTALL requires OPENFST_USE_SYSTEM_ABSEIL to be ON."
-      "OpenFst cannot install its own Abseil copy. Please install Abseil"
+      "OPENFST_ENABLE_INSTALL requires OPENFST_USE_SYSTEM_ABSEIL to be ON. "
+      "OpenFst cannot install its own Abseil copy. Please install Abseil "
       "separately or disable installation (-DOPENFST_ENABLE_INSTALL=OFF)."
   )
 endif()

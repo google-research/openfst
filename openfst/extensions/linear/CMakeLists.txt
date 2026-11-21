@@ -45,7 +45,7 @@ set_target_properties(
 )
 target_link_libraries(fstlinear_classifier_fst PUBLIC fst)
 
-add_library(fstlinear-main fstlinear-main.cc)
+add_library(fstlinear-main STATIC fstlinear-main.cc)
 target_link_libraries(fstlinear-main PUBLIC fstlinearscript absl::flags
                                             absl::log
 )
@@ -61,7 +61,7 @@ target_link_libraries(
           fstlinear-main
 )
 
-add_library(fstloglinearapply-main fstloglinearapply-main.cc)
+add_library(fstloglinearapply-main STATIC fstloglinearapply-main.cc)
 target_link_libraries(fstloglinearapply-main PUBLIC fst absl::flags absl::log)
 
 add_executable(fstloglinearapply fstloglinearapply.cc)

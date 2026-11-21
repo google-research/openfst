@@ -64,7 +64,7 @@ set(PDT_BINS
 )
 
 foreach(BIN ${PDT_BINS})
-  add_library(${BIN}-main ${BIN}-main.cc)
+  add_library(${BIN}-main STATIC ${BIN}-main.cc)
   target_link_libraries(
     ${BIN}-main
     PUBLIC fstpdtscript

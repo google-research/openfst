@@ -44,7 +44,7 @@ target_include_directories(
 )
 target_link_libraries(fstcompressscript PUBLIC fstscript fstcompress_compress)
 
-add_library(fstcompress-main fstcompress-main.cc)
+add_library(fstcompress-main STATIC fstcompress-main.cc)
 target_link_libraries(fstcompress-main PUBLIC fstcompressscript absl::flags
                                               absl::log
 )

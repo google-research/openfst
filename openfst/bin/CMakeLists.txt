@@ -53,8 +53,9 @@ set(BINARIES
 )
 
 foreach(TOOL_NAME ${BINARIES})
-  # Create the main library (e.g., fstarcsort-main)
-  add_library(${TOOL_NAME}-main ${TOOL_NAME}-main.cc)
+  # Create the main library (e.g., fstarcsort-main). It is STATIC because it is
+  # not installed, so it must not follow BUILD_SHARED_LIBS.
+  add_library(${TOOL_NAME}-main STATIC ${TOOL_NAME}-main.cc)
 
   target_link_libraries(
     ${TOOL_NAME}-main

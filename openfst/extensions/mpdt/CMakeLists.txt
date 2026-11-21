@@ -33,7 +33,7 @@ set(MPDT_BINS
 
 foreach(BIN ${MPDT_BINS})
 
-  add_library(${BIN}-main ${BIN}-main.cc)
+  add_library(${BIN}-main STATIC ${BIN}-main.cc)
 
   target_link_libraries(${BIN}-main PUBLIC fstmpdtscript absl::flags absl::log)
 
