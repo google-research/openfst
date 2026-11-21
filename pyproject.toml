@@ -1,0 +1,67 @@
+[build-system]
+requires = [
+    "scikit-build-core>=0.8.0",
+    "cython>=3.0.0",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "openfst"
+version = "1.8.4"
+description = "OpenFst finite-state transducer library Python extension"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "The OpenFst Authors" },
+]
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: C++",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://www.openfst.org"
+Repository = "https://github.com/google-research/openfst"
+Issues = "https://github.com/google-research/openfst/issues"
+
+[tool.scikit-build]
+cmake.version = ">=3.22"
+cmake.build-type = "Release"
+cmake.args = [
+    "-DOPENFST_ENABLE_PYTHON=ON",
+    "-DOPENFST_ENABLE_FAR=ON",
+    "-DOPENFST_ENABLE_BIN=OFF",
+    "-DOPENFST_BUILD_TESTS=OFF",
+    "-DOPENFST_BUILD_BENCHMARKS=OFF",
+]
+install.components = ["python"]
+wheel.packages = []
+
+[tool.scikit-build.sdist]
+include = [
+    "CMakeLists.txt",
+    "cmake/**",
+    "openfst/**",
+    "README.md",
+    "LICENSE",
+]
+exclude = [
+    "build*",
+    ".git*",
+]

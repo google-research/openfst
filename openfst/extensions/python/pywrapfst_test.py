@@ -1217,20 +1217,20 @@ class PywrapFstTest(parameterized.TestCase):
     f = fst.MutableFst.read(self.fst_testdir / "print/p1.fst")
     # Print without input/output symbol tables.
     result = f.print()
-    with open(self.fst_testdir / "print/p1-nosyms.txt", "rb") as source:
-      output = source.read().decode("utf8")
+    with open(self.fst_testdir / "print/p1-nosyms.txt", "r", encoding="utf8") as source:
+      output = source.read()
     self.assertEqual(result, output)
     # Print with both input and output symbol tables.
     syms = fst.SymbolTable.read_text(self.fst_testdir / "print/p1.map")
     result = f.print(isymbols=syms, osymbols=syms)
-    with open(self.fst_testdir / "print/p1-syms.txt", "rb") as source:
-      output = source.read().decode("utf8")
+    with open(self.fst_testdir / "print/p1-syms.txt", "r", encoding="utf8") as source:
+      output = source.read()
     self.assertEqual(result, output)
     # Print with pre-attached input and output symbol tables.
     f = fst.MutableFst.read(self.fst_testdir / "print/p2.fst")
     result = f.print()
-    with open(self.fst_testdir / "print/p2.txt", "rb") as source:
-      output = source.read().decode("utf8")
+    with open(self.fst_testdir / "print/p2.txt", "r", encoding="utf8") as source:
+      output = source.read()
     self.assertEqual(result, output)
 
   def testFstPropertiesTruthiness(self):

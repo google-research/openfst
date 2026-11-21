@@ -13,7 +13,24 @@
 # limitations under the License.
 
 find_package(Python3 COMPONENTS Interpreter Development)
-find_program(CYTHON_EXECUTABLE NAMES cython3 cython)
+if(Python3_FOUND)
+  get_filename_component(_python_dir "${Python3_EXECUTABLE}" DIRECTORY)
+  find_program(
+    CYTHON_EXECUTABLE
+    NAMES cython3 cython cython.exe cython3.exe
+    HINTS "${_python_dir}"
+  )
+  if(NOT CYTHON_EXECUTABLE)
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -m cython --version
+      RESULT_VARIABLE _cython_exit_code
+      OUTPUT_QUIET ERROR_QUIET
+    )
+    if(_cython_exit_code EQUAL 0)
+      set(CYTHON_EXECUTABLE ${Python3_EXECUTABLE} -m cython)
+    endif()
+  endif()
+endif()
 
 if(Python3_FOUND AND CYTHON_EXECUTABLE)
   message(STATUS "Found Python3: ${Python3_EXECUTABLE}")
@@ -70,10 +87,17 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
 
   # Python module
   add_library(pywrapfst MODULE ${PYWRAPFST_CC})
-  set_target_properties(
-    pywrapfst
-    PROPERTIES PREFIX ""
-  )
+  if(WIN32)
+    set_target_properties(
+      pywrapfst
+      PROPERTIES PREFIX "" SUFFIX ".pyd"
+    )
+  else()
+    set_target_properties(
+      pywrapfst
+      PROPERTIES PREFIX ""
+    )
+  endif()
 
   target_include_directories(pywrapfst PRIVATE ${CMAKE_SOURCE_DIR}
                                                ${Python3_INCLUDE_DIRS}
@@ -89,33 +113,56 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
   )
 
   # Ensure dependency symbols are available for registration
-  if(UNIX AND NOT APPLE)
-    target_link_options(pywrapfst PRIVATE "-Wl,--no-as-needed")
+  if(MSVC)
+    target_link_options(pywrapfst PRIVATE /WHOLEARCHIVE:fst /WHOLEARCHIVE:fstscript /WHOLEARCHIVE:fstfarscript)
+  elseif(APPLE)
+    target_link_options(pywrapfst PRIVATE -Wl,-force_load,$<TARGET_FILE:fst> -Wl,-force_load,$<TARGET_FILE:fstscript> -Wl,-force_load,$<TARGET_FILE:fstfarscript>)
+  elseif(UNIX)
+    if(BUILD_SHARED_LIBS)
+      target_link_options(pywrapfst PRIVATE "-Wl,--no-as-needed")
+    else()
+      target_link_options(pywrapfst PRIVATE "-Wl,--whole-archive" fst fstscript fstfarscript "-Wl,--no-whole-archive")
+    endif()
   endif()
 
   # Prepare package structure for testing
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/openfst)
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/openfst/__init__.py
-       "from .pywrapfst import *\n"
+       "\"\"\"OpenFst Python extensions package.\"\"\"\n\nfrom .pywrapfst import *\n\n__version__ = \"${PROJECT_VERSION}\"\n"
   )
+  file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/openfst/py.typed)
 
   add_custom_command(
     TARGET pywrapfst
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapfst>
             ${CMAKE_CURRENT_BINARY_DIR}/openfst/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyi
+            ${CMAKE_CURRENT_BINARY_DIR}/openfst/
     COMMENT "Copying pywrapfst to openfst/ package directory"
   )
 
-  # Use relative path to respect CMAKE_INSTALL_PREFIX
-  set(PYTHON_INSTALL_DIR
-      lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages
-  )
-
-  openfst_install(TARGETS pywrapfst DESTINATION ${PYTHON_INSTALL_DIR}/openfst)
-  openfst_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openfst/__init__.py
-                  DESTINATION ${PYTHON_INSTALL_DIR}/openfst
-  )
+  if(DEFINED SKBUILD)
+    set(PYTHON_INSTALL_DIR "openfst")
+    install(TARGETS pywrapfst DESTINATION ${PYTHON_INSTALL_DIR} COMPONENT python)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openfst/__init__.py
+                  ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyi
+                  ${CMAKE_CURRENT_BINARY_DIR}/openfst/py.typed
+            DESTINATION ${PYTHON_INSTALL_DIR}
+            COMPONENT python
+    )
+  else()
+    set(PYTHON_INSTALL_DIR
+        lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/openfst
+    )
+    openfst_install(TARGETS pywrapfst DESTINATION ${PYTHON_INSTALL_DIR} COMPONENT python)
+    openfst_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openfst/__init__.py
+                          ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyi
+                          ${CMAKE_CURRENT_BINARY_DIR}/openfst/py.typed
+                    DESTINATION ${PYTHON_INSTALL_DIR}
+                    COMPONENT python
+    )
+  endif()
 
   # Test
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
@@ -125,12 +172,14 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
       ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst_test.py
       --test_srcdir=${CMAKE_SOURCE_DIR}
       --test_tmpdir=${CMAKE_CURRENT_BINARY_DIR}/tmp
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
 
   add_test(
     NAME gil_test
     COMMAND
       ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gil_test.py
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
 
   # Construct LD_LIBRARY_PATH for the test
@@ -149,8 +198,6 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
     PROPERTIES
       ENVIRONMENT
         "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
-      WILL_FAIL TRUE
-      LABELS "ExpectFailure"
   )
 
   set_tests_properties(

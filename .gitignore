@@ -6,6 +6,7 @@
 
 # default cmake output directory
 /build/
+/build*/
 
 # python
 *.egg-info/

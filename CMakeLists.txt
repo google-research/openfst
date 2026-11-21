@@ -96,7 +96,8 @@ endif()
 
 # Compiler Warnings
 if(MSVC)
-  add_compile_options(/W4)
+  add_compile_options(/W4 /utf-8 /Zc:preprocessor /bigobj /wd4018 /wd4389 /wd4996)
+  add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN NOGDI _USE_MATH_DEFINES)
 else()
   add_compile_options(
     -Wall
