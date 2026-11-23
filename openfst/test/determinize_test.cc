@@ -737,5 +737,128 @@ TEST_F(DeterminizeTest, DefaultExpandSetsErrorOnNonMemberSum) {
   EXPECT_EQ(det.Properties(kError, false), kError);
 }
 
+// A non-member sum of final weights across NFA states in a subset sets kError
+// when Final() is evaluated on the default flat state table path.
+TEST_F(DeterminizeTest, DefaultComputeFinalSetsErrorOnNonMemberFinalSum) {
+  const absl::FlagSaver fs;
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  using GArc = GallicArc<Arc, GALLIC_RESTRICT>;
+  using GWeight = GArc::Weight;
+  VectorFst<GArc> nfa;
+  nfa.AddStates(3);
+  nfa.SetStart(0);
+  nfa.AddArc(0, GArc(1, 1, GWeight::One(), 1));
+  nfa.AddArc(0, GArc(1, 1, GWeight::One(), 2));
+  nfa.SetFinal(1, GWeight(GWeight::SW(10), Arc::Weight::One()));
+  nfa.SetFinal(2, GWeight(GWeight::SW(20), Arc::Weight::One()));
+
+  const DeterminizeFst<GArc> det(nfa);
+  const ArcIterator<DeterminizeFst<GArc>> aiter(det, det.Start());
+  ASSERT_FALSE(aiter.Done());
+  const GArc::StateId dest = aiter.Value().nextstate;
+  ASSERT_EQ(det.Properties(kError, false), 0);
+
+  EXPECT_FALSE(det.Final(dest).Member());
+  EXPECT_EQ(det.Properties(kError, false), kError);
+}
+
+// Passing a caller-supplied DefaultDeterminizeStateTable via
+// DeterminizeFstOptions (`det` takes ownership of it) populates that table
+// through the generic path, produces the exact same DFA as the default flat
+// state table path, and supports Copy().
+TEST_F(DeterminizeTest,
+       ExplicitDefaultStateTableMatchesFlatStateTableAndCopies) {
+  const VectorFst<Arc> nfa = MakeParallelArcAcceptor();
+  const VectorFst<Arc> expected = DeterminizeOnDefaultPath(nfa);
+
+  using Filter = DefaultDeterminizeFilter<Arc>;
+  using StateTable =
+      DefaultDeterminizeStateTable<Arc, typename Filter::FilterState>;
+  auto* state_table = new StateTable();
+  DeterminizeFstOptions<Arc> opts;
+  opts.state_table = state_table;
+
+  const DeterminizeFst<Arc> det(nfa, opts);
+  ASSERT_NE(det.Start(), kNoStateId);
+  EXPECT_EQ(state_table->Tuple(det.Start())->subset.front(),
+            typename Filter::Element(nfa.Start(), Arc::Weight::One()));
+  // Partially expand before copying to exercise the non-null `state_table_`
+  // branch of DeterminizeFsaImpl's copy constructor.
+  const ArcIterator<DeterminizeFst<Arc>> aiter(det, det.Start());
+  ASSERT_FALSE(aiter.Done());
+
+  for (const bool safe : {false, true}) {
+    SCOPED_TRACE(safe);
+    const DeterminizeFst<Arc> copy(det, safe);
+    EXPECT_TRUE(ExactlyEqual(expected, copy));
+  }
+  EXPECT_TRUE(ExactlyEqual(expected, VectorFst<Arc>(det)));
+  EXPECT_FALSE(state_table->Tuple(expected.NumStates() - 1)->subset.empty());
+}
+
+// Exercises FlatDeterminizeStateTable across many multi-element subsets,
+// repeated state-table hits, and multiple arena / hash-table rehashes
+// (including subsets such as {3} and {3, 6} that collided under
+// StateTupleKey).
+TEST_F(DeterminizeTest, FlatStateTableMatchesGenericPathAcrossRehashes) {
+  constexpr int kNumBitStates = 8;  // Generates 2^8 - 1 = 255 distinct subsets.
+  VectorFst<Arc> nfa;
+  nfa.AddStates(kNumBitStates + 1);
+  nfa.SetStart(0);
+  for (int b = 1; b <= kNumBitStates; ++b) {
+    nfa.SetFinal(b, Arc::Weight(0.125f * b));
+  }
+  // Label `mask` (1..255) transitions from start state 0 to every NFA state `b`
+  // whose bit is set in `mask`, creating 255 distinct subsets (including {3}
+  // and {3, 6}, whose residual weights are all One() and which therefore
+  // collided under StateTupleKey). Each NFA state `b` also loops back on
+  // labels 1..16 to trigger dense state-table hits and arena growth while
+  // reading source subsets.
+  for (int mask = 1; mask < (1 << kNumBitStates); ++mask) {
+    for (int b = 1; b <= kNumBitStates; ++b) {
+      if (mask & (1 << (b - 1))) {
+        nfa.AddArc(0, Arc(mask, mask, Arc::Weight(0.25f * (b % 3)), b));
+      }
+    }
+  }
+  for (int b = 1; b <= kNumBitStates; ++b) {
+    for (int label = 1; label <= 16; ++label) {
+      const int target = ((b + label - 1) % kNumBitStates) + 1;
+      nfa.AddArc(b, Arc(label, label, Arc::Weight(0.5f), target));
+      nfa.AddArc(b, Arc(label, label, Arc::Weight(0.75f), b));
+    }
+  }
+
+  const VectorFst<Arc> default_dfa = DeterminizeOnDefaultPath(nfa);
+  const VectorFst<Arc> generic_dfa = DeterminizeOnGenericPath(nfa);
+  EXPECT_GT(default_dfa.NumStates(), 256);
+  EXPECT_TRUE(ExactlyEqual(generic_dfa, default_dfa));
+}
+
+// Subsets whose weights compare equal but hash differently (0.0f and -0.0f)
+// are distinct states: FlatDeterminizeStateTable only treats subsets with
+// equal hashes as equal, which keeps its equality consistent with its hash.
+TEST_F(DeterminizeTest, FlatStateTableDistinguishesEqualWeightsByHash) {
+  const Arc::Weight positive_zero(0.0f);
+  const Arc::Weight negative_zero(-0.0f);
+  ASSERT_EQ(positive_zero, negative_zero);
+  ASSERT_NE(positive_zero.Hash(), negative_zero.Hash());
+
+  using Element = internal::DeterminizeElement<Arc>;
+  internal::FlatDeterminizeStateTable<Arc> table;
+  const auto find_state = [&table](Arc::Weight weight) {
+    Element subset[] = {{1, weight}};
+    return table.FindState<Element>(subset);
+  };
+  const Arc::StateId positive_id = find_state(positive_zero);
+  const Arc::StateId negative_id = find_state(negative_zero);
+
+  EXPECT_NE(positive_id, negative_id);
+  // Looking either subset up again finds its own state.
+  EXPECT_EQ(find_state(positive_zero), positive_id);
+  EXPECT_EQ(find_state(negative_zero), negative_id);
+}
+
 }  // namespace
 }  // namespace fst

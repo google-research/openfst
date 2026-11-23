@@ -31,7 +31,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
+#include "absl/types/span.h"
 #include "openfst/lib/arc-map.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
@@ -548,6 +551,164 @@ class DeterminizeFstImplBase : public CacheImpl<Arc> {
   std::unique_ptr<const Fst<Arc>> fst_;  // Input FST.
 };
 
+// Compact state table for DeterminizeFsaImpl when using
+// DefaultDeterminizeFilter and DefaultDeterminizeStateTable with no
+// caller-supplied state_table (so every state has the constant filter state
+// CharFilterState(0)). Stores all accepted subsets contiguously in `elements_`
+// and indexes state IDs in `set_` using cached per-state hashes, avoiding
+// StateTuple and std::forward_list allocations on both hits and misses as well
+// as subset re-walks when `set_` grows.
+template <class Arc>
+class FlatDeterminizeStateTable {
+ public:
+  using StateId = typename Arc::StateId;
+  using Element = DeterminizeElement<Arc>;
+
+  FlatDeterminizeStateTable() : set_(0, StateHash(this), StateEqual(this)) {}
+
+  // Neither copyable nor movable: the hash and equality functors of `set_`
+  // point back to this object. Copies of DeterminizeFsaImpl start with an
+  // empty table instead.
+  FlatDeterminizeStateTable(const FlatDeterminizeStateTable&) = delete;
+  FlatDeterminizeStateTable& operator=(const FlatDeterminizeStateTable&) =
+      delete;
+
+  // Returns the subset of state `s`, ordered as it was passed to
+  // `FindState()`. The view points into `elements_` and is invalidated if
+  // `FindState()` inserts a new state.
+  absl::Span<const Element> Subset(StateId s) const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    const StateEntry& entry = states_[s];
+    return absl::MakeConstSpan(elements_.data() + entry.offset, entry.size);
+  }
+
+  // Looks up the state ID for the subset `items`, which must be sorted by
+  // strictly ascending state ID (hashing and comparison depend on the order).
+  // On a hit, returns the existing state ID and leaves `items` unchanged. On a
+  // miss, assigns the next sequential state ID (0, 1, ...) and moves each
+  // item's weight into `elements_`. `Item` may be `Element` or a transition
+  // struct with `.nextstate` and `.weight` fields.
+  template <class Item>
+  StateId FindState(absl::Span<Item> items) {
+    const absl::Span<const Item> const_items = absl::MakeConstSpan(items);
+    const size_t hash = HashItems(const_items);
+    const Candidate<Item> candidate{const_items, hash};
+    if (const auto it = set_.find(candidate); it != set_.end()) {
+      return *it;
+    }
+    const StateId new_id = static_cast<StateId>(states_.size());
+    const size_t offset = elements_.size();
+    for (Item& item : items) {
+      elements_.emplace_back(GetStateId(item), std::move(item.weight));
+    }
+    states_.push_back(StateEntry{offset, items.size(), hash});
+    set_.insert(new_id);
+    return new_id;
+  }
+
+ private:
+  // Location in `elements_` and cached hash of a stored subset. Holds an
+  // offset rather than a pointer, so it stays valid when `elements_` grows.
+  struct StateEntry {
+    size_t offset;
+    size_t size;
+    size_t hash;
+  };
+
+  // Lookup key for a subset that may not be stored yet, with its hash.
+  template <class Item>
+  struct Candidate {
+    absl::Span<const Item> items;
+    size_t hash;
+  };
+
+  template <class Item>
+  static StateId GetStateId(const Item& item) {
+    if constexpr (std::is_same_v<std::remove_cv_t<Item>, Element>) {
+      return item.state_id;
+    } else {
+      return item.nextstate;
+    }
+  }
+
+  template <class Item>
+  static size_t HashItems(absl::Span<const Item> items) {
+    uint64_t h = items.size();
+    for (const Item& item : items) {
+      const uint64_t s = static_cast<uint64_t>(GetStateId(item));
+      const uint64_t w = static_cast<uint64_t>(item.weight.Hash());
+      // Multiplicative mix avoids StateTupleKey's shift-XOR cancellation
+      // (where {s, 2*s} collides with {s} if the weights hash to zero, as 0.0f
+      // does) and populates the upper 7 bits used by absl::flat_hash_set's H2
+      // control byte.
+      uint64_t k = (s * uint64_t{0x9e3779b97f4a7c15}) ^ w;
+      k ^= k >> 30;
+      h = (h ^ k) * uint64_t{0xbf58476d1ce4e5b9};
+    }
+    h ^= h >> 27;
+    h *= uint64_t{0x94d049bb133111eb};
+    h ^= h >> 31;
+    return static_cast<size_t>(h);
+  }
+
+  struct StateHash {
+    using is_transparent = void;
+
+    explicit StateHash(const FlatDeterminizeStateTable* owner) : owner(owner) {}
+
+    size_t operator()(StateId id) const { return owner->states_[id].hash; }
+
+    template <class Item>
+    size_t operator()(const Candidate<Item>& c) const {
+      return c.hash;
+    }
+
+    const FlatDeterminizeStateTable* owner;
+  };
+
+  struct StateEqual {
+    using is_transparent = void;
+
+    explicit StateEqual(const FlatDeterminizeStateTable* owner)
+        : owner(owner) {}
+
+    // Only called when FindState() inserts a new ID, which it does after
+    // finding no stored subset equal to the new one, so distinct IDs never
+    // compare equal.
+    bool operator()(StateId a, StateId b) const { return a == b; }
+
+    template <class Item>
+    bool operator()(StateId id, const Candidate<Item>& c) const {
+      const StateEntry& entry = owner->states_[id];
+      // Comparing the cached hashes skips most element-wise comparisons and
+      // keeps equality consistent with the hash, as absl::flat_hash_set
+      // requires, for weights that compare equal but hash differently (e.g.
+      // 0.0f and -0.0f).
+      if (entry.size != c.items.size() || entry.hash != c.hash) {
+        return false;
+      }
+      const absl::Span<const Element> stored = owner->Subset(id);
+      return std::equal(stored.begin(), stored.end(), c.items.begin(),
+                        [](const Element& elem, const Item& item) {
+                          return elem.state_id == GetStateId(item) &&
+                                 elem.weight == item.weight;
+                        });
+    }
+
+    template <class Item>
+    bool operator()(const Candidate<Item>& c, StateId id) const {
+      return (*this)(id, c);
+    }
+
+    const FlatDeterminizeStateTable* owner;
+  };
+
+  std::vector<Element> elements_;   // Elements of all subsets, back to back.
+  std::vector<StateEntry> states_;  // Indexed by state ID.
+  // IDs of all stored states, hashed and compared by subset content.
+  absl::flat_hash_set<StateId, StateHash, StateEqual> set_;
+};
+
 // Implementation of delayed determinization for weighted acceptors.
 template <class Arc, class CommonDivisor, class Filter, class StateTable>
 class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
@@ -559,7 +720,6 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   using FilterState = typename Filter::FilterState;
   using StateTuple = internal::DeterminizeStateTuple<Arc, FilterState>;
   using Element = typename StateTuple::Element;
-  using Subset = typename StateTuple::Subset;
   using LabelMap = typename Filter::LabelMap;
 
   using FstImpl<Arc>::SetProperties;
@@ -575,7 +735,10 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
         in_dist_(in_dist),
         out_dist_(out_dist),
         filter_(opts.filter ? opts.filter : new Filter(fst)),
-        state_table_(opts.state_table ? opts.state_table : new StateTable()) {
+        state_table_(opts.state_table) {
+    if (!state_table_ && !kIsDefaultFilterAndStateTable) {
+      state_table_ = std::make_unique<StateTable>();
+    }
     if (!fst.Properties(kAcceptor, true)) {
       FSTERROR() << "DeterminizeFst: Argument not an acceptor";
       SetProperties(kError, kError);
@@ -594,7 +757,8 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
         in_dist_(nullptr),
         out_dist_(nullptr),
         filter_(new Filter(*impl.filter_, &GetFst())),
-        state_table_(new StateTable(*impl.state_table_)) {
+        state_table_(impl.state_table_ ? new StateTable(*impl.state_table_)
+                                       : nullptr) {
     if (impl.out_dist_) {
       FSTERROR() << "DeterminizeFsaImpl: Cannot copy with out_dist vector";
       SetProperties(kError, kError);
@@ -618,6 +782,12 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   StateId ComputeStart() override {
     const auto s = GetFst().Start();
     if (s == kNoStateId) return kNoStateId;
+    if constexpr (kIsDefaultFilterAndStateTable) {
+      if (state_table_ == nullptr) {
+        Element start_element(s, Weight::One());
+        return FindDefaultState(absl::MakeSpan(&start_element, 1));
+      }
+    }
     auto tuple = absl::make_unique_for_overwrite<StateTuple>();
     tuple->subset.emplace_front(s, Weight::One());
     tuple->filter_state = filter_->Start();
@@ -625,6 +795,21 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   }
 
   Weight ComputeFinal(StateId s) override {
+    if constexpr (kIsDefaultFilterAndStateTable) {
+      if (state_table_ == nullptr) {
+        // Same computation as below, where DefaultDeterminizeFilter's
+        // SetState() does nothing and FilterFinal() returns its argument. The
+        // elements of Subset(s) are in the same order as `tuple->subset`.
+        auto final_weight = Weight::Zero();
+        for (const Element& element : flat_state_table_.Subset(s)) {
+          final_weight =
+              Plus(final_weight,
+                   Times(element.weight, GetFst().Final(element.state_id)));
+          if (!final_weight.Member()) SetProperties(kError, kError);
+        }
+        return final_weight;
+      }
+    }
     const auto* tuple = state_table_->Tuple(s);
     filter_->SetState(s, *tuple);
     auto final_weight = Weight::Zero();
@@ -649,7 +834,8 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
 
   // Computes distance from a state to the final states in the DFA given the
   // distances in the NFA.
-  Weight ComputeDistance(const Subset& subset) {
+  template <class SubsetRange>
+  Weight ComputeDistance(const SubsetRange& subset) {
     auto outd = Weight::Zero();
     for (const auto& element : subset) {
       const auto ind =
@@ -663,19 +849,32 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   // Computes the outgoing transitions from a state, creating new destination
   // states as needed.
   void Expand(StateId s) override {
-    if constexpr (std::is_same_v<Filter, DefaultDeterminizeFilter<Arc>>) {
-      ExpandDefault(s);
-    } else {
-      LabelMap label_map;
-      GetLabelMap(s, &label_map);
-      for (auto& [unused_label, arc] : label_map) {
-        AddArc(s, std::move(arc));
+    if constexpr (kIsDefaultFilterAndStateTable) {
+      if (state_table_ == nullptr) {
+        ExpandDefault(s);
+        return;
       }
-      SetArcs(s);
     }
+    LabelMap label_map;
+    GetLabelMap(s, &label_map);
+    for (auto& [unused_label, arc] : label_map) {
+      AddArc(s, std::move(arc));
+    }
+    SetArcs(s);
   }
 
  private:
+  // True if `Filter` and `StateTable` are exactly the default types. All
+  // states then share the filter state CharFilterState(0), and the filter's
+  // SetState() and FilterFinal() have no effect. If, in addition, the caller
+  // passed no state table (`state_table_` is null), states are kept in
+  // `flat_state_table_` and expanded by ExpandDefault(); a caller-supplied
+  // table is still populated through the generic path.
+  static constexpr bool kIsDefaultFilterAndStateTable =
+      std::is_same_v<Filter, DefaultDeterminizeFilter<Arc>> &&
+      std::is_same_v<StateTable,
+                     DefaultDeterminizeStateTable<Arc, FilterState>>;
+
   using DetArc = internal::DeterminizeArc<StateTuple>;
 
   // An outgoing transition of the source subset, as gathered by
@@ -698,17 +897,33 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
     Label ilabel;
   };
 
-  // Fast path for DefaultDeterminizeFilter. Gathers the outgoing transitions of
-  // the source subset into a reusable flat buffer, sorts them, and normalizes
-  // each run of equal labels in place, without building a LabelMap or sorting
-  // forward_lists. Gives the same arcs, weights, and destination subsets as the
-  // generic path, except for arcs labeled kNoLabel: the generic path uses that
-  // label to mark an uninitialized DeterminizeArc and so keeps only the last
-  // such transition, whereas this path keeps all of them.
+  // Counterpart of FindState() for `flat_state_table_`. The output distance of
+  // a new state is computed from the stored subset, since the table moves the
+  // weights out of `subset` when it adds a state.
+  template <class Item>
+  StateId FindDefaultState(absl::Span<Item> subset) {
+    const StateId s = flat_state_table_.FindState(subset);
+    if (in_dist_ && out_dist_->size() <= static_cast<size_t>(s)) {
+      out_dist_->push_back(ComputeDistance(flat_state_table_.Subset(s)));
+    }
+    return s;
+  }
+
+  // Fast path for DefaultDeterminizeFilter and DefaultDeterminizeStateTable
+  // when no caller-supplied state_table is passed. Gathers the outgoing
+  // transitions of the source subset into a reusable flat buffer, sorts them,
+  // normalizes each run of equal labels in place, and looks up destination
+  // subsets directly in `flat_state_table_` without building a LabelMap or
+  // allocating StateTuple / std::forward_list nodes. Gives the same arcs,
+  // weights, and destination subsets as the generic path, except for arcs
+  // labeled kNoLabel: the generic path uses that label to mark an uninitialized
+  // DeterminizeArc and so keeps only the last such transition, whereas this
+  // path keeps all of them.
   void ExpandDefault(StateId s) {
-    const auto* src_tuple = state_table_->Tuple(s);
     scratch_transitions_.clear();
-    for (const auto& src_element : src_tuple->subset) {
+    // Subset(s) is only read here: the FindDefaultState() calls below may
+    // invalidate it.
+    for (const Element& src_element : flat_state_table_.Subset(s)) {
       for (ArcIterator<Fst<Arc>> aiter(GetFst(), src_element.state_id);
            !aiter.Done(); aiter.Next()) {
         const auto& arc = aiter.Value();
@@ -738,9 +953,16 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
                 });
     }
     const auto scratch_end = scratch_transitions_.end();
+    // Each iteration handles one run [run_begin, run_end) of transitions with
+    // the same label. While the run is scanned, [run_begin, unique_end) holds
+    // the destination subset built so far, in ascending `nextstate` order with
+    // the weights of duplicate destinations summed; the slots in
+    // [unique_end, run_end) are not read again.
     for (auto run_begin = scratch_transitions_.begin(), run_end = run_begin;
          run_begin != scratch_end; run_begin = run_end) {
       const Label label = run_begin->ilabel;
+      // Starts from Zero() as NormArc() does: common_divisor_(Zero(), w) need
+      // not equal w (LabelCommonDivisor returns only the first label of w).
       Weight arc_weight = common_divisor_(Weight::Zero(), run_begin->weight);
       auto unique_end = run_begin + 1;
       for (run_end = run_begin + 1;
@@ -757,18 +979,14 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
           ++unique_end;
         }
       }
-      auto dest_tuple = absl::make_unique_for_overwrite<StateTuple>();
-      dest_tuple->filter_state = FilterState(0);
-      // Prepend in reverse so the subset stays in ascending state_id order.
-      for (auto it = unique_end; it != run_begin; --it) {
-        auto& trans = *(it - 1);
-        Weight norm_weight = Divide(trans.weight, arc_weight, DIVIDE_LEFT);
-        norm_weight = norm_weight.Quantize(delta_);
-        dest_tuple->subset.emplace_front(trans.nextstate,
-                                         std::move(norm_weight));
+      for (auto it = run_begin; it != unique_end; ++it) {
+        Weight norm_weight = Divide(it->weight, arc_weight, DIVIDE_LEFT);
+        it->weight = norm_weight.Quantize(delta_);
       }
+      const absl::Span<RawTransition> dest_subset = absl::MakeSpan(
+          &*run_begin, static_cast<size_t>(unique_end - run_begin));
       CacheImpl<Arc>::EmplaceArc(s, label, label, std::move(arc_weight),
-                                 FindState(std::move(dest_tuple)));
+                                 FindDefaultState(dest_subset));
     }
     // Release any heap-backed weights (e.g. GallicWeight) between calls while
     // preserving vector capacity.
@@ -841,7 +1059,10 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
 
   static const CommonDivisor common_divisor_;
   std::unique_ptr<Filter> filter_;
+  // Null when `kIsDefaultFilterAndStateTable` is true and no caller-supplied
+  // `opts.state_table` was passed; `flat_state_table_` is used instead.
   std::unique_ptr<StateTable> state_table_;
+  FlatDeterminizeStateTable<Arc> flat_state_table_;
   // Scratch buffer of ExpandDefault(). Empty between calls, but keeps its
   // capacity for the lifetime of this object.
   std::vector<RawTransition> scratch_transitions_;
