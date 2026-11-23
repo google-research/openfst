@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "openfst/compat/file_path.h"
 #include "gtest/gtest.h"
@@ -30,9 +31,11 @@
 #include "absl/flags/reflection.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/equal.h"
+#include "openfst/lib/float-weight.h"
 #include "openfst/lib/fst.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/shortest-distance.h"
+#include "openfst/lib/string-weight.h"
 #include "openfst/lib/util.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/verify.h"
@@ -92,6 +95,87 @@ class MaxLabelDeterminizeFilter : public DefaultDeterminizeFilter<A> {
  private:
   Label max_label_;
 };
+
+// Pass-through subclass of DefaultDeterminizeFilter that preserves identical
+// filtering semantics while forcing DeterminizeFsaImpl onto the generic
+// LabelMap path (since std::is_same_v<Filter, DefaultDeterminizeFilter<A>> is
+// false).
+template <class A>
+class PassthroughDeterminizeFilter : public DefaultDeterminizeFilter<A> {
+ public:
+  using Base = DefaultDeterminizeFilter<A>;
+
+  template <class B>
+  struct rebind {
+    using Other = PassthroughDeterminizeFilter<B>;
+  };
+
+  explicit PassthroughDeterminizeFilter(const Fst<A>& fst) : Base(fst) {}
+
+  template <class Filter>
+  PassthroughDeterminizeFilter(const Fst<A>& fst,
+                               std::unique_ptr<Filter> filter)
+      : Base(fst, std::move(filter)) {}
+
+  PassthroughDeterminizeFilter(const PassthroughDeterminizeFilter& filter,
+                               const Fst<A>* fst = nullptr)
+      : Base(filter, fst) {}
+};
+
+// Returns true iff `fst1` and `fst2` are equal with exactly equal weights.
+// Equal() compares weights only up to kDelta by default.
+template <class A>
+bool ExactlyEqual(const Fst<A>& fst1, const Fst<A>& fst2) {
+  using Weight = typename A::Weight;
+  return Equal(fst1, fst2,
+               [](const Weight& w1, const Weight& w2) { return w1 == w2; });
+}
+
+// Determinizes `fst` on the DefaultDeterminizeFilter fast path of
+// DeterminizeFsaImpl::Expand.
+template <class A>
+VectorFst<A> DeterminizeOnDefaultPath(
+    const Fst<A>& fst, DeterminizeType type = DETERMINIZE_FUNCTIONAL,
+    float delta = kDelta) {
+  DeterminizeFstOptions<A> opts;
+  opts.delta = delta;
+  opts.type = type;
+  return VectorFst<A>(DeterminizeFst<A>(fst, opts));
+}
+
+// Determinizes `fst` on the generic LabelMap path of
+// DeterminizeFsaImpl::Expand.
+template <class A>
+VectorFst<A> DeterminizeOnGenericPath(
+    const Fst<A>& fst, DeterminizeType type = DETERMINIZE_FUNCTIONAL,
+    float delta = kDelta) {
+  DeterminizeFstOptions<A, DefaultCommonDivisor<typename A::Weight>,
+                        PassthroughDeterminizeFilter<A>>
+      opts;
+  opts.delta = delta;
+  opts.type = type;
+  return VectorFst<A>(DeterminizeFst<A>(fst, opts));
+}
+
+// Returns a cyclic nondeterministic acceptor with unsorted labels, parallel
+// arcs (same label and destination state), and a final state without outgoing
+// arcs.
+VectorFst<Arc> MakeParallelArcAcceptor() {
+  VectorFst<Arc> fst;
+  fst.AddStates(4);
+  fst.SetStart(0);
+  fst.SetFinal(3, Arc::Weight::One());
+  fst.AddArc(0, Arc(3, 3, Arc::Weight(1.5f), 2));
+  fst.AddArc(0, Arc(1, 1, Arc::Weight(2.0f), 1));
+  fst.AddArc(0, Arc(1, 1, Arc::Weight(0.5f), 1));
+  fst.AddArc(0, Arc(1, 1, Arc::Weight(1.0f), 2));
+  fst.AddArc(0, Arc(2, 2, Arc::Weight(0.25f), 3));
+  fst.AddArc(1, Arc(1, 1, Arc::Weight(0.75f), 0));
+  fst.AddArc(1, Arc(2, 2, Arc::Weight(0.5f), 3));
+  fst.AddArc(2, Arc(2, 2, Arc::Weight(1.25f), 3));
+  fst.AddArc(2, Arc(2, 2, Arc::Weight(0.25f), 3));
+  return fst;
+}
 
 class DeterminizeTest : public testing::Test {
  protected:
@@ -488,6 +572,169 @@ TEST_F(DeterminizeTest, FstClassDeterminize) {
   ASSERT_TRUE(Verify(ofst));
   ASSERT_TRUE(ofst.Properties(kIDeterministic, true));
   ASSERT_TRUE(Equal(dfst7, ofst));
+}
+
+// The DefaultDeterminizeFilter fast path of DeterminizeFsaImpl::Expand must
+// give exactly the same result, including weights, as the generic LabelMap
+// path used by other filters.
+TEST_F(DeterminizeTest, DefaultExpandMatchesGenericPathOnAcceptors) {
+  const VectorFst<Arc> nfa = MakeParallelArcAcceptor();
+
+  EXPECT_TRUE(ExactlyEqual(DeterminizeOnGenericPath(nfa),
+                           DeterminizeOnDefaultPath(nfa)));
+  EXPECT_TRUE(ExactlyEqual(DeterminizeOnGenericPath(*dfst1_),
+                           DeterminizeOnDefaultPath(*dfst1_)));
+
+  // Non-default `opts.delta` (`0.5f`) collapses residuals `0.1f` and `0.2f` to
+  // `0.0f` (`2` DFA states), whereas default `kDelta` keeps them distinct (`3`
+  // DFA states), verifying that ExpandDefault quantizes with `delta_`.
+  VectorFst<Arc> coarse_nfa;
+  coarse_nfa.AddStates(3);
+  coarse_nfa.SetStart(0);
+  coarse_nfa.SetFinal(1, Arc::Weight::One());
+  coarse_nfa.SetFinal(2, Arc::Weight::One());
+  coarse_nfa.AddArc(0, Arc(1, 1, Arc::Weight::One(), 1));
+  coarse_nfa.AddArc(0, Arc(1, 1, Arc::Weight(0.1f), 2));
+  coarse_nfa.AddArc(0, Arc(2, 2, Arc::Weight::One(), 1));
+  coarse_nfa.AddArc(0, Arc(2, 2, Arc::Weight(0.2f), 2));
+
+  EXPECT_EQ(DeterminizeOnDefaultPath(coarse_nfa).NumStates(), 3);
+  const VectorFst<Arc> default_coarse =
+      DeterminizeOnDefaultPath(coarse_nfa, DETERMINIZE_FUNCTIONAL, 0.5f);
+  EXPECT_EQ(default_coarse.NumStates(), 2);
+  EXPECT_TRUE(ExactlyEqual(
+      DeterminizeOnGenericPath(coarse_nfa, DETERMINIZE_FUNCTIONAL, 0.5f),
+      default_coarse));
+}
+
+// Same as above for transducers, which are determinized as acceptors over
+// gallic weights.
+TEST_F(DeterminizeTest, DefaultExpandMatchesGenericPathOnTransducers) {
+  EXPECT_TRUE(ExactlyEqual(DeterminizeOnGenericPath(*dfst3_),
+                           DeterminizeOnDefaultPath(*dfst3_)));
+  EXPECT_TRUE(ExactlyEqual(
+      DeterminizeOnGenericPath(*dfst6_, DETERMINIZE_NONFUNCTIONAL),
+      DeterminizeOnDefaultPath(*dfst6_, DETERMINIZE_NONFUNCTIONAL)));
+  EXPECT_TRUE(ExactlyEqual(
+      DeterminizeOnGenericPath(*dfst6_, DETERMINIZE_DISAMBIGUATE),
+      DeterminizeOnDefaultPath(*dfst6_, DETERMINIZE_DISAMBIGUATE)));
+}
+
+// Under DETERMINIZE_DISAMBIGUATE, parallel arcs with equal weights and
+// different output labels keep the output of the first arc: Plus() for
+// GALLIC_MIN returns its second argument on a tie, and parallel arcs are
+// combined last arc first.
+TEST_F(DeterminizeTest, DefaultExpandKeepsFirstOutputOnDisambiguateTie) {
+  VectorFst<Arc> ifst;
+  ifst.AddStates(2);
+  ifst.SetStart(0);
+  ifst.SetFinal(1, Arc::Weight::One());
+  ifst.AddArc(0, Arc(1, 10, Arc::Weight(1.0f), 1));
+  ifst.AddArc(0, Arc(1, 20, Arc::Weight(1.0f), 1));
+
+  VectorFst<Arc> expected;
+  expected.AddStates(3);
+  expected.SetStart(0);
+  expected.SetFinal(2, Arc::Weight::One());
+  expected.AddArc(0, Arc(1, 0, Arc::Weight(1.0f), 1));
+  expected.AddArc(1, Arc(0, 10, Arc::Weight::One(), 2));
+
+  EXPECT_TRUE(ExactlyEqual(
+      expected, DeterminizeOnDefaultPath(ifst, DETERMINIZE_DISAMBIGUATE)));
+}
+
+// LogWeight Plus() is not associative in floating point, so three or more
+// parallel arcs must be combined in the same order on both paths for the arc
+// weights to be exactly equal.
+TEST_F(DeterminizeTest, DefaultExpandMatchesGenericPathOnLogWeights) {
+  VectorFst<LogArc> nfa;
+  nfa.AddStates(3);
+  nfa.SetStart(0);
+  nfa.SetFinal(1, LogWeight::One());
+  nfa.SetFinal(2, LogWeight(0.3f));
+  // Label 1 uses an explicit IEEE-754 absorption triple where forward
+  // Plus(Plus(1.5f, 18.5f), 18.5f) == 1.5f differs by 1 ULP from reverse
+  // Plus(Plus(18.5f, 18.5f), 1.5f) == 1.49999988f.
+  nfa.AddArc(0, LogArc(1, 1, LogWeight(1.5f), 1));
+  nfa.AddArc(0, LogArc(1, 1, LogWeight(18.5f), 1));
+  nfa.AddArc(0, LogArc(1, 1, LogWeight(18.5f), 1));
+  // Labels 2..8 combine three parallel arcs to state 1 alongside a second
+  // destination state 2 to exercise multi-destination common_divisor_ and
+  // LogWeight residual Divide/Quantize.
+  for (int label = 2; label <= 8; ++label) {
+    nfa.AddArc(0, LogArc(label, label, LogWeight(0.1f * label), 1));
+    nfa.AddArc(0, LogArc(label, label, LogWeight(0.37f * label), 1));
+    nfa.AddArc(0, LogArc(label, label, LogWeight(0.71f * label), 1));
+    nfa.AddArc(0, LogArc(label, label, LogWeight(0.53f * label), 2));
+  }
+
+  EXPECT_TRUE(ExactlyEqual(DeterminizeOnGenericPath(nfa),
+                           DeterminizeOnDefaultPath(nfa)));
+}
+
+// The output distances computed for pruned determinization are the same on
+// both paths.
+TEST_F(DeterminizeTest, DefaultExpandMatchesGenericPathOnDistances) {
+  const VectorFst<Arc> nfa = MakeParallelArcAcceptor();
+  const std::vector<Arc::Weight> in_dist(nfa.NumStates(), Arc::Weight(1.0f));
+  std::vector<Arc::Weight> default_out_dist;
+  std::vector<Arc::Weight> generic_out_dist;
+  const DeterminizeFst<Arc> default_det(nfa, &in_dist, &default_out_dist,
+                                        DeterminizeFstOptions<Arc>());
+  const DeterminizeFst<Arc> generic_det(
+      nfa, &in_dist, &generic_out_dist,
+      DeterminizeFstOptions<Arc, DefaultCommonDivisor<Arc::Weight>,
+                            PassthroughDeterminizeFilter<Arc>>());
+
+  // Expanding the FSTs fills in the output distances.
+  EXPECT_TRUE(
+      ExactlyEqual(VectorFst<Arc>(generic_det), VectorFst<Arc>(default_det)));
+  ASSERT_FALSE(default_out_dist.empty());
+  EXPECT_EQ(generic_out_dist, default_out_dist);
+}
+
+// Copies of a partially expanded DeterminizeFst expand to the same result as
+// the original.
+TEST_F(DeterminizeTest, DefaultExpandSupportsCopiesOfPartiallyExpandedFst) {
+  const VectorFst<Arc> nfa = MakeParallelArcAcceptor();
+  const VectorFst<Arc> expected = DeterminizeOnGenericPath(nfa);
+  const DeterminizeFst<Arc> partial(nfa);
+  ASSERT_NE(partial.Start(), kNoStateId);
+  // Expands the start state only.
+  const ArcIterator<DeterminizeFst<Arc>> aiter(partial, partial.Start());
+  ASSERT_FALSE(aiter.Done());
+
+  for (const bool safe : {false, true}) {
+    SCOPED_TRACE(safe);
+    const DeterminizeFst<Arc> copy(partial, safe);
+    EXPECT_TRUE(ExactlyEqual(expected, copy));
+  }
+}
+
+// A sum of parallel arcs that is not a member of the semiring sets kError as
+// soon as the state is expanded, before any final weight is computed. The
+// input is an acceptor over GALLIC_RESTRICT weights, whose Plus() fails on
+// unequal strings.
+TEST_F(DeterminizeTest, DefaultExpandSetsErrorOnNonMemberSum) {
+  const absl::FlagSaver fs;
+  absl::SetFlag(&FLAGS_fst_error_fatal, false);
+
+  using GArc = GallicArc<Arc, GALLIC_RESTRICT>;
+  using GWeight = GArc::Weight;
+  VectorFst<GArc> nfa;
+  nfa.AddStates(2);
+  nfa.SetStart(0);
+  nfa.SetFinal(1, GWeight::One());
+  nfa.AddArc(0, GArc(1, 1, GWeight(GWeight::SW(10), Arc::Weight::One()), 1));
+  nfa.AddArc(0, GArc(1, 1, GWeight(GWeight::SW(20), Arc::Weight::One()), 1));
+
+  const DeterminizeFst<GArc> det(nfa);
+  ASSERT_NE(det.Start(), kNoStateId);
+  ASSERT_EQ(det.Properties(kError, false), 0);
+  // Expands the start state only.
+  const ArcIterator<DeterminizeFst<GArc>> aiter(det, det.Start());
+
+  EXPECT_EQ(det.Properties(kError, false), kError);
 }
 
 }  // namespace

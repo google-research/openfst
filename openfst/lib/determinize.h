@@ -27,6 +27,7 @@
 #include <forward_list>
 #include <map>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -662,16 +663,118 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   // Computes the outgoing transitions from a state, creating new destination
   // states as needed.
   void Expand(StateId s) override {
-    LabelMap label_map;
-    GetLabelMap(s, &label_map);
-    for (auto& [unused_label, arc] : label_map) {
-      AddArc(s, std::move(arc));
+    if constexpr (std::is_same_v<Filter, DefaultDeterminizeFilter<Arc>>) {
+      ExpandDefault(s);
+    } else {
+      LabelMap label_map;
+      GetLabelMap(s, &label_map);
+      for (auto& [unused_label, arc] : label_map) {
+        AddArc(s, std::move(arc));
+      }
+      SetArcs(s);
     }
-    SetArcs(s);
   }
 
  private:
   using DetArc = internal::DeterminizeArc<StateTuple>;
+
+  // An outgoing transition of the source subset, as gathered by
+  // ExpandDefault().
+  struct RawTransition {
+    RawTransition(uint32_t sequence, StateId nextstate, Weight weight,
+                  Label ilabel)
+        : sequence(sequence),
+          nextstate(nextstate),
+          weight(std::move(weight)),
+          ilabel(ilabel) {}
+
+    // Position in gathering order. Wraps after 2^32 transitions from a single
+    // source subset, which only affects the order in which transitions beyond
+    // that point are combined.
+    uint32_t sequence;
+    StateId nextstate;
+    // Residual weight of the source element times the arc weight.
+    Weight weight;
+    Label ilabel;
+  };
+
+  // Fast path for DefaultDeterminizeFilter. Gathers the outgoing transitions of
+  // the source subset into a reusable flat buffer, sorts them, and normalizes
+  // each run of equal labels in place, without building a LabelMap or sorting
+  // forward_lists. Gives the same arcs, weights, and destination subsets as the
+  // generic path, except for arcs labeled kNoLabel: the generic path uses that
+  // label to mark an uninitialized DeterminizeArc and so keeps only the last
+  // such transition, whereas this path keeps all of them.
+  void ExpandDefault(StateId s) {
+    const auto* src_tuple = state_table_->Tuple(s);
+    scratch_transitions_.clear();
+    for (const auto& src_element : src_tuple->subset) {
+      for (ArcIterator<Fst<Arc>> aiter(GetFst(), src_element.state_id);
+           !aiter.Done(); aiter.Next()) {
+        const auto& arc = aiter.Value();
+        scratch_transitions_.emplace_back(
+            static_cast<uint32_t>(scratch_transitions_.size()), arc.nextstate,
+            Times(src_element.weight, arc.weight), arc.ilabel);
+      }
+    }
+    if (scratch_transitions_.size() > 1) {
+      // Orders transitions by label, then by destination state, and breaks ties
+      // by descending `sequence` (last gathered first). That matches the
+      // generic path, where FilterArc() prepends each element and NormArc()
+      // sorts stably by state; the combine order is observable because Plus()
+      // is not associative for floating-point weights, and Plus() for
+      // GALLIC_MIN returns its second argument on a tie. No two transitions
+      // compare equal, so the result does not depend on how std::sort orders
+      // equal elements.
+      std::sort(scratch_transitions_.begin(), scratch_transitions_.end(),
+                [](const RawTransition& a, const RawTransition& b) {
+                  if (a.ilabel != b.ilabel) return a.ilabel < b.ilabel;
+                  if (a.nextstate != b.nextstate) {
+                    return a.nextstate < b.nextstate;
+                  }
+                  // Larger `sequence` was gathered later; place it first to
+                  // match FilterArc()'s push_front() + stable sort().
+                  return a.sequence > b.sequence;
+                });
+    }
+    const auto scratch_end = scratch_transitions_.end();
+    for (auto run_begin = scratch_transitions_.begin(), run_end = run_begin;
+         run_begin != scratch_end; run_begin = run_end) {
+      const Label label = run_begin->ilabel;
+      Weight arc_weight = common_divisor_(Weight::Zero(), run_begin->weight);
+      auto unique_end = run_begin + 1;
+      for (run_end = run_begin + 1;
+           run_end != scratch_end && run_end->ilabel == label; ++run_end) {
+        arc_weight = common_divisor_(arc_weight, run_end->weight);
+        if (run_end->nextstate == (unique_end - 1)->nextstate) {
+          Weight& prev_weight = (unique_end - 1)->weight;
+          prev_weight = Plus(prev_weight, run_end->weight);
+          if (!prev_weight.Member()) SetProperties(kError, kError);
+        } else {
+          if (unique_end != run_end) {
+            *unique_end = std::move(*run_end);
+          }
+          ++unique_end;
+        }
+      }
+      auto dest_tuple = absl::make_unique_for_overwrite<StateTuple>();
+      dest_tuple->filter_state = FilterState(0);
+      // Prepend in reverse so the subset stays in ascending state_id order.
+      for (auto it = unique_end; it != run_begin; --it) {
+        auto& trans = *(it - 1);
+        Weight norm_weight = Divide(trans.weight, arc_weight, DIVIDE_LEFT);
+        norm_weight = norm_weight.Quantize(delta_);
+        dest_tuple->subset.emplace_front(trans.nextstate,
+                                         std::move(norm_weight));
+      }
+      CacheImpl<Arc>::EmplaceArc(s, label, label, std::move(arc_weight),
+                                 FindState(std::move(dest_tuple)));
+    }
+    // Release any heap-backed weights (e.g. GallicWeight) between calls while
+    // preserving vector capacity.
+    scratch_transitions_.clear();
+    SetArcs(s);
+  }
 
   // Constructs proto-determinization transition, including destination subset,
   // per label.
@@ -739,6 +842,9 @@ class DeterminizeFsaImpl : public DeterminizeFstImplBase<Arc> {
   static const CommonDivisor common_divisor_;
   std::unique_ptr<Filter> filter_;
   std::unique_ptr<StateTable> state_table_;
+  // Scratch buffer of ExpandDefault(). Empty between calls, but keeps its
+  // capacity for the lifetime of this object.
+  std::vector<RawTransition> scratch_transitions_;
 };
 
 template <class Arc, class CommonDivisor, class Filter, class StateTable>
