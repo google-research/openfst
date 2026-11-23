@@ -45,6 +45,8 @@ namespace fst {
 template <class Arc>
 void Connect(MutableFst<Arc>* fst) {
   using StateId = typename Arc::StateId;
+  constexpr uint64_t kTrimProperties = kAccessible | kCoAccessible;
+  if (fst->Properties(kTrimProperties, false) == kTrimProperties) return;
   std::vector<bool> access;
   std::vector<bool> coaccess;
   uint64_t props = 0;
@@ -55,8 +57,19 @@ void Connect(MutableFst<Arc>* fst) {
   for (StateId s = 0; s < access.size(); ++s) {
     if (!access[s] || !coaccess[s]) dstates.push_back(s);
   }
-  fst->DeleteStates(dstates);
-  fst->SetProperties(kAccessible | kCoAccessible, kAccessible | kCoAccessible);
+  constexpr uint64_t kTrimMask =
+      kAccessible | kNotAccessible | kCoAccessible | kNotCoAccessible;
+  constexpr uint64_t kSccVisitorMask =
+      kTrimMask | kAcyclic | kCyclic | kInitialAcyclic | kInitialCyclic;
+  if (dstates.empty()) {
+    fst->SetProperties(
+        props, fst->Start() != kNoStateId ? kSccVisitorMask : kTrimMask);
+  } else {
+    fst->DeleteStates(dstates);
+    const uint64_t acyclic_props = props & (kAcyclic | kInitialAcyclic);
+    fst->SetProperties(kTrimProperties | acyclic_props,
+                       kTrimMask | acyclic_props);
+  }
 }
 
 // Returns an acyclic FST where each SCC in the input FST has been condensed to
