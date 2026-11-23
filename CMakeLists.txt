@@ -170,7 +170,9 @@ else()
 
   FetchContent_Declare(
     abseil-cpp
-    URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20260817.0.zip
+    URL https://github.com/abseil/abseil-cpp/releases/download/20260817.0/abseil-cpp-20260817.0.tar.gz
+    URL_HASH
+      SHA256=f7e05179df39c45434cad433f5783840bb3788ef322976f9138bc6b72b3a107d
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   )
   FetchContent_MakeAvailable(abseil-cpp)
@@ -205,9 +207,12 @@ if(OPENFST_BUILD_TESTS)
   else()
     set(BENCHMARK_ENABLE_INSTALL OFF)
     set(BENCHMARK_ENABLE_TESTING OFF)
+    # google/benchmark does not upload release tarballs to GitHub Releases.
     FetchContent_Declare(
       google_benchmark
-      URL https://github.com/google/benchmark/archive/refs/tags/v1.10.0.zip
+      URL https://github.com/google/benchmark/archive/refs/tags/v1.10.0.tar.gz
+      URL_HASH
+        SHA256=acc5c7c0fbed855c4aaa2d7c3c36fb82b0c15c28f4e151e3f679c2fc0aa404af
       DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(google_benchmark)
