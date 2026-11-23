@@ -164,7 +164,8 @@ class PdtParenReachable {
       // happens. ComputeStateSet always adds something to the vector,
       // and never leaves an empty vector.
       DCHECK(!parens->second.empty());
-      return ParenIterator(&*parens->second.begin(), &*parens->second.end());
+      return ParenIterator(parens->second.data(),
+                           parens->second.data() + parens->second.size());
     } else {
       return ParenIterator();
     }
@@ -194,8 +195,9 @@ class PdtParenReachable {
       // happens. ComputeStateSet always adds something to the vector,
       // and never leaves an empty vector.
       DCHECK(!paren_arcs->second.empty());
-      return ParenArcIterator(&*paren_arcs->second.begin(),
-                              &*paren_arcs->second.end());
+      return ParenArcIterator(
+          paren_arcs->second.data(),
+          paren_arcs->second.data() + paren_arcs->second.size());
     } else {
       return ParenArcIterator();
     }
