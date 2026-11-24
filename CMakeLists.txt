@@ -63,6 +63,7 @@ if(OPENFST_ENABLE_GRM)
 endif()
 
 option(OPENFST_ENABLE_BIN "Enable fst::script and executables" ON)
+option(OPENFST_ENABLE_CATEGORIAL "Enable categorial semiring extension" OFF)
 option(OPENFST_ENABLE_COMPACT_FSTS "Enable CompactFst extensions" ${_def_fsts})
 option(OPENFST_ENABLE_COMPRESS "Enable compression extension" ${_def_fsts})
 option(OPENFST_ENABLE_CONST_FSTS "Enable ConstFst extensions" ${_def_fsts})
