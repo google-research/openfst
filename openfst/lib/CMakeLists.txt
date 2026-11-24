@@ -66,6 +66,7 @@ target_link_libraries(
          absl::status
          absl::status_macros
          absl::random_random
+  PRIVATE ${CMAKE_DL_LIBS}
 )
 
 openfst_install(

@@ -54,40 +54,42 @@ openfst_install(FILES ${PDT_HEADERS}
                 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/pdt
 )
 
-set(PDT_BINS
-    pdtcompose
-    pdtexpand
-    pdtinfo
-    pdtreplace
-    pdtreverse
-    pdtshortestpath
-)
-
-foreach(BIN ${PDT_BINS})
-  add_library(${BIN}-main ${BIN}-main.cc)
-  target_link_libraries(
-    ${BIN}-main
-    PUBLIC fstpdtscript
-           absl::flags
-           absl::log
-           absl::status
-           absl::statusor
+if(OPENFST_ENABLE_BIN)
+  set(PDT_BINS
+      pdtcompose
+      pdtexpand
+      pdtinfo
+      pdtreplace
+      pdtreverse
+      pdtshortestpath
   )
 
-  add_executable(${BIN} ${BIN}.cc)
-  # Force-link fst so static builds retain the FST type registrations in
-  # fst-types.cc.
-  target_link_libraries(
-    ${BIN}
-    PRIVATE ${OPENFST_ALWAYS_LINK_START}
-            fst
-            ${OPENFST_ALWAYS_LINK_END}
-            ${BIN}-main
-            absl::status
-            absl::statusor
-  )
-  openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endforeach()
+  foreach(BIN ${PDT_BINS})
+    add_library(${BIN}-main ${BIN}-main.cc)
+    target_link_libraries(
+      ${BIN}-main
+      PUBLIC fstpdtscript
+             absl::flags
+             absl::log
+             absl::status
+             absl::statusor
+    )
+
+    add_executable(${BIN} ${BIN}.cc)
+    # Force-link fst so static builds retain the FST type registrations in
+    # fst-types.cc.
+    target_link_libraries(
+      ${BIN}
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fst
+              ${OPENFST_ALWAYS_LINK_END}
+              ${BIN}-main
+              absl::status
+              absl::statusor
+    )
+    openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  endforeach()
+endif()
 
 if(OPENFST_BUILD_TESTS)
   include(GoogleTest)

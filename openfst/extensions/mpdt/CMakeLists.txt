@@ -24,34 +24,36 @@ target_include_directories(
 )
 target_link_libraries(fstmpdtscript PUBLIC fstscript fstpdtscript absl::log)
 
-set(MPDT_BINS
-    mpdtcompose
-    mpdtexpand
-    mpdtinfo
-    mpdtreverse
-)
-
-foreach(BIN ${MPDT_BINS})
-
-  add_library(${BIN}-main ${BIN}-main.cc)
-
-  target_link_libraries(${BIN}-main PUBLIC fstmpdtscript absl::flags absl::log)
-
-  add_executable(${BIN} ${BIN}.cc)
-
-  # Force-link fst so static builds retain the FST type registrations in
-  # fst-types.cc.
-  target_link_libraries(
-    ${BIN}
-    PRIVATE ${OPENFST_ALWAYS_LINK_START}
-            fst
-            ${OPENFST_ALWAYS_LINK_END}
-            ${BIN}-main
+if(OPENFST_ENABLE_BIN)
+  set(MPDT_BINS
+      mpdtcompose
+      mpdtexpand
+      mpdtinfo
+      mpdtreverse
   )
 
-  openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  foreach(BIN ${MPDT_BINS})
 
-endforeach()
+    add_library(${BIN}-main ${BIN}-main.cc)
+
+    target_link_libraries(${BIN}-main PUBLIC fstmpdtscript absl::flags absl::log)
+
+    add_executable(${BIN} ${BIN}.cc)
+
+    # Force-link fst so static builds retain the FST type registrations in
+    # fst-types.cc.
+    target_link_libraries(
+      ${BIN}
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fst
+              ${OPENFST_ALWAYS_LINK_END}
+              ${BIN}-main
+    )
+
+    openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+  endforeach()
+endif()
 
 openfst_install(
   TARGETS fstmpdtscript

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development.Module)
 find_program(CYTHON_EXECUTABLE NAMES cython3 cython)
 
 if(Python3_FOUND AND CYTHON_EXECUTABLE)
@@ -68,16 +68,15 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
     COMMENT "Generating C++ source from Cython file"
   )
 
-  # Python module
-  add_library(pywrapfst MODULE ${PYWRAPFST_CC})
-  set_target_properties(
-    pywrapfst
-    PROPERTIES PREFIX ""
-  )
+  # Python module. When built as a PEP 517 wheel via `scikit-build-core` (e.g.,
+  # as part of Pynini wheels), prefer its `SKBUILD_SOABI` over CMake's detected
+  # `Python3_SOABI` for PyPy and cross-compilation compatibility.
+  if(SKBUILD_SOABI)
+    set(Python3_SOABI "${SKBUILD_SOABI}")
+  endif()
+  Python3_add_library(pywrapfst MODULE WITH_SOABI ${PYWRAPFST_CC})
 
-  target_include_directories(pywrapfst PRIVATE ${CMAKE_SOURCE_DIR}
-                                               ${Python3_INCLUDE_DIRS}
-  )
+  target_include_directories(pywrapfst PRIVATE ${CMAKE_SOURCE_DIR})
 
   target_link_libraries(
     pywrapfst
@@ -85,7 +84,6 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
             fstscript
             fstfarscript
             absl::flags
-            Python3::Module
   )
 
   # Ensure dependency symbols are available for registration

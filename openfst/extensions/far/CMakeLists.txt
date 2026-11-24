@@ -113,48 +113,50 @@ openfst_install(FILES ${FAR_HEADERS}
                 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openfst/extensions/far
 )
 
-set(FAR_BINS
-    farcreate
-    farcompilestrings
-    farconvert
-    farencode
-    farequal
-    farextract
-    farinfo
-    farisomorphic
-    farprintstrings
-)
-
-foreach(BIN ${FAR_BINS})
-
-  add_library(${BIN}-main ${BIN}-main.cc)
-
-  target_link_libraries(
-    ${BIN}-main
-    PUBLIC fstfarscript
-           absl::flags
-           absl::log
-           absl::status
-           absl::statusor
+if(OPENFST_ENABLE_BIN)
+  set(FAR_BINS
+      farcreate
+      farcompilestrings
+      farconvert
+      farencode
+      farequal
+      farextract
+      farinfo
+      farisomorphic
+      farprintstrings
   )
 
-  add_executable(${BIN} ${BIN}.cc)
+  foreach(BIN ${FAR_BINS})
 
-  # Force-link fst so static builds retain the FST type registrations in
-  # fst-types.cc.
-  target_link_libraries(
-    ${BIN}
-    PRIVATE ${OPENFST_ALWAYS_LINK_START}
-            fst
-            ${OPENFST_ALWAYS_LINK_END}
-            ${BIN}-main
-            absl::status
-            absl::statusor
-  )
+    add_library(${BIN}-main ${BIN}-main.cc)
 
-  openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    target_link_libraries(
+      ${BIN}-main
+      PUBLIC fstfarscript
+             absl::flags
+             absl::log
+             absl::status
+             absl::statusor
+    )
 
-endforeach()
+    add_executable(${BIN} ${BIN}.cc)
+
+    # Force-link fst so static builds retain the FST type registrations in
+    # fst-types.cc.
+    target_link_libraries(
+      ${BIN}
+      PRIVATE ${OPENFST_ALWAYS_LINK_START}
+              fst
+              ${OPENFST_ALWAYS_LINK_END}
+              ${BIN}-main
+              absl::status
+              absl::statusor
+    )
+
+    openfst_install(TARGETS ${BIN} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+  endforeach()
+endif()
 
 if(OPENFST_BUILD_TESTS)
   include(GoogleTest)
