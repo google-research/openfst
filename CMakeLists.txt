@@ -108,10 +108,28 @@ else()
     # is failing here.  Investigate, fix, and re-enable.
     -Wno-overloaded-virtual
     -Wno-sign-compare
-    # Temporarily disabled warnings that we would like to turn on.
-    -Wno-defaulted-function-deleted
-    -Wno-nullability-completeness
   )
+  include(CheckCXXCompilerFlag)
+  # Probe the positive -W flags because GCC silently accepts unknown -Wno-*
+  # flags during isolated feature checks and later emits notes on warnings.
+  #
+  # Temporarily disabled warnings that we would like to turn on.
+  check_cxx_compiler_flag("-Wdefaulted-function-deleted"
+                          HAS_WDEFAULTED_FUNCTION_DELETED
+  )
+  if(HAS_WDEFAULTED_FUNCTION_DELETED)
+    add_compile_options(
+      "$<$<COMPILE_LANGUAGE:CXX>:-Wno-defaulted-function-deleted>"
+    )
+  endif()
+  check_cxx_compiler_flag("-Wnullability-completeness"
+                          HAS_WNULLABILITY_COMPLETENESS
+  )
+  if(HAS_WNULLABILITY_COMPLETENESS)
+    add_compile_options(
+      "$<$<COMPILE_LANGUAGE:CXX>:-Wno-nullability-completeness>"
+    )
+  endif()
 endif()
 
 # Linker options.
