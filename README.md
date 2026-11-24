@@ -86,10 +86,10 @@ for building.
 
 OpenFst can also be built with [CMake](https://cmake.org) 3.22 or higher.
 
-#### Build and Install
+#### Build and Test
 
-Dependencies like Abseil, GoogleTest, and Google Benchmark are automatically
-downloaded using `FetchContent`.
+By default, dependencies like Abseil, GoogleTest, and Google Benchmark are
+automatically downloaded using `FetchContent`:
 
 ```bash
 # Configure the project
@@ -103,16 +103,43 @@ cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 
 # Run tests
 ctest --test-dir build --output-on-failure -j$(getconf _NPROCESSORS_ONLN)
+```
 
-# Install the project
+#### Install
+
+Installing OpenFst requires `-DOPENFST_ENABLE_INSTALL=ON` and a pre-installed
+[Abseil](https://github.com/abseil/abseil-cpp) enabled via
+`-DOPENFST_USE_SYSTEM_ABSEIL=ON` (pass `-DCMAKE_PREFIX_PATH=<abseil prefix>` if
+Abseil is installed in a non-standard prefix). OpenFst is tested against the
+Abseil release pinned in the top-level `CMakeLists.txt`; older releases may lack
+required libraries such as `absl::status_macros`.
+
+```bash
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DOPENFST_ENABLE_INSTALL=ON \
+  -DOPENFST_USE_SYSTEM_ABSEIL=ON \
+  -DOPENFST_BUILD_TESTS=OFF
+cmake --build build -j$(getconf _NPROCESSORS_ONLN)
+
 # Use --prefix to specify an installation directory
 cmake --install build --prefix /usr/local
 ```
 
 #### Configuration Options
 
-You can enable or disable specific features using CMake options (default is
-`OFF` unless noted):
+General build, install, and dependency options:
+
+Option                         | Description                      | Default
+:----------------------------- | :------------------------------- | :------
+`BUILD_SHARED_LIBS`            | Build shared libraries           | `OFF`
+`OPENFST_BUILD_TESTS`          | Build tests and benchmarks       | `ON`
+`OPENFST_ENABLE_INSTALL`       | Enable `cmake --install` targets | `OFF`
+`OPENFST_USE_SYSTEM_ABSEIL`    | Use installed Abseil             | `OFF`
+`OPENFST_USE_SYSTEM_BENCHMARK` | Use installed Google Benchmark   | `OFF`
+`OPENFST_USE_SYSTEM_GTEST`     | Use installed GoogleTest         | `OFF`
+
+Feature and extension options (default is `OFF` unless noted):
 
 Option                          | Description                                      | Default
 :------------------------------ | :----------------------------------------------- | :------
