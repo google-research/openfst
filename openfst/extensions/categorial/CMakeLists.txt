@@ -22,13 +22,8 @@ openfst_install(
 if(OPENFST_BUILD_TESTS)
   include(GoogleTest)
   add_executable(categorial_weight_test weight_test.cc)
-  target_link_directories(categorial_weight_test
-                          PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-  )
-  target_include_directories(
-    categorial_weight_test
-    PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/test>
+  target_include_directories(categorial_weight_test
+                             PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   )
   target_link_libraries(
     categorial_weight_test
