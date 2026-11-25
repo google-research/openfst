@@ -35,6 +35,9 @@
 #include "openfst/lib/compose.h"
 #include "openfst/lib/equal.h"
 #include "openfst/lib/fst.h"
+#include "openfst/lib/lookahead-filter.h"
+#include "openfst/lib/lookahead-matcher.h"
+#include "openfst/lib/matcher-fst.h"
 #include "openfst/lib/properties.h"
 #include "openfst/lib/relabel.h"
 #include "openfst/lib/util.h"
@@ -594,6 +597,78 @@ TEST_F(MatcherTest, ExplicitMatcher) {
   for (auto s = 0; s < mfst8_->NumStates(); ++s) {
     ASSERT_EQ(explicit_matcher.Final(s), mfst8_->Final(s));
   }
+}
+
+// Verifies Matcher<MatcherFst> ownership on temporaries, non-owning pointer
+// construction, safe/unsafe copies, and GetFst/Final/Priority.
+TEST_F(MatcherTest, MatcherFstMatcher) {
+  IterativeTest<Matcher<StdArcLookAheadFst>>(StdArcLookAheadFst(*lm_fst_),
+                                             /*count=*/1);
+
+  // Construction from a reference copies the MatcherFst, pointer construction
+  // aliases the caller's, and Copy() owns a MatcherFst that outlives the
+  // source.
+  std::unique_ptr<Matcher<StdArcLookAheadFst>> copied;
+  {
+    StdArcLookAheadFst local_fst(*lm_fst_);
+    Matcher<StdArcLookAheadFst> ref_matcher(local_fst, MATCH_INPUT);
+    EXPECT_NE(&ref_matcher.GetFst(), &local_fst);
+    Matcher<StdArcLookAheadFst> ptr_matcher(&local_fst, MATCH_INPUT);
+    EXPECT_EQ(&ptr_matcher.GetFst(), &local_fst);
+    copied.reset(ptr_matcher.Copy(/*safe=*/true));
+    EXPECT_NE(&copied->GetFst(), &local_fst);
+    EXPECT_NE(&copied->GetFst().GetFst(), &local_fst.GetFst());
+  }
+  IterateAndMatch(copied->GetFst(), copied.get());
+
+  // Owning construction from a temporary MatcherFst keeps the FST alive.
+  Matcher<StdArcLookAheadFst> temp_matcher(StdArcLookAheadFst(*lm_fst_),
+                                           MATCH_INPUT);
+  EXPECT_EQ(temp_matcher.GetFst().NumStates(), lm_fst_->NumStates());
+  EXPECT_EQ(temp_matcher.Priority(0), lm_fst_->NumArcs(0));
+  temp_matcher.SetState(0);
+  EXPECT_TRUE(temp_matcher.Find(0));
+}
+
+// Verifies LookAheadMatcher<MatcherFst> ownership on temporaries, non-owning
+// pointer construction, GetFst/Final/Priority, and typed composition filters.
+TEST_F(MatcherTest, MatcherFstLookAheadMatcher) {
+  // Construction from a reference copies the MatcherFst, pointer construction
+  // aliases the caller's, and Copy() owns its own MatcherFst copy.
+  std::unique_ptr<LookAheadMatcher<StdArcLookAheadFst>> copied;
+  {
+    StdArcLookAheadFst local_fst(*lm_fst_);
+    LookAheadMatcher<StdArcLookAheadFst> ref_matcher(local_fst, MATCH_INPUT);
+    EXPECT_NE(&ref_matcher.GetFst(), &local_fst);
+    LookAheadMatcher<StdArcLookAheadFst> ptr_matcher(&local_fst, MATCH_INPUT);
+    EXPECT_EQ(&ptr_matcher.GetFst(), &local_fst);
+    copied.reset(ptr_matcher.Copy(/*safe=*/true));
+    EXPECT_NE(&copied->GetFst(), &local_fst);
+    EXPECT_NE(&copied->GetFst().GetFst(), &local_fst.GetFst());
+  }
+  IterateAndMatch(copied->GetFst(), copied.get());
+
+  // Owning construction from a temporary MatcherFst keeps the FST alive.
+  LookAheadMatcher<StdArcLookAheadFst> temp_matcher(
+      StdArcLookAheadFst(*lm_fst_), MATCH_INPUT);
+  EXPECT_EQ(temp_matcher.GetFst().NumStates(), lm_fst_->NumStates());
+  EXPECT_EQ(temp_matcher.Priority(0), lm_fst_->NumArcs(0));
+  IterateAndMatch(temp_matcher.GetFst(), &temp_matcher);
+
+  // Typed composition instantiates LookAheadMatcher<MatcherFst> in
+  // ComposeFstImpl and LookAheadComposeFilter and runs it through a safe copy.
+  StdVectorFst sorted_m1(*mfst1_);
+  ArcSort(&sorted_m1, OLabelCompare<Arc>());
+  StdArcLookAheadFst la_m1(sorted_m1);
+  using M1 = LookAheadMatcher<StdArcLookAheadFst>;
+  using M2 = Matcher<StdVectorFst>;
+  using BaseFilter = AltSequenceComposeFilter<M1, M2>;
+  using Filter = LookAheadComposeFilter<BaseFilter, M1, M2, MATCH_OUTPUT>;
+  ComposeFstImplOptions<M1, M2, Filter> opts;
+  ComposeFst<Arc> cfst(la_m1, *mfst3_, opts);
+  ComposeFst<Arc> cfst_safe(cfst, /*safe=*/true);
+  ASSERT_TRUE(Verify(cfst_safe));
+  EXPECT_TRUE(Equal(ComposeFst<Arc>(sorted_m1, *mfst3_), cfst_safe));
 }
 
 }  // namespace

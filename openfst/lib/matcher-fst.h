@@ -20,6 +20,8 @@
 #ifndef OPENFST_LIB_MATCHER_FST_H_
 #define OPENFST_LIB_MATCHER_FST_H_
 
+#include <sys/types.h>
+
 #include <cstdint>
 #include <istream>
 #include <memory>
@@ -259,13 +261,25 @@ class Matcher<MatcherFst<F, M, Name, Init>> {
   using Arc = typename F::Arc;
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
+  using Weight = typename Arc::Weight;
 
+  // This makes a copy of the FST.
   Matcher(const FST& fst, MatchType match_type)
-      : matcher_(fst.InitMatcher(match_type)) {}
+      : owned_fst_(fst.Copy()),
+        fst_(*owned_fst_),
+        matcher_(fst_.InitMatcher(match_type)) {}
 
-  Matcher(const Matcher& matcher) : matcher_(matcher.matcher_->Copy()) {}
+  // This doesn't copy the FST.
+  Matcher(const FST* fst, MatchType match_type)
+      : fst_(*fst), matcher_(fst_.InitMatcher(match_type)) {}
 
-  Matcher* Copy() const { return new Matcher(*this); }
+  // This makes a copy of the FST.
+  Matcher(const Matcher& matcher, bool safe = false)
+      : owned_fst_(matcher.fst_.Copy(safe)),
+        fst_(*owned_fst_),
+        matcher_(matcher.matcher_->Copy(safe)) {}
+
+  Matcher* Copy(bool safe = false) const { return new Matcher(*this, safe); }
 
   MatchType Type(bool test) const { return matcher_->Type(test); }
 
@@ -279,6 +293,12 @@ class Matcher<MatcherFst<F, M, Name, Init>> {
 
   void Next() { matcher_->Next(); }
 
+  Weight Final(StateId s) const { return matcher_->Final(s); }
+
+  ssize_t Priority(StateId s) { return matcher_->Priority(s); }
+
+  const FST& GetFst() const { return fst_; }
+
   uint64_t Properties(uint64_t props) const {
     return matcher_->Properties(props);
   }
@@ -286,6 +306,8 @@ class Matcher<MatcherFst<F, M, Name, Init>> {
   uint32_t Flags() const { return matcher_->Flags(); }
 
  private:
+  std::unique_ptr<const FST> owned_fst_;
+  const FST& fst_;
   std::unique_ptr<M> matcher_;
 };
 
@@ -299,11 +321,21 @@ class LookAheadMatcher<MatcherFst<F, M, Name, Init>> {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
+  // This makes a copy of the FST.
   LookAheadMatcher(const FST& fst, MatchType match_type)
-      : matcher_(fst.InitMatcher(match_type)) {}
+      : owned_fst_(fst.Copy()),
+        fst_(*owned_fst_),
+        matcher_(fst_.InitMatcher(match_type)) {}
 
+  // This doesn't copy the FST.
+  LookAheadMatcher(const FST* fst, MatchType match_type)
+      : fst_(*fst), matcher_(fst_.InitMatcher(match_type)) {}
+
+  // This makes a copy of the FST.
   LookAheadMatcher(const LookAheadMatcher& matcher, bool safe = false)
-      : matcher_(matcher.matcher_->Copy(safe)) {}
+      : owned_fst_(matcher.fst_.Copy(safe)),
+        fst_(*owned_fst_),
+        matcher_(matcher.matcher_->Copy(safe)) {}
 
   // General matcher methods.
   LookAheadMatcher* Copy(bool safe = false) const {
@@ -322,7 +354,11 @@ class LookAheadMatcher<MatcherFst<F, M, Name, Init>> {
 
   void Next() { matcher_->Next(); }
 
-  const FST& GetFst() const { return matcher_->GetFst(); }
+  Weight Final(StateId s) const { return matcher_->Final(s); }
+
+  ssize_t Priority(StateId s) { return matcher_->Priority(s); }
+
+  const FST& GetFst() const { return fst_; }
 
   uint64_t Properties(uint64_t props) const {
     return matcher_->Properties(props);
@@ -349,6 +385,8 @@ class LookAheadMatcher<MatcherFst<F, M, Name, Init>> {
   }
 
  private:
+  std::unique_ptr<const FST> owned_fst_;
+  const FST& fst_;
   std::unique_ptr<M> matcher_;
 };
 
