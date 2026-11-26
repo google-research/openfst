@@ -45,47 +45,49 @@ set_target_properties(
 )
 target_link_libraries(fstlinear_classifier_fst PUBLIC fst)
 
-add_library(fstlinear-main STATIC fstlinear-main.cc)
-target_link_libraries(fstlinear-main PUBLIC fstlinearscript absl::flags
-                                            absl::log
-)
+if(OPENFST_ENABLE_BIN)
+  add_library(fstlinear-main STATIC fstlinear-main.cc)
+  target_link_libraries(fstlinear-main PUBLIC fstlinearscript absl::flags
+                                              absl::log
+  )
 
-add_executable(fstlinear fstlinear.cc)
-# Force-link fst so static builds retain the FST type registrations in
-# fst-types.cc.
-target_link_libraries(
-  fstlinear
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          fstlinear-main
-)
+  add_executable(fstlinear fstlinear.cc)
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc.
+  target_link_libraries(
+    fstlinear
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstlinear-main
+  )
 
-add_library(fstloglinearapply-main STATIC fstloglinearapply-main.cc)
-target_link_libraries(fstloglinearapply-main PUBLIC fst absl::flags absl::log)
+  add_library(fstloglinearapply-main STATIC fstloglinearapply-main.cc)
+  target_link_libraries(fstloglinearapply-main PUBLIC fst absl::flags absl::log)
 
-add_executable(fstloglinearapply fstloglinearapply.cc)
+  add_executable(fstloglinearapply fstloglinearapply.cc)
 
-# Force-link the linear tagger/classifier FST libraries and fst so their FST
-# type registrations are retained when reading models with Fst::Read.
-target_link_libraries(
-  fstloglinearapply
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fstlinear_tagger_fst
-          fstlinear_classifier_fst
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          fstloglinearapply-main
-)
+  # Force-link the linear tagger/classifier FST libraries and fst so their FST
+  # type registrations are retained when reading models with Fst::Read.
+  target_link_libraries(
+    fstloglinearapply
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstlinear_tagger_fst
+            fstlinear_classifier_fst
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstloglinearapply-main
+  )
+
+  openfst_install(TARGETS fstlinear fstloglinearapply
+                  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 openfst_install(
   TARGETS fstlinearscript fstlinear_tagger_fst fstlinear_classifier_fst
   EXPORT OpenFstTargets
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-openfst_install(TARGETS fstlinear fstloglinearapply
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 set(LINEAR_HEADERS

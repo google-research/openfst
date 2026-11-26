@@ -44,37 +44,6 @@ target_include_directories(
 )
 target_link_libraries(fstcompressscript PUBLIC fstscript fstcompress_compress)
 
-add_library(fstcompress-main STATIC fstcompress-main.cc)
-target_link_libraries(fstcompress-main PUBLIC fstcompressscript absl::flags
-                                              absl::log
-)
-
-add_executable(fstcompress fstcompress.cc)
-# Force-link fst so static builds retain the FST type registrations in
-# fst-types.cc.
-target_link_libraries(
-  fstcompress
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          fstcompress-main
-)
-
-add_executable(fstrandmod fstrandmod.cc)
-# Force-link fst so static builds retain the FST type registrations in
-# fst-types.cc.
-target_link_libraries(
-  fstrandmod
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          absl::flags
-          absl::flags_parse
-          absl::flags_usage
-          absl::log
-          absl::random_random
-)
-
 add_library(fstquantize_weights quantize_weights.cc)
 set_target_properties(
   fstquantize_weights
@@ -87,18 +56,55 @@ target_include_directories(
 )
 target_link_libraries(fstquantize_weights PUBLIC fst absl::log absl::span)
 
-add_executable(fstquantize fstquantize.cc)
-# Force-link fst so static builds retain the FST type registrations in
-# fst-types.cc.
-target_link_libraries(
-  fstquantize
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          fstquantize_weights
-          absl::flags
-          absl::log
-)
+if(OPENFST_ENABLE_BIN)
+  add_library(fstcompress-main STATIC fstcompress-main.cc)
+  target_link_libraries(fstcompress-main PUBLIC fstcompressscript absl::flags
+                                                absl::log
+  )
+
+  add_executable(fstcompress fstcompress.cc)
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc.
+  target_link_libraries(
+    fstcompress
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstcompress-main
+  )
+
+  add_executable(fstrandmod fstrandmod.cc)
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc.
+  target_link_libraries(
+    fstrandmod
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            absl::flags
+            absl::flags_parse
+            absl::flags_usage
+            absl::log
+            absl::random_random
+  )
+
+  add_executable(fstquantize fstquantize.cc)
+  # Force-link fst so static builds retain the FST type registrations in
+  # fst-types.cc.
+  target_link_libraries(
+    fstquantize
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstquantize_weights
+            absl::flags
+            absl::log
+  )
+
+  openfst_install(TARGETS fstcompress fstrandmod fstquantize
+                  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 openfst_install(
   TARGETS fstcompress_elias
@@ -107,9 +113,6 @@ openfst_install(
           fstquantize_weights
   EXPORT OpenFstTargets
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-openfst_install(TARGETS fstcompress fstrandmod fstquantize
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 set(COMPRESS_HEADERS

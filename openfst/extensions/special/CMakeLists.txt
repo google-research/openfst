@@ -63,30 +63,34 @@ target_link_libraries(
          absl::flags
 )
 
-add_executable(fstspecial fstspecial.cc)
+if(OPENFST_ENABLE_BIN)
+  add_executable(fstspecial fstspecial.cc)
 
-# It depends on fstconvert-main which is in openfst/bin. Force-link the special
-# FST libraries and fst so their FST type registrations are retained.
-target_link_libraries(
-  fstspecial
-  PRIVATE ${OPENFST_ALWAYS_LINK_START}
-          fstphi-fst
-          fstrho-fst
-          fstsigma-fst
-          fst
-          ${OPENFST_ALWAYS_LINK_END}
-          fstconvert-main
-          absl::flags
-          absl::log
-)
+  # It depends on fstconvert-main which is in openfst/bin. Force-link the
+  # special FST libraries and fst so their FST type registrations are retained.
+  target_link_libraries(
+    fstspecial
+    PRIVATE ${OPENFST_ALWAYS_LINK_START}
+            fstphi-fst
+            fstrho-fst
+            fstsigma-fst
+            fst
+            ${OPENFST_ALWAYS_LINK_END}
+            fstconvert-main
+            absl::flags
+            absl::log
+  )
+
+  openfst_install(TARGETS fstspecial RUNTIME DESTINATION
+                                             ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 openfst_install(
   TARGETS fstphi-fst fstrho-fst fstsigma-fst
   EXPORT OpenFstTargets
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-
-openfst_install(TARGETS fstspecial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 set(SPECIAL_HEADERS
     phi-fst.h
