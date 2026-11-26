@@ -29,8 +29,8 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
     if(ABSL_PY_EXIT_CODE)
       message(
         FATAL_ERROR
-          "Python package 'absl-py' is required for testing but was not found."
-          "Please install it (e.g., `pip install absl-py`) or disable tests"
+          "Python package 'absl-py' is required for testing but was not found. "
+          "Please install it (e.g., `pip install absl-py`) or disable tests "
           "(-DOPENFST_BUILD_TESTS=OFF)."
       )
     endif()
