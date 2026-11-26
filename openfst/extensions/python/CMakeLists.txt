@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if(NOT BUILD_SHARED_LIBS)
+  message(
+    FATAL_ERROR
+      "OPENFST_ENABLE_PYTHON requires BUILD_SHARED_LIBS=ON. "
+      "Static builds drop or duplicate OpenFst and Abseil registries across "
+      "dynamically loaded FST plugins and downstream Python extensions. "
+      "Please enable shared libraries (-DBUILD_SHARED_LIBS=ON) or disable "
+      "the Python extension (-DOPENFST_ENABLE_PYTHON=OFF)."
+  )
+endif()
+
 find_package(Python3 COMPONENTS Interpreter Development.Module)
 find_program(CYTHON_EXECUTABLE NAMES cython3 cython)
 
@@ -85,11 +96,6 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
             fstfarscript
             absl::flags
   )
-
-  # Ensure dependency symbols are available for registration
-  if(UNIX AND NOT APPLE)
-    target_link_options(pywrapfst PRIVATE "-Wl,--no-as-needed")
-  endif()
 
   # Prepare package structure for testing
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/openfst)
