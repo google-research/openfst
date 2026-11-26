@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <type_traits>
 
 #include "gtest/gtest.h"
 #include "absl/hash/hash.h"
@@ -232,6 +233,19 @@ TEST(BiTableTest, ErasableBiTableFindIdWithoutInsertDoesNotInsert) {
   EXPECT_GT(copies_after_insert, 0);
   EXPECT_EQ(table.FindId(CountedEntry(1, &copies), /*insert=*/false), 0);
   EXPECT_EQ(copies, copies_after_insert);
+}
+
+// The tables whose key sets hash through a pointer to the owning table are
+// copyable but not assignable.
+TEST(BiTableTest, SelfReferentialTablesAreNotAssignable) {
+  using CompactTable = CompactHashBiTable<int, std::string>;
+  EXPECT_FALSE(std::is_copy_assignable_v<CompactTable>);
+  EXPECT_FALSE(std::is_move_assignable_v<CompactTable>);
+
+  using VectorHashTable =
+      VectorHashBiTable<int, int, SmallIntSelector, IntFingerprint>;
+  EXPECT_FALSE(std::is_copy_assignable_v<VectorHashTable>);
+  EXPECT_FALSE(std::is_move_assignable_v<VectorHashTable>);
 }
 
 }  // namespace
