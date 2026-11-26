@@ -14,12 +14,15 @@
 
 add_library(fstcompress_elias INTERFACE)
 target_include_directories(
-  fstcompress_elias INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  fstcompress_elias INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+                              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 add_library(fstcompress_compress INTERFACE)
 target_include_directories(
-  fstcompress_compress INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  fstcompress_compress
+  INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(
   fstcompress_compress
