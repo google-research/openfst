@@ -95,6 +95,12 @@ if(OPENFST_ENABLE_PYTHON)
   set(OPENFST_ENABLE_FAR ON CACHE BOOL "Enable FAR extensions" FORCE)
 endif()
 
+# MPDT extension depends on PDT
+if(OPENFST_ENABLE_MPDT)
+  unset(OPENFST_ENABLE_PDT)
+  set(OPENFST_ENABLE_PDT ON CACHE BOOL "Enable PDT extensions" FORCE)
+endif()
+
 # Compiler Warnings
 if(MSVC)
   add_compile_options(/W4)
