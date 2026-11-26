@@ -19,10 +19,10 @@ function(fst_add_library TARGET_NAME)
   # Delegate to built-in add_library supporting exact signature.
   add_library(${ARGV})
 
-  # Derive lowercase imported target name. Internally, OpenFst prefixes extension
-  # modules with 'fst' (e.g., fstfar, fstngram), but external consumers expect
-  # prefix-stripped target names (e.g., openfst::far). Below we strip the
-  # redundant leading 'fst' while preserving the core 'fst' library.
+  # Derive lowercase imported target name. Internally, OpenFst prefixes
+  # extension modules with 'fst' (e.g., fstfar, fstngram), but external
+  # consumers expect prefix-stripped target names (e.g., openfst::far). Below we
+  # strip the redundant leading 'fst' while preserving the core 'fst' library.
   set(EXPORT_NAME "")
   if(TARGET_NAME STREQUAL "fst")
     set(EXPORT_NAME "fst")
@@ -34,12 +34,16 @@ function(fst_add_library TARGET_NAME)
     set(EXPORT_NAME "${TARGET_NAME}")
   endif()
 
-  # Automatically inject fail-safe ALIAS bridge.
+  # Set matching installed EXPORT_NAME and in-tree ALIAS.
   if(NOT
      EXPORT_NAME
      STREQUAL
      ""
   )
+    set_target_properties(
+      ${TARGET_NAME}
+      PROPERTIES EXPORT_NAME ${EXPORT_NAME}
+    )
     add_library(openfst::${EXPORT_NAME} ALIAS ${TARGET_NAME})
   endif()
 endfunction()
