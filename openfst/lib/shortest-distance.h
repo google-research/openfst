@@ -155,9 +155,18 @@ class ShortestDistanceState {
 template <class Arc, class Queue, class ArcFilter, class WeightEqual>
 void ShortestDistanceState<Arc, Queue, ArcFilter,
                            WeightEqual>::ShortestDistance(StateId source) {
-  if (fst_.Start() == kNoStateId) {
-    if (fst_.Properties(kError, false)) error_ = true;
-    return;
+  if (!retain_) {
+    distance_->clear();
+    adder_.clear();
+    radder_.clear();
+    enqueued_.clear();
+  }
+  if (source == kNoStateId) {
+    source = fst_.Start();
+    if (source == kNoStateId) {
+      if (fst_.Properties(kError, false)) error_ = true;
+      return;
+    }
   }
   if (!(Weight::Properties() & kRightSemiring)) {
     FSTERROR() << "ShortestDistance: Weight needs to be right distributive: "
@@ -172,13 +181,6 @@ void ShortestDistanceState<Arc, Queue, ArcFilter,
     return;
   }
   state_queue_->Clear();
-  if (!retain_) {
-    distance_->clear();
-    adder_.clear();
-    radder_.clear();
-    enqueued_.clear();
-  }
-  if (source == kNoStateId) source = fst_.Start();
   EnsureDistanceIndexIsValid(source);
   if (retain_) {
     // Advance before relaxation so 0 remains the unvisited sentinel in

@@ -93,8 +93,7 @@ class RmEpsilonState {
                  const RmEpsilonOptions<Arc, Queue>& opts)
       : fst_(fst),
         distance_(distance),
-        unweighted_idempotent_(!opts.first_path &&
-                               kIdempotentRightSemiring<Weight> &&
+        unweighted_idempotent_(kIdempotentRightSemiring<Weight> &&
                                (fst_.Properties(kUnweighted, false) != 0)),
         expand_id_(0),
         error_(false) {
@@ -104,7 +103,13 @@ class RmEpsilonState {
         visited_.resize(*num_states, false);
       }
     } else {
-      sd_state_.emplace(fst_, distance_, opts, /*retain=*/true);
+      // ShortestDistanceOptions::first_path stops relaxing outgoing arcs upon
+      // popping any final state, which would leave states in the epsilon
+      // closure uninitialized or stale in `distance_`.
+      const ShortestDistanceOptions<Arc, Queue, EpsilonArcFilter<Arc>> sd_opts(
+          opts.state_queue, opts.arc_filter, kNoStateId, opts.delta,
+          /*first_path=*/false);
+      sd_state_.emplace(fst_, distance_, sd_opts, /*retain=*/true);
     }
   }
 

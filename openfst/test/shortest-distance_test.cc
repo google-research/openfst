@@ -28,11 +28,13 @@
 #include <vector>
 
 #include "openfst/compat/file_path.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/log/log.h"
 #include "openfst/lib/arc.h"
 #include "openfst/lib/arcfilter.h"
 #include "openfst/lib/float-weight.h"
+#include "openfst/lib/fst.h"
 #include "openfst/lib/queue.h"
 #include "openfst/lib/vector-fst.h"
 #include "openfst/lib/weight.h"
@@ -42,6 +44,8 @@
 
 namespace fst {
 namespace {
+
+using ::testing::ElementsAre;
 
 using Arc = StdArc;
 using StateId = Arc::StateId;
@@ -276,6 +280,38 @@ TEST(ShortestDistanceStateTest, RetainAdvancesGenerationAfterMemberError) {
   EXPECT_TRUE(sd_state.Error());
   EXPECT_EQ(distance[2], Weight(5.0));
   EXPECT_EQ(distance[3], Weight(7.0));
+}
+
+// Verifies that ShortestDistance honors an explicit opts.source on a startless
+// FST while still clearing `distance` when source == kNoStateId.
+TEST(ShortestDistanceStateTest, ExplicitSourceOnStartlessFst) {
+  VectorFst<Arc> fst;
+  fst.AddStates(3);
+  // Leave Start() == kNoStateId.
+  fst.AddArc(0, Arc(1, 1, Weight(2.0), 1));
+  fst.AddArc(1, Arc(2, 2, Weight(3.0), 2));
+  ASSERT_EQ(fst.Start(), kNoStateId);
+
+  std::vector<Weight> distance = {Weight::One()};
+  ShortestDistance(fst, &distance);
+  EXPECT_TRUE(distance.empty());
+
+  FifoQueue<StateId> state_queue;
+  const AnyArcFilter<Arc> arc_filter;
+  ShortestDistanceOptions<Arc, FifoQueue<StateId>, AnyArcFilter<Arc>> opts(
+      &state_queue, arc_filter, /*source=*/0);
+  ShortestDistance(fst, &distance, opts);
+  EXPECT_THAT(distance, ElementsAre(Weight::One(), Weight(2.0), Weight(5.0)));
+
+  // Reusing ShortestDistanceState with retain = false clears `distance` when a
+  // subsequent call uses source == kNoStateId on a startless FST.
+  internal::ShortestDistanceState<Arc, FifoQueue<StateId>, AnyArcFilter<Arc>>
+      sd_state(fst, &distance, opts, /*retain=*/false);
+  sd_state.ShortestDistance(0);
+  ASSERT_EQ(distance.size(), 3);
+  sd_state.ShortestDistance(kNoStateId);
+  EXPECT_FALSE(sd_state.Error());
+  EXPECT_TRUE(distance.empty());
 }
 
 }  // namespace

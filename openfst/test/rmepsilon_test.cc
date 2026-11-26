@@ -22,8 +22,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "openfst/compat/file_path.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/reflection.h"
@@ -49,6 +51,8 @@
 
 namespace fst {
 namespace {
+
+using ::testing::FieldsAre;
 
 using Arc = StdArc;
 using StateId = Arc::StateId;
@@ -535,6 +539,116 @@ TEST(RmEpsilonUnweightedTest, UnweightedPropagatesDynamicEpsilonArcError) {
   RmEpsilonFst<Arc> dfst_bad(bad_delayed);
   dfst_bad.NumArcs(dfst_bad.Start());
   EXPECT_EQ(dfst_bad.Properties(kError, false), kError);
+}
+
+// Verifies that RmEpsilon ignores inherited ShortestDistanceOptions::first_path
+// instead of stopping epsilon-closure relaxation at final states (which left
+// reachable states uninitialized or stale in `distance`) or rejecting non-kPath
+// semirings such as LogArc.
+TEST(RmEpsilonFirstPathTest, IgnoresInheritedFirstPathOption) {
+  // Final start state with an outgoing epsilon chain (0 --eps/2--> 1 --5:5/3-->
+  // 2): stopping ShortestDistance at state 0 previously left state 1 beyond
+  // distance.size() (out-of-bounds read in ExpandImpl<false>).
+  VectorFst<Arc> oob_fst = CompileTextFst<Arc>(
+      "0 1 0 0 2.0\n"  // 0 --eps/2.0--> 1
+      "1 2 5 5 3.0\n"  // 1 --5:5/3.0--> 2
+      "0 1.0\n"        // state 0 final (triggers early first_path break)
+      "2 4.0\n");      // state 2 final
+  VectorFst<Arc> oob_expected(oob_fst);
+  RmEpsilon(&oob_expected);
+
+  FifoQueue<StateId> fifo_queue;
+  RmEpsilonOptions<Arc, FifoQueue<StateId>> opts(&fifo_queue);
+  opts.first_path = true;
+  std::vector<Weight> distance;
+
+  // Wrap in a delayed ArcMapFst (NumStatesIfKnown() == std::nullopt) and expand
+  // state 0 first so `distance` is not pre-reserved past state 0 before
+  // traversing 0 -> 1.
+  ArcMapFst<Arc, Arc, IdentityArcMapper<Arc>> delayed_oob(
+      oob_fst, IdentityArcMapper<Arc>());
+  internal::RmEpsilonState<Arc, FifoQueue<StateId>> rmeps_state(
+      delayed_oob, &distance, opts);
+  rmeps_state.Expand(0);
+  EXPECT_FALSE(rmeps_state.Error());
+  EXPECT_EQ(rmeps_state.Final(), Weight(1.0));
+  ASSERT_EQ(rmeps_state.Arcs().size(), 1);
+  EXPECT_EQ(rmeps_state.Arcs()[0].weight, Weight(5.0));
+
+  RmEpsilon(&oob_fst, &distance, opts);
+  ASSERT_TRUE(Verify(oob_fst));
+  EXPECT_TRUE(Equal(oob_expected, oob_fst));
+
+  // Multi-state top-sorted FST where Expand(1) populates distance[2] = 1.5
+  // first and Expand(0) (with state 0 final) must recompute distance[2] = 10.0
+  // rather than reusing Expand(1)'s retained distance.
+  VectorFst<Arc> retain_fst = CompileTextFst<Arc>(
+      "0 1 7 7 1.0\n"   // 0 --7:7/1.0--> 1 (keeps state 1 in noneps_in)
+      "0 2 0 0 10.0\n"  // 0 --eps/10.0--> 2
+      "1 2 0 0 1.5\n"   // 1 --eps/1.5--> 2 (expanded before state 0)
+      "2 3 8 8 2.0\n"   // 2 --8:8/2.0--> 3
+      "0 1.0\n"         // state 0 final
+      "2 0.5\n"         // state 2 final
+      "3\n");           // state 3 final
+  VectorFst<Arc> retain_expected(retain_fst);
+  RmEpsilon(&retain_expected);
+
+  RmEpsilon(&retain_fst, &distance, opts);
+  ASSERT_TRUE(Verify(retain_fst));
+  EXPECT_TRUE(Equal(retain_expected, retain_fst));
+
+  // Unweighted idempotent FST still takes the unweighted fast path.
+  VectorFst<Arc> unweighted = CompileTextFst<Arc>(
+      "0 1 0 0\n"
+      "1 2 3 3\n"
+      "0\n"
+      "2\n");
+  ASSERT_EQ(unweighted.Properties(kUnweighted, false), kUnweighted);
+  VectorFst<Arc> unweighted_expected(unweighted);
+  RmEpsilon(&unweighted_expected);
+  RmEpsilon(&unweighted, &distance, opts);
+  EXPECT_TRUE(distance.empty());
+  EXPECT_TRUE(Equal(unweighted_expected, unweighted));
+
+  // LogArc lacks kPath, so forwarding first_path = true to ShortestDistance
+  // previously failed with FSTERROR.
+  VectorFst<LogArc> log_fst = CompileTextFst<LogArc>(
+      "0 1 0 0 2.0\n"
+      "1 2 5 5 3.0\n"
+      "0 1.0\n"
+      "2 4.0\n");
+  VectorFst<LogArc> log_expected(log_fst);
+  RmEpsilon(&log_expected);
+
+  FifoQueue<LogArc::StateId> log_queue;
+  RmEpsilonOptions<LogArc, FifoQueue<LogArc::StateId>> log_opts(&log_queue);
+  log_opts.first_path = true;
+  std::vector<LogArc::Weight> log_distance;
+  RmEpsilon(&log_fst, &log_distance, log_opts);
+  ASSERT_TRUE(Verify(log_fst));
+  EXPECT_TRUE(Equal(log_expected, log_fst));
+}
+
+// Verifies that delayed RmEpsilonFst can expand states of a startless weighted
+// FST without out-of-bounds reads on an empty distance vector.
+TEST(RmEpsilonStartlessTest, DelayedRmEpsilonFstHandlesStartlessWeightedFst) {
+  VectorFst<Arc> fst;
+  fst.AddStates(2);
+  // Leave Start() == kNoStateId while querying state 0 directly.
+  fst.AddArc(0, Arc(0, 0, Weight(2.0), 1));
+  fst.AddArc(1, Arc(5, 5, Weight(3.0), 1));
+  fst.SetFinal(1, Weight(4.0));
+  ASSERT_EQ(fst.Start(), kNoStateId);
+  ASSERT_EQ(fst.Properties(kUnweighted, false), 0);
+
+  RmEpsilonFst<Arc> dfst(fst);
+  EXPECT_EQ(dfst.Start(), kNoStateId);
+  EXPECT_EQ(dfst.Final(0), Weight(6.0));
+  ASSERT_EQ(dfst.NumArcs(0), 1);
+  ArcIterator<RmEpsilonFst<Arc>> aiter(dfst, 0);
+  ASSERT_FALSE(aiter.Done());
+  EXPECT_THAT(aiter.Value(), FieldsAre(5, 5, Weight(5.0), 1));
+  EXPECT_EQ(dfst.Properties(kError, false), 0);
 }
 
 }  // namespace
