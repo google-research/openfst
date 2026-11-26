@@ -121,48 +121,45 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
                   DESTINATION ${PYTHON_INSTALL_DIR}/openfst
   )
 
-  # Test
-  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
-  add_test(
-    NAME pywrapfst_test
-    COMMAND
-      ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst_test.py
-      --test_srcdir=${CMAKE_SOURCE_DIR}
-      --test_tmpdir=${CMAKE_CURRENT_BINARY_DIR}/tmp
-  )
+  if(OPENFST_BUILD_TESTS)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
+    # `pywrapfst_test.py` resolves `testdata` relative to `.`, so run from
+    # `${PROJECT_SOURCE_DIR}` where `openfst/*/testdata` lives.
+    add_test(
+      NAME pywrapfst_test
+      COMMAND
+        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst_test.py
+        --test_tmpdir=${CMAKE_CURRENT_BINARY_DIR}/tmp
+      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    )
 
-  add_test(
-    NAME gil_test
-    COMMAND
-      ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gil_test.py
-  )
+    add_test(
+      NAME gil_test
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gil_test.py
+    )
 
-  # Construct LD_LIBRARY_PATH for the test
-  set(TEST_LIB_PATH "$<TARGET_FILE_DIR:fst>" "$<TARGET_FILE_DIR:fstscript>")
-  if(UNIX AND NOT APPLE)
-    set(ENV_VAR_NAME "LD_LIBRARY_PATH")
-  elseif(APPLE)
-    set(ENV_VAR_NAME "DYLD_LIBRARY_PATH")
-  else()
-    set(ENV_VAR_NAME "PATH")
+    # Prepend the Python module and library build directories to the test
+    # environment without overwriting caller paths.
+    if(APPLE)
+      set(ENV_VAR_NAME "DYLD_LIBRARY_PATH")
+    elseif(UNIX)
+      set(ENV_VAR_NAME "LD_LIBRARY_PATH")
+    else()
+      set(ENV_VAR_NAME "PATH")
+    endif()
+
+    set(TEST_ENV_MODS
+        "PYTHONPATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}"
+        "${ENV_VAR_NAME}=path_list_prepend:$<TARGET_FILE_DIR:fstfar>"
+        "${ENV_VAR_NAME}=path_list_prepend:$<TARGET_FILE_DIR:fstfarscript>"
+        "${ENV_VAR_NAME}=path_list_prepend:$<TARGET_FILE_DIR:fstscript>"
+        "${ENV_VAR_NAME}=path_list_prepend:$<TARGET_FILE_DIR:fst>"
+    )
+    set_tests_properties(
+      pywrapfst_test gil_test
+      PROPERTIES ENVIRONMENT_MODIFICATION "${TEST_ENV_MODS}"
+    )
   endif()
-
-  # Set environment for the test
-  set_tests_properties(
-    pywrapfst_test
-    PROPERTIES
-      ENVIRONMENT
-        "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
-      WILL_FAIL TRUE
-      LABELS "ExpectFailure"
-  )
-
-  set_tests_properties(
-    gil_test
-    PROPERTIES
-      ENVIRONMENT
-        "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};${ENV_VAR_NAME}=${TEST_LIB_PATH}"
-  )
 
 else()
   message(
