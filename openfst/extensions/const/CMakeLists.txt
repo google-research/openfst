@@ -19,7 +19,7 @@ set(CONST_LIBS
 )
 
 foreach(LIB ${CONST_LIBS})
-  add_library(${LIB} ${LIB}.cc)
+  fst_add_library(${LIB} ${LIB}.cc)
   set_target_properties(
     ${LIB}
     PROPERTIES SOVERSION ${OPENFST_SOVERSION}

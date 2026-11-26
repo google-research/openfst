@@ -31,14 +31,14 @@ target_link_libraries(
          absl::strings
 )
 
-add_library(fstlinear_tagger_fst linear-tagger-fst.cc)
+fst_add_library(fstlinear_tagger_fst linear-tagger-fst.cc)
 set_target_properties(
   fstlinear_tagger_fst
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
 )
 target_link_libraries(fstlinear_tagger_fst PUBLIC fst)
 
-add_library(fstlinear_classifier_fst linear-classifier-fst.cc)
+fst_add_library(fstlinear_classifier_fst linear-classifier-fst.cc)
 set_target_properties(
   fstlinear_classifier_fst
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}

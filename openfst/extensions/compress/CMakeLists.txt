@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(fstcompress_elias INTERFACE)
+fst_add_library(fstcompress_elias INTERFACE)
 target_include_directories(
   fstcompress_elias INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
                               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(fstcompress_compress INTERFACE)
+fst_add_library(fstcompress_compress INTERFACE)
 target_include_directories(
   fstcompress_compress
   INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
@@ -47,7 +47,7 @@ target_include_directories(
 )
 target_link_libraries(fstcompressscript PUBLIC fstscript fstcompress_compress)
 
-add_library(fstquantize_weights quantize_weights.cc)
+fst_add_library(fstquantize_weights quantize_weights.cc)
 set_target_properties(
   fstquantize_weights
   PROPERTIES SOVERSION ${OPENFST_SOVERSION}
