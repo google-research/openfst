@@ -37,13 +37,6 @@ foreach(LIB ${LOOKAHEAD_LIBS})
 endforeach()
 
 # Logical interface wrapper for plugin-backed LookAhead extension
-add_library(
-  openfst::lookahead
-  INTERFACE
-  IMPORTED
-  GLOBAL
-)
-set_target_properties(
-  openfst::lookahead
-  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
-)
+fst_add_library(fstlookahead INTERFACE)
+target_link_libraries(fstlookahead INTERFACE fst)
+openfst_install(TARGETS fstlookahead EXPORT OpenFstTargets)

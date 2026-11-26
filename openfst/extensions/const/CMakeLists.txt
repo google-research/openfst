@@ -37,13 +37,6 @@ foreach(LIB ${CONST_LIBS})
 endforeach()
 
 # Logical interface wrapper for plugin-backed Const extension
-add_library(
-  openfst::const
-  INTERFACE
-  IMPORTED
-  GLOBAL
-)
-set_target_properties(
-  openfst::const
-  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
-)
+fst_add_library(fstconst INTERFACE)
+target_link_libraries(fstconst INTERFACE fst)
+openfst_install(TARGETS fstconst EXPORT OpenFstTargets)

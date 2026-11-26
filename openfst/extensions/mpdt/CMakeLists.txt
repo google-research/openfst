@@ -36,7 +36,9 @@ if(OPENFST_ENABLE_BIN)
 
     add_library(${BIN}-main STATIC ${BIN}-main.cc)
 
-    target_link_libraries(${BIN}-main PUBLIC fstmpdtscript absl::flags absl::log)
+    target_link_libraries(${BIN}-main PUBLIC fstmpdtscript absl::flags
+                                             absl::log
+    )
 
     add_executable(${BIN} ${BIN}.cc)
 
@@ -122,13 +124,6 @@ if(OPENFST_BUILD_TESTS)
 endif()
 
 # Logical interface wrapper for header-backed MPDT extension
-add_library(
-  openfst::mpdt
-  INTERFACE
-  IMPORTED
-  GLOBAL
-)
-set_target_properties(
-  openfst::mpdt
-  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
-)
+fst_add_library(fstmpdt INTERFACE)
+target_link_libraries(fstmpdt INTERFACE fst fstpdt)
+openfst_install(TARGETS fstmpdt EXPORT OpenFstTargets)

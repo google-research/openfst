@@ -49,13 +49,6 @@ foreach(LIB ${COMPACT_LIBS})
 endforeach()
 
 # Logical interface wrapper for plugin-backed Compact extension
-add_library(
-  openfst::compact
-  INTERFACE
-  IMPORTED
-  GLOBAL
-)
-set_target_properties(
-  openfst::compact
-  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
-)
+fst_add_library(fstcompact INTERFACE)
+target_link_libraries(fstcompact INTERFACE fst)
+openfst_install(TARGETS fstcompact EXPORT OpenFstTargets)

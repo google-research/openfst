@@ -140,13 +140,6 @@ if(OPENFST_BUILD_TESTS)
 endif()
 
 # Logical interface wrapper for header-backed PDT extension
-add_library(
-  openfst::pdt
-  INTERFACE
-  IMPORTED
-  GLOBAL
-)
-set_target_properties(
-  openfst::pdt
-  PROPERTIES INTERFACE_LINK_LIBRARIES openfst::fst
-)
+fst_add_library(fstpdt INTERFACE)
+target_link_libraries(fstpdt INTERFACE fst)
+openfst_install(TARGETS fstpdt EXPORT OpenFstTargets)
