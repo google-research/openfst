@@ -171,6 +171,10 @@ class CompactHashBiTable {
         keys_(table.keys_.begin(), table.keys_.end(), table.keys_.size(),
               compact_hash_func_, compact_hash_equal_) {}
 
+  // Not assignable: assigning `keys_` would leave its hash and equality
+  // functors bound to the source table.
+  CompactHashBiTable& operator=(const CompactHashBiTable&) = delete;
+
   I FindId(const T& entry, bool insert = true) {
     current_entry_ = &entry;
     if (insert) {
@@ -327,6 +331,10 @@ class VectorHashBiTable {
         keys_(table.keys_.size(), hash_func_, hash_equal_) {
     keys_.insert(table.keys_.begin(), table.keys_.end());
   }
+
+  // Not assignable: assigning `keys_` would leave its hash and equality
+  // functors bound to the source table.
+  VectorHashBiTable& operator=(const VectorHashBiTable&) = delete;
 
   I FindId(const T& entry, bool insert = true) {
     if ((selector_)(entry)) {  // Uses the vector if selector_(entry) == true.
