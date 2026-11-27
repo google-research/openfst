@@ -49,33 +49,16 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
 
   set(PYWRAPFST_CC ${CMAKE_CURRENT_BINARY_DIR}/pywrapfst.cc)
 
-  # Prepare include directory structure for Cython to match "from openfst.xxx
-  # cimport"
-  set(CYTHON_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cython_include)
-  file(MAKE_DIRECTORY ${CYTHON_INCLUDE_DIR}/openfst)
-
-  set(PXD_FILES
-      cios.pxd
-      cmemory.pxd
-      cpywrapfst.pxd
-  )
-  foreach(PXD ${PXD_FILES})
-    execute_process(
-      COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/${PXD} ${CYTHON_INCLUDE_DIR}/openfst/${PXD}
-    )
-  endforeach()
-
   # Cython command
   add_custom_command(
     OUTPUT ${PYWRAPFST_CC}
-    COMMAND
-      ${CYTHON_EXECUTABLE} -3 --cplus -I ${CYTHON_INCLUDE_DIR} -I
-      ${CMAKE_SOURCE_DIR} -o ${PYWRAPFST_CC}
-      ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyx
+    COMMAND ${CYTHON_EXECUTABLE} -3 --cplus -I ${PROJECT_SOURCE_DIR} -o
+            ${PYWRAPFST_CC} ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyx
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pyx
-            ${CYTHON_INCLUDE_DIR}/openfst/cpywrapfst.pxd
+            ${CMAKE_CURRENT_SOURCE_DIR}/cios.pxd
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmemory.pxd
+            ${CMAKE_CURRENT_SOURCE_DIR}/cpywrapfst.pxd
+            ${CMAKE_CURRENT_SOURCE_DIR}/pywrapfst.pxd
     COMMENT "Generating C++ source from Cython file"
   )
 
@@ -87,7 +70,7 @@ if(Python3_FOUND AND CYTHON_EXECUTABLE)
   endif()
   Python3_add_library(pywrapfst MODULE WITH_SOABI ${PYWRAPFST_CC})
 
-  target_include_directories(pywrapfst PRIVATE ${CMAKE_SOURCE_DIR})
+  target_include_directories(pywrapfst PRIVATE ${PROJECT_SOURCE_DIR})
 
   target_link_libraries(
     pywrapfst
